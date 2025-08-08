@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"os"
 
-	mailinglistc "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/http/mailing_list/client"
+	mailinglistc "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/http/mailing_list/client"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )

@@ -51,7 +51,7 @@ deps: ## Install dependencies
 
 .PHONY: apigen
 apigen: ## Generate API code using Goa
-	cd cmd/mailing-list-api && go run goa.design/goa/v3/cmd/goa@$(GOA_VERSION) gen $(MODULE)/cmd/mailing-list-api/design
+	go run goa.design/goa/v3/cmd/goa@$(GOA_VERSION) gen $(MODULE)/cmd/mailing-list-api/design
 
 .PHONY: lint
 lint: ## Run golangci-lint (local Go linting)
