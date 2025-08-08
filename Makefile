@@ -6,6 +6,10 @@ VERSION := $(shell git describe --tags --always)
 BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 GIT_COMMIT := $(shell git rev-parse HEAD)
 
+# Goa CLI
+GOA_VERSION := v3.21.5
+MODULE      := $(shell go list -m)
+
 # Docker
 DOCKER_REGISTRY := linuxfoundation
 DOCKER_IMAGE := $(DOCKER_REGISTRY)/$(APP_NAME)
@@ -43,11 +47,11 @@ setup: ## Setup development environment
 .PHONY: deps
 deps: ## Install dependencies
 	@echo "Installing dependencies..."
-	go install goa.design/goa/v3/cmd/goa@latest
+	go install goa.design/goa/v3/cmd/goa@$(GOA_VERSION)
 
 .PHONY: apigen
-apigen: deps #@ Generate API code using Goa
-	goa gen github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/design
+apigen: ## Generate API code using Goa
+	go run goa.design/goa/v3/cmd/goa@$(GOA_VERSION) gen $(MODULE)/cmd/mailing-list-api/design
 
 .PHONY: lint
 lint: ## Run golangci-lint (local Go linting)
@@ -84,7 +88,9 @@ docker-build: ## Build Docker image
 .PHONY: docker-run
 docker-run: ## Run Docker container locally
 	@echo "Running Docker container..."
+	@docker rm -f $(APP_NAME) >/dev/null 2>&1 || true
 	docker run \
+		--rm \
 		--name $(APP_NAME) \
 		-p 8080:8080 \
 		-e OPENSEARCH_URL=http://opensearch-cluster-master.lfx.svc.cluster.local:9200 \
@@ -112,3 +118,13 @@ helm-uninstall:
 	@echo "==> Uninstalling Helm chart..."
 	helm uninstall $(HELM_RELEASE_NAME) --namespace $(HELM_NAMESPACE)
 	@echo "==> Helm chart uninstalled: $(HELM_RELEASE_NAME)"
+
+.PHONY: all
+all: setup lint test build ## Run common pipeline locally
+
+.PHONY: clean
+clean: ## Remove build artifacts and stale containers/images
+	@echo "Cleaning..."
+	rm -rf bin coverage.out
+	@docker rm -f $(APP_NAME) >/dev/null 2>&1 || true
+	@docker rmi $(DOCKER_IMAGE):$(DOCKER_TAG) >/dev/null 2>&1 || true

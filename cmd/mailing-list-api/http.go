@@ -88,7 +88,10 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 		// Start HTTP server in a separate goroutine.
 		go func() {
 			slog.InfoContext(ctx, "HTTP server listening", "host", host)
-			errc <- srv.ListenAndServe()
+			select {
+			case errc <- srv.ListenAndServe():
+			case <-ctx.Done(): // avoid deadlock if channel already satisfied
+			}
 		}()
 
 		<-ctx.Done()
