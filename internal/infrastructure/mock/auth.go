@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package mock provides mock implementations for testing purposes.
 package mock
 
 import (
@@ -16,12 +17,12 @@ import (
 type MockAuthService struct{}
 
 // ParsePrincipal parses and validates a JWT token, returning a mock principal
-func (m *MockAuthService) ParsePrincipal(ctx context.Context, token string, logger *slog.Logger) (string, error) {
+func (m *MockAuthService) ParsePrincipal(ctx context.Context, _ string, logger *slog.Logger) (string, error) {
 
 	principal := os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL")
 
 	if principal == "" {
-		return "", errors.NewValidation("empty token provided")
+		return "", errors.NewValidation("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL environment variable not set")
 	}
 
 	logger.DebugContext(ctx, "parsed principal",

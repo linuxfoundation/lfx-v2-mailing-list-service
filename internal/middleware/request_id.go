@@ -19,7 +19,7 @@ func RequestIDMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Try to get request ID from header first
-			requestID := r.Header.Get(string(constants.RequestIDHeader))
+			requestID := r.Header.Get(constants.RequestIDHeader)
 
 			// If no request ID in header, generate a new one
 			if requestID == "" {

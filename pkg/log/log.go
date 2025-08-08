@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package log provides structured logging utilities and configuration for the service.
 package log
 
 import (

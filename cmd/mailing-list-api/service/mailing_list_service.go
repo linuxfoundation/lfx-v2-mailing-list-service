@@ -1,10 +1,14 @@
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+
+// Package service implements the mailing list service business logic and endpoints.
 package service
 
 import (
 	"context"
 	"log/slog"
 
-	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
+	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 
@@ -27,7 +31,7 @@ func NewMailingList(auth port.Authenticator) mailinglistservice.Service {
 
 // JWTAuth implements the authorization logic for service "mailing-list"
 // for the "jwt" security scheme.
-func (s *mailingListService) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
+func (s *mailingListService) JWTAuth(ctx context.Context, token string, _ *security.JWTScheme) (context.Context, error) {
 	// Parse the Heimdall-authorized principal from the token
 	principal, err := s.auth.ParsePrincipal(ctx, token, slog.Default())
 	if err != nil {
@@ -40,6 +44,7 @@ func (s *mailingListService) JWTAuth(ctx context.Context, token string, scheme *
 
 // Livez implements the livez endpoint for liveness probes.
 func (s *mailingListService) Livez(ctx context.Context) error {
+	slog.DebugContext(ctx, "liveness check completed successfully")
 	return nil
 }
 
@@ -47,5 +52,6 @@ func (s *mailingListService) Livez(ctx context.Context) error {
 func (s *mailingListService) Readyz(ctx context.Context) error {
 	// For health endpoints, we don't need complex connectivity checks in base PR
 	// This will be enhanced when we add CRUD operations that need storage verification
+	slog.DebugContext(ctx, "readiness check completed successfully")
 	return nil
 }

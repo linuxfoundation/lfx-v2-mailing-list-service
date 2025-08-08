@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package auth provides authentication and authorization implementations.
 package auth
 
 import (
@@ -56,6 +57,7 @@ func (c *HeimdallClaims) Validate(_ context.Context) error {
 	return nil
 }
 
+// JWTAuth provides JWT authentication and token validation functionality.
 type JWTAuth struct {
 	validator *validator.Validator
 	config    JWTAuthConfig

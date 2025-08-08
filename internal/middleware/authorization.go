@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package middleware provides HTTP middleware components for the mailing list service.
 package middleware
 
 import (

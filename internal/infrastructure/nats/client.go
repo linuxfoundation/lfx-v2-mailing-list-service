@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package nats provides NATS messaging client implementation and related utilities.
 package nats
 
 import (
@@ -41,11 +42,17 @@ func (c *NATSClient) Close() error {
 // IsReady checks if the NATS client is ready
 func (c *NATSClient) IsReady(ctx context.Context) error {
 	if c.conn == nil {
+		slog.ErrorContext(ctx, "NATS client is not initialized or not connected")
 		return errors.NewServiceUnavailable("NATS client is not initialized or not connected")
 	}
 	if !c.conn.IsConnected() || c.conn.IsDraining() {
+		slog.ErrorContext(ctx, "NATS client is not ready",
+			"connected", c.conn.IsConnected(),
+			"draining", c.conn.IsDraining(),
+		)
 		return errors.NewServiceUnavailable("NATS client is not ready, connection is not established or is draining")
 	}
+	slog.DebugContext(ctx, "NATS client is ready", "url", c.conn.ConnectedUrl())
 	return nil
 }
 
@@ -95,7 +102,11 @@ func NewClient(ctx context.Context, config Config) (*NATSClient, error) {
 		nats.MaxReconnects(config.MaxReconnect),
 		nats.ReconnectWait(config.ReconnectWait),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			slog.WarnContext(ctx, "NATS disconnected", "error", err)
+			slog.WarnContext(ctx, "NATS disconnected",
+				"error", err,
+				"url", nc.ConnectedUrl(),
+				"status", nc.Status(),
+			)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			slog.InfoContext(ctx, "NATS reconnected", "url", nc.ConnectedUrl())
@@ -108,7 +119,10 @@ func NewClient(ctx context.Context, config Config) (*NATSClient, error) {
 			}
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
-			slog.InfoContext(ctx, "NATS connection closed")
+			slog.InfoContext(ctx, "NATS connection closed",
+				"url", nc.ConnectedUrl(),
+				"status", nc.Status(),
+			)
 		}),
 	}
 

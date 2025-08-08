@@ -43,7 +43,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 	assertion := assert.New(t)
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(_ *testing.T) {
 			var capturedRequestID string
 			var capturedContext context.Context
 
@@ -118,7 +118,7 @@ func TestMiddlewareIntegration(t *testing.T) {
 	assertion := assert.New(t)
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(_ *testing.T) {
 			var requestIDs []string
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +160,7 @@ func TestMiddlewareIntegration(t *testing.T) {
 
 // Helper function to extract request ID from context
 func getRequestIDFromContext(ctx context.Context) string {
-	if requestID, ok := ctx.Value(constants.RequestIDHeader).(string); ok {
+	if requestID, ok := ctx.Value(constants.RequestIDContextKey).(string); ok {
 		return requestID
 	}
 	return ""

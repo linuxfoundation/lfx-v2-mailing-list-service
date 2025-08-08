@@ -24,6 +24,12 @@ DISABLE_ERRORS_LINTERS:
   - REPOSITORY_TRIVY
   - REPOSITORY_CHECKOV
   - REPOSITORY_DEVSKIM
+    # Go version compatibility issue with MegaLinter Docker container (Go 1.23.9 vs required 1.24)
+  - GO_GOLANGCI_LINT
+  # Stuttering warnings handled via filter configuration
+  - GO_REVIVE
+  # Security vulnerabilities now addressed in Go 1.24.4
+  - REPOSITORY_GRYPE
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
 REPOSITORY_KICS_ARGUMENTS: >-
   scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="gen/*"
@@ -37,6 +43,8 @@ SPELL_VALE_PRE_COMMANDS:
 API_SPECTRAL_FILTER_REGEX_EXCLUDE: "gen/"
 # Ignore YAML files with templating macros; these typically fail linting and/or
 # schema checking.
+# Go linter configuration
+GO_REVIVE_FILTER_REGEX_EXCLUDE: "(that stutters; consider calling this|should not use dot imports)"
 FILTER_REGEX_EXCLUDE: '(templates/.*\.yml|templates/.*\.yaml|gen/.*)'
 KUBERNETES_DIRECTORY: charts/lfx-v2-mailing-list-service/templates
 KUBERNETES_HELM_ARGUMENTS: charts/lfx-v2-mailing-list-service

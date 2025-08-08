@@ -6,9 +6,6 @@
 
 FROM cgr.dev/chainguard/go:latest AS builder
 
-# Expose port 8080 for the mailing-list service API.
-EXPOSE 8080
-
 # Set necessary environment variables needed for our image. Allow building to
 # other architectures via cross-compilation build-arg.
 ARG TARGETARCH
@@ -25,13 +22,15 @@ RUN go mod download
 COPY . .
 
 # Build the packages
-RUN go build -o /go/bin/mailing-list-svc -trimpath -ldflags="-w -s" github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api
+RUN go build -o /go/bin/mailing-list-svc -trimpath -ldflags="-w -s" ./cmd/mailing-list-api
 
 # Run our go binary standalone
 FROM cgr.dev/chainguard/static:latest
 
 # Implicit with base image; setting explicitly for linters.
 USER nonroot
+
+EXPOSE 8080
 
 COPY --from=builder /go/bin/mailing-list-svc /cmd/mailing-list-api
 

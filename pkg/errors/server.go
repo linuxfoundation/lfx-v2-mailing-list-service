@@ -15,6 +15,11 @@ func (u Unexpected) Error() string {
 	return u.error()
 }
 
+// Unwrap returns the wrapped error, if any.
+func (u Unexpected) Unwrap() error {
+	return u.err
+}
+
 // NewUnexpected creates a new Unexpected error with the provided message.
 func NewUnexpected(message string, err ...error) Unexpected {
 	return Unexpected{
@@ -33,6 +38,11 @@ type ServiceUnavailable struct {
 // Error returns the error message for ServiceUnavailable.
 func (su ServiceUnavailable) Error() string {
 	return su.error()
+}
+
+// Unwrap returns the wrapped error, if any.
+func (su ServiceUnavailable) Unwrap() error {
+	return su.err
 }
 
 // NewServiceUnavailable creates a new ServiceUnavailable error with the provided message.

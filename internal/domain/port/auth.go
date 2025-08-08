@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package port defines the interfaces for external dependencies and adapters.
 package port
 
 import (

@@ -58,7 +58,7 @@ func TestAuthorizationMiddleware(t *testing.T) {
 	assertion := assert.New(t)
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(_ *testing.T) {
 			var capturedContext context.Context
 			var capturedAuthorization string
 
@@ -123,7 +123,7 @@ func TestAuthorizationMiddlewareIntegration(t *testing.T) {
 				assert.Equal(t, "Bearer integration-token", auth)
 
 				// Check if request ID is also in context (if both middlewares are used)
-				if requestID, ok := ctx.Value(constants.RequestIDHeader).(string); ok {
+				if requestID, ok := ctx.Value(constants.RequestIDContextKey).(string); ok {
 					assert.Equal(t, "test-request-id", requestID)
 				}
 			},
@@ -131,7 +131,7 @@ func TestAuthorizationMiddlewareIntegration(t *testing.T) {
 		},
 		{
 			name: "handles missing authorization header gracefully",
-			setupRequest: func(req *http.Request) {
+			setupRequest: func(_ *http.Request) {
 				// Don't set any authorization header
 			},
 			checkContext: func(t *testing.T, ctx context.Context) {
@@ -213,7 +213,10 @@ func TestAuthorizationMiddlewareConcurrency(t *testing.T) {
 		// Simulate some processing time
 		time.Sleep(10 * time.Millisecond)
 		auth := getAuthorizationFromContext(r.Context())
-		w.Write([]byte(auth)) //nolint:errcheck
+		if _, err := w.Write([]byte(auth)); err != nil {
+			// In a test, we don't need to handle this error, but we check it to satisfy gosec
+			return
+		}
 	})
 
 	middleware := AuthorizationMiddleware()

@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package errors provides custom error types for the mailing list service.
 package errors
 
 import "fmt"
@@ -18,4 +19,9 @@ func (b base) error() string {
 		return b.message
 	}
 	return fmt.Sprintf("%s: %v", b.message, b.err)
+}
+
+// Unwrap exposes the underlying error to support errors.Is / errors.As.
+func (b base) Unwrap() error {
+	return b.err
 }

@@ -1,3 +1,6 @@
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+
 module github.com/linuxfoundation/lfx-v2-mailing-list-service
 
 go 1.24.0

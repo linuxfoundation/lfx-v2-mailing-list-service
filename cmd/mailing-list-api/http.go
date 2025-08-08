@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package main provides HTTP server setup and configuration for the mailing list API.
 package main
 
 import (
@@ -10,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	mailinglistservicesvr "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/http/mailing_list/server"
-	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
+	mailinglistservicesvr "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/http/mailing_list/server"
+	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/middleware"
 
 	"goa.design/clue/debug"
@@ -108,7 +109,12 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 // The function also writes and logs the error unique ID so that it's possible
 // to correlate.
 func errorHandler(logCtx context.Context) func(context.Context, http.ResponseWriter, error) {
-	return func(ctx context.Context, w http.ResponseWriter, err error) {
-		slog.ErrorContext(logCtx, "HTTP error occurred", "error", err)
+	return func(ctx context.Context, _ http.ResponseWriter, err error) {
+		// Log with request context but include info from both contexts
+		slog.ErrorContext(ctx, "HTTP error occurred",
+			"error", err,
+			"has_server_context", logCtx != nil,
+			"has_request_context", ctx != nil,
+		)
 	}
 }

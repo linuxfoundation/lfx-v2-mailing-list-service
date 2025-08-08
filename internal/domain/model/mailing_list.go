@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package model defines the domain models and entities for the mailing list service.
 package model
 
 import (

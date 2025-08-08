@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package constants defines global constants used throughout the mailing list service.
 package constants
 
 // Service constants
@@ -13,15 +14,6 @@ const (
 const (
 	// RequestIDHeader is the HTTP header name for request ID
 	RequestIDHeader = "X-Request-Id"
-)
-
-// Context key types
-type contextKey string
-
-// Context keys
-const (
-	// RequestIDContextKey is the context key for request ID
-	RequestIDContextKey contextKey = "request-id"
 )
 
 // NATS messaging subjects

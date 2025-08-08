@@ -15,6 +15,11 @@ func (v Validation) Error() string {
 	return v.error()
 }
 
+// Unwrap returns the wrapped error, if any.
+func (v Validation) Unwrap() error {
+	return v.err
+}
+
 // NewValidation creates a new Validation error with the provided message.
 func NewValidation(message string, err ...error) Validation {
 	return Validation{
@@ -35,6 +40,11 @@ func (v NotFound) Error() string {
 	return v.error()
 }
 
+// Unwrap returns the wrapped error, if any.
+func (v NotFound) Unwrap() error {
+	return v.err
+}
+
 // NewNotFound creates a new NotFound error with the provided message.
 func NewNotFound(message string, err ...error) NotFound {
 	return NotFound{
@@ -53,6 +63,11 @@ type Conflict struct {
 // Error returns the error message for Conflict.
 func (c Conflict) Error() string {
 	return c.error()
+}
+
+// Unwrap returns the wrapped error, if any.
+func (c Conflict) Unwrap() error {
+	return c.err
 }
 
 // NewConflict creates a new Conflict error with the provided message.

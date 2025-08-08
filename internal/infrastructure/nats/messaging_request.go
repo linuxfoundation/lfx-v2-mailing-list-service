@@ -41,6 +41,7 @@ func (m *messageRequest) Name(ctx context.Context, uid string) (string, error) {
 	return m.get(ctx, constants.ProjectGetNameSubject, uid)
 }
 
+// NewMessageRequest creates a new project reader implementation using NATS messaging.
 func NewMessageRequest(client *NATSClient) port.ProjectReader {
 	return &messageRequest{
 		client: client,
