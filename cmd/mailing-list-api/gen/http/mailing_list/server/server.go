@@ -12,7 +12,7 @@ import (
 	"context"
 	"net/http"
 
-	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )

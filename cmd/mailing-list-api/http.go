@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	mailinglistservicesvr "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/http/mailing_list/server"
-	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	mailinglistservicesvr "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/http/mailing_list/server"
+	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/middleware"
 
 	"goa.design/clue/debug"

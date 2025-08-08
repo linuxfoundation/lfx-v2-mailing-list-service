@@ -8,7 +8,7 @@ import (
 	"context"
 	"log/slog"
 
-	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 

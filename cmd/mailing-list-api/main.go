@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
-	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/gen/mailing_list"
 
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 
