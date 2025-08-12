@@ -1,0 +1,51 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+# image is the configuration for the container images
+image:
+  # repository is the container image repository
+  repository: ghcr.io/linuxfoundation/lfx-v2-mailing-list-service/mailing-list-api
+  # tag is the container image tag (overrides appVersion from Chart.yaml)
+  tag: ""
+  # pullPolicy is the image pull policy
+  pullPolicy: IfNotPresent
+
+# service is the configuration for the Kubernetes service
+service:
+  # port is the service port
+  port: 8080
+
+# nats is the configuration for the NATS server
+nats:
+  # url is the URL of the NATS server
+  url: nats://lfx-platform-nats.lfx.svc.cluster.local:4222
+
+# openfga is the configuration for the OpenFGA server
+openfga:
+  # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization
+  # Note: If it is disabled, then the mailing-list service will allow all requests
+  # (Disabling OpenFGA should only be used for local development).
+  enabled: true
+
+# heimdall is the configuration for the heimdall middleware
+heimdall:
+  enabled: true
+  url: http://heimdall.lfx.svc.cluster.local:4456
+  # jwksUrl is the URL to the JSON Web Key Set endpoint for JWT validation
+  jwksUrl: http://heimdall.lfx.svc.cluster.local:4457/.well-known/jwks
+
+# authelia is the configuration for the Authelia server
+authelia:
+  # enabled is a boolean to determine if the Authelia authenticator is enabled
+  # Note: Disabling Authelia should only be used for local development
+  enabled: true
+
+# app is the configuration for the application
+app:
+  # logLevel is the log level (debug, info, warn, error)
+  logLevel: debug
+  # logAddSource is a boolean to determine if the log source should be added
+  logAddSource: true
+  # jwt is the configuration for JWT authentication
+  # audience is the intended audience for the JWT token
+  audience: lfx-v2-mailing-list-service

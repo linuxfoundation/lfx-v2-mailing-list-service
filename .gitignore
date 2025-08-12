@@ -1,0 +1,10 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+bin/
+.env*
+coverage.out
+
+# Linter generated files
+megalinter-reports/
+revive.log
+.claude/
