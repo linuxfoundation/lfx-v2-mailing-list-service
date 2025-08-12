@@ -7,3 +7,268 @@
 // github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/design
 
 package client
+
+import (
+	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	goa "goa.design/goa/v3/pkg"
+)
+
+// GetGrpsioServiceResponseBody is the type of the "mailing-list" service
+// "get-grpsio-service" endpoint HTTP response body.
+type GetGrpsioServiceResponseBody ServiceInfoResponseBody
+
+// ReadyzServiceUnavailableResponseBody is the type of the "mailing-list"
+// service "readyz" endpoint HTTP response body for the "ServiceUnavailable"
+// error.
+type ReadyzServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGrpsioServiceBadRequestResponseBody is the type of the "mailing-list"
+// service "get-grpsio-service" endpoint HTTP response body for the
+// "BadRequest" error.
+type GetGrpsioServiceBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGrpsioServiceInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "get-grpsio-service" endpoint HTTP response body for
+// the "InternalServerError" error.
+type GetGrpsioServiceInternalServerErrorResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGrpsioServiceNotFoundResponseBody is the type of the "mailing-list"
+// service "get-grpsio-service" endpoint HTTP response body for the "NotFound"
+// error.
+type GetGrpsioServiceNotFoundResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGrpsioServiceServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-grpsio-service" endpoint HTTP response body for
+// the "ServiceUnavailable" error.
+type GetGrpsioServiceServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ServiceInfoResponseBody is used to define fields on response body types.
+type ServiceInfoResponseBody struct {
+	// Service type (primary, formation, shared)
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Unique service identifier
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Service domain
+	Domain *string `form:"domain,omitempty" json:"domain,omitempty" xml:"domain,omitempty"`
+	// GroupsIO group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
+	// Service status
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// List of global owner email addresses
+	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
+	// Email prefix
+	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Project slug identifier
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
+	// Project UUID
+	ProjectID *string `form:"project_id,omitempty" json:"project_id,omitempty" xml:"project_id,omitempty"`
+	// Service URL
+	URL *string `form:"url,omitempty" json:"url,omitempty" xml:"url,omitempty"`
+	// GroupsIO group name
+	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+}
+
+// NewReadyzServiceUnavailable builds a mailing-list service readyz endpoint
+// ServiceUnavailable error.
+func NewReadyzServiceUnavailable(body *ReadyzServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+	v := &mailinglist.ServiceUnavailableError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGrpsioServiceResultOK builds a "mailing-list" service
+// "get-grpsio-service" endpoint result from a HTTP "OK" response.
+func NewGetGrpsioServiceResultOK(body *GetGrpsioServiceResponseBody, etag *string) *mailinglist.GetGrpsioServiceResult {
+	v := &mailinglist.ServiceInfo{
+		Type:        *body.Type,
+		ID:          *body.ID,
+		Domain:      *body.Domain,
+		GroupID:     *body.GroupID,
+		Status:      *body.Status,
+		Prefix:      body.Prefix,
+		ProjectSlug: *body.ProjectSlug,
+		ProjectID:   *body.ProjectID,
+		URL:         *body.URL,
+		GroupName:   *body.GroupName,
+	}
+	if body.GlobalOwners != nil {
+		v.GlobalOwners = make([]string, len(body.GlobalOwners))
+		for i, val := range body.GlobalOwners {
+			v.GlobalOwners[i] = val
+		}
+	}
+	res := &mailinglist.GetGrpsioServiceResult{
+		Service: v,
+	}
+	res.Etag = etag
+
+	return res
+}
+
+// NewGetGrpsioServiceBadRequest builds a mailing-list service
+// get-grpsio-service endpoint BadRequest error.
+func NewGetGrpsioServiceBadRequest(body *GetGrpsioServiceBadRequestResponseBody) *mailinglist.BadRequestError {
+	v := &mailinglist.BadRequestError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGrpsioServiceInternalServerError builds a mailing-list service
+// get-grpsio-service endpoint InternalServerError error.
+func NewGetGrpsioServiceInternalServerError(body *GetGrpsioServiceInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+	v := &mailinglist.InternalServerError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGrpsioServiceNotFound builds a mailing-list service get-grpsio-service
+// endpoint NotFound error.
+func NewGetGrpsioServiceNotFound(body *GetGrpsioServiceNotFoundResponseBody) *mailinglist.NotFoundError {
+	v := &mailinglist.NotFoundError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGrpsioServiceServiceUnavailable builds a mailing-list service
+// get-grpsio-service endpoint ServiceUnavailable error.
+func NewGetGrpsioServiceServiceUnavailable(body *GetGrpsioServiceServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+	v := &mailinglist.ServiceUnavailableError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// ValidateGetGrpsioServiceResponseBody runs the validations defined on
+// Get-Grpsio-ServiceResponseBody
+func ValidateGetGrpsioServiceResponseBody(body *GetGrpsioServiceResponseBody) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Domain == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("domain", "body"))
+	}
+	if body.GroupID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_id", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ProjectSlug == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_slug", "body"))
+	}
+	if body.ProjectID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	}
+	if body.URL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("url", "body"))
+	}
+	if body.GroupName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	return
+}
+
+// ValidateReadyzServiceUnavailableResponseBody runs the validations defined on
+// readyz_ServiceUnavailable_response_body
+func ValidateReadyzServiceUnavailableResponseBody(body *ReadyzServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGrpsioServiceBadRequestResponseBody runs the validations defined
+// on get-grpsio-service_BadRequest_response_body
+func ValidateGetGrpsioServiceBadRequestResponseBody(body *GetGrpsioServiceBadRequestResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGrpsioServiceInternalServerErrorResponseBody runs the validations
+// defined on get-grpsio-service_InternalServerError_response_body
+func ValidateGetGrpsioServiceInternalServerErrorResponseBody(body *GetGrpsioServiceInternalServerErrorResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGrpsioServiceNotFoundResponseBody runs the validations defined on
+// get-grpsio-service_NotFound_response_body
+func ValidateGetGrpsioServiceNotFoundResponseBody(body *GetGrpsioServiceNotFoundResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGrpsioServiceServiceUnavailableResponseBody runs the validations
+// defined on get-grpsio-service_ServiceUnavailable_response_body
+func ValidateGetGrpsioServiceServiceUnavailableResponseBody(body *GetGrpsioServiceServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateServiceInfoResponseBody runs the validations defined on
+// ServiceInfoResponseBody
+func ValidateServiceInfoResponseBody(body *ServiceInfoResponseBody) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Domain == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("domain", "body"))
+	}
+	if body.GroupID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_id", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ProjectSlug == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_slug", "body"))
+	}
+	if body.ProjectID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	}
+	if body.URL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("url", "body"))
+	}
+	if body.GroupName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	return
+}

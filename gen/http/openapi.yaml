@@ -2,8 +2,8 @@ swagger: "2.0"
 info:
     title: Mailing List Service
     description: Service for managing mailing lists in LFX
-    version: "1.0"
-host: localhost:8080
+    version: 0.0.1
+host: localhost:80
 consumes:
     - application/json
     - application/xml
@@ -13,16 +13,106 @@ produces:
     - application/xml
     - application/gob
 paths:
+    /groupsio/services/{uid}:
+        get:
+            tags:
+                - mailing-list
+            summary: get-grpsio-service mailing-list
+            description: Get groupsIO service details by ID
+            operationId: mailing-list#get-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service unique identifier
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/MailingListGetGrpsioServiceResponseBody'
+                        required:
+                            - type
+                            - id
+                            - domain
+                            - group_id
+                            - status
+                            - project_slug
+                            - project_id
+                            - url
+                            - group_name
+                    headers:
+                        ETag:
+                            description: ETag header value
+                            type: string
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /livez:
         get:
             tags:
                 - mailing-list
             summary: livez mailing-list
-            description: Liveness probe endpoint
+            description: Check if the service is alive.
             operationId: mailing-list#livez
+            produces:
+                - text/plain
             responses:
                 "200":
                     description: OK response.
+                    schema:
+                        type: string
+                        format: byte
+            schemes:
+                - http
+    /openapi.json:
+        get:
+            tags:
+                - mailing-list
+            summary: Download gen/http/openapi3.json
+            operationId: mailing-list#/openapi.json
+            responses:
+                "200":
+                    description: File downloaded
+                    schema:
+                        type: file
             schemes:
                 - http
     /readyz:
@@ -30,12 +120,160 @@ paths:
             tags:
                 - mailing-list
             summary: readyz mailing-list
-            description: Readiness probe endpoint
+            description: Check if the service is able to take inbound requests.
             operationId: mailing-list#readyz
+            produces:
+                - text/plain
             responses:
                 "200":
                     description: OK response.
+                    schema:
+                        type: string
+                        format: byte
                 "503":
                     description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
             schemes:
                 - http
+definitions:
+    BadRequestError:
+        title: BadRequestError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The request was invalid.
+        description: Bad request
+        example:
+            message: The request was invalid.
+        required:
+            - message
+    InternalServerError:
+        title: InternalServerError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: An internal server error occurred.
+        description: Internal server error
+        example:
+            message: An internal server error occurred.
+        required:
+            - message
+    MailingListGetGrpsioServiceResponseBody:
+        title: MailingListGetGrpsioServiceResponseBody
+        $ref: '#/definitions/ServiceInfo'
+    NotFoundError:
+        title: NotFoundError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The resource was not found.
+        description: Resource not found
+        example:
+            message: The resource was not found.
+        required:
+            - message
+    ServiceInfo:
+        title: ServiceInfo
+        type: object
+        properties:
+            domain:
+                type: string
+                description: Service domain
+                example: lists.project.org
+            global_owners:
+                type: array
+                items:
+                    type: string
+                    example: Perspiciatis voluptas recusandae tenetur.
+                description: List of global owner email addresses
+                example:
+                    - admin@example.com
+            group_id:
+                type: integer
+                description: GroupsIO group ID
+                example: 12345
+                format: int64
+            group_name:
+                type: string
+                description: GroupsIO group name
+                example: project-name
+            id:
+                type: string
+                description: Unique service identifier
+                example: service-uuid
+            prefix:
+                type: string
+                description: Email prefix
+                example: ""
+            project_id:
+                type: string
+                description: Project UUID
+                example: project-uuid
+            project_slug:
+                type: string
+                description: Project slug identifier
+                example: project-name
+            status:
+                type: string
+                description: Service status
+                example: created
+            type:
+                type: string
+                description: Service type (primary, formation, shared)
+                example: v2_primary
+            url:
+                type: string
+                description: Service URL
+                example: https://lists.project.org
+        description: A GroupsIO service for managing mailing lists
+        example:
+            domain: lists.project.org
+            global_owners:
+                - admin@example.com
+            group_id: 12345
+            group_name: project-name
+            id: service-uuid
+            prefix: ""
+            project_id: project-uuid
+            project_slug: project-name
+            status: created
+            type: v2_primary
+            url: https://lists.project.org
+        required:
+            - type
+            - id
+            - domain
+            - group_id
+            - status
+            - project_slug
+            - project_id
+            - url
+            - group_name
+    ServiceUnavailableError:
+        title: ServiceUnavailableError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The service is unavailable.
+        description: Service unavailable
+        example:
+            message: The service is unavailable.
+        required:
+            - message
+securityDefinitions:
+    jwt_header_Authorization:
+        type: apiKey
+        description: Heimdall authorization
+        name: Authorization
+        in: header

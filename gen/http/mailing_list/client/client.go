@@ -24,6 +24,10 @@ type Client struct {
 	// Readyz Doer is the HTTP client used to make requests to the readyz endpoint.
 	ReadyzDoer goahttp.Doer
 
+	// GetGrpsioService Doer is the HTTP client used to make requests to the
+	// get-grpsio-service endpoint.
+	GetGrpsioServiceDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -44,13 +48,14 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:           doer,
-		ReadyzDoer:          doer,
-		RestoreResponseBody: restoreBody,
-		scheme:              scheme,
-		host:                host,
-		decoder:             dec,
-		encoder:             enc,
+		LivezDoer:            doer,
+		ReadyzDoer:           doer,
+		GetGrpsioServiceDoer: doer,
+		RestoreResponseBody:  restoreBody,
+		scheme:               scheme,
+		host:                 host,
+		decoder:              dec,
+		encoder:              enc,
 	}
 }
 
@@ -87,6 +92,30 @@ func (c *Client) Readyz() goa.Endpoint {
 		resp, err := c.ReadyzDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "readyz", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGrpsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service get-grpsio-service server.
+func (c *Client) GetGrpsioService() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGrpsioServiceRequest(c.encoder)
+		decodeResponse = DecodeGetGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGrpsioServiceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGrpsioServiceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-service", err)
 		}
 		return decodeResponse(resp)
 	}

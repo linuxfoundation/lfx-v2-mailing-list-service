@@ -7,3 +7,42 @@
 // github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/design
 
 package client
+
+import (
+	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	goa "goa.design/goa/v3/pkg"
+)
+
+// BuildGetGrpsioServicePayload builds the payload for the mailing-list
+// get-grpsio-service endpoint from CLI flags.
+func BuildGetGrpsioServicePayload(mailingListGetGrpsioServiceUID string, mailingListGetGrpsioServiceVersion string, mailingListGetGrpsioServiceBearerToken string) (*mailinglist.GetGrpsioServicePayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListGetGrpsioServiceUID
+	}
+	var version *string
+	{
+		if mailingListGetGrpsioServiceVersion != "" {
+			version = &mailingListGetGrpsioServiceVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGrpsioServiceBearerToken != "" {
+			bearerToken = &mailingListGetGrpsioServiceBearerToken
+		}
+	}
+	v := &mailinglist.GetGrpsioServicePayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v, nil
+}

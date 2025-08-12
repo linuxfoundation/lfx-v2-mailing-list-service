@@ -8,6 +8,10 @@
 
 package server
 
+import (
+	"fmt"
+)
+
 // LivezMailingListPath returns the URL path to the mailing-list service livez HTTP endpoint.
 func LivezMailingListPath() string {
 	return "/livez"
@@ -16,4 +20,9 @@ func LivezMailingListPath() string {
 // ReadyzMailingListPath returns the URL path to the mailing-list service readyz HTTP endpoint.
 func ReadyzMailingListPath() string {
 	return "/readyz"
+}
+
+// GetGrpsioServiceMailingListPath returns the URL path to the mailing-list service get-grpsio-service HTTP endpoint.
+func GetGrpsioServiceMailingListPath(uid string) string {
+	return fmt.Sprintf("/groupsio/services/%v", uid)
 }

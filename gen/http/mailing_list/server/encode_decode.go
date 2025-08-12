@@ -10,17 +10,25 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strings"
 
+	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	goahttp "goa.design/goa/v3/http"
+	goa "goa.design/goa/v3/pkg"
 )
 
 // EncodeLivezResponse returns an encoder for responses returned by the
 // mailing-list livez endpoint.
 func EncodeLivezResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.([]byte)
+		ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "text/plain")
+		enc := encoder(ctx, w)
+		body := res
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return enc.Encode(body)
 	}
 }
 
@@ -28,7 +36,165 @@ func EncodeLivezResponse(encoder func(context.Context, http.ResponseWriter) goah
 // mailing-list readyz endpoint.
 func EncodeReadyzResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.([]byte)
+		ctx = context.WithValue(ctx, goahttp.ContentTypeKey, "text/plain")
+		enc := encoder(ctx, w)
+		body := res
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return enc.Encode(body)
+	}
+}
+
+// EncodeReadyzError returns an encoder for errors returned by the readyz
+// mailing-list endpoint.
+func EncodeReadyzError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewReadyzServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetGrpsioServiceResponse returns an encoder for responses returned by
+// the mailing-list get-grpsio-service endpoint.
+func EncodeGetGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GetGrpsioServiceResult)
+		enc := encoder(ctx, w)
+		body := NewGetGrpsioServiceResponseBody(res)
+		if res.Etag != nil {
+			w.Header().Set("Etag", *res.Etag)
+		}
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetGrpsioServiceRequest returns a decoder for requests sent to the
+// mailing-list get-grpsio-service endpoint.
+func DecodeGetGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			uid         string
+			version     *string
+			bearerToken *string
+			err         error
+
+			params = mux.Vars(r)
+		)
+		uid = params["uid"]
+		versionRaw := r.URL.Query().Get("v")
+		if versionRaw != "" {
+			version = &versionRaw
+		}
+		if version != nil {
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+		}
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetGrpsioServicePayload(uid, version, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetGrpsioServiceError returns an encoder for errors returned by the
+// get-grpsio-service mailing-list endpoint.
+func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGrpsioServiceBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGrpsioServiceInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGrpsioServiceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGrpsioServiceServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
 	}
 }

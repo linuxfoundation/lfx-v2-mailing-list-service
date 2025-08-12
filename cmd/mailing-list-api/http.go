@@ -54,7 +54,7 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 	)
 	{
 		eh := errorHandler(ctx)
-		mailingListServiceServer = mailinglistservicesvr.New(mailingListServiceEndpoints, mux, dec, enc, eh, nil)
+		mailingListServiceServer = mailinglistservicesvr.New(mailingListServiceEndpoints, mux, dec, enc, eh, nil, nil)
 	}
 
 	// Configure the mux.
