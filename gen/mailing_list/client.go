@@ -16,26 +16,56 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint  goa.Endpoint
-	ReadyzEndpoint goa.Endpoint
+	LivezEndpoint            goa.Endpoint
+	ReadyzEndpoint           goa.Endpoint
+	GetGrpsioServiceEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz goa.Endpoint) *Client {
+func NewClient(livez, readyz, getGrpsioService goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:  livez,
-		ReadyzEndpoint: readyz,
+		LivezEndpoint:            livez,
+		ReadyzEndpoint:           readyz,
+		GetGrpsioServiceEndpoint: getGrpsioService,
 	}
 }
 
 // Livez calls the "livez" endpoint of the "mailing-list" service.
-func (c *Client) Livez(ctx context.Context) (err error) {
-	_, err = c.LivezEndpoint(ctx, nil)
-	return
+func (c *Client) Livez(ctx context.Context) (res []byte, err error) {
+	var ires any
+	ires, err = c.LivezEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.([]byte), nil
 }
 
 // Readyz calls the "readyz" endpoint of the "mailing-list" service.
-func (c *Client) Readyz(ctx context.Context) (err error) {
-	_, err = c.ReadyzEndpoint(ctx, nil)
-	return
+// Readyz may return the following errors:
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) Readyz(ctx context.Context) (res []byte, err error) {
+	var ires any
+	ires, err = c.ReadyzEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.([]byte), nil
+}
+
+// GetGrpsioService calls the "get-grpsio-service" endpoint of the
+// "mailing-list" service.
+// GetGrpsioService may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Resource not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGrpsioService(ctx context.Context, p *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error) {
+	var ires any
+	ires, err = c.GetGrpsioServiceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GetGrpsioServiceResult), nil
 }

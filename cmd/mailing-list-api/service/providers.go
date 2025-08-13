@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	// TODO: Add MailingListReaderWriter port when needed for CRUD operations
-	// natsStorage   port.MailingListReaderWriter
-	natsMessaging port.ProjectReader
+	natsStorageClient   port.GrpsIOServiceReaderWriter
+	natsMessagingClient port.ProjectReader
+	mockStorageClient   port.GrpsIOServiceReaderWriter
 
 	natsDoOnce sync.Once
+	mockDoOnce sync.Once
 )
 
 func natsInit(ctx context.Context) {
@@ -67,25 +68,35 @@ func natsInit(ctx context.Context) {
 			ReconnectWait: natsReconnectWaitDuration,
 		}
 
-		natsClient, errNewClient := nats.NewClient(ctx, config)
+		client, errNewClient := nats.NewClient(ctx, config)
 		if errNewClient != nil {
 			log.Fatalf("failed to create NATS client: %v", errNewClient)
 		}
-		// TODO: Initialize natsStorage when MailingListReaderWriter port is added
-		// natsStorage = nats.NewStorage(natsClient)
-		natsMessaging = nats.NewMessageRequest(natsClient)
+		natsStorageClient = nats.NewStorage(client)
+		natsMessagingClient = nats.NewMessageRequest(client)
 	})
 }
 
-// TODO: Uncomment when MailingListReaderWriter port is implemented
-// func natsStorageImpl(ctx context.Context) port.MailingListReaderWriter {
-// 	natsInit(ctx)
-// 	return natsStorage
-// }
-
-func natsMessagingImpl(ctx context.Context) port.ProjectReader {
+func natsStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
 	natsInit(ctx)
-	return natsMessaging
+	return natsStorageClient
+}
+
+func natsMessaging(ctx context.Context) port.ProjectReader {
+	natsInit(ctx)
+	return natsMessagingClient
+}
+
+func mockInit(ctx context.Context) {
+	mockDoOnce.Do(func() {
+		slog.InfoContext(ctx, "initializing shared mock service")
+		mockStorageClient = infrastructure.NewMockService()
+	})
+}
+
+func mockStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
+	mockInit(ctx)
+	return mockStorageClient
 }
 
 // TODO: MailingListStorage - Add when MailingListReaderWriter port is implemented
@@ -135,7 +146,7 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 	switch repoSource {
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS project retriever")
-		natsClient := natsMessagingImpl(ctx)
+		natsClient := natsMessaging(ctx)
 		if natsClient == nil {
 			log.Fatalf("failed to initialize NATS client")
 		}
@@ -146,4 +157,60 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 	}
 
 	return projectReader
+}
+
+// GrpsIOServiceReader initializes the service reader implementation
+func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
+	var grpsIOServiceReader port.GrpsIOServiceReader
+
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "mock"
+	}
+
+	switch repoSource {
+	case "mock":
+		grpsIOServiceReader = mockStorage(ctx)
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS service")
+		natsClient := natsStorage(ctx)
+		if natsClient == nil {
+			log.Fatalf("failed to initialize NATS client")
+		}
+		grpsIOServiceReader = natsClient
+
+	default:
+		log.Fatalf("unsupported service reader implementation: %s", repoSource)
+	}
+
+	return grpsIOServiceReader
+}
+
+func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWriter {
+	var storage port.GrpsIOServiceReaderWriter
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "mock"
+	}
+
+	switch repoSource {
+	case "mock":
+		storage = mockStorage(ctx)
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS service")
+		natsClient := natsStorage(ctx)
+		if natsClient == nil {
+			log.Fatalf("failed to initialize NATS client")
+		}
+		storage = natsClient
+
+	default:
+		log.Fatalf("unsupported service reader implementation: %s", repoSource)
+	}
+
+	return storage
 }

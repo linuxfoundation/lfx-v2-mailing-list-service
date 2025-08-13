@@ -5,47 +5,87 @@
 package design
 
 import (
-	. "goa.design/goa/v3/dsl" //nolint:revive,staticcheck // GOA design requires dot imports
+	"goa.design/goa/v3/dsl"
 )
 
 // API describes the global properties of the API server.
-var _ = API("mailing-list", func() {
-	Title("Mailing List Service")
-	Description("Service for managing mailing lists in LFX")
-	Version("1.0")
-	Server("mailing-list-api", func() {
-		Host("localhost", func() {
-			URI("http://localhost:8080")
-		})
-	})
+var _ = dsl.API("mailing-list", func() {
+	dsl.Title("Mailing List Service")
+	dsl.Description("Service for managing mailing lists in LFX")
 })
 
-// Note: JWT security not included in base PR as health endpoints are unauthenticated
-// JWT security will be added when implementing authenticated CRUD operations:
-//
-// var JWTAuth = JWTSecurity("jwt", func() {
-//     Description("Heimdall authorization")
-// })
+// JWTAuth defines the JWT security scheme for authenticated endpoints
+var JWTAuth = dsl.JWTSecurity("jwt", func() {
+	dsl.Description("Heimdall authorization")
+})
 
 // MailingListService defines the mailing list service.
-var _ = Service("mailing-list", func() {
-	Description("The mailing list service manages mailing lists")
+var _ = dsl.Service("mailing-list", func() {
+	dsl.Description("The mailing list service manages mailing lists and services")
 
 	// Health check endpoints
-	Method("livez", func() {
-		Description("Liveness probe endpoint")
-		HTTP(func() {
-			GET("/livez")
-			Response(StatusOK)
+	dsl.Method("livez", func() {
+		dsl.Description("Check if the service is alive.")
+		dsl.Result(dsl.Bytes, func() {
+			dsl.Example("OK")
+		})
+		dsl.HTTP(func() {
+			dsl.GET("/livez")
+			dsl.Response(dsl.StatusOK, func() {
+				dsl.ContentType("text/plain")
+			})
 		})
 	})
 
-	Method("readyz", func() {
-		Description("Readiness probe endpoint")
-		HTTP(func() {
-			GET("/readyz")
-			Response(StatusOK)
-			Response(StatusServiceUnavailable)
+	dsl.Method("readyz", func() {
+		dsl.Description("Check if the service is able to take inbound requests.")
+		dsl.Result(dsl.Bytes, func() {
+			dsl.Example("OK")
+		})
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.GET("/readyz")
+			dsl.Response(dsl.StatusOK, func() {
+				dsl.ContentType("text/plain")
+			})
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
 		})
 	})
+
+	// Service Management endpoint
+	dsl.Method("get-grpsio-service", func() {
+		dsl.Description("Get groupsIO service details by ID")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			dsl.Attribute("uid", dsl.String, "Service unique identifier")
+		})
+		dsl.Result(func() {
+			dsl.Attribute("service", ServiceModel)
+			ETagAttribute()
+			dsl.Required("service")
+		})
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Resource not found")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.GET("/groupsio/services/{uid}")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusOK, func() {
+				dsl.Body("service")
+				dsl.Header("etag:ETag")
+			})
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	// Serve the file gen/http/openapi3.json for requests sent to /openapi.json.
+	dsl.Files("/openapi.json", "gen/http/openapi3.json")
 })

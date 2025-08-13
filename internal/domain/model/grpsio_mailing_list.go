@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// MailingList represents a mailing list entity
-type MailingList struct {
+// GrpsIOMailingList represents a GroupsIO mailing list entity
+type GrpsIOMailingList struct {
 	UID                string    `json:"uid"`
 	GroupName          string    `json:"group_name"`
 	Visibility         string    `json:"visibility"`

@@ -8,3 +8,4 @@ coverage.out
 megalinter-reports/
 revive.log
 .claude/
+.vscode/settings.json

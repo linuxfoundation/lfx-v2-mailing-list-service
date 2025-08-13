@@ -10,21 +10,31 @@ package mailinglist
 
 import (
 	"context"
+
+	"goa.design/goa/v3/security"
 )
 
-// The mailing list service manages mailing lists
+// The mailing list service manages mailing lists and services
 type Service interface {
-	// Liveness probe endpoint
-	Livez(context.Context) (err error)
-	// Readiness probe endpoint
-	Readyz(context.Context) (err error)
+	// Check if the service is alive.
+	Livez(context.Context) (res []byte, err error)
+	// Check if the service is able to take inbound requests.
+	Readyz(context.Context) (res []byte, err error)
+	// Get groupsIO service details by ID
+	GetGrpsioService(context.Context, *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error)
+}
+
+// Auther defines the authorization functions to be implemented by the service.
+type Auther interface {
+	// JWTAuth implements the authorization logic for the JWT security scheme.
+	JWTAuth(ctx context.Context, token string, schema *security.JWTScheme) (context.Context, error)
 }
 
 // APIName is the name of the API as defined in the design.
 const APIName = "mailing-list"
 
 // APIVersion is the version of the API as defined in the design.
-const APIVersion = "1.0"
+const APIVersion = "0.0.1"
 
 // ServiceName is the name of the service as defined in the design. This is the
 // same value that is set in the endpoint request contexts under the ServiceKey
@@ -34,4 +44,137 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [2]string{"livez", "readyz"}
+var MethodNames = [3]string{"livez", "readyz", "get-grpsio-service"}
+
+// GetGrpsioServicePayload is the payload type of the mailing-list service
+// get-grpsio-service method.
+type GetGrpsioServicePayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// Service unique identifier
+	UID *string
+}
+
+// GetGrpsioServiceResult is the result type of the mailing-list service
+// get-grpsio-service method.
+type GetGrpsioServiceResult struct {
+	Service *ServiceInfo
+	// ETag header value
+	Etag *string
+}
+
+// A GroupsIO service for managing mailing lists
+type ServiceInfo struct {
+	// Service type
+	Type string
+	// Unique service identifier
+	UID string
+	// Service domain
+	Domain string
+	// GroupsIO group ID
+	GroupID int64
+	// Service status
+	Status string
+	// List of global owner email addresses
+	GlobalOwners []string
+	// Email prefix
+	Prefix *string
+	// Project slug identifier
+	ProjectSlug string
+	// LFXv2 Project UID
+	ProjectUID string
+	// Service URL
+	URL string
+	// GroupsIO group name
+	GroupName string
+}
+
+type BadRequestError struct {
+	// Error message
+	Message string
+}
+
+type InternalServerError struct {
+	// Error message
+	Message string
+}
+
+type NotFoundError struct {
+	// Error message
+	Message string
+}
+
+type ServiceUnavailableError struct {
+	// Error message
+	Message string
+}
+
+// Error returns an error description.
+func (e *BadRequestError) Error() string {
+	return ""
+}
+
+// ErrorName returns "bad-request-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *BadRequestError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "bad-request-error".
+func (e *BadRequestError) GoaErrorName() string {
+	return "BadRequest"
+}
+
+// Error returns an error description.
+func (e *InternalServerError) Error() string {
+	return ""
+}
+
+// ErrorName returns "internal-server-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *InternalServerError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "internal-server-error".
+func (e *InternalServerError) GoaErrorName() string {
+	return "InternalServerError"
+}
+
+// Error returns an error description.
+func (e *NotFoundError) Error() string {
+	return ""
+}
+
+// ErrorName returns "not-found-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *NotFoundError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "not-found-error".
+func (e *NotFoundError) GoaErrorName() string {
+	return "NotFound"
+}
+
+// Error returns an error description.
+func (e *ServiceUnavailableError) Error() string {
+	return ""
+}
+
+// ErrorName returns "service-unavailable-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *ServiceUnavailableError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "service-unavailable-error".
+func (e *ServiceUnavailableError) GoaErrorName() string {
+	return "ServiceUnavailable"
+}

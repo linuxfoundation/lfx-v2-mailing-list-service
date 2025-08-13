@@ -12,19 +12,24 @@ import (
 	"context"
 
 	goa "goa.design/goa/v3/pkg"
+	"goa.design/goa/v3/security"
 )
 
 // Endpoints wraps the "mailing-list" service endpoints.
 type Endpoints struct {
-	Livez  goa.Endpoint
-	Readyz goa.Endpoint
+	Livez            goa.Endpoint
+	Readyz           goa.Endpoint
+	GetGrpsioService goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
+	// Casting service to Auther interface
+	a := s.(Auther)
 	return &Endpoints{
-		Livez:  NewLivezEndpoint(s),
-		Readyz: NewReadyzEndpoint(s),
+		Livez:            NewLivezEndpoint(s),
+		Readyz:           NewReadyzEndpoint(s),
+		GetGrpsioService: NewGetGrpsioServiceEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -32,13 +37,14 @@ func NewEndpoints(s Service) *Endpoints {
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.Livez = m(e.Livez)
 	e.Readyz = m(e.Readyz)
+	e.GetGrpsioService = m(e.GetGrpsioService)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
 // of service "mailing-list".
 func NewLivezEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return nil, s.Livez(ctx)
+		return s.Livez(ctx)
 	}
 }
 
@@ -46,6 +52,29 @@ func NewLivezEndpoint(s Service) goa.Endpoint {
 // "readyz" of service "mailing-list".
 func NewReadyzEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return nil, s.Readyz(ctx)
+		return s.Readyz(ctx)
+	}
+}
+
+// NewGetGrpsioServiceEndpoint returns an endpoint function that calls the
+// method "get-grpsio-service" of service "mailing-list".
+func NewGetGrpsioServiceEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGrpsioServicePayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGrpsioService(ctx, p)
 	}
 }

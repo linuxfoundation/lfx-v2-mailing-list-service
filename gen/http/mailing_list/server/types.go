@@ -7,3 +7,161 @@
 // github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/design
 
 package server
+
+import (
+	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+)
+
+// GetGrpsioServiceResponseBody is the type of the "mailing-list" service
+// "get-grpsio-service" endpoint HTTP response body.
+type GetGrpsioServiceResponseBody ServiceInfoResponseBody
+
+// ReadyzServiceUnavailableResponseBody is the type of the "mailing-list"
+// service "readyz" endpoint HTTP response body for the "ServiceUnavailable"
+// error.
+type ReadyzServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioServiceBadRequestResponseBody is the type of the "mailing-list"
+// service "get-grpsio-service" endpoint HTTP response body for the
+// "BadRequest" error.
+type GetGrpsioServiceBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioServiceInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "get-grpsio-service" endpoint HTTP response body for
+// the "InternalServerError" error.
+type GetGrpsioServiceInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioServiceNotFoundResponseBody is the type of the "mailing-list"
+// service "get-grpsio-service" endpoint HTTP response body for the "NotFound"
+// error.
+type GetGrpsioServiceNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioServiceServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-grpsio-service" endpoint HTTP response body for
+// the "ServiceUnavailable" error.
+type GetGrpsioServiceServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ServiceInfoResponseBody is used to define fields on response body types.
+type ServiceInfoResponseBody struct {
+	// Service type
+	Type string `form:"type" json:"type" xml:"type"`
+	// Unique service identifier
+	UID string `form:"uid" json:"uid" xml:"uid"`
+	// Service domain
+	Domain string `form:"domain" json:"domain" xml:"domain"`
+	// GroupsIO group ID
+	GroupID int64 `form:"group_id" json:"group_id" xml:"group_id"`
+	// Service status
+	Status string `form:"status" json:"status" xml:"status"`
+	// List of global owner email addresses
+	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
+	// Email prefix
+	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Project slug identifier
+	ProjectSlug string `form:"project_slug" json:"project_slug" xml:"project_slug"`
+	// LFXv2 Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Service URL
+	URL string `form:"url" json:"url" xml:"url"`
+	// GroupsIO group name
+	GroupName string `form:"group_name" json:"group_name" xml:"group_name"`
+}
+
+// NewGetGrpsioServiceResponseBody builds the HTTP response body from the
+// result of the "get-grpsio-service" endpoint of the "mailing-list" service.
+func NewGetGrpsioServiceResponseBody(res *mailinglist.GetGrpsioServiceResult) *GetGrpsioServiceResponseBody {
+	body := &GetGrpsioServiceResponseBody{
+		Type:        res.Service.Type,
+		UID:         res.Service.UID,
+		Domain:      res.Service.Domain,
+		GroupID:     res.Service.GroupID,
+		Status:      res.Service.Status,
+		Prefix:      res.Service.Prefix,
+		ProjectSlug: res.Service.ProjectSlug,
+		ProjectUID:  res.Service.ProjectUID,
+		URL:         res.Service.URL,
+		GroupName:   res.Service.GroupName,
+	}
+	if res.Service.GlobalOwners != nil {
+		body.GlobalOwners = make([]string, len(res.Service.GlobalOwners))
+		for i, val := range res.Service.GlobalOwners {
+			body.GlobalOwners[i] = val
+		}
+	}
+	return body
+}
+
+// NewReadyzServiceUnavailableResponseBody builds the HTTP response body from
+// the result of the "readyz" endpoint of the "mailing-list" service.
+func NewReadyzServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *ReadyzServiceUnavailableResponseBody {
+	body := &ReadyzServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioServiceBadRequestResponseBody builds the HTTP response body from
+// the result of the "get-grpsio-service" endpoint of the "mailing-list"
+// service.
+func NewGetGrpsioServiceBadRequestResponseBody(res *mailinglist.BadRequestError) *GetGrpsioServiceBadRequestResponseBody {
+	body := &GetGrpsioServiceBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioServiceInternalServerErrorResponseBody builds the HTTP response
+// body from the result of the "get-grpsio-service" endpoint of the
+// "mailing-list" service.
+func NewGetGrpsioServiceInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGrpsioServiceInternalServerErrorResponseBody {
+	body := &GetGrpsioServiceInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioServiceNotFoundResponseBody builds the HTTP response body from
+// the result of the "get-grpsio-service" endpoint of the "mailing-list"
+// service.
+func NewGetGrpsioServiceNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGrpsioServiceNotFoundResponseBody {
+	body := &GetGrpsioServiceNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioServiceServiceUnavailableResponseBody builds the HTTP response
+// body from the result of the "get-grpsio-service" endpoint of the
+// "mailing-list" service.
+func NewGetGrpsioServiceServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGrpsioServiceServiceUnavailableResponseBody {
+	body := &GetGrpsioServiceServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioServicePayload builds a mailing-list service get-grpsio-service
+// endpoint payload.
+func NewGetGrpsioServicePayload(uid string, version *string, bearerToken *string) *mailinglist.GetGrpsioServicePayload {
+	v := &mailinglist.GetGrpsioServicePayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v
+}

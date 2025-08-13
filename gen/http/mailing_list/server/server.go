@@ -11,6 +11,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"path"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	goahttp "goa.design/goa/v3/http"
@@ -19,9 +20,11 @@ import (
 
 // Server lists the mailing-list service endpoint HTTP handlers.
 type Server struct {
-	Mounts []*MountPoint
-	Livez  http.Handler
-	Readyz http.Handler
+	Mounts              []*MountPoint
+	Livez               http.Handler
+	Readyz              http.Handler
+	GetGrpsioService    http.Handler
+	GenHTTPOpenapi3JSON http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -48,14 +51,23 @@ func New(
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
+	fileSystemGenHTTPOpenapi3JSON http.FileSystem,
 ) *Server {
+	if fileSystemGenHTTPOpenapi3JSON == nil {
+		fileSystemGenHTTPOpenapi3JSON = http.Dir(".")
+	}
+	fileSystemGenHTTPOpenapi3JSON = appendPrefix(fileSystemGenHTTPOpenapi3JSON, "/gen/http")
 	return &Server{
 		Mounts: []*MountPoint{
 			{"Livez", "GET", "/livez"},
 			{"Readyz", "GET", "/readyz"},
+			{"GetGrpsioService", "GET", "/groupsio/services/{uid}"},
+			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		Livez:  NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
-		Readyz: NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
+		Livez:               NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
+		Readyz:              NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
+		GetGrpsioService:    NewGetGrpsioServiceHandler(e.GetGrpsioService, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -66,6 +78,7 @@ func (s *Server) Service() string { return "mailing-list" }
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.Livez = m(s.Livez)
 	s.Readyz = m(s.Readyz)
+	s.GetGrpsioService = m(s.GetGrpsioService)
 }
 
 // MethodNames returns the methods served.
@@ -75,6 +88,8 @@ func (s *Server) MethodNames() []string { return mailinglist.MethodNames[:] }
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountLivezHandler(mux, h.Livez)
 	MountReadyzHandler(mux, h.Readyz)
+	MountGetGrpsioServiceHandler(mux, h.GetGrpsioService)
+	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
 // Mount configures the mux to serve the mailing-list endpoints.
@@ -152,7 +167,7 @@ func NewReadyzHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeReadyzResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeReadyzError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -172,4 +187,86 @@ func NewReadyzHandler(
 			}
 		}
 	})
+}
+
+// MountGetGrpsioServiceHandler configures the mux to serve the "mailing-list"
+// service "get-grpsio-service" endpoint.
+func MountGetGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/services/{uid}", f)
+}
+
+// NewGetGrpsioServiceHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "get-grpsio-service" endpoint.
+func NewGetGrpsioServiceHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGrpsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeGetGrpsioServiceResponse(encoder)
+		encodeError    = EncodeGetGrpsioServiceError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-service")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// appendFS is a custom implementation of fs.FS that appends a specified prefix
+// to the file paths before delegating the Open call to the underlying fs.FS.
+type appendFS struct {
+	prefix string
+	fs     http.FileSystem
+}
+
+// Open opens the named file, appending the prefix to the file path before
+// passing it to the underlying fs.FS.
+func (s appendFS) Open(name string) (http.File, error) {
+	switch name {
+	case "/openapi.json":
+		name = "/openapi3.json"
+	}
+	return s.fs.Open(path.Join(s.prefix, name))
+}
+
+// appendPrefix returns a new fs.FS that appends the specified prefix to file paths
+// before delegating to the provided embed.FS.
+func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
+	return appendFS{prefix: prefix, fs: fsys}
+}
+
+// MountGenHTTPOpenapi3JSON configures the mux to serve GET request made to
+// "/openapi.json".
+func MountGenHTTPOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
+	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
 }
