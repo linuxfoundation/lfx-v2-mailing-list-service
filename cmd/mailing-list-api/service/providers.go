@@ -21,8 +21,10 @@ import (
 var (
 	natsStorageClient   port.GrpsIOServiceReaderWriter
 	natsMessagingClient port.ProjectReader
+	mockStorageClient   port.GrpsIOServiceReaderWriter
 
 	natsDoOnce sync.Once
+	mockDoOnce sync.Once
 )
 
 func natsInit(ctx context.Context) {
@@ -83,6 +85,18 @@ func natsStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
 func natsMessaging(ctx context.Context) port.ProjectReader {
 	natsInit(ctx)
 	return natsMessagingClient
+}
+
+func mockInit(ctx context.Context) {
+	mockDoOnce.Do(func() {
+		slog.InfoContext(ctx, "initializing shared mock service")
+		mockStorageClient = infrastructure.NewMockService()
+	})
+}
+
+func mockStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
+	mockInit(ctx)
+	return mockStorageClient
 }
 
 // TODO: MailingListStorage - Add when MailingListReaderWriter port is implemented
@@ -157,8 +171,7 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 
 	switch repoSource {
 	case "mock":
-		slog.InfoContext(ctx, "initializing mock service")
-		grpsIOServiceReader = infrastructure.NewMockService()
+		grpsIOServiceReader = mockStorage(ctx)
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -185,8 +198,7 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 
 	switch repoSource {
 	case "mock":
-		slog.InfoContext(ctx, "initializing mock service")
-		storage = infrastructure.NewMockService()
+		storage = mockStorage(ctx)
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")

@@ -104,8 +104,10 @@ func (m *MockGrpsIOService) GetGrpsIOService(ctx context.Context, uid string) (*
 		return nil, 0, errors.NewNotFound(fmt.Sprintf("service with UID %s not found", uid))
 	}
 
-	// Return a copy of the service to avoid data races
+	// Return a deep copy of the service to avoid data races
 	serviceCopy := *service
+	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
+	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
 	revision := m.serviceRevisions[uid]
 	return &serviceCopy, revision, nil
 }

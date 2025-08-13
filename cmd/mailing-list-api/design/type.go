@@ -10,11 +10,13 @@ import (
 // ServiceModel represents a GroupsIO service
 var ServiceModel = dsl.Type("ServiceInfo", func() {
 	dsl.Description("A GroupsIO service for managing mailing lists")
-	dsl.Attribute("type", dsl.String, "Service type (primary, formation, shared)", func() {
-		dsl.Example("v2_primary")
+	dsl.Attribute("type", dsl.String, "Service type", func() {
+		dsl.Enum("primary", "formation", "shared")
+		dsl.Example("primary")
 	})
-	dsl.Attribute("id", dsl.String, "Unique service identifier", func() {
-		dsl.Example("service-uuid")
+	dsl.Attribute("uid", dsl.String, "Unique service identifier", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("domain", dsl.String, "Service domain", func() {
 		dsl.Example("lists.project.org")
@@ -26,24 +28,31 @@ var ServiceModel = dsl.Type("ServiceInfo", func() {
 		dsl.Example("created")
 	})
 	dsl.Attribute("global_owners", dsl.ArrayOf(dsl.String), "List of global owner email addresses", func() {
+		dsl.Elem(func() {
+			dsl.Format(dsl.FormatEmail)
+		})
 		dsl.Example([]string{"admin@example.com"})
 	})
 	dsl.Attribute("prefix", dsl.String, "Email prefix", func() {
 		dsl.Example("")
 	})
 	dsl.Attribute("project_slug", dsl.String, "Project slug identifier", func() {
-		dsl.Example("project-name")
+		dsl.Format(dsl.FormatRegexp)
+		dsl.Pattern(`^[a-z][a-z0-9_\-]*[a-z0-9]$`)
+		dsl.Example("cncf")
 	})
-	dsl.Attribute("project_id", dsl.String, "Project UUID", func() {
-		dsl.Example("project-uuid")
+	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("url", dsl.String, "Service URL", func() {
+		dsl.Format(dsl.FormatURI)
 		dsl.Example("https://lists.project.org")
 	})
 	dsl.Attribute("group_name", dsl.String, "GroupsIO group name", func() {
 		dsl.Example("project-name")
 	})
-	dsl.Required("type", "id", "domain", "group_id", "status", "project_slug", "project_id", "url", "group_name")
+	dsl.Required("type", "uid", "domain", "group_id", "status", "project_slug", "project_uid", "url", "group_name")
 })
 
 // BearerTokenAttribute is the DSL attribute for bearer token.

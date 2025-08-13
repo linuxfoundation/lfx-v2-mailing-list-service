@@ -62,5 +62,8 @@ func NewGrpsIOServiceReaderOrchestrator(opts ...grpsIOServiceReaderOrchestratorO
 	for _, opt := range opts {
 		opt(sr)
 	}
+	if sr.grpsIOServiceReader == nil {
+		panic("grpsIOServiceReader is required")
+	}
 	return sr
 }

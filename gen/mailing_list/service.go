@@ -67,10 +67,10 @@ type GetGrpsioServiceResult struct {
 
 // A GroupsIO service for managing mailing lists
 type ServiceInfo struct {
-	// Service type (primary, formation, shared)
+	// Service type
 	Type string
 	// Unique service identifier
-	ID string
+	UID string
 	// Service domain
 	Domain string
 	// GroupsIO group ID
@@ -83,8 +83,8 @@ type ServiceInfo struct {
 	Prefix *string
 	// Project slug identifier
 	ProjectSlug string
-	// Project UUID
-	ProjectID string
+	// LFXv2 Project UID
+	ProjectUID string
 	// Service URL
 	URL string
 	// GroupsIO group name

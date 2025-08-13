@@ -58,10 +58,10 @@ type GetGrpsioServiceServiceUnavailableResponseBody struct {
 
 // ServiceInfoResponseBody is used to define fields on response body types.
 type ServiceInfoResponseBody struct {
-	// Service type (primary, formation, shared)
+	// Service type
 	Type string `form:"type" json:"type" xml:"type"`
 	// Unique service identifier
-	ID string `form:"id" json:"id" xml:"id"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Service domain
 	Domain string `form:"domain" json:"domain" xml:"domain"`
 	// GroupsIO group ID
@@ -74,8 +74,8 @@ type ServiceInfoResponseBody struct {
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
 	// Project slug identifier
 	ProjectSlug string `form:"project_slug" json:"project_slug" xml:"project_slug"`
-	// Project UUID
-	ProjectID string `form:"project_id" json:"project_id" xml:"project_id"`
+	// LFXv2 Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
 	// Service URL
 	URL string `form:"url" json:"url" xml:"url"`
 	// GroupsIO group name
@@ -87,13 +87,13 @@ type ServiceInfoResponseBody struct {
 func NewGetGrpsioServiceResponseBody(res *mailinglist.GetGrpsioServiceResult) *GetGrpsioServiceResponseBody {
 	body := &GetGrpsioServiceResponseBody{
 		Type:        res.Service.Type,
-		ID:          res.Service.ID,
+		UID:         res.Service.UID,
 		Domain:      res.Service.Domain,
 		GroupID:     res.Service.GroupID,
 		Status:      res.Service.Status,
 		Prefix:      res.Service.Prefix,
 		ProjectSlug: res.Service.ProjectSlug,
-		ProjectID:   res.Service.ProjectID,
+		ProjectUID:  res.Service.ProjectUID,
 		URL:         res.Service.URL,
 		GroupName:   res.Service.GroupName,
 	}

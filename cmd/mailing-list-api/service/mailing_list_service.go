@@ -77,14 +77,14 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 	// Convert domain model to GOA response
 	goaService := &mailinglistservice.ServiceInfo{
 		Type:         service.Type,
-		ID:           service.ID,
+		UID:          service.ID,
 		Domain:       service.Domain,
 		GroupID:      service.GroupID,
 		Status:       service.Status,
 		GlobalOwners: service.GlobalOwners,
 		Prefix:       &service.Prefix,
 		ProjectSlug:  service.ProjectSlug,
-		ProjectID:    service.ProjectID,
+		ProjectUID:   service.ProjectID,
 		URL:          service.URL,
 		GroupName:    service.GroupName,
 	}

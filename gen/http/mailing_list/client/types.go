@@ -59,10 +59,10 @@ type GetGrpsioServiceServiceUnavailableResponseBody struct {
 
 // ServiceInfoResponseBody is used to define fields on response body types.
 type ServiceInfoResponseBody struct {
-	// Service type (primary, formation, shared)
+	// Service type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Unique service identifier
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Service domain
 	Domain *string `form:"domain,omitempty" json:"domain,omitempty" xml:"domain,omitempty"`
 	// GroupsIO group ID
@@ -75,8 +75,8 @@ type ServiceInfoResponseBody struct {
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
-	// Project UUID
-	ProjectID *string `form:"project_id,omitempty" json:"project_id,omitempty" xml:"project_id,omitempty"`
+	// LFXv2 Project UID
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// Service URL
 	URL *string `form:"url,omitempty" json:"url,omitempty" xml:"url,omitempty"`
 	// GroupsIO group name
@@ -98,13 +98,13 @@ func NewReadyzServiceUnavailable(body *ReadyzServiceUnavailableResponseBody) *ma
 func NewGetGrpsioServiceResultOK(body *GetGrpsioServiceResponseBody, etag *string) *mailinglist.GetGrpsioServiceResult {
 	v := &mailinglist.ServiceInfo{
 		Type:        *body.Type,
-		ID:          *body.ID,
+		UID:         *body.UID,
 		Domain:      *body.Domain,
 		GroupID:     *body.GroupID,
 		Status:      *body.Status,
 		Prefix:      body.Prefix,
 		ProjectSlug: *body.ProjectSlug,
-		ProjectID:   *body.ProjectID,
+		ProjectUID:  *body.ProjectUID,
 		URL:         *body.URL,
 		GroupName:   *body.GroupName,
 	}
@@ -168,8 +168,8 @@ func ValidateGetGrpsioServiceResponseBody(body *GetGrpsioServiceResponseBody) (e
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Domain == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("domain", "body"))
@@ -183,14 +183,37 @@ func ValidateGetGrpsioServiceResponseBody(body *GetGrpsioServiceResponseBody) (e
 	if body.ProjectSlug == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("project_slug", "body"))
 	}
-	if body.ProjectID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
 	}
 	if body.URL == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("url", "body"))
 	}
 	if body.GroupName == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
+		}
+	}
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
+	}
+	for _, e := range body.GlobalOwners {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+	}
+	if body.ProjectSlug != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
+	}
+	if body.ProjectSlug != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.project_slug", *body.ProjectSlug, "^[a-z][a-z0-9_\\-]*[a-z0-9]$"))
+	}
+	if body.ProjectUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
+	}
+	if body.URL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
 	}
 	return
 }
@@ -246,8 +269,8 @@ func ValidateServiceInfoResponseBody(body *ServiceInfoResponseBody) (err error) 
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Domain == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("domain", "body"))
@@ -261,14 +284,37 @@ func ValidateServiceInfoResponseBody(body *ServiceInfoResponseBody) (err error) 
 	if body.ProjectSlug == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("project_slug", "body"))
 	}
-	if body.ProjectID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
 	}
 	if body.URL == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("url", "body"))
 	}
 	if body.GroupName == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
+		}
+	}
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
+	}
+	for _, e := range body.GlobalOwners {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+	}
+	if body.ProjectSlug != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
+	}
+	if body.ProjectSlug != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.project_slug", *body.ProjectSlug, "^[a-z][a-z0-9_\\-]*[a-z0-9]$"))
+	}
+	if body.ProjectUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
+	}
+	if body.URL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
 	}
 	return
 }

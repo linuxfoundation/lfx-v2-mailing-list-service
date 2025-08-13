@@ -30,7 +30,7 @@ func (s *storage) GetGrpsIOService(ctx context.Context, uid string) (*model.Grps
 	rev, err := s.get(ctx, constants.KVBucketNameGrpsIOServices, uid, service, false)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			slog.DebugContext(ctx, "service not found", "service_uid", uid)
+			slog.DebugContext(ctx, "service not found", "service_uid", uid, "error", err)
 			return nil, 0, errs.NewNotFound("service not found")
 		}
 		slog.ErrorContext(ctx, "failed to get service", "error", err, "service_uid", uid)
@@ -48,19 +48,24 @@ func (s *storage) GetGrpsIOService(ctx context.Context, uid string) (*model.Grps
 // get retrieves a model from the NATS KV store by bucket and UID.
 // It unmarshals the data into the provided model and returns the revision.
 // If the UID is empty, it returns a validation error.
-// It can be used for any that has the similar need for fetching data by UID.
+// It can be used for any model that has the similar need for fetching data by UID.
 func (s *storage) get(ctx context.Context, bucket, uid string, model any, onlyRevision bool) (uint64, error) {
 	if uid == "" {
 		return 0, errs.NewValidation("UID cannot be empty")
 	}
 
-	data, errGet := s.client.kvStore[bucket].Get(ctx, uid)
+	kv, exists := s.client.kvStore[bucket]
+	if !exists || kv == nil {
+		return 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+	
+	data, errGet := kv.Get(ctx, uid)
 	if errGet != nil {
 		return 0, errGet
 	}
 
 	if !onlyRevision {
-		errUnmarshal := json.Unmarshal(data.Value(), &model)
+		errUnmarshal := json.Unmarshal(data.Value(), model)
 		if errUnmarshal != nil {
 			return 0, errUnmarshal
 		}
@@ -70,6 +75,7 @@ func (s *storage) get(ctx context.Context, bucket, uid string, model any, onlyRe
 }
 
 // GetRevision retrieves only the revision number for a given UID without unmarshaling the data
+// This method will be used in future for conditional requests and caching scenarios
 func (s *storage) GetRevision(ctx context.Context, bucket, uid string) (uint64, error) {
 	return s.get(ctx, bucket, uid, &model.GrpsIOService{}, true)
 }
