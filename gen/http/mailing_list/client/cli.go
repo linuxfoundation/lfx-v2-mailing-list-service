@@ -9,9 +9,90 @@
 package client
 
 import (
+	"encoding/json"
+	"fmt"
+
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	goa "goa.design/goa/v3/pkg"
 )
+
+// BuildCreateGrpsioServicePayload builds the payload for the mailing-list
+// create-grpsio-service endpoint from CLI flags.
+func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, mailingListCreateGrpsioServiceVersion string, mailingListCreateGrpsioServiceBearerToken string) (*mailinglist.CreateGrpsioServicePayload, error) {
+	var err error
+	var body CreateGrpsioServiceRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListCreateGrpsioServiceBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\"\n   }'")
+		}
+		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
+		}
+		for _, e := range body.GlobalOwners {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+		}
+		if body.ProjectSlug != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
+		}
+		if body.ProjectSlug != nil {
+			err = goa.MergeErrors(err, goa.ValidatePattern("body.project_slug", *body.ProjectSlug, "^[a-z][a-z0-9_\\-]*[a-z0-9]$"))
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", body.ProjectUID, goa.FormatUUID))
+		if body.URL != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListCreateGrpsioServiceVersion != "" {
+			version = &mailingListCreateGrpsioServiceVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListCreateGrpsioServiceBearerToken != "" {
+			bearerToken = &mailingListCreateGrpsioServiceBearerToken
+		}
+	}
+	v := &mailinglist.CreateGrpsioServicePayload{
+		Type:        body.Type,
+		Domain:      body.Domain,
+		GroupID:     body.GroupID,
+		Status:      body.Status,
+		Prefix:      body.Prefix,
+		ProjectSlug: body.ProjectSlug,
+		ProjectUID:  body.ProjectUID,
+		URL:         body.URL,
+		GroupName:   body.GroupName,
+		Public:      body.Public,
+	}
+	if body.GlobalOwners != nil {
+		v.GlobalOwners = make([]string, len(body.GlobalOwners))
+		for i, val := range body.GlobalOwners {
+			v.GlobalOwners[i] = val
+		}
+	}
+	{
+		var zero bool
+		if v.Public == zero {
+			v.Public = false
+		}
+	}
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
 
 // BuildGetGrpsioServicePayload builds the payload for the mailing-list
 // get-grpsio-service endpoint from CLI flags.
@@ -20,6 +101,10 @@ func BuildGetGrpsioServicePayload(mailingListGetGrpsioServiceUID string, mailing
 	var uid string
 	{
 		uid = mailingListGetGrpsioServiceUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 	}
 	var version *string
 	{
@@ -43,6 +128,145 @@ func BuildGetGrpsioServicePayload(mailingListGetGrpsioServiceUID string, mailing
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildUpdateGrpsioServicePayload builds the payload for the mailing-list
+// update-grpsio-service endpoint from CLI flags.
+func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, mailingListUpdateGrpsioServiceUID string, mailingListUpdateGrpsioServiceVersion string, mailingListUpdateGrpsioServiceBearerToken string, mailingListUpdateGrpsioServiceEtag string) (*mailinglist.UpdateGrpsioServicePayload, error) {
+	var err error
+	var body UpdateGrpsioServiceRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListUpdateGrpsioServiceBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\"\n   }'")
+		}
+		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
+		}
+		for _, e := range body.GlobalOwners {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+		}
+		if body.ProjectSlug != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
+		}
+		if body.ProjectSlug != nil {
+			err = goa.MergeErrors(err, goa.ValidatePattern("body.project_slug", *body.ProjectSlug, "^[a-z][a-z0-9_\\-]*[a-z0-9]$"))
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", body.ProjectUID, goa.FormatUUID))
+		if body.URL != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var uid string
+	{
+		uid = mailingListUpdateGrpsioServiceUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListUpdateGrpsioServiceVersion != "" {
+			version = &mailingListUpdateGrpsioServiceVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListUpdateGrpsioServiceBearerToken != "" {
+			bearerToken = &mailingListUpdateGrpsioServiceBearerToken
+		}
+	}
+	var etag *string
+	{
+		if mailingListUpdateGrpsioServiceEtag != "" {
+			etag = &mailingListUpdateGrpsioServiceEtag
+		}
+	}
+	v := &mailinglist.UpdateGrpsioServicePayload{
+		Type:        body.Type,
+		Domain:      body.Domain,
+		GroupID:     body.GroupID,
+		Status:      body.Status,
+		Prefix:      body.Prefix,
+		ProjectSlug: body.ProjectSlug,
+		ProjectUID:  body.ProjectUID,
+		URL:         body.URL,
+		GroupName:   body.GroupName,
+		Public:      body.Public,
+	}
+	if body.GlobalOwners != nil {
+		v.GlobalOwners = make([]string, len(body.GlobalOwners))
+		for i, val := range body.GlobalOwners {
+			v.GlobalOwners[i] = val
+		}
+	}
+	{
+		var zero bool
+		if v.Public == zero {
+			v.Public = false
+		}
+	}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.Etag = etag
+
+	return v, nil
+}
+
+// BuildDeleteGrpsioServicePayload builds the payload for the mailing-list
+// delete-grpsio-service endpoint from CLI flags.
+func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, mailingListDeleteGrpsioServiceVersion string, mailingListDeleteGrpsioServiceBearerToken string, mailingListDeleteGrpsioServiceEtag string) (*mailinglist.DeleteGrpsioServicePayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListDeleteGrpsioServiceUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListDeleteGrpsioServiceVersion != "" {
+			version = &mailingListDeleteGrpsioServiceVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListDeleteGrpsioServiceBearerToken != "" {
+			bearerToken = &mailingListDeleteGrpsioServiceBearerToken
+		}
+	}
+	var etag *string
+	{
+		if mailingListDeleteGrpsioServiceEtag != "" {
+			etag = &mailingListDeleteGrpsioServiceEtag
+		}
+	}
+	v := &mailinglist.DeleteGrpsioServicePayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.Etag = etag
 
 	return v, nil
 }

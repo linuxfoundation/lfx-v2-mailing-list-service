@@ -13,6 +13,76 @@ produces:
     - application/xml
     - application/gob
 paths:
+    /groupsio/services:
+        post:
+            tags:
+                - mailing-list
+            summary: create-grpsio-service mailing-list
+            description: Create GroupsIO service with type-specific validation rules
+            operationId: mailing-list#create-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Create-Grpsio-ServiceRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListCreateGrpsioServiceRequestBody'
+                    required:
+                        - type
+                        - project_uid
+            responses:
+                "201":
+                    description: Created response.
+                    schema:
+                        $ref: '#/definitions/ServiceWithReadonlyAttributes'
+                        required:
+                            - type
+                            - project_uid
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services/{uid}:
         get:
             tags:
@@ -30,9 +100,10 @@ paths:
                     - "1"
                 - name: uid
                   in: path
-                  description: Service unique identifier
+                  description: Service UID -- unique identifier for the service
                   required: true
                   type: string
+                  format: uuid
                 - name: Authorization
                   in: header
                   description: JWT token issued by Heimdall
@@ -45,14 +116,7 @@ paths:
                         $ref: '#/definitions/MailingListGetGrpsioServiceResponseBody'
                         required:
                             - type
-                            - uid
-                            - domain
-                            - group_id
-                            - status
-                            - project_slug
                             - project_uid
-                            - url
-                            - group_name
                     headers:
                         ETag:
                             description: ETag header value
@@ -67,6 +131,153 @@ paths:
                     description: Not Found response.
                     schema:
                         $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-grpsio-service mailing-list
+            description: Update GroupsIO service
+            operationId: mailing-list#update-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: ETag
+                  in: header
+                  description: ETag header value
+                  required: false
+                  type: string
+                - name: Update-Grpsio-ServiceRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioServiceRequestBody'
+                    required:
+                        - type
+                        - project_uid
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/ServiceWithReadonlyAttributes'
+                        required:
+                            - type
+                            - project_uid
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-service mailing-list
+            description: Delete GroupsIO service
+            operationId: mailing-list#delete-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: ETag
+                  in: header
+                  description: ETag header value
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
                         required:
                             - message
                 "500":
@@ -147,9 +358,22 @@ definitions:
                 type: string
                 description: Error message
                 example: The request was invalid.
-        description: Bad request
+        description: Bad request - Invalid type, missing required fields, or validation failures
         example:
             message: The request was invalid.
+        required:
+            - message
+    ConflictError:
+        title: ConflictError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The resource already exists.
+        description: Conflict
+        example:
+            message: The resource already exists.
         required:
             - message
     InternalServerError:
@@ -165,24 +389,8 @@ definitions:
             message: An internal server error occurred.
         required:
             - message
-    MailingListGetGrpsioServiceResponseBody:
-        title: MailingListGetGrpsioServiceResponseBody
-        $ref: '#/definitions/ServiceInfo'
-    NotFoundError:
-        title: NotFoundError
-        type: object
-        properties:
-            message:
-                type: string
-                description: Error message
-                example: The resource was not found.
-        description: Resource not found
-        example:
-            message: The resource was not found.
-        required:
-            - message
-    ServiceInfo:
-        title: ServiceInfo
+    MailingListCreateGrpsioServiceRequestBody:
+        title: MailingListCreateGrpsioServiceRequestBody
         type: object
         properties:
             domain:
@@ -193,9 +401,9 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: kailyn_howell@cruickshankcorwin.net
+                    example: humberto.dubuque@stammbruen.biz
                     format: email
-                description: List of global owner email addresses
+                description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
                     - admin@example.com
             group_id:
@@ -209,8 +417,8 @@ definitions:
                 example: project-name
             prefix:
                 type: string
-                description: Email prefix
-                example: ""
+                description: Email prefix (required for formation and shared, forbidden for primary)
+                example: formation
             project_slug:
                 type: string
                 description: Project slug identifier
@@ -222,6 +430,203 @@ definitions:
                 description: LFXv2 Project UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            public:
+                type: boolean
+                description: Whether the service is publicly accessible
+                default: false
+                example: true
+            status:
+                type: string
+                description: Service status
+                example: created
+            type:
+                type: string
+                description: Service type
+                example: primary
+                enum:
+                    - primary
+                    - formation
+                    - shared
+            url:
+                type: string
+                description: Service URL
+                example: https://lists.project.org
+                format: uri
+        example:
+            domain: lists.project.org
+            global_owners:
+                - admin@example.com
+            group_id: 12345
+            group_name: project-name
+            prefix: formation
+            project_slug: cncf
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            public: true
+            status: created
+            type: primary
+            url: https://lists.project.org
+        required:
+            - type
+            - project_uid
+    MailingListGetGrpsioServiceResponseBody:
+        title: MailingListGetGrpsioServiceResponseBody
+        $ref: '#/definitions/ServiceWithReadonlyAttributes'
+    MailingListUpdateGrpsioServiceRequestBody:
+        title: MailingListUpdateGrpsioServiceRequestBody
+        type: object
+        properties:
+            domain:
+                type: string
+                description: Service domain
+                example: lists.project.org
+            global_owners:
+                type: array
+                items:
+                    type: string
+                    example: ebba_ratke@wilderman.biz
+                    format: email
+                description: List of global owner email addresses (required for primary, forbidden for shared)
+                example:
+                    - admin@example.com
+            group_id:
+                type: integer
+                description: GroupsIO group ID
+                example: 12345
+                format: int64
+            group_name:
+                type: string
+                description: GroupsIO group name
+                example: project-name
+            prefix:
+                type: string
+                description: Email prefix (required for formation and shared, forbidden for primary)
+                example: formation
+            project_slug:
+                type: string
+                description: Project slug identifier
+                example: cncf
+                format: regexp
+                pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+            project_uid:
+                type: string
+                description: LFXv2 Project UID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            public:
+                type: boolean
+                description: Whether the service is publicly accessible
+                default: false
+                example: true
+            status:
+                type: string
+                description: Service status
+                example: created
+            type:
+                type: string
+                description: Service type
+                example: primary
+                enum:
+                    - primary
+                    - formation
+                    - shared
+            url:
+                type: string
+                description: Service URL
+                example: https://lists.project.org
+                format: uri
+        example:
+            domain: lists.project.org
+            global_owners:
+                - admin@example.com
+            group_id: 12345
+            group_name: project-name
+            prefix: formation
+            project_slug: cncf
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            public: true
+            status: created
+            type: primary
+            url: https://lists.project.org
+        required:
+            - type
+            - project_uid
+    NotFoundError:
+        title: NotFoundError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The resource was not found.
+        description: Resource not found
+        example:
+            message: The resource was not found.
+        required:
+            - message
+    ServiceUnavailableError:
+        title: ServiceUnavailableError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: The service is unavailable.
+        description: Service unavailable
+        example:
+            message: The service is unavailable.
+        required:
+            - message
+    ServiceWithReadonlyAttributes:
+        title: ServiceWithReadonlyAttributes
+        type: object
+        properties:
+            created_at:
+                type: string
+                description: The timestamp when the service was created (read-only)
+                example: "2023-01-15T10:30:00Z"
+                format: date-time
+            domain:
+                type: string
+                description: Service domain
+                example: lists.project.org
+            global_owners:
+                type: array
+                items:
+                    type: string
+                    example: nicholas.dickinson@welch.name
+                    format: email
+                description: List of global owner email addresses (required for primary, forbidden for shared)
+                example:
+                    - admin@example.com
+            group_id:
+                type: integer
+                description: GroupsIO group ID
+                example: 12345
+                format: int64
+            group_name:
+                type: string
+                description: GroupsIO group name
+                example: project-name
+            prefix:
+                type: string
+                description: Email prefix (required for formation and shared, forbidden for primary)
+                example: formation
+            project_slug:
+                type: string
+                description: Project slug identifier
+                example: cncf
+                format: regexp
+                pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+            project_uid:
+                type: string
+                description: LFXv2 Project UID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            public:
+                type: boolean
+                description: Whether the service is publicly accessible
+                default: false
+                example: true
             status:
                 type: string
                 description: Service status
@@ -236,51 +641,38 @@ definitions:
                     - shared
             uid:
                 type: string
-                description: Unique service identifier
+                description: Service UID -- unique identifier for the service
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            updated_at:
+                type: string
+                description: The timestamp when the service was last updated (read-only)
+                example: "2023-06-20T14:45:30Z"
+                format: date-time
             url:
                 type: string
                 description: Service URL
                 example: https://lists.project.org
                 format: uri
-        description: A GroupsIO service for managing mailing lists
         example:
+            created_at: "2023-01-15T10:30:00Z"
             domain: lists.project.org
             global_owners:
                 - admin@example.com
             group_id: 12345
             group_name: project-name
-            prefix: ""
+            prefix: formation
             project_slug: cncf
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            public: true
             status: created
             type: primary
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            updated_at: "2023-06-20T14:45:30Z"
             url: https://lists.project.org
         required:
             - type
-            - uid
-            - domain
-            - group_id
-            - status
-            - project_slug
             - project_uid
-            - url
-            - group_name
-    ServiceUnavailableError:
-        title: ServiceUnavailableError
-        type: object
-        properties:
-            message:
-                type: string
-                description: Error message
-                example: The service is unavailable.
-        description: Service unavailable
-        example:
-            message: The service is unavailable.
-        required:
-            - message
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

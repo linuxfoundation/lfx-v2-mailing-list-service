@@ -5,7 +5,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
@@ -14,21 +13,17 @@ import (
 
 func wrapError(ctx context.Context, err error) error {
 	slog.ErrorContext(ctx, "request failed", "error", err)
-	
-	// Unwrap to get the underlying error for direct type assertion
-	unwrappedErr := errors.Unwrap(err)
-	if unwrappedErr == nil {
-		unwrappedErr = err
-	}
-	
-	switch unwrappedErr.(type) {
+
+	switch e := err.(type) {
 	case lfxerrors.Validation:
-		return &mailinglistservice.BadRequestError{Message: err.Error()}
+		return &mailinglistservice.BadRequestError{Message: e.Error()}
 	case lfxerrors.NotFound:
-		return &mailinglistservice.NotFoundError{Message: err.Error()}
+		return &mailinglistservice.NotFoundError{Message: e.Error()}
+	case lfxerrors.Conflict:
+		return &mailinglistservice.ConflictError{Message: e.Error()}
 	case lfxerrors.ServiceUnavailable:
-		return &mailinglistservice.ServiceUnavailableError{Message: err.Error()}
+		return &mailinglistservice.ServiceUnavailableError{Message: e.Error()}
 	default:
-		return &mailinglistservice.InternalServerError{Message: err.Error()}
+		return &mailinglistservice.InternalServerError{Message: e.Error()}
 	}
 }

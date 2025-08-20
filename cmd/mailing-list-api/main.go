@@ -16,8 +16,6 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-
-	svc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 
 	"goa.design/clue/debug"
@@ -58,17 +56,15 @@ func main() {
 	)
 
 	// Initialize dependencies using provider pattern
-	grpsIOServiceReader := service.GrpsIOServiceReader(ctx)
 	storage := service.GrpsIOServiceReaderWriter(ctx)
 	authService := service.AuthService(ctx)
 
-	// Create orchestrator directly in main (like committee service)
-	readGrpsIOService := svc.NewGrpsIOServiceReaderOrchestrator(
-		svc.WithServiceReader(grpsIOServiceReader),
-	)
+	// Create orchestrators using provider functions
+	readGrpsIOService := service.GrpsIOServiceReaderOrchestrator(ctx)
+	writeGrpsIOService := service.GrpsIOServiceWriterOrchestrator(ctx)
 
 	// Initialize the mailing list service with service management endpoints
-	mailingListServiceSvc := service.NewMailingList(authService, readGrpsIOService, storage)
+	mailingListServiceSvc := service.NewMailingList(authService, readGrpsIOService, writeGrpsIOService, storage)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.

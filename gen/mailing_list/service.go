@@ -20,8 +20,14 @@ type Service interface {
 	Livez(context.Context) (res []byte, err error)
 	// Check if the service is able to take inbound requests.
 	Readyz(context.Context) (res []byte, err error)
+	// Create GroupsIO service with type-specific validation rules
+	CreateGrpsioService(context.Context, *CreateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error)
 	// Get groupsIO service details by ID
 	GetGrpsioService(context.Context, *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error)
+	// Update GroupsIO service
+	UpdateGrpsioService(context.Context, *UpdateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error)
+	// Delete GroupsIO service
+	DeleteGrpsioService(context.Context, *DeleteGrpsioServicePayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -44,7 +50,52 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [3]string{"livez", "readyz", "get-grpsio-service"}
+var MethodNames = [6]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service"}
+
+// CreateGrpsioServicePayload is the payload type of the mailing-list service
+// create-grpsio-service method.
+type CreateGrpsioServicePayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// Service type
+	Type string
+	// Service domain
+	Domain *string
+	// GroupsIO group ID
+	GroupID *int64
+	// Service status
+	Status *string
+	// List of global owner email addresses (required for primary, forbidden for
+	// shared)
+	GlobalOwners []string
+	// Email prefix (required for formation and shared, forbidden for primary)
+	Prefix *string
+	// Project slug identifier
+	ProjectSlug *string
+	// LFXv2 Project UID
+	ProjectUID string
+	// Service URL
+	URL *string
+	// GroupsIO group name
+	GroupName *string
+	// Whether the service is publicly accessible
+	Public bool
+}
+
+// DeleteGrpsioServicePayload is the payload type of the mailing-list service
+// delete-grpsio-service method.
+type DeleteGrpsioServicePayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// ETag header value
+	Etag *string
+	// Service UID -- unique identifier for the service
+	UID *string
+}
 
 // GetGrpsioServicePayload is the payload type of the mailing-list service
 // get-grpsio-service method.
@@ -53,45 +104,94 @@ type GetGrpsioServicePayload struct {
 	BearerToken *string
 	// Version of the API
 	Version *string
-	// Service unique identifier
+	// Service UID -- unique identifier for the service
 	UID *string
 }
 
 // GetGrpsioServiceResult is the result type of the mailing-list service
 // get-grpsio-service method.
 type GetGrpsioServiceResult struct {
-	Service *ServiceInfo
+	Service *ServiceWithReadonlyAttributes
 	// ETag header value
 	Etag *string
 }
 
-// A GroupsIO service for managing mailing lists
-type ServiceInfo struct {
+// ServiceWithReadonlyAttributes is the result type of the mailing-list service
+// create-grpsio-service method.
+type ServiceWithReadonlyAttributes struct {
+	// Service UID -- unique identifier for the service
+	UID *string
 	// Service type
 	Type string
-	// Unique service identifier
-	UID string
 	// Service domain
-	Domain string
+	Domain *string
 	// GroupsIO group ID
-	GroupID int64
+	GroupID *int64
 	// Service status
-	Status string
-	// List of global owner email addresses
+	Status *string
+	// List of global owner email addresses (required for primary, forbidden for
+	// shared)
 	GlobalOwners []string
-	// Email prefix
+	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string
 	// Project slug identifier
-	ProjectSlug string
+	ProjectSlug *string
 	// LFXv2 Project UID
 	ProjectUID string
 	// Service URL
-	URL string
+	URL *string
 	// GroupsIO group name
-	GroupName string
+	GroupName *string
+	// Whether the service is publicly accessible
+	Public bool
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
+}
+
+// UpdateGrpsioServicePayload is the payload type of the mailing-list service
+// update-grpsio-service method.
+type UpdateGrpsioServicePayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// ETag header value
+	Etag *string
+	// Service UID -- unique identifier for the service
+	UID *string
+	// Service type
+	Type string
+	// Service domain
+	Domain *string
+	// GroupsIO group ID
+	GroupID *int64
+	// Service status
+	Status *string
+	// List of global owner email addresses (required for primary, forbidden for
+	// shared)
+	GlobalOwners []string
+	// Email prefix (required for formation and shared, forbidden for primary)
+	Prefix *string
+	// Project slug identifier
+	ProjectSlug *string
+	// LFXv2 Project UID
+	ProjectUID string
+	// Service URL
+	URL *string
+	// GroupsIO group name
+	GroupName *string
+	// Whether the service is publicly accessible
+	Public bool
 }
 
 type BadRequestError struct {
+	// Error message
+	Message string
+}
+
+type ConflictError struct {
 	// Error message
 	Message string
 }
@@ -126,6 +226,23 @@ func (e *BadRequestError) ErrorName() string {
 // GoaErrorName returns "bad-request-error".
 func (e *BadRequestError) GoaErrorName() string {
 	return "BadRequest"
+}
+
+// Error returns an error description.
+func (e *ConflictError) Error() string {
+	return ""
+}
+
+// ErrorName returns "conflict-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *ConflictError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "conflict-error".
+func (e *ConflictError) GoaErrorName() string {
+	return "Conflict"
 }
 
 // Error returns an error description.

@@ -24,9 +24,21 @@ type Client struct {
 	// Readyz Doer is the HTTP client used to make requests to the readyz endpoint.
 	ReadyzDoer goahttp.Doer
 
+	// CreateGrpsioService Doer is the HTTP client used to make requests to the
+	// create-grpsio-service endpoint.
+	CreateGrpsioServiceDoer goahttp.Doer
+
 	// GetGrpsioService Doer is the HTTP client used to make requests to the
 	// get-grpsio-service endpoint.
 	GetGrpsioServiceDoer goahttp.Doer
+
+	// UpdateGrpsioService Doer is the HTTP client used to make requests to the
+	// update-grpsio-service endpoint.
+	UpdateGrpsioServiceDoer goahttp.Doer
+
+	// DeleteGrpsioService Doer is the HTTP client used to make requests to the
+	// delete-grpsio-service endpoint.
+	DeleteGrpsioServiceDoer goahttp.Doer
 
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
@@ -48,14 +60,17 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:            doer,
-		ReadyzDoer:           doer,
-		GetGrpsioServiceDoer: doer,
-		RestoreResponseBody:  restoreBody,
-		scheme:               scheme,
-		host:                 host,
-		decoder:              dec,
-		encoder:              enc,
+		LivezDoer:               doer,
+		ReadyzDoer:              doer,
+		CreateGrpsioServiceDoer: doer,
+		GetGrpsioServiceDoer:    doer,
+		UpdateGrpsioServiceDoer: doer,
+		DeleteGrpsioServiceDoer: doer,
+		RestoreResponseBody:     restoreBody,
+		scheme:                  scheme,
+		host:                    host,
+		decoder:                 dec,
+		encoder:                 enc,
 	}
 }
 
@@ -97,6 +112,30 @@ func (c *Client) Readyz() goa.Endpoint {
 	}
 }
 
+// CreateGrpsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service create-grpsio-service server.
+func (c *Client) CreateGrpsioService() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeCreateGrpsioServiceRequest(c.encoder)
+		decodeResponse = DecodeCreateGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildCreateGrpsioServiceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.CreateGrpsioServiceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-service", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
 // GetGrpsioService returns an endpoint that makes HTTP requests to the
 // mailing-list service get-grpsio-service server.
 func (c *Client) GetGrpsioService() goa.Endpoint {
@@ -116,6 +155,54 @@ func (c *Client) GetGrpsioService() goa.Endpoint {
 		resp, err := c.GetGrpsioServiceDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-service", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateGrpsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service update-grpsio-service server.
+func (c *Client) UpdateGrpsioService() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateGrpsioServiceRequest(c.encoder)
+		decodeResponse = DecodeUpdateGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateGrpsioServiceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateGrpsioServiceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-service", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// DeleteGrpsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service delete-grpsio-service server.
+func (c *Client) DeleteGrpsioService() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeDeleteGrpsioServiceRequest(c.encoder)
+		decodeResponse = DecodeDeleteGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildDeleteGrpsioServiceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.DeleteGrpsioServiceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-service", err)
 		}
 		return decodeResponse(resp)
 	}

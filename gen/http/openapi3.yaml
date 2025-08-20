@@ -7,7 +7,192 @@ servers:
     - url: http://localhost:80
       description: Default server for mailing-list
 paths:
+    /groupsio/services:
+        post:
+            tags:
+                - mailing-list
+            summary: create-grpsio-service mailing-list
+            description: Create GroupsIO service with type-specific validation rules
+            operationId: mailing-list#create-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ServiceBase'
+                        example:
+                            domain: lists.project.org
+                            global_owners:
+                                - admin@example.com
+                            group_id: 12345
+                            group_name: project-name
+                            prefix: formation
+                            project_slug: cncf
+                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            public: true
+                            status: created
+                            type: primary
+                            url: https://lists.project.org
+            responses:
+                "201":
+                    description: Created response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceWithReadonlyAttributes'
+                            example:
+                                created_at: "2023-01-15T10:30:00Z"
+                                domain: lists.project.org
+                                global_owners:
+                                    - admin@example.com
+                                group_id: 12345
+                                group_name: project-name
+                                prefix: formation
+                                project_slug: cncf
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                public: true
+                                status: created
+                                type: primary
+                                uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                updated_at: "2023-06-20T14:45:30Z"
+                                url: https://lists.project.org
+                "400":
+                    description: 'BadRequest: Bad request - Invalid type, missing required fields, or validation failures'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Resource not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services/{uid}:
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-service mailing-list
+            description: Delete GroupsIO service
+            operationId: mailing-list#delete-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  schema:
+                    type: string
+                    description: Service UID -- unique identifier for the service
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - name: ETag
+                  in: header
+                  description: ETag header value
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: ETag header value
+                    example: "123"
+                  example: "123"
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Resource not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
         get:
             tags:
                 - mailing-list
@@ -28,13 +213,14 @@ paths:
                   example: "1"
                 - name: uid
                   in: path
-                  description: Service unique identifier
+                  description: Service UID -- unique identifier for the service
                   required: true
                   schema:
                     type: string
-                    description: Service unique identifier
-                    example: Velit quia hic eos eos.
-                  example: Quas animi qui.
+                    description: Service UID -- unique identifier for the service
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             responses:
                 "200":
                     description: OK response.
@@ -49,19 +235,22 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceInfo'
+                                $ref: '#/components/schemas/ServiceWithReadonlyAttributes'
                             example:
+                                created_at: "2023-01-15T10:30:00Z"
                                 domain: lists.project.org
                                 global_owners:
                                     - admin@example.com
                                 group_id: 12345
                                 group_name: project-name
-                                prefix: ""
+                                prefix: formation
                                 project_slug: cncf
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                public: true
                                 status: created
                                 type: primary
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                updated_at: "2023-06-20T14:45:30Z"
                                 url: https://lists.project.org
                 "400":
                     description: 'BadRequest: Bad request'
@@ -79,6 +268,127 @@ paths:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
                                 message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-grpsio-service mailing-list
+            description: Update GroupsIO service
+            operationId: mailing-list#update-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  schema:
+                    type: string
+                    description: Service UID -- unique identifier for the service
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - name: ETag
+                  in: header
+                  description: ETag header value
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: ETag header value
+                    example: "123"
+                  example: "123"
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ServiceBase'
+                        example:
+                            domain: lists.project.org
+                            global_owners:
+                                - admin@example.com
+                            group_id: 12345
+                            group_name: project-name
+                            prefix: formation
+                            project_slug: cncf
+                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            public: true
+                            status: created
+                            type: primary
+                            url: https://lists.project.org
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceWithReadonlyAttributes'
+                            example:
+                                created_at: "2023-01-15T10:30:00Z"
+                                domain: lists.project.org
+                                global_owners:
+                                    - admin@example.com
+                                group_id: 12345
+                                group_name: project-name
+                                prefix: formation
+                                project_slug: cncf
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                public: true
+                                status: created
+                                type: primary
+                                uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                updated_at: "2023-06-20T14:45:30Z"
+                                url: https://lists.project.org
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Resource not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -194,7 +504,7 @@ components:
                 message: The resource was not found.
             required:
                 - message
-        ServiceInfo:
+        ServiceBase:
             type: object
             properties:
                 domain:
@@ -205,9 +515,9 @@ components:
                     type: array
                     items:
                         type: string
-                        example: angie.orn@fadel.com
+                        example: devan.von@sporer.name
                         format: email
-                    description: List of global owner email addresses
+                    description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
                         - admin@example.com
                 group_id:
@@ -221,8 +531,8 @@ components:
                     example: project-name
                 prefix:
                     type: string
-                    description: Email prefix
-                    example: ""
+                    description: Email prefix (required for formation and shared, forbidden for primary)
+                    example: formation
                 project_slug:
                     type: string
                     description: Project slug identifier
@@ -234,6 +544,185 @@ components:
                     description: LFXv2 Project UID
                     example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     format: uuid
+                public:
+                    type: boolean
+                    description: Whether the service is publicly accessible
+                    default: false
+                    example: true
+                status:
+                    type: string
+                    description: Service status
+                    example: created
+                type:
+                    type: string
+                    description: Service type
+                    example: primary
+                    enum:
+                        - primary
+                        - formation
+                        - shared
+                url:
+                    type: string
+                    description: Service URL
+                    example: https://lists.project.org
+                    format: uri
+            description: A base representation of GroupsIO services without readonly attributes.
+            example:
+                domain: lists.project.org
+                global_owners:
+                    - admin@example.com
+                group_id: 12345
+                group_name: project-name
+                prefix: formation
+                project_slug: cncf
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                public: true
+                status: created
+                type: primary
+                url: https://lists.project.org
+            required:
+                - type
+                - project_uid
+        ServiceCreatePayload:
+            type: object
+            properties:
+                domain:
+                    type: string
+                    description: Service domain
+                    example: lists.project.org
+                global_owners:
+                    type: array
+                    items:
+                        type: string
+                        example: graciela@mayer.info
+                        format: email
+                    description: List of global owner email addresses (required for primary, forbidden for shared)
+                    example:
+                        - admin@example.com
+                group_id:
+                    type: integer
+                    description: GroupsIO group ID
+                    example: 12345
+                    format: int64
+                group_name:
+                    type: string
+                    description: GroupsIO group name
+                    example: project-name
+                prefix:
+                    type: string
+                    description: Email prefix (required for formation and shared, forbidden for primary)
+                    example: formation
+                project_slug:
+                    type: string
+                    description: Project slug identifier
+                    example: cncf
+                    format: regexp
+                    pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+                project_uid:
+                    type: string
+                    description: LFXv2 Project UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                public:
+                    type: boolean
+                    description: Whether the service is publicly accessible
+                    default: false
+                    example: true
+                status:
+                    type: string
+                    description: Service status
+                    example: created
+                type:
+                    type: string
+                    description: Service type
+                    example: primary
+                    enum:
+                        - primary
+                        - formation
+                        - shared
+                url:
+                    type: string
+                    description: Service URL
+                    example: https://lists.project.org
+                    format: uri
+            description: Payload for creating GroupsIO services with type-specific validation.
+            example:
+                domain: lists.project.org
+                global_owners:
+                    - admin@example.com
+                group_id: 12345
+                group_name: project-name
+                prefix: formation
+                project_slug: cncf
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                public: true
+                status: created
+                type: primary
+                url: https://lists.project.org
+            required:
+                - type
+                - project_uid
+        ServiceUnavailableError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: The service is unavailable.
+            example:
+                message: The service is unavailable.
+            required:
+                - message
+        ServiceWithReadonlyAttributes:
+            type: object
+            properties:
+                created_at:
+                    type: string
+                    description: The timestamp when the service was created (read-only)
+                    example: "2023-01-15T10:30:00Z"
+                    format: date-time
+                domain:
+                    type: string
+                    description: Service domain
+                    example: lists.project.org
+                global_owners:
+                    type: array
+                    items:
+                        type: string
+                        example: aaron_rice@ernser.info
+                        format: email
+                    description: List of global owner email addresses (required for primary, forbidden for shared)
+                    example:
+                        - admin@example.com
+                group_id:
+                    type: integer
+                    description: GroupsIO group ID
+                    example: 12345
+                    format: int64
+                group_name:
+                    type: string
+                    description: GroupsIO group name
+                    example: project-name
+                prefix:
+                    type: string
+                    description: Email prefix (required for formation and shared, forbidden for primary)
+                    example: formation
+                project_slug:
+                    type: string
+                    description: Project slug identifier
+                    example: cncf
+                    format: regexp
+                    pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+                project_uid:
+                    type: string
+                    description: LFXv2 Project UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                public:
+                    type: boolean
+                    description: Whether the service is publicly accessible
+                    default: false
+                    example: true
                 status:
                     type: string
                     description: Service status
@@ -248,49 +737,39 @@ components:
                         - shared
                 uid:
                     type: string
-                    description: Unique service identifier
+                    description: Service UID -- unique identifier for the service
                     example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     format: uuid
+                updated_at:
+                    type: string
+                    description: The timestamp when the service was last updated (read-only)
+                    example: "2023-06-20T14:45:30Z"
+                    format: date-time
                 url:
                     type: string
                     description: Service URL
                     example: https://lists.project.org
                     format: uri
-            description: A GroupsIO service for managing mailing lists
+            description: A representation of GroupsIO services with readonly attributes.
             example:
+                created_at: "2023-01-15T10:30:00Z"
                 domain: lists.project.org
                 global_owners:
                     - admin@example.com
                 group_id: 12345
                 group_name: project-name
-                prefix: ""
+                prefix: formation
                 project_slug: cncf
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                public: true
                 status: created
                 type: primary
                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                updated_at: "2023-06-20T14:45:30Z"
                 url: https://lists.project.org
             required:
                 - type
-                - uid
-                - domain
-                - group_id
-                - status
-                - project_slug
                 - project_uid
-                - url
-                - group_name
-        ServiceUnavailableError:
-            type: object
-            properties:
-                message:
-                    type: string
-                    description: Error message
-                    example: The service is unavailable.
-            example:
-                message: The service is unavailable.
-            required:
-                - message
     securitySchemes:
         jwt_header_Authorization:
             type: http

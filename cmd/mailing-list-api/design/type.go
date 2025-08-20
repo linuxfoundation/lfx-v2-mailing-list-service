@@ -7,16 +7,28 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
-// ServiceModel represents a GroupsIO service
-var ServiceModel = dsl.Type("ServiceInfo", func() {
-	dsl.Description("A GroupsIO service for managing mailing lists")
+// ServiceBase is the DSL type for a GroupsIO service base.
+var ServiceBase = dsl.Type("service-base", func() {
+	dsl.Description("A base representation of GroupsIO services without readonly attributes.")
+
+	ServiceBaseAttributes()
+})
+
+// ServiceCreatePayload is a specialized type for service creation with validation
+var ServiceCreatePayload = dsl.Type("service-create-payload", func() {
+	dsl.Description("Payload for creating GroupsIO services with type-specific validation.")
+
+	ServiceBaseAttributes()
+
+	// Add validation rules that will be enforced in the service layer
+	dsl.Meta("validation:type-specific", "true")
+})
+
+// ServiceBaseAttributes is the DSL attributes for a GroupsIO service base.
+func ServiceBaseAttributes() {
 	dsl.Attribute("type", dsl.String, "Service type", func() {
 		dsl.Enum("primary", "formation", "shared")
 		dsl.Example("primary")
-	})
-	dsl.Attribute("uid", dsl.String, "Unique service identifier", func() {
-		dsl.Format(dsl.FormatUUID)
-		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("domain", dsl.String, "Service domain", func() {
 		dsl.Example("lists.project.org")
@@ -27,14 +39,14 @@ var ServiceModel = dsl.Type("ServiceInfo", func() {
 	dsl.Attribute("status", dsl.String, "Service status", func() {
 		dsl.Example("created")
 	})
-	dsl.Attribute("global_owners", dsl.ArrayOf(dsl.String), "List of global owner email addresses", func() {
+	dsl.Attribute("global_owners", dsl.ArrayOf(dsl.String), "List of global owner email addresses (required for primary, forbidden for shared)", func() {
 		dsl.Elem(func() {
 			dsl.Format(dsl.FormatEmail)
 		})
 		dsl.Example([]string{"admin@example.com"})
 	})
-	dsl.Attribute("prefix", dsl.String, "Email prefix", func() {
-		dsl.Example("")
+	dsl.Attribute("prefix", dsl.String, "Email prefix (required for formation and shared, forbidden for primary)", func() {
+		dsl.Example("formation")
 	})
 	dsl.Attribute("project_slug", dsl.String, "Project slug identifier", func() {
 		dsl.Format(dsl.FormatRegexp)
@@ -52,8 +64,35 @@ var ServiceModel = dsl.Type("ServiceInfo", func() {
 	dsl.Attribute("group_name", dsl.String, "GroupsIO group name", func() {
 		dsl.Example("project-name")
 	})
-	dsl.Required("type", "uid", "domain", "group_id", "status", "project_slug", "project_uid", "url", "group_name")
+	dsl.Attribute("public", dsl.Boolean, "Whether the service is publicly accessible", func() {
+		dsl.Default(false)
+		dsl.Example(true)
+	})
+
+	// Base required fields for all service types
+	dsl.Required("type", "project_uid")
+}
+
+// ServiceWithReadonlyAttributes is the DSL type for a GroupsIO service with readonly attributes.
+var ServiceWithReadonlyAttributes = dsl.Type("service-with-readonly-attributes", func() {
+	dsl.Description("A representation of GroupsIO services with readonly attributes.")
+
+	ServiceUIDAttribute()
+	ServiceBaseAttributes()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
 })
+
+// ServiceUIDAttribute is the DSL attribute for service UID.
+func ServiceUIDAttribute() {
+	dsl.Attribute("uid", dsl.String, "Service UID -- unique identifier for the service", func() {
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+		dsl.Format(dsl.FormatUUID)
+	})
+}
+
+// ServiceModel represents a GroupsIO service (legacy - keeping for compatibility)
+var ServiceModel = ServiceWithReadonlyAttributes
 
 // BearerTokenAttribute is the DSL attribute for bearer token.
 func BearerTokenAttribute() {
@@ -75,6 +114,22 @@ func VersionAttribute() {
 func ETagAttribute() {
 	dsl.Attribute("etag", dsl.String, "ETag header value", func() {
 		dsl.Example("123")
+	})
+}
+
+// CreatedAtAttribute is the DSL attribute for creation timestamp.
+func CreatedAtAttribute() {
+	dsl.Attribute("created_at", dsl.String, "The timestamp when the service was created (read-only)", func() {
+		dsl.Format(dsl.FormatDateTime)
+		dsl.Example("2023-01-15T10:30:00Z")
+	})
+}
+
+// UpdatedAtAttribute is the DSL attribute for update timestamp.
+func UpdatedAtAttribute() {
+	dsl.Attribute("updated_at", dsl.String, "The timestamp when the service was last updated (read-only)", func() {
+		dsl.Format(dsl.FormatDateTime)
+		dsl.Example("2023-06-20T14:45:30Z")
 	})
 }
 

@@ -16,17 +16,23 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint            goa.Endpoint
-	ReadyzEndpoint           goa.Endpoint
-	GetGrpsioServiceEndpoint goa.Endpoint
+	LivezEndpoint               goa.Endpoint
+	ReadyzEndpoint              goa.Endpoint
+	CreateGrpsioServiceEndpoint goa.Endpoint
+	GetGrpsioServiceEndpoint    goa.Endpoint
+	UpdateGrpsioServiceEndpoint goa.Endpoint
+	DeleteGrpsioServiceEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, getGrpsioService goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:            livez,
-		ReadyzEndpoint:           readyz,
-		GetGrpsioServiceEndpoint: getGrpsioService,
+		LivezEndpoint:               livez,
+		ReadyzEndpoint:              readyz,
+		CreateGrpsioServiceEndpoint: createGrpsioService,
+		GetGrpsioServiceEndpoint:    getGrpsioService,
+		UpdateGrpsioServiceEndpoint: updateGrpsioService,
+		DeleteGrpsioServiceEndpoint: deleteGrpsioService,
 	}
 }
 
@@ -53,6 +59,24 @@ func (c *Client) Readyz(ctx context.Context) (res []byte, err error) {
 	return ires.([]byte), nil
 }
 
+// CreateGrpsioService calls the "create-grpsio-service" endpoint of the
+// "mailing-list" service.
+// CreateGrpsioService may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request - Invalid type, missing required fields, or validation failures
+//   - "NotFound" (type *NotFoundError): Resource not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error) {
+	var ires any
+	ires, err = c.CreateGrpsioServiceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ServiceWithReadonlyAttributes), nil
+}
+
 // GetGrpsioService calls the "get-grpsio-service" endpoint of the
 // "mailing-list" service.
 // GetGrpsioService may return the following errors:
@@ -68,4 +92,36 @@ func (c *Client) GetGrpsioService(ctx context.Context, p *GetGrpsioServicePayloa
 		return
 	}
 	return ires.(*GetGrpsioServiceResult), nil
+}
+
+// UpdateGrpsioService calls the "update-grpsio-service" endpoint of the
+// "mailing-list" service.
+// UpdateGrpsioService may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Resource not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateGrpsioService(ctx context.Context, p *UpdateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error) {
+	var ires any
+	ires, err = c.UpdateGrpsioServiceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ServiceWithReadonlyAttributes), nil
+}
+
+// DeleteGrpsioService calls the "delete-grpsio-service" endpoint of the
+// "mailing-list" service.
+// DeleteGrpsioService may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Resource not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) DeleteGrpsioService(ctx context.Context, p *DeleteGrpsioServicePayload) (err error) {
+	_, err = c.DeleteGrpsioServiceEndpoint(ctx, p)
+	return
 }
