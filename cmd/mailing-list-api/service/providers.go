@@ -22,11 +22,9 @@ import (
 var (
 	natsStorageClient   port.GrpsIOServiceReaderWriter
 	natsMessagingClient port.ProjectReader
-	natsPublisherClient port.GrpsIOServicePublisher
-	mockStorageClient   port.GrpsIOServiceReaderWriter
+	natsPublisherClient port.MessagePublisher
 
 	natsDoOnce sync.Once
-	mockDoOnce sync.Once
 )
 
 func natsInit(ctx context.Context) {
@@ -90,24 +88,10 @@ func natsMessaging(ctx context.Context) port.ProjectReader {
 	return natsMessagingClient
 }
 
-func natsPublisher(ctx context.Context) port.GrpsIOServicePublisher {
+func natsPublisher(ctx context.Context) port.MessagePublisher {
 	natsInit(ctx)
 	return natsPublisherClient
 }
-
-func mockInit(ctx context.Context) {
-	mockDoOnce.Do(func() {
-		slog.InfoContext(ctx, "initializing shared mock service")
-		mockStorageClient = infrastructure.NewMockService()
-	})
-}
-
-func mockStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
-	mockInit(ctx)
-	return mockStorageClient
-}
-
-// TODO: MailingListStorage - Add when MailingListReaderWriter port is implemented
 
 // AuthService initializes the authentication service implementation
 func AuthService(ctx context.Context) port.Authenticator {
@@ -148,10 +132,14 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "nats"
+		repoSource = "mock" // Default to mock for easier local testing
 	}
 
 	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock project retriever")
+		projectReader = infrastructure.NewMockProjectRetriever(infrastructure.NewMockRepository())
+
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS project retriever")
 		natsClient := natsMessaging(ctx)
@@ -179,7 +167,8 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 
 	switch repoSource {
 	case "mock":
-		grpsIOServiceReader = mockStorage(ctx)
+		slog.InfoContext(ctx, "initializing mock grpsio service reader")
+		grpsIOServiceReader = infrastructure.NewMockGrpsIOServiceReader(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -201,12 +190,13 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "mock" // Default to mock for easier local testing
 	}
 
 	switch repoSource {
 	case "mock":
-		storage = mockStorage(ctx)
+		slog.InfoContext(ctx, "initializing mock grpsio service reader writer")
+		storage = infrastructure.NewMockGrpsIOServiceReaderWriter(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -235,7 +225,8 @@ func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
 
 	switch repoSource {
 	case "mock":
-		grpsIOServiceWriter = mockStorage(ctx)
+		slog.InfoContext(ctx, "initializing mock grpsio service writer")
+		grpsIOServiceWriter = infrastructure.NewMockGrpsIOServiceWriter(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service writer")
@@ -252,9 +243,9 @@ func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
 	return grpsIOServiceWriter
 }
 
-// GrpsIOServicePublisher initializes the service publisher implementation
-func GrpsIOServicePublisher(ctx context.Context) port.GrpsIOServicePublisher {
-	var publisher port.GrpsIOServicePublisher
+// MessagePublisher initializes the service publisher implementation
+func MessagePublisher(ctx context.Context) port.MessagePublisher {
+	var publisher port.MessagePublisher
 
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
@@ -265,7 +256,7 @@ func GrpsIOServicePublisher(ctx context.Context) port.GrpsIOServicePublisher {
 	switch repoSource {
 	case "mock":
 		slog.InfoContext(ctx, "initializing mock service publisher")
-		publisher = infrastructure.NewMockGrpsIOServicePublisher()
+		publisher = infrastructure.NewMockMessagePublisher()
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service publisher")
@@ -285,6 +276,9 @@ func GrpsIOServicePublisher(ctx context.Context) port.GrpsIOServicePublisher {
 // GrpsIOServiceReaderOrchestrator initializes the service reader orchestrator
 func GrpsIOServiceReaderOrchestrator(ctx context.Context) service.GrpsIOServiceReader {
 	serviceReader := GrpsIOServiceReader(ctx)
+
+	slog.InfoContext(ctx, "initializing service reader orchestrator")
+
 	return service.NewGrpsIOServiceReaderOrchestrator(
 		service.WithServiceReader(serviceReader),
 	)
@@ -295,7 +289,7 @@ func GrpsIOServiceWriterOrchestrator(ctx context.Context) service.GrpsIOServiceW
 	serviceWriter := GrpsIOServiceWriter(ctx)
 	serviceReader := GrpsIOServiceReader(ctx)
 	projectReader := ProjectRetriever(ctx)
-	publisher := GrpsIOServicePublisher(ctx)
+	publisher := MessagePublisher(ctx)
 
 	slog.InfoContext(ctx, "initializing service writer orchestrator with concurrent message publishing")
 

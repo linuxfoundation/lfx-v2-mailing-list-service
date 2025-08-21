@@ -47,7 +47,7 @@ func WithProjectRetriever(reader port.ProjectReader) grpsIOServiceWriterOrchestr
 }
 
 // WithPublisher sets the publisher
-func WithPublisher(publisher port.GrpsIOServicePublisher) grpsIOServiceWriterOrchestratorOption {
+func WithPublisher(publisher port.MessagePublisher) grpsIOServiceWriterOrchestratorOption {
 	return func(w *grpsIOServiceWriterOrchestrator) {
 		w.publisher = publisher
 	}
@@ -65,7 +65,7 @@ type grpsIOServiceWriterOrchestrator struct {
 	grpsIOServiceWriter port.GrpsIOServiceWriter
 	grpsIOServiceReader port.GrpsIOServiceReader
 	projectReader       port.ProjectReader
-	publisher           port.GrpsIOServicePublisher
+	publisher           port.MessagePublisher
 }
 
 // CreateGrpsIOService creates a new service with transactional operations and rollback
@@ -371,13 +371,13 @@ func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx contex
 // reserveUniqueConstraints reserves unique constraints based on service type
 func (sw *grpsIOServiceWriterOrchestrator) reserveUniqueConstraints(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	switch service.Type {
-	case "v2_primary", "primary":
+	case "primary":
 		// Primary service: unique by project only
 		return sw.grpsIOServiceWriter.UniqueProjectType(ctx, service)
-	case "v2_formation", "formation":
+	case "formation":
 		// Formation service: unique by project + prefix
 		return sw.grpsIOServiceWriter.UniqueProjectPrefix(ctx, service)
-	case "v2_shared", "shared":
+	case "shared":
 		// Shared service: unique by project + group_id
 		return sw.grpsIOServiceWriter.UniqueProjectGroupID(ctx, service)
 	default:
@@ -438,7 +438,7 @@ func (sw *grpsIOServiceWriterOrchestrator) publishDeleteMessages(ctx context.Con
 	}
 
 	// For delete messages, we just need the UID
-	indexerMessage := &model.GrpsIOServiceIndexerMessage{
+	indexerMessage := &model.IndexerMessage{
 		Action: model.ActionDeleted,
 		Tags:   []string{}, // No tags needed for deletion
 	}
@@ -474,8 +474,8 @@ func (sw *grpsIOServiceWriterOrchestrator) publishDeleteMessages(ctx context.Con
 }
 
 // buildIndexerMessage builds an indexer message for the service
-func (sw *grpsIOServiceWriterOrchestrator) buildIndexerMessage(ctx context.Context, service *model.GrpsIOService, action model.MessageAction, tags []string) (*model.GrpsIOServiceIndexerMessage, error) {
-	indexerMessage := &model.GrpsIOServiceIndexerMessage{
+func (sw *grpsIOServiceWriterOrchestrator) buildIndexerMessage(ctx context.Context, service *model.GrpsIOService, action model.MessageAction, tags []string) (*model.IndexerMessage, error) {
+	indexerMessage := &model.IndexerMessage{
 		Action: action,
 		Tags:   tags,
 	}
@@ -484,8 +484,8 @@ func (sw *grpsIOServiceWriterOrchestrator) buildIndexerMessage(ctx context.Conte
 }
 
 // buildAccessControlMessage builds an access control message for the service
-func (sw *grpsIOServiceWriterOrchestrator) buildAccessControlMessage(ctx context.Context, service *model.GrpsIOService) *model.GrpsIOServiceAccessMessage {
-	message := &model.GrpsIOServiceAccessMessage{
+func (sw *grpsIOServiceWriterOrchestrator) buildAccessControlMessage(ctx context.Context, service *model.GrpsIOService) *model.AccessMessage {
+	message := &model.AccessMessage{
 		UID:        service.UID,
 		ObjectType: "grpsio_service",
 		Public:     service.Public,

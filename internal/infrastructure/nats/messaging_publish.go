@@ -72,7 +72,7 @@ func (m *messagingPublisher) publish(ctx context.Context, subject string, messag
 }
 
 // NewGrpsIOServicePublisher creates a new GrpsIOServicePublisher using NATS
-func NewGrpsIOServicePublisher(client *NATSClient) port.GrpsIOServicePublisher {
+func NewGrpsIOServicePublisher(client *NATSClient) port.MessagePublisher {
 	return &messagingPublisher{
 		client: client,
 	}

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/mail"
-	"strconv"
 	"strings"
 	"time"
 
@@ -84,7 +83,7 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 	}
 
 	// Convert domain model to GOA response
-	goaService := domainServiceToGOAResponse(service)
+	goaService := s.convertDomainToStandardResponse(service)
 
 	// Create result with ETag (using revision from NATS)
 	revisionStr := fmt.Sprintf("%d", revision)
@@ -98,7 +97,7 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 }
 
 // CreateGrpsioService creates a new GroupsIO service with type-specific validation
-func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *mailinglistservice.CreateGrpsioServicePayload) (result *mailinglistservice.ServiceWithReadonlyAttributes, err error) {
+func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *mailinglistservice.CreateGrpsioServicePayload) (result *mailinglistservice.ServiceFull, err error) {
 	slog.DebugContext(ctx, "mailingListService.create-grpsio-service", "service_type", payload.Type)
 
 	// Validate type-specific requirements
@@ -110,8 +109,9 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	// Generate new UID for the service
 	serviceUID := uuid.New().String()
 
-	// Convert GOA payload to domain model using helper
-	domainService := payloadToDomainService(payload, serviceUID)
+	// Convert GOA payload to domain model
+	domainService := s.convertCreatePayloadToDomain(payload)
+	domainService.UID = serviceUID
 
 	// Execute use case
 	createdService, revision, err := s.grpsIOServiceWriterOrchestrator.CreateGrpsIOService(ctx, domainService)
@@ -121,7 +121,7 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Convert domain model to GOA response
-	result = domainServiceToGOAResponse(createdService)
+	result = s.convertDomainToFullResponse(createdService)
 
 	slog.InfoContext(ctx, "successfully created service", "service_uid", createdService.UID, "revision", revision)
 	return result, nil
@@ -132,7 +132,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	slog.DebugContext(ctx, "mailingListService.update-grpsio-service", "service_uid", payload.UID)
 
 	// Parse expected revision from ETag
-	expectedRevision, err := parseRevision(payload.Etag)
+	expectedRevision, err := etagValidator(payload.Etag)
 	if err != nil {
 		slog.ErrorContext(ctx, "invalid etag", "error", err, "etag", payload.Etag)
 		return nil, wrapError(ctx, err)
@@ -151,8 +151,8 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert GOA payload to domain model using helper
-	domainService := buildUpdateRequest(existingService, payload)
+	// Convert GOA payload to domain model
+	domainService := s.convertUpdatePayloadToDomain(existingService, payload)
 
 	// Execute use case
 	updatedService, revision, err := s.grpsIOServiceWriterOrchestrator.UpdateGrpsIOService(ctx, *payload.UID, domainService, expectedRevision)
@@ -161,8 +161,8 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response
-	result = domainServiceToGOAResponse(updatedService)
+	// Convert domain model to GOA response using committee service pattern
+	result = s.convertDomainToStandardResponse(updatedService)
 
 	slog.InfoContext(ctx, "successfully updated service", "service_uid", payload.UID, "revision", revision)
 	return result, nil
@@ -172,8 +172,8 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *mailinglistservice.DeleteGrpsioServicePayload) (err error) {
 	slog.DebugContext(ctx, "mailingListService.delete-grpsio-service", "service_uid", payload.UID)
 
-	// Parse expected revision from ETag
-	expectedRevision, err := parseRevision(payload.Etag)
+	// Validate ETag using committee service pattern
+	expectedRevision, err := etagValidator(payload.Etag)
 	if err != nil {
 		slog.ErrorContext(ctx, "invalid etag", "error", err, "etag", payload.Etag)
 		return wrapError(ctx, err)
@@ -205,14 +205,6 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 
 // Helper functions
 
-// parseRevision parses the revision from ETag string
-func parseRevision(etag *string) (uint64, error) {
-	if etag == nil {
-		return 0, fmt.Errorf("etag is required")
-	}
-	return strconv.ParseUint(*etag, 10, 64)
-}
-
 // payloadStringValue safely extracts string value from payload pointer
 func payloadStringValue(val *string) string {
 	if val == nil {
@@ -227,26 +219,6 @@ func payloadInt64Value(val *int64) int64 {
 		return 0
 	}
 	return *val
-}
-
-// domainServiceToGOAResponse converts domain model to GOA response
-func domainServiceToGOAResponse(service *model.GrpsIOService) *mailinglistservice.ServiceWithReadonlyAttributes {
-	return &mailinglistservice.ServiceWithReadonlyAttributes{
-		UID:          &service.UID,
-		Type:         service.Type,
-		Domain:       &service.Domain,
-		GroupID:      &service.GroupID,
-		Status:       &service.Status,
-		GlobalOwners: service.GlobalOwners,
-		Prefix:       &service.Prefix,
-		ProjectSlug:  &service.ProjectSlug,
-		ProjectUID:   service.ProjectUID,
-		URL:          &service.URL,
-		GroupName:    &service.GroupName,
-		Public:       service.Public,
-		CreatedAt:    func() *string { s := service.CreatedAt.Format(time.RFC3339); return &s }(),
-		UpdatedAt:    func() *string { s := service.UpdatedAt.Format(time.RFC3339); return &s }(),
-	}
 }
 
 // validateServiceCreationRules validates type-specific business rules for service creation
@@ -269,11 +241,16 @@ func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServic
 func validatePrimaryRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
 	// primary rules:
 	// - prefix must NOT be provided (will return 400 error)
-	// - global_owners emails must be valid format
+	// - global_owners must be provided and contain at least one valid email
 	// - No existing non-formation service for the project (TODO: implement project validation)
 
 	if payload.Prefix != nil && *payload.Prefix != "" {
 		return errors.NewValidation("prefix must not be provided for primary service type")
+	}
+
+	// global_owners is required for primary services
+	if len(payload.GlobalOwners) == 0 {
+		return errors.NewValidation("global_owners is required and must contain at least one email address for primary service type")
 	}
 
 	// Validate global_owners email addresses

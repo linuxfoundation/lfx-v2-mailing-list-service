@@ -68,13 +68,13 @@ func (c *Client) Readyz(ctx context.Context) (res []byte, err error) {
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error) {
+func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *ServiceFull, err error) {
 	var ires any
 	ires, err = c.CreateGrpsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*ServiceWithReadonlyAttributes), nil
+	return ires.(*ServiceFull), nil
 }
 
 // GetGrpsioService calls the "get-grpsio-service" endpoint of the

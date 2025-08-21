@@ -24,9 +24,9 @@ const (
 	ActionDeleted MessageAction = "deleted"
 )
 
-// GrpsIOServiceIndexerMessage is a NATS message schema for sending messages related to GroupsIO service CRUD operations
+// IndexerMessage is a NATS message schema for sending messages related to GroupsIO service CRUD operations
 // This message is consumed by indexing services to maintain search indexes
-type GrpsIOServiceIndexerMessage struct {
+type IndexerMessage struct {
 	Action  MessageAction     `json:"action"`
 	Headers map[string]string `json:"headers"`
 	Data    any               `json:"data"`
@@ -35,7 +35,7 @@ type GrpsIOServiceIndexerMessage struct {
 }
 
 // Build constructs an indexer message with proper context extraction and data marshaling
-func (g *GrpsIOServiceIndexerMessage) Build(ctx context.Context, input any) (*GrpsIOServiceIndexerMessage, error) {
+func (g *IndexerMessage) Build(ctx context.Context, input any) (*IndexerMessage, error) {
 	// Extract headers from context for authorization propagation
 	headers := make(map[string]string)
 	if authorization, ok := ctx.Value(constants.AuthorizationContextID).(string); ok {
@@ -72,9 +72,9 @@ func (g *GrpsIOServiceIndexerMessage) Build(ctx context.Context, input any) (*Gr
 	return g, nil
 }
 
-// GrpsIOServiceAccessMessage is the schema for the data in the message sent to the fga-sync service
+// AccessMessage is the schema for the data in the message sent to the fga-sync service
 // These are the fields that the fga-sync service needs in order to update the OpenFGA permissions
-type GrpsIOServiceAccessMessage struct {
+type AccessMessage struct {
 	UID string `json:"uid"`
 	// ObjectType is the type of the object that the message is about, e.g. "grpsio_service"
 	ObjectType string `json:"object_type"`

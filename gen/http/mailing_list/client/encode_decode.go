@@ -220,7 +220,7 @@ func DecodeCreateGrpsioServiceResponse(decoder func(*http.Response) goahttp.Deco
 			if err != nil {
 				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-service", err)
 			}
-			res := NewCreateGrpsioServiceServiceWithReadonlyAttributesCreated(&body)
+			res := NewCreateGrpsioServiceServiceFullCreated(&body)
 			return res, nil
 		case http.StatusBadRequest:
 			var (
@@ -508,6 +508,10 @@ func EncodeUpdateGrpsioServiceRequest(encoder func(*http.Request) goahttp.Encode
 			head := *p.Etag
 			req.Header.Set("ETag", head)
 		}
+		if p.IfMatch != nil {
+			head := *p.IfMatch
+			req.Header.Set("If-Match", head)
+		}
 		values := req.URL.Query()
 		if p.Version != nil {
 			values.Add("v", *p.Version)
@@ -685,6 +689,10 @@ func EncodeDeleteGrpsioServiceRequest(encoder func(*http.Request) goahttp.Encode
 		if p.Etag != nil {
 			head := *p.Etag
 			req.Header.Set("ETag", head)
+		}
+		if p.IfMatch != nil {
+			head := *p.IfMatch
+			req.Header.Set("If-Match", head)
 		}
 		values := req.URL.Query()
 		if p.Version != nil {

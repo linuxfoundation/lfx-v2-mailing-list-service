@@ -79,7 +79,7 @@ func EncodeReadyzError(encoder func(context.Context, http.ResponseWriter) goahtt
 // by the mailing-list create-grpsio-service endpoint.
 func EncodeCreateGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.ServiceWithReadonlyAttributes)
+		res, _ := v.(*mailinglist.ServiceFull)
 		enc := encoder(ctx, w)
 		body := NewCreateGrpsioServiceResponseBody(res)
 		w.WriteHeader(http.StatusCreated)
@@ -392,6 +392,7 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			version     *string
 			bearerToken *string
 			etag        *string
+			ifMatch     *string
 
 			params = mux.Vars(r)
 		)
@@ -414,10 +415,14 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if etagRaw != "" {
 			etag = &etagRaw
 		}
+		ifMatchRaw := r.Header.Get("If-Match")
+		if ifMatchRaw != "" {
+			ifMatch = &ifMatchRaw
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateGrpsioServicePayload(&body, uid, version, bearerToken, etag)
+		payload := NewUpdateGrpsioServicePayload(&body, uid, version, bearerToken, etag, ifMatch)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -529,6 +534,7 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			version     *string
 			bearerToken *string
 			etag        *string
+			ifMatch     *string
 			err         error
 
 			params = mux.Vars(r)
@@ -552,10 +558,14 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if etagRaw != "" {
 			etag = &etagRaw
 		}
+		ifMatchRaw := r.Header.Get("If-Match")
+		if ifMatchRaw != "" {
+			ifMatch = &ifMatchRaw
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewDeleteGrpsioServicePayload(uid, version, bearerToken, etag)
+		payload := NewDeleteGrpsioServicePayload(uid, version, bearerToken, etag, ifMatch)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")

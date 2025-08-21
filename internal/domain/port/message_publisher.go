@@ -5,10 +5,10 @@ package port
 
 import "context"
 
-// GrpsIOServicePublisher defines the interface for publishing GroupsIO service messages
+// MessagePublisher defines the interface for publishing GroupsIO service messages
 // This interface is implemented by the NATS messaging infrastructure to support
 // indexing and access control message publishing for downstream services
-type GrpsIOServicePublisher interface {
+type MessagePublisher interface {
 	// Indexer publishes indexer messages for search and discovery services
 	// These messages are consumed by indexing services to maintain search indexes
 	Indexer(ctx context.Context, subject string, message any) error

@@ -7,23 +7,6 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
-// ServiceBase is the DSL type for a GroupsIO service base.
-var ServiceBase = dsl.Type("service-base", func() {
-	dsl.Description("A base representation of GroupsIO services without readonly attributes.")
-
-	ServiceBaseAttributes()
-})
-
-// ServiceCreatePayload is a specialized type for service creation with validation
-var ServiceCreatePayload = dsl.Type("service-create-payload", func() {
-	dsl.Description("Payload for creating GroupsIO services with type-specific validation.")
-
-	ServiceBaseAttributes()
-
-	// Add validation rules that will be enforced in the service layer
-	dsl.Meta("validation:type-specific", "true")
-})
-
 // ServiceBaseAttributes is the DSL attributes for a GroupsIO service base.
 func ServiceBaseAttributes() {
 	dsl.Attribute("type", dsl.String, "Service type", func() {
@@ -79,8 +62,15 @@ var ServiceWithReadonlyAttributes = dsl.Type("service-with-readonly-attributes",
 
 	ServiceUIDAttribute()
 	ServiceBaseAttributes()
+	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
+	LastReviewedAtAttribute()
+	LastReviewedByAttribute()
+	LastAuditedByAttribute()
+	LastAuditedTimeAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 })
 
 // ServiceUIDAttribute is the DSL attribute for service UID.
@@ -91,14 +81,86 @@ func ServiceUIDAttribute() {
 	})
 }
 
-// ServiceModel represents a GroupsIO service (legacy - keeping for compatibility)
-var ServiceModel = ServiceWithReadonlyAttributes
+// ServiceFull is the DSL type for a complete service representation with all attributes.
+var ServiceFull = dsl.Type("service-full", func() {
+	dsl.Description("A complete representation of GroupsIO services with all attributes including access control and audit trail.")
+
+	ServiceUIDAttribute()
+	ServiceBaseAttributes()
+	ProjectNameAttribute()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+	LastReviewedAtAttribute()
+	LastReviewedByAttribute()
+	LastAuditedByAttribute()
+	LastAuditedTimeAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
+})
 
 // BearerTokenAttribute is the DSL attribute for bearer token.
 func BearerTokenAttribute() {
 	dsl.Token("bearer_token", dsl.String, func() {
 		dsl.Description("JWT token issued by Heimdall")
 		dsl.Example("eyJhbGci...")
+	})
+}
+
+// LastReviewedAtAttribute is the DSL attribute for last review timestamp.
+func LastReviewedAtAttribute() {
+	dsl.Attribute("last_reviewed_at", dsl.String, "The timestamp when the service was last reviewed in RFC3339 format", func() {
+		dsl.Format(dsl.FormatDateTime)
+		dsl.Example("2025-08-04T09:00:00Z")
+	})
+}
+
+// LastReviewedByAttribute is the DSL attribute for last review user.
+func LastReviewedByAttribute() {
+	dsl.Attribute("last_reviewed_by", dsl.String, "The user ID who last reviewed this service", func() {
+		dsl.Example("user_id_12345")
+	})
+}
+
+// ProjectNameAttribute is the DSL attribute for project name (read-only).
+func ProjectNameAttribute() {
+	dsl.Attribute("project_name", dsl.String, "Project name (read-only)", func() {
+		dsl.Example("Cloud Native Computing Foundation")
+	})
+}
+
+// WritersAttribute is the DSL attribute for service writers.
+func WritersAttribute() {
+	dsl.Attribute("writers", dsl.ArrayOf(dsl.String), "Manager user IDs who can edit/modify this service", func() {
+		dsl.Example([]string{"manager_user_id1", "manager_user_id2"})
+	})
+}
+
+// AuditorsAttribute is the DSL attribute for service auditors.
+func AuditorsAttribute() {
+	dsl.Attribute("auditors", dsl.ArrayOf(dsl.String), "Auditor user IDs who can audit this service", func() {
+		dsl.Example([]string{"auditor_user_id1", "auditor_user_id2"})
+	})
+}
+
+// LastAuditedByAttribute is the DSL attribute for last audited by user.
+func LastAuditedByAttribute() {
+	dsl.Attribute("last_audited_by", dsl.String, "The user ID who last audited the service", func() {
+		dsl.Example("user_id_12345")
+	})
+}
+
+// LastAuditedTimeAttribute is the DSL attribute for last audit timestamp.
+func LastAuditedTimeAttribute() {
+	dsl.Attribute("last_audited_time", dsl.String, "The timestamp when the service was last audited", func() {
+		dsl.Format(dsl.FormatDateTime)
+		dsl.Example("2023-05-10T09:15:00Z")
+	})
+}
+
+// IfMatchAttribute is the DSL attribute for If-Match header (for conditional requests).
+func IfMatchAttribute() {
+	dsl.Attribute("if_match", dsl.String, "If-Match header value for conditional requests", func() {
+		dsl.Example("123")
 	})
 }
 

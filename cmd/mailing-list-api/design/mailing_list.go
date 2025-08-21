@@ -59,11 +59,16 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			VersionAttribute()
+
 			ServiceBaseAttributes()
+
+			WritersAttribute()
+			AuditorsAttribute()
+
 			// Only common required fields - type-specific validation handled in service layer
 			dsl.Required("type", "project_uid")
 		})
-		dsl.Result(ServiceWithReadonlyAttributes)
+		dsl.Result(ServiceFull)
 		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid type, missing required fields, or validation failures")
 		dsl.Error("NotFound", NotFoundError, "Resource not found")
 		dsl.Error("Conflict", ConflictError, "Conflict")
@@ -122,8 +127,14 @@ var _ = dsl.Service("mailing-list", func() {
 			BearerTokenAttribute()
 			VersionAttribute()
 			ETagAttribute()
+			IfMatchAttribute()
+
 			ServiceUIDAttribute()
 			ServiceBaseAttributes()
+
+			WritersAttribute()
+			AuditorsAttribute()
+
 			dsl.Required("type", "project_uid")
 		})
 		dsl.Result(ServiceWithReadonlyAttributes)
@@ -138,6 +149,7 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Header("etag:ETag")
+			dsl.Header("if_match:If-Match")
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
 			dsl.Response("NotFound", dsl.StatusNotFound)
@@ -154,6 +166,7 @@ var _ = dsl.Service("mailing-list", func() {
 			BearerTokenAttribute()
 			VersionAttribute()
 			ETagAttribute()
+			IfMatchAttribute()
 			ServiceUIDAttribute()
 		})
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
@@ -167,6 +180,7 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Header("etag:ETag")
+			dsl.Header("if_match:If-Match")
 			dsl.Response(dsl.StatusNoContent)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
 			dsl.Response("NotFound", dsl.StatusNotFound)

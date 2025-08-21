@@ -39,6 +39,10 @@ type CreateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioServiceRequestBody is the type of the "mailing-list" service
@@ -67,6 +71,10 @@ type UpdateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // CreateGrpsioServiceResponseBody is the type of the "mailing-list" service
@@ -97,10 +105,24 @@ type CreateGrpsioServiceResponseBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	// Project name (read-only)
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
+	// The user ID who last reviewed this service
+	LastReviewedBy *string `form:"last_reviewed_by,omitempty" json:"last_reviewed_by,omitempty" xml:"last_reviewed_by,omitempty"`
+	// The user ID who last audited the service
+	LastAuditedBy *string `form:"last_audited_by,omitempty" json:"last_audited_by,omitempty" xml:"last_audited_by,omitempty"`
+	// The timestamp when the service was last audited
+	LastAuditedTime *string `form:"last_audited_time,omitempty" json:"last_audited_time,omitempty" xml:"last_audited_time,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // GetGrpsioServiceResponseBody is the type of the "mailing-list" service
@@ -135,10 +157,24 @@ type UpdateGrpsioServiceResponseBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	// Project name (read-only)
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
+	// The user ID who last reviewed this service
+	LastReviewedBy *string `form:"last_reviewed_by,omitempty" json:"last_reviewed_by,omitempty" xml:"last_reviewed_by,omitempty"`
+	// The user ID who last audited the service
+	LastAuditedBy *string `form:"last_audited_by,omitempty" json:"last_audited_by,omitempty" xml:"last_audited_by,omitempty"`
+	// The timestamp when the service was last audited
+	LastAuditedTime *string `form:"last_audited_time,omitempty" json:"last_audited_time,omitempty" xml:"last_audited_time,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // ReadyzServiceUnavailableResponseBody is the type of the "mailing-list"
@@ -329,10 +365,24 @@ type ServiceWithReadonlyAttributesResponseBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	// Project name (read-only)
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
+	// The user ID who last reviewed this service
+	LastReviewedBy *string `form:"last_reviewed_by,omitempty" json:"last_reviewed_by,omitempty" xml:"last_reviewed_by,omitempty"`
+	// The user ID who last audited the service
+	LastAuditedBy *string `form:"last_audited_by,omitempty" json:"last_audited_by,omitempty" xml:"last_audited_by,omitempty"`
+	// The timestamp when the service was last audited
+	LastAuditedTime *string `form:"last_audited_time,omitempty" json:"last_audited_time,omitempty" xml:"last_audited_time,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // NewCreateGrpsioServiceRequestBody builds the HTTP request body from the
@@ -361,6 +411,18 @@ func NewCreateGrpsioServiceRequestBody(p *mailinglist.CreateGrpsioServicePayload
 		var zero bool
 		if body.Public == zero {
 			body.Public = false
+		}
+	}
+	if p.Writers != nil {
+		body.Writers = make([]string, len(p.Writers))
+		for i, val := range p.Writers {
+			body.Writers[i] = val
+		}
+	}
+	if p.Auditors != nil {
+		body.Auditors = make([]string, len(p.Auditors))
+		for i, val := range p.Auditors {
+			body.Auditors[i] = val
 		}
 	}
 	return body
@@ -394,6 +456,18 @@ func NewUpdateGrpsioServiceRequestBody(p *mailinglist.UpdateGrpsioServicePayload
 			body.Public = false
 		}
 	}
+	if p.Writers != nil {
+		body.Writers = make([]string, len(p.Writers))
+		for i, val := range p.Writers {
+			body.Writers[i] = val
+		}
+	}
+	if p.Auditors != nil {
+		body.Auditors = make([]string, len(p.Auditors))
+		for i, val := range p.Auditors {
+			body.Auditors[i] = val
+		}
+	}
 	return body
 }
 
@@ -407,23 +481,27 @@ func NewReadyzServiceUnavailable(body *ReadyzServiceUnavailableResponseBody) *ma
 	return v
 }
 
-// NewCreateGrpsioServiceServiceWithReadonlyAttributesCreated builds a
-// "mailing-list" service "create-grpsio-service" endpoint result from a HTTP
-// "Created" response.
-func NewCreateGrpsioServiceServiceWithReadonlyAttributesCreated(body *CreateGrpsioServiceResponseBody) *mailinglist.ServiceWithReadonlyAttributes {
-	v := &mailinglist.ServiceWithReadonlyAttributes{
-		UID:         body.UID,
-		Type:        *body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  *body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+// NewCreateGrpsioServiceServiceFullCreated builds a "mailing-list" service
+// "create-grpsio-service" endpoint result from a HTTP "Created" response.
+func NewCreateGrpsioServiceServiceFullCreated(body *CreateGrpsioServiceResponseBody) *mailinglist.ServiceFull {
+	v := &mailinglist.ServiceFull{
+		UID:             body.UID,
+		Type:            *body.Type,
+		Domain:          body.Domain,
+		GroupID:         body.GroupID,
+		Status:          body.Status,
+		Prefix:          body.Prefix,
+		ProjectSlug:     body.ProjectSlug,
+		ProjectUID:      *body.ProjectUID,
+		URL:             body.URL,
+		GroupName:       body.GroupName,
+		ProjectName:     body.ProjectName,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
+		LastReviewedAt:  body.LastReviewedAt,
+		LastReviewedBy:  body.LastReviewedBy,
+		LastAuditedBy:   body.LastAuditedBy,
+		LastAuditedTime: body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -436,6 +514,18 @@ func NewCreateGrpsioServiceServiceWithReadonlyAttributesCreated(body *CreateGrps
 	}
 	if body.Public == nil {
 		v.Public = false
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
 	}
 
 	return v
@@ -495,18 +585,23 @@ func NewCreateGrpsioServiceServiceUnavailable(body *CreateGrpsioServiceServiceUn
 // "get-grpsio-service" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioServiceResultOK(body *GetGrpsioServiceResponseBody, etag *string) *mailinglist.GetGrpsioServiceResult {
 	v := &mailinglist.ServiceWithReadonlyAttributes{
-		UID:         body.UID,
-		Type:        *body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  *body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+		UID:             body.UID,
+		Type:            *body.Type,
+		Domain:          body.Domain,
+		GroupID:         body.GroupID,
+		Status:          body.Status,
+		Prefix:          body.Prefix,
+		ProjectSlug:     body.ProjectSlug,
+		ProjectUID:      *body.ProjectUID,
+		URL:             body.URL,
+		GroupName:       body.GroupName,
+		ProjectName:     body.ProjectName,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
+		LastReviewedAt:  body.LastReviewedAt,
+		LastReviewedBy:  body.LastReviewedBy,
+		LastAuditedBy:   body.LastAuditedBy,
+		LastAuditedTime: body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -519,6 +614,18 @@ func NewGetGrpsioServiceResultOK(body *GetGrpsioServiceResponseBody, etag *strin
 	}
 	if body.Public == nil {
 		v.Public = false
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
 	}
 	res := &mailinglist.GetGrpsioServiceResult{
 		Service: v,
@@ -573,18 +680,23 @@ func NewGetGrpsioServiceServiceUnavailable(body *GetGrpsioServiceServiceUnavaila
 // "OK" response.
 func NewUpdateGrpsioServiceServiceWithReadonlyAttributesOK(body *UpdateGrpsioServiceResponseBody) *mailinglist.ServiceWithReadonlyAttributes {
 	v := &mailinglist.ServiceWithReadonlyAttributes{
-		UID:         body.UID,
-		Type:        *body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  *body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+		UID:             body.UID,
+		Type:            *body.Type,
+		Domain:          body.Domain,
+		GroupID:         body.GroupID,
+		Status:          body.Status,
+		Prefix:          body.Prefix,
+		ProjectSlug:     body.ProjectSlug,
+		ProjectUID:      *body.ProjectUID,
+		URL:             body.URL,
+		GroupName:       body.GroupName,
+		ProjectName:     body.ProjectName,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
+		LastReviewedAt:  body.LastReviewedAt,
+		LastReviewedBy:  body.LastReviewedBy,
+		LastAuditedBy:   body.LastAuditedBy,
+		LastAuditedTime: body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -597,6 +709,18 @@ func NewUpdateGrpsioServiceServiceWithReadonlyAttributesOK(body *UpdateGrpsioSer
 	}
 	if body.Public == nil {
 		v.Public = false
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
 	}
 
 	return v
@@ -740,6 +864,12 @@ func ValidateCreateGrpsioServiceResponseBody(body *CreateGrpsioServiceResponseBo
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
+	if body.LastReviewedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_reviewed_at", *body.LastReviewedAt, goa.FormatDateTime))
+	}
+	if body.LastAuditedTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_audited_time", *body.LastAuditedTime, goa.FormatDateTime))
+	}
 	return
 }
 
@@ -781,6 +911,12 @@ func ValidateGetGrpsioServiceResponseBody(body *GetGrpsioServiceResponseBody) (e
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
+	if body.LastReviewedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_reviewed_at", *body.LastReviewedAt, goa.FormatDateTime))
+	}
+	if body.LastAuditedTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_audited_time", *body.LastAuditedTime, goa.FormatDateTime))
+	}
 	return
 }
 
@@ -821,6 +957,12 @@ func ValidateUpdateGrpsioServiceResponseBody(body *UpdateGrpsioServiceResponseBo
 	}
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	if body.LastReviewedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_reviewed_at", *body.LastReviewedAt, goa.FormatDateTime))
+	}
+	if body.LastAuditedTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_audited_time", *body.LastAuditedTime, goa.FormatDateTime))
 	}
 	return
 }
@@ -1045,6 +1187,12 @@ func ValidateServiceWithReadonlyAttributesResponseBody(body *ServiceWithReadonly
 	}
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	if body.LastReviewedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_reviewed_at", *body.LastReviewedAt, goa.FormatDateTime))
+	}
+	if body.LastAuditedTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_audited_time", *body.LastAuditedTime, goa.FormatDateTime))
 	}
 	return
 }

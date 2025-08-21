@@ -24,7 +24,7 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
@@ -88,6 +88,18 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 			v.Public = false
 		}
 	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
 	v.Version = version
 	v.BearerToken = bearerToken
 
@@ -134,13 +146,13 @@ func BuildGetGrpsioServicePayload(mailingListGetGrpsioServiceUID string, mailing
 
 // BuildUpdateGrpsioServicePayload builds the payload for the mailing-list
 // update-grpsio-service endpoint from CLI flags.
-func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, mailingListUpdateGrpsioServiceUID string, mailingListUpdateGrpsioServiceVersion string, mailingListUpdateGrpsioServiceBearerToken string, mailingListUpdateGrpsioServiceEtag string) (*mailinglist.UpdateGrpsioServicePayload, error) {
+func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, mailingListUpdateGrpsioServiceUID string, mailingListUpdateGrpsioServiceVersion string, mailingListUpdateGrpsioServiceBearerToken string, mailingListUpdateGrpsioServiceEtag string, mailingListUpdateGrpsioServiceIfMatch string) (*mailinglist.UpdateGrpsioServicePayload, error) {
 	var err error
 	var body UpdateGrpsioServiceRequestBody
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
@@ -194,6 +206,12 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 			etag = &mailingListUpdateGrpsioServiceEtag
 		}
 	}
+	var ifMatch *string
+	{
+		if mailingListUpdateGrpsioServiceIfMatch != "" {
+			ifMatch = &mailingListUpdateGrpsioServiceIfMatch
+		}
+	}
 	v := &mailinglist.UpdateGrpsioServicePayload{
 		Type:        body.Type,
 		Domain:      body.Domain,
@@ -218,17 +236,30 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 			v.Public = false
 		}
 	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.Etag = etag
+	v.IfMatch = ifMatch
 
 	return v, nil
 }
 
 // BuildDeleteGrpsioServicePayload builds the payload for the mailing-list
 // delete-grpsio-service endpoint from CLI flags.
-func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, mailingListDeleteGrpsioServiceVersion string, mailingListDeleteGrpsioServiceBearerToken string, mailingListDeleteGrpsioServiceEtag string) (*mailinglist.DeleteGrpsioServicePayload, error) {
+func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, mailingListDeleteGrpsioServiceVersion string, mailingListDeleteGrpsioServiceBearerToken string, mailingListDeleteGrpsioServiceEtag string, mailingListDeleteGrpsioServiceIfMatch string) (*mailinglist.DeleteGrpsioServicePayload, error) {
 	var err error
 	var uid string
 	{
@@ -262,11 +293,18 @@ func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, m
 			etag = &mailingListDeleteGrpsioServiceEtag
 		}
 	}
+	var ifMatch *string
+	{
+		if mailingListDeleteGrpsioServiceIfMatch != "" {
+			ifMatch = &mailingListDeleteGrpsioServiceIfMatch
+		}
+	}
 	v := &mailinglist.DeleteGrpsioServicePayload{}
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.Etag = etag
+	v.IfMatch = ifMatch
 
 	return v, nil
 }

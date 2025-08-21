@@ -21,7 +21,7 @@ type Service interface {
 	// Check if the service is able to take inbound requests.
 	Readyz(context.Context) (res []byte, err error)
 	// Create GroupsIO service with type-specific validation rules
-	CreateGrpsioService(context.Context, *CreateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error)
+	CreateGrpsioService(context.Context, *CreateGrpsioServicePayload) (res *ServiceFull, err error)
 	// Get groupsIO service details by ID
 	GetGrpsioService(context.Context, *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error)
 	// Update GroupsIO service
@@ -82,6 +82,10 @@ type CreateGrpsioServicePayload struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
 }
 
 // DeleteGrpsioServicePayload is the payload type of the mailing-list service
@@ -93,6 +97,8 @@ type DeleteGrpsioServicePayload struct {
 	Version *string
 	// ETag header value
 	Etag *string
+	// If-Match header value for conditional requests
+	IfMatch *string
 	// Service UID -- unique identifier for the service
 	UID *string
 }
@@ -116,8 +122,56 @@ type GetGrpsioServiceResult struct {
 	Etag *string
 }
 
-// ServiceWithReadonlyAttributes is the result type of the mailing-list service
+// ServiceFull is the result type of the mailing-list service
 // create-grpsio-service method.
+type ServiceFull struct {
+	// Service UID -- unique identifier for the service
+	UID *string
+	// Service type
+	Type string
+	// Service domain
+	Domain *string
+	// GroupsIO group ID
+	GroupID *int64
+	// Service status
+	Status *string
+	// List of global owner email addresses (required for primary, forbidden for
+	// shared)
+	GlobalOwners []string
+	// Email prefix (required for formation and shared, forbidden for primary)
+	Prefix *string
+	// Project slug identifier
+	ProjectSlug *string
+	// LFXv2 Project UID
+	ProjectUID string
+	// Service URL
+	URL *string
+	// GroupsIO group name
+	GroupName *string
+	// Whether the service is publicly accessible
+	Public bool
+	// Project name (read-only)
+	ProjectName *string
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string
+	// The user ID who last reviewed this service
+	LastReviewedBy *string
+	// The user ID who last audited the service
+	LastAuditedBy *string
+	// The timestamp when the service was last audited
+	LastAuditedTime *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
+
+// ServiceWithReadonlyAttributes is the result type of the mailing-list service
+// update-grpsio-service method.
 type ServiceWithReadonlyAttributes struct {
 	// Service UID -- unique identifier for the service
 	UID *string
@@ -144,10 +198,24 @@ type ServiceWithReadonlyAttributes struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
+	// Project name (read-only)
+	ProjectName *string
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string
+	// The user ID who last reviewed this service
+	LastReviewedBy *string
+	// The user ID who last audited the service
+	LastAuditedBy *string
+	// The timestamp when the service was last audited
+	LastAuditedTime *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
 }
 
 // UpdateGrpsioServicePayload is the payload type of the mailing-list service
@@ -159,6 +227,8 @@ type UpdateGrpsioServicePayload struct {
 	Version *string
 	// ETag header value
 	Etag *string
+	// If-Match header value for conditional requests
+	IfMatch *string
 	// Service UID -- unique identifier for the service
 	UID *string
 	// Service type
@@ -184,6 +254,10 @@ type UpdateGrpsioServicePayload struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
 }
 
 type BadRequestError struct {

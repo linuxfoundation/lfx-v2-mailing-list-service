@@ -15,21 +15,25 @@ import (
 
 // GrpsIOService represents a GroupsIO service entity
 type GrpsIOService struct {
-	Type         string    `json:"type"`
-	UID          string    `json:"uid"`
-	Domain       string    `json:"domain"`
-	GroupID      int64     `json:"group_id"`
-	Status       string    `json:"status"`
-	GlobalOwners []string  `json:"global_owners"`
-	Prefix       string    `json:"prefix"`
-	ProjectSlug  string    `json:"project_slug"`
-	ProjectName  string    `json:"project_name"`
-	ProjectUID   string    `json:"project_uid"`
-	URL          string    `json:"url"`
-	GroupName    string    `json:"group_name"`
-	Public       bool      `json:"public"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Type           string    `json:"type"`
+	UID            string    `json:"uid"`
+	Domain         string    `json:"domain"`
+	GroupID        int64     `json:"group_id"`
+	Status         string    `json:"status"`
+	GlobalOwners   []string  `json:"global_owners"`
+	Prefix         string    `json:"prefix"`
+	ProjectSlug    string    `json:"project_slug"`
+	ProjectName    string    `json:"project_name"`
+	ProjectUID     string    `json:"project_uid"`
+	URL            string    `json:"url"`
+	GroupName      string    `json:"group_name"`
+	Public         bool      `json:"public"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	LastReviewedAt *string   `json:"last_reviewed_at,omitempty"`
+	LastReviewedBy *string   `json:"last_reviewed_by,omitempty"`
+	Writers        []string  `json:"writers"`
+	Auditors       []string  `json:"auditors"`
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
