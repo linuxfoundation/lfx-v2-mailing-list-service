@@ -10,6 +10,22 @@ image:
   # pullPolicy is the image pull policy
   pullPolicy: IfNotPresent
 
+# traefik is the configuration for Traefik Gateway API routing
+traefik:
+  # gateway specifies the platform Gateway to attach to
+  gateway:
+    # name is the name of the Gateway resource
+    name: lfx-platform-gateway
+    # namespace is the namespace of the Gateway resource
+    namespace: lfx
+
+# lfx is the configuration for LFX platform
+lfx:
+  # domain is the base domain for routing
+  domain: k8s.orb.local
+  # namespace is the target namespace for deployment
+  namespace: lfx
+
 # service is the configuration for the Kubernetes service
 service:
   # port is the service port
