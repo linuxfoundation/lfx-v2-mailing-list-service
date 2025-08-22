@@ -52,7 +52,7 @@ spec:
           config:
             values:
               relation: viewer
-              object: "grpsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
         {{- else }}
         - authorizer: allow_all
         {{- end }}
@@ -78,7 +78,7 @@ spec:
           config:
             values:
               relation: writer
-              object: "grpsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
         {{- else }}
         - authorizer: allow_all
         {{- end }}
@@ -104,7 +104,7 @@ spec:
           config:
             values:
               relation: owner
-              object: "grpsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
         {{- else }}
         # When OpenFGA is disabled, allow all requests
         # (Only meant for *local development* because OpenFGA should be enabled when deployed)

@@ -492,7 +492,7 @@ func (sw *grpsIOServiceWriterOrchestrator) buildIndexerMessage(ctx context.Conte
 func (sw *grpsIOServiceWriterOrchestrator) buildAccessControlMessage(ctx context.Context, service *model.GrpsIOService) *model.AccessMessage {
 	message := &model.AccessMessage{
 		UID:        service.UID,
-		ObjectType: "grpsio_service",
+		ObjectType: "groupsio_service",
 		Public:     service.Public,
 		// Relations is reserved for future use and is intentionally left empty
 		Relations: map[string][]string{},

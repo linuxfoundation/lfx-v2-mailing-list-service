@@ -132,7 +132,7 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock" // Default to mock for easier local testing
+		repoSource = "nats"
 	}
 
 	switch repoSource {
@@ -162,7 +162,7 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "nats"
 	}
 
 	switch repoSource {
@@ -190,7 +190,7 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock" // Default to mock for easier local testing
+		repoSource = "nats"
 	}
 
 	switch repoSource {
@@ -220,7 +220,7 @@ func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "nats"
 	}
 
 	switch repoSource {
@@ -250,7 +250,7 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "nats"
 	}
 
 	switch repoSource {

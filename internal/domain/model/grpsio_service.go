@@ -91,7 +91,7 @@ func (s *GrpsIOService) Tags() []string {
 	}
 
 	if s.UID != "" {
-		tag := fmt.Sprintf("grpsio_service_uid:%s", s.UID)
+		tag := fmt.Sprintf("groupsio_service_uid:%s", s.UID)
 		tags = append(tags, tag)
 	}
 

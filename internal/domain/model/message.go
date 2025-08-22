@@ -76,7 +76,7 @@ func (g *IndexerMessage) Build(ctx context.Context, input any) (*IndexerMessage,
 // These are the fields that the fga-sync service needs in order to update the OpenFGA permissions
 type AccessMessage struct {
 	UID string `json:"uid"`
-	// ObjectType is the type of the object that the message is about, e.g. "grpsio_service"
+	// ObjectType is the type of the object that the message is about, e.g. "groupsio_service"
 	ObjectType string `json:"object_type"`
 	// Public is the public flag for the object
 	Public bool `json:"public"`
