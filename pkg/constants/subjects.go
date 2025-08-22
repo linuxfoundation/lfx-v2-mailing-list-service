@@ -6,9 +6,9 @@ package constants
 // NATS subject constants for message publishing
 const (
 	// Indexing subjects for search and discovery
-	IndexGrpsIOServiceSubject = "lfx.index.grpsio_service"
+	IndexGroupsIOServiceSubject = "lfx.index.groupsio_service"
 
 	// Access control subjects for OpenFGA integration
-	UpdateAccessGrpsIOServiceSubject    = "lfx.update_access.grpsio_service"
-	DeleteAllAccessGrpsIOServiceSubject = "lfx.delete_all_access.grpsio_service"
+	UpdateAccessGroupsIOServiceSubject    = "lfx.update_access.groupsio_service"
+	DeleteAllAccessGroupsIOServiceSubject = "lfx.delete_all_access.groupsio_service"
 )

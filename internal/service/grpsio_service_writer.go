@@ -410,10 +410,10 @@ func (sw *grpsIOServiceWriterOrchestrator) publishMessages(ctx context.Context, 
 	// Publish messages concurrently
 	messages := []func() error{
 		func() error {
-			return sw.publisher.Indexer(ctx, constants.IndexGrpsIOServiceSubject, indexerMessage)
+			return sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSubject, indexerMessage)
 		},
 		func() error {
-			return sw.publisher.Access(ctx, constants.UpdateAccessGrpsIOServiceSubject, accessMessage)
+			return sw.publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMessage)
 		},
 	}
 
@@ -457,10 +457,10 @@ func (sw *grpsIOServiceWriterOrchestrator) publishDeleteMessages(ctx context.Con
 	// Publish delete messages concurrently
 	messages := []func() error{
 		func() error {
-			return sw.publisher.Indexer(ctx, constants.IndexGrpsIOServiceSubject, builtMessage)
+			return sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSubject, builtMessage)
 		},
 		func() error {
-			return sw.publisher.Access(ctx, constants.DeleteAllAccessGrpsIOServiceSubject, uid)
+			return sw.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOServiceSubject, uid)
 		},
 	}
 
