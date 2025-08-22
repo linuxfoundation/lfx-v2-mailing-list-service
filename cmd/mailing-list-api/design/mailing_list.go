@@ -126,7 +126,6 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			VersionAttribute()
-			ETagAttribute()
 			IfMatchAttribute()
 
 			ServiceUIDAttribute()
@@ -148,7 +147,6 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Param("version:v")
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
-			dsl.Header("etag:ETag")
 			dsl.Header("if_match:If-Match")
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
@@ -165,7 +163,6 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			VersionAttribute()
-			ETagAttribute()
 			IfMatchAttribute()
 			ServiceUIDAttribute()
 		})
@@ -179,7 +176,6 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Param("version:v")
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
-			dsl.Header("etag:ETag")
 			dsl.Header("if_match:If-Match")
 			dsl.Response(dsl.StatusNoContent)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)

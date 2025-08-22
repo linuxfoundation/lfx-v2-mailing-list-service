@@ -11,7 +11,7 @@ import (
 )
 
 // convertCreatePayloadToDomain converts GOA payload to domain model
-// Following committee service pattern: convertPayloadToDomain
+// convertPayloadToDomain
 func (s *mailingListService) convertCreatePayloadToDomain(p *mailinglistservice.CreateGrpsioServicePayload) *model.GrpsIOService {
 	// Check for nil payload to avoid panic
 	if p == nil {
@@ -41,25 +41,29 @@ func (s *mailingListService) convertCreatePayloadToDomain(p *mailinglistservice.
 }
 
 // convertUpdatePayloadToDomain converts GOA update payload to domain model
-// Following committee service pattern: convertPayloadToUpdateBase
+// convertPayloadToUpdateBase
 func (s *mailingListService) convertUpdatePayloadToDomain(existing *model.GrpsIOService, p *mailinglistservice.UpdateGrpsioServicePayload) *model.GrpsIOService {
-	// Check for nil payload to avoid panic
-	if p == nil || p.UID == nil {
+	// Check for nil payload or existing to avoid panic
+	if p == nil || p.UID == nil || existing == nil {
 		return &model.GrpsIOService{}
 	}
 
+	now := time.Now()
 	return &model.GrpsIOService{
 		// Preserve immutable fields from existing service
-		Type:        existing.Type,
-		UID:         *p.UID,
-		Domain:      existing.Domain,
-		GroupID:     existing.GroupID,
-		Prefix:      existing.Prefix,
-		ProjectSlug: existing.ProjectSlug,
-		ProjectUID:  existing.ProjectUID,
-		URL:         existing.URL,
-		GroupName:   existing.GroupName,
-		CreatedAt:   existing.CreatedAt,
+		Type:           existing.Type,
+		UID:            *p.UID,
+		Domain:         existing.Domain,
+		GroupID:        existing.GroupID,
+		Prefix:         existing.Prefix,
+		ProjectSlug:    existing.ProjectSlug,
+		ProjectName:    existing.ProjectName,
+		ProjectUID:     existing.ProjectUID,
+		URL:            existing.URL,
+		GroupName:      existing.GroupName,
+		CreatedAt:      existing.CreatedAt,
+		LastReviewedAt: existing.LastReviewedAt,
+		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update only mutable fields
 		Status:       payloadStringValue(p.Status),
@@ -67,6 +71,6 @@ func (s *mailingListService) convertUpdatePayloadToDomain(existing *model.GrpsIO
 		Public:       p.Public,
 		Writers:      p.Writers,
 		Auditors:     p.Auditors,
-		UpdatedAt:    time.Now(),
+		UpdatedAt:    now,
 	}
 }

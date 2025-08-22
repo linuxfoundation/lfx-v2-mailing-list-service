@@ -146,7 +146,7 @@ func BuildGetGrpsioServicePayload(mailingListGetGrpsioServiceUID string, mailing
 
 // BuildUpdateGrpsioServicePayload builds the payload for the mailing-list
 // update-grpsio-service endpoint from CLI flags.
-func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, mailingListUpdateGrpsioServiceUID string, mailingListUpdateGrpsioServiceVersion string, mailingListUpdateGrpsioServiceBearerToken string, mailingListUpdateGrpsioServiceEtag string, mailingListUpdateGrpsioServiceIfMatch string) (*mailinglist.UpdateGrpsioServicePayload, error) {
+func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, mailingListUpdateGrpsioServiceUID string, mailingListUpdateGrpsioServiceVersion string, mailingListUpdateGrpsioServiceBearerToken string, mailingListUpdateGrpsioServiceIfMatch string) (*mailinglist.UpdateGrpsioServicePayload, error) {
 	var err error
 	var body UpdateGrpsioServiceRequestBody
 	{
@@ -200,12 +200,6 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 			bearerToken = &mailingListUpdateGrpsioServiceBearerToken
 		}
 	}
-	var etag *string
-	{
-		if mailingListUpdateGrpsioServiceEtag != "" {
-			etag = &mailingListUpdateGrpsioServiceEtag
-		}
-	}
 	var ifMatch *string
 	{
 		if mailingListUpdateGrpsioServiceIfMatch != "" {
@@ -251,7 +245,6 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
-	v.Etag = etag
 	v.IfMatch = ifMatch
 
 	return v, nil
@@ -259,7 +252,7 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 
 // BuildDeleteGrpsioServicePayload builds the payload for the mailing-list
 // delete-grpsio-service endpoint from CLI flags.
-func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, mailingListDeleteGrpsioServiceVersion string, mailingListDeleteGrpsioServiceBearerToken string, mailingListDeleteGrpsioServiceEtag string, mailingListDeleteGrpsioServiceIfMatch string) (*mailinglist.DeleteGrpsioServicePayload, error) {
+func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, mailingListDeleteGrpsioServiceVersion string, mailingListDeleteGrpsioServiceBearerToken string, mailingListDeleteGrpsioServiceIfMatch string) (*mailinglist.DeleteGrpsioServicePayload, error) {
 	var err error
 	var uid string
 	{
@@ -287,12 +280,6 @@ func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, m
 			bearerToken = &mailingListDeleteGrpsioServiceBearerToken
 		}
 	}
-	var etag *string
-	{
-		if mailingListDeleteGrpsioServiceEtag != "" {
-			etag = &mailingListDeleteGrpsioServiceEtag
-		}
-	}
 	var ifMatch *string
 	{
 		if mailingListDeleteGrpsioServiceIfMatch != "" {
@@ -303,7 +290,6 @@ func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, m
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
-	v.Etag = etag
 	v.IfMatch = ifMatch
 
 	return v, nil

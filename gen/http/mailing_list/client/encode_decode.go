@@ -504,10 +504,6 @@ func EncodeUpdateGrpsioServiceRequest(encoder func(*http.Request) goahttp.Encode
 				req.Header.Set("Authorization", head)
 			}
 		}
-		if p.Etag != nil {
-			head := *p.Etag
-			req.Header.Set("ETag", head)
-		}
 		if p.IfMatch != nil {
 			head := *p.IfMatch
 			req.Header.Set("If-Match", head)
@@ -685,10 +681,6 @@ func EncodeDeleteGrpsioServiceRequest(encoder func(*http.Request) goahttp.Encode
 			} else {
 				req.Header.Set("Authorization", head)
 			}
-		}
-		if p.Etag != nil {
-			head := *p.Etag
-			req.Header.Set("ETag", head)
 		}
 		if p.IfMatch != nil {
 			head := *p.IfMatch

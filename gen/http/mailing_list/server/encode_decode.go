@@ -391,7 +391,6 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			uid         string
 			version     *string
 			bearerToken *string
-			etag        *string
 			ifMatch     *string
 
 			params = mux.Vars(r)
@@ -411,10 +410,6 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		etagRaw := r.Header.Get("ETag")
-		if etagRaw != "" {
-			etag = &etagRaw
-		}
 		ifMatchRaw := r.Header.Get("If-Match")
 		if ifMatchRaw != "" {
 			ifMatch = &ifMatchRaw
@@ -422,7 +417,7 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateGrpsioServicePayload(&body, uid, version, bearerToken, etag, ifMatch)
+		payload := NewUpdateGrpsioServicePayload(&body, uid, version, bearerToken, ifMatch)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -533,7 +528,6 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			uid         string
 			version     *string
 			bearerToken *string
-			etag        *string
 			ifMatch     *string
 			err         error
 
@@ -554,10 +548,6 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		etagRaw := r.Header.Get("ETag")
-		if etagRaw != "" {
-			etag = &etagRaw
-		}
 		ifMatchRaw := r.Header.Get("If-Match")
 		if ifMatchRaw != "" {
 			ifMatch = &ifMatchRaw
@@ -565,7 +555,7 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if err != nil {
 			return nil, err
 		}
-		payload := NewDeleteGrpsioServicePayload(uid, version, bearerToken, etag, ifMatch)
+		payload := NewDeleteGrpsioServicePayload(uid, version, bearerToken, ifMatch)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")

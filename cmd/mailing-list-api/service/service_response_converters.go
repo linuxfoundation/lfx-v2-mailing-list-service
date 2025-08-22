@@ -11,7 +11,7 @@ import (
 )
 
 // convertDomainToFullResponse converts domain model to full response (for CREATE operations)
-// Following committee service pattern: convertDomainToFullResponse
+// Following convertDomainToFullResponse
 func (s *mailingListService) convertDomainToFullResponse(service *model.GrpsIOService) *mailinglistservice.ServiceFull {
 	if service == nil {
 		return &mailinglistservice.ServiceFull{}
@@ -53,7 +53,7 @@ func (s *mailingListService) convertDomainToFullResponse(service *model.GrpsIOSe
 }
 
 // convertDomainToStandardResponse converts domain model to standard response (for GET/UPDATE operations)
-// Following committee service pattern: convertBaseToResponse
+// convertBaseToResponse
 func (s *mailingListService) convertDomainToStandardResponse(service *model.GrpsIOService) *mailinglistservice.ServiceWithReadonlyAttributes {
 	if service == nil {
 		return &mailinglistservice.ServiceWithReadonlyAttributes{}

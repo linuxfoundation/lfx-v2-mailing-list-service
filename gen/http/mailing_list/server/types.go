@@ -791,7 +791,7 @@ func NewGetGrpsioServicePayload(uid string, version *string, bearerToken *string
 
 // NewUpdateGrpsioServicePayload builds a mailing-list service
 // update-grpsio-service endpoint payload.
-func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid string, version *string, bearerToken *string, etag *string, ifMatch *string) *mailinglist.UpdateGrpsioServicePayload {
+func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid string, version *string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioServicePayload {
 	v := &mailinglist.UpdateGrpsioServicePayload{
 		Type:        *body.Type,
 		Domain:      body.Domain,
@@ -830,7 +830,6 @@ func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid str
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
-	v.Etag = etag
 	v.IfMatch = ifMatch
 
 	return v
@@ -838,12 +837,11 @@ func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid str
 
 // NewDeleteGrpsioServicePayload builds a mailing-list service
 // delete-grpsio-service endpoint payload.
-func NewDeleteGrpsioServicePayload(uid string, version *string, bearerToken *string, etag *string, ifMatch *string) *mailinglist.DeleteGrpsioServicePayload {
+func NewDeleteGrpsioServicePayload(uid string, version *string, bearerToken *string, ifMatch *string) *mailinglist.DeleteGrpsioServicePayload {
 	v := &mailinglist.DeleteGrpsioServicePayload{}
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
-	v.Etag = etag
 	v.IfMatch = ifMatch
 
 	return v

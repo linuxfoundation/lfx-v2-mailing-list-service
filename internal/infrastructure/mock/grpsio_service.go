@@ -190,6 +190,8 @@ func (m *MockRepository) GetGrpsIOService(ctx context.Context, uid string) (*mod
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
+	serviceCopy.Writers = append([]string(nil), service.Writers...)
+	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 	revision := m.serviceRevisions[uid]
 	return &serviceCopy, revision, nil
 }
@@ -217,6 +219,8 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
+	serviceCopy.Writers = append([]string(nil), service.Writers...)
+	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 
 	w.mock.services[service.UID] = &serviceCopy
 	w.mock.serviceRevisions[service.UID] = 1
@@ -225,6 +229,8 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 	resultCopy := serviceCopy
 	resultCopy.GlobalOwners = make([]string, len(serviceCopy.GlobalOwners))
 	copy(resultCopy.GlobalOwners, serviceCopy.GlobalOwners)
+	resultCopy.Writers = append([]string(nil), serviceCopy.Writers...)
+	resultCopy.Auditors = append([]string(nil), serviceCopy.Auditors...)
 
 	return &resultCopy, 1, nil
 }
@@ -257,6 +263,8 @@ func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid s
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
+	serviceCopy.Writers = append([]string(nil), service.Writers...)
+	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 
 	w.mock.services[uid] = &serviceCopy
 	newRevision := currentRevision + 1
@@ -266,6 +274,8 @@ func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid s
 	resultCopy := serviceCopy
 	resultCopy.GlobalOwners = make([]string, len(serviceCopy.GlobalOwners))
 	copy(resultCopy.GlobalOwners, serviceCopy.GlobalOwners)
+	resultCopy.Writers = append([]string(nil), serviceCopy.Writers...)
+	resultCopy.Auditors = append([]string(nil), serviceCopy.Auditors...)
 
 	return &resultCopy, newRevision, nil
 }

@@ -174,11 +174,6 @@ paths:
                   description: JWT token issued by Heimdall
                   required: false
                   type: string
-                - name: ETag
-                  in: header
-                  description: ETag header value
-                  required: false
-                  type: string
                 - name: If-Match
                   in: header
                   description: If-Match header value for conditional requests
@@ -257,11 +252,6 @@ paths:
                 - name: Authorization
                   in: header
                   description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: ETag
-                  in: header
-                  description: ETag header value
                   required: false
                   type: string
                 - name: If-Match

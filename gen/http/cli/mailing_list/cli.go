@@ -64,14 +64,12 @@ func ParseEndpoint(
 		mailingListUpdateGrpsioServiceUIDFlag         = mailingListUpdateGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
 		mailingListUpdateGrpsioServiceVersionFlag     = mailingListUpdateGrpsioServiceFlags.String("version", "", "")
 		mailingListUpdateGrpsioServiceBearerTokenFlag = mailingListUpdateGrpsioServiceFlags.String("bearer-token", "", "")
-		mailingListUpdateGrpsioServiceEtagFlag        = mailingListUpdateGrpsioServiceFlags.String("etag", "", "")
 		mailingListUpdateGrpsioServiceIfMatchFlag     = mailingListUpdateGrpsioServiceFlags.String("if-match", "", "")
 
 		mailingListDeleteGrpsioServiceFlags           = flag.NewFlagSet("delete-grpsio-service", flag.ExitOnError)
 		mailingListDeleteGrpsioServiceUIDFlag         = mailingListDeleteGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
 		mailingListDeleteGrpsioServiceVersionFlag     = mailingListDeleteGrpsioServiceFlags.String("version", "", "")
 		mailingListDeleteGrpsioServiceBearerTokenFlag = mailingListDeleteGrpsioServiceFlags.String("bearer-token", "", "")
-		mailingListDeleteGrpsioServiceEtagFlag        = mailingListDeleteGrpsioServiceFlags.String("etag", "", "")
 		mailingListDeleteGrpsioServiceIfMatchFlag     = mailingListDeleteGrpsioServiceFlags.String("if-match", "", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
@@ -171,10 +169,10 @@ func ParseEndpoint(
 				data, err = mailinglistc.BuildGetGrpsioServicePayload(*mailingListGetGrpsioServiceUIDFlag, *mailingListGetGrpsioServiceVersionFlag, *mailingListGetGrpsioServiceBearerTokenFlag)
 			case "update-grpsio-service":
 				endpoint = c.UpdateGrpsioService()
-				data, err = mailinglistc.BuildUpdateGrpsioServicePayload(*mailingListUpdateGrpsioServiceBodyFlag, *mailingListUpdateGrpsioServiceUIDFlag, *mailingListUpdateGrpsioServiceVersionFlag, *mailingListUpdateGrpsioServiceBearerTokenFlag, *mailingListUpdateGrpsioServiceEtagFlag, *mailingListUpdateGrpsioServiceIfMatchFlag)
+				data, err = mailinglistc.BuildUpdateGrpsioServicePayload(*mailingListUpdateGrpsioServiceBodyFlag, *mailingListUpdateGrpsioServiceUIDFlag, *mailingListUpdateGrpsioServiceVersionFlag, *mailingListUpdateGrpsioServiceBearerTokenFlag, *mailingListUpdateGrpsioServiceIfMatchFlag)
 			case "delete-grpsio-service":
 				endpoint = c.DeleteGrpsioService()
-				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceEtagFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
+				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
 			}
 		}
 	}
@@ -273,14 +271,13 @@ Example:
 }
 
 func mailingListUpdateGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service -body JSON -uid STRING -version STRING -bearer-token STRING -etag STRING -if-match STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
 
 Update GroupsIO service
     -body JSON: 
     -uid STRING: Service UID -- unique identifier for the service
     -version STRING: 
     -bearer-token STRING: 
-    -etag STRING: 
     -if-match STRING: 
 
 Example:
@@ -306,21 +303,20 @@ Example:
          "manager_user_id1",
          "manager_user_id2"
       ]
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --etag "123" --if-match "123"
+   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }
 
 func mailingListDeleteGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-service -uid STRING -version STRING -bearer-token STRING -etag STRING -if-match STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-service -uid STRING -version STRING -bearer-token STRING -if-match STRING
 
 Delete GroupsIO service
     -uid STRING: Service UID -- unique identifier for the service
     -version STRING: 
     -bearer-token STRING: 
-    -etag STRING: 
     -if-match STRING: 
 
 Example:
-    %[1]s mailing-list delete-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --etag "123" --if-match "123"
+    %[1]s mailing-list delete-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }

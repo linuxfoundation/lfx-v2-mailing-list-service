@@ -12,6 +12,9 @@ import (
 )
 
 func wrapError(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
 
 	f := func(err error) error {
 		switch e := err.(type) {
@@ -24,7 +27,7 @@ func wrapError(ctx context.Context, err error) error {
 		case lfxerrors.ServiceUnavailable:
 			return &mailinglistservice.ServiceUnavailableError{Message: e.Error()}
 		default:
-			return &mailinglistservice.InternalServerError{Message: e.Error()}
+			return &mailinglistservice.InternalServerError{Message: "An internal server error occurred"}
 		}
 	}
 

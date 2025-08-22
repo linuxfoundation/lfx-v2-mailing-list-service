@@ -175,10 +175,15 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 			)
 			go func() {
 				// Cleanup stale keys in a separate goroutine
-				// new context to avoid blocking the main flow
-				ctxCleanup, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				// Use WithoutCancel to inherit values (tracing, auth) but not cancellation from parent request
+				// This ensures cleanup completes even if original request times out
+				ctxCleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second*10)
 				defer cancel()
+
 				sw.deleteKeys(ctxCleanup, staleKeys, false)
+				slog.DebugContext(ctxCleanup, "stale keys cleanup completed",
+					"keys_count", len(staleKeys),
+				)
 			}()
 		}
 	}()
@@ -221,7 +226,7 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 	}
 
 	// Merge existing data with updated fields
-	sw.mergeServiceData(existing, service)
+	sw.mergeServiceData(ctx, existing, service)
 
 	// Update service in storage
 	updatedService, revision, err := sw.grpsIOServiceWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
@@ -507,7 +512,7 @@ func (sw *grpsIOServiceWriterOrchestrator) buildAccessControlMessage(ctx context
 }
 
 // mergeServiceData merges existing service data with updated fields
-func (sw *grpsIOServiceWriterOrchestrator) mergeServiceData(existing *model.GrpsIOService, updated *model.GrpsIOService) {
+func (sw *grpsIOServiceWriterOrchestrator) mergeServiceData(ctx context.Context, existing *model.GrpsIOService, updated *model.GrpsIOService) {
 	// Preserve immutable fields
 	updated.UID = existing.UID
 	updated.CreatedAt = existing.CreatedAt
@@ -522,7 +527,7 @@ func (sw *grpsIOServiceWriterOrchestrator) mergeServiceData(existing *model.Grps
 	// Update timestamp
 	updated.UpdatedAt = time.Now()
 
-	slog.DebugContext(context.Background(), "service data merged",
+	slog.DebugContext(ctx, "service data merged",
 		"service_id", existing.UID,
 		"mutable_fields", []string{"global_owners", "status", "public"},
 	)

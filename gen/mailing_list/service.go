@@ -95,8 +95,6 @@ type DeleteGrpsioServicePayload struct {
 	BearerToken *string
 	// Version of the API
 	Version *string
-	// ETag header value
-	Etag *string
 	// If-Match header value for conditional requests
 	IfMatch *string
 	// Service UID -- unique identifier for the service
@@ -225,8 +223,6 @@ type UpdateGrpsioServicePayload struct {
 	BearerToken *string
 	// Version of the API
 	Version *string
-	// ETag header value
-	Etag *string
 	// If-Match header value for conditional requests
 	IfMatch *string
 	// Service UID -- unique identifier for the service

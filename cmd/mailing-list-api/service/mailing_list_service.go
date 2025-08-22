@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"net/mail"
 	"strings"
-	"time"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -132,9 +131,9 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	slog.DebugContext(ctx, "mailingListService.update-grpsio-service", "service_uid", payload.UID)
 
 	// Parse expected revision from ETag
-	expectedRevision, err := etagValidator(payload.Etag)
+	expectedRevision, err := etagValidator(payload.IfMatch)
 	if err != nil {
-		slog.ErrorContext(ctx, "invalid etag", "error", err, "etag", payload.Etag)
+		slog.ErrorContext(ctx, "invalid if-match", "error", err, "if_match", payload.IfMatch)
 		return nil, wrapError(ctx, err)
 	}
 
@@ -161,7 +160,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response using committee service pattern
+	// Convert domain model to GOA response
 	result = s.convertDomainToStandardResponse(updatedService)
 
 	slog.InfoContext(ctx, "successfully updated service", "service_uid", payload.UID, "revision", revision)
@@ -172,10 +171,10 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *mailinglistservice.DeleteGrpsioServicePayload) (err error) {
 	slog.DebugContext(ctx, "mailingListService.delete-grpsio-service", "service_uid", payload.UID)
 
-	// Validate ETag using committee service pattern
-	expectedRevision, err := etagValidator(payload.Etag)
+	// Validate ETag
+	expectedRevision, err := etagValidator(payload.IfMatch)
 	if err != nil {
-		slog.ErrorContext(ctx, "invalid etag", "error", err, "etag", payload.Etag)
+		slog.ErrorContext(ctx, "invalid if-match", "error", err, "if_match", payload.IfMatch)
 		return wrapError(ctx, err)
 	}
 
@@ -314,38 +313,28 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	}
 
 	// Check prefix immutability
-	currentPrefix := existing.Prefix
-	newPrefix := payloadStringValue(payload.Prefix)
-	if newPrefix != currentPrefix {
-		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", currentPrefix, newPrefix))
+	if payload.Prefix != nil && *payload.Prefix != existing.Prefix {
+		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, *payload.Prefix))
 	}
 
 	// Check domain immutability
-	currentDomain := existing.Domain
-	newDomain := payloadStringValue(payload.Domain)
-	if newDomain != currentDomain {
-		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", currentDomain, newDomain))
+	if payload.Domain != nil && *payload.Domain != existing.Domain {
+		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, *payload.Domain))
 	}
 
 	// Check group_id immutability
-	currentGroupID := existing.GroupID
-	newGroupID := payloadInt64Value(payload.GroupID)
-	if newGroupID != currentGroupID {
-		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", currentGroupID, newGroupID))
+	if payload.GroupID != nil && *payload.GroupID != existing.GroupID {
+		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, *payload.GroupID))
 	}
 
 	// Check url immutability
-	currentURL := existing.URL
-	newURL := payloadStringValue(payload.URL)
-	if newURL != currentURL {
-		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", currentURL, newURL))
+	if payload.URL != nil && *payload.URL != existing.URL {
+		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, *payload.URL))
 	}
 
 	// Check group_name immutability
-	currentGroupName := existing.GroupName
-	newGroupName := payloadStringValue(payload.GroupName)
-	if newGroupName != currentGroupName {
-		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", currentGroupName, newGroupName))
+	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
+		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, *payload.GroupName))
 	}
 
 	// Validate global_owners email addresses if being updated
@@ -377,52 +366,6 @@ func validateDeleteProtectionRules(service *model.GrpsIOService) error {
 		return nil
 	default:
 		return errors.NewValidation(fmt.Sprintf("Unknown service type '%s' - deletion not permitted", service.Type))
-	}
-}
-
-// Helper functions for code reuse - added for optimization
-
-// payloadToDomainService converts create payload to domain model
-func payloadToDomainService(payload *mailinglistservice.CreateGrpsioServicePayload, uid string) *model.GrpsIOService {
-	now := time.Now()
-	return &model.GrpsIOService{
-		Type:         payload.Type,
-		UID:          uid,
-		Domain:       payloadStringValue(payload.Domain),
-		GroupID:      payloadInt64Value(payload.GroupID),
-		Status:       payloadStringValue(payload.Status),
-		GlobalOwners: payload.GlobalOwners,
-		Prefix:       payloadStringValue(payload.Prefix),
-		ProjectSlug:  payloadStringValue(payload.ProjectSlug),
-		ProjectUID:   payload.ProjectUID,
-		URL:          payloadStringValue(payload.URL),
-		GroupName:    payloadStringValue(payload.GroupName),
-		Public:       payload.Public,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-	}
-}
-
-// buildUpdateRequest creates domain model for updates with only mutable fields
-func buildUpdateRequest(existing *model.GrpsIOService, payload *mailinglistservice.UpdateGrpsioServicePayload) *model.GrpsIOService {
-	return &model.GrpsIOService{
-		// Preserve immutable fields from existing service
-		Type:        existing.Type,
-		UID:         *payload.UID,
-		Domain:      existing.Domain,
-		GroupID:     existing.GroupID,
-		Prefix:      existing.Prefix,
-		ProjectSlug: existing.ProjectSlug,
-		ProjectUID:  existing.ProjectUID,
-		URL:         existing.URL,
-		GroupName:   existing.GroupName,
-		CreatedAt:   existing.CreatedAt,
-
-		// Update only mutable fields
-		Status:       payloadStringValue(payload.Status),
-		GlobalOwners: payload.GlobalOwners,
-		Public:       payload.Public,
-		UpdatedAt:    time.Now(),
 	}
 }
 
