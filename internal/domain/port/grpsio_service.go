@@ -3,12 +3,14 @@
 
 package port
 
-import "context"
+import (
+	"context"
+)
 
 // GrpsIOServiceReaderWriter provides access to service reading and writing operations
 type GrpsIOServiceReaderWriter interface {
 	GrpsIOServiceReader
-	// GrpsIOServiceWriter will be added later when implementing CRUD operations
+	GrpsIOServiceWriter
 
 	// IsReady checks if the storage is ready by verifying the connection
 	IsReady(ctx context.Context) error

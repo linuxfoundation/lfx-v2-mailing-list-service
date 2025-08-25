@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|get-grpsio-service)
+	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service)
 `
 }
 
@@ -49,15 +49,36 @@ func ParseEndpoint(
 
 		mailingListReadyzFlags = flag.NewFlagSet("readyz", flag.ExitOnError)
 
+		mailingListCreateGrpsioServiceFlags           = flag.NewFlagSet("create-grpsio-service", flag.ExitOnError)
+		mailingListCreateGrpsioServiceBodyFlag        = mailingListCreateGrpsioServiceFlags.String("body", "REQUIRED", "")
+		mailingListCreateGrpsioServiceVersionFlag     = mailingListCreateGrpsioServiceFlags.String("version", "", "")
+		mailingListCreateGrpsioServiceBearerTokenFlag = mailingListCreateGrpsioServiceFlags.String("bearer-token", "", "")
+
 		mailingListGetGrpsioServiceFlags           = flag.NewFlagSet("get-grpsio-service", flag.ExitOnError)
-		mailingListGetGrpsioServiceUIDFlag         = mailingListGetGrpsioServiceFlags.String("uid", "REQUIRED", "Service unique identifier")
+		mailingListGetGrpsioServiceUIDFlag         = mailingListGetGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
 		mailingListGetGrpsioServiceVersionFlag     = mailingListGetGrpsioServiceFlags.String("version", "", "")
 		mailingListGetGrpsioServiceBearerTokenFlag = mailingListGetGrpsioServiceFlags.String("bearer-token", "", "")
+
+		mailingListUpdateGrpsioServiceFlags           = flag.NewFlagSet("update-grpsio-service", flag.ExitOnError)
+		mailingListUpdateGrpsioServiceBodyFlag        = mailingListUpdateGrpsioServiceFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGrpsioServiceUIDFlag         = mailingListUpdateGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
+		mailingListUpdateGrpsioServiceVersionFlag     = mailingListUpdateGrpsioServiceFlags.String("version", "", "")
+		mailingListUpdateGrpsioServiceBearerTokenFlag = mailingListUpdateGrpsioServiceFlags.String("bearer-token", "", "")
+		mailingListUpdateGrpsioServiceIfMatchFlag     = mailingListUpdateGrpsioServiceFlags.String("if-match", "", "")
+
+		mailingListDeleteGrpsioServiceFlags           = flag.NewFlagSet("delete-grpsio-service", flag.ExitOnError)
+		mailingListDeleteGrpsioServiceUIDFlag         = mailingListDeleteGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
+		mailingListDeleteGrpsioServiceVersionFlag     = mailingListDeleteGrpsioServiceFlags.String("version", "", "")
+		mailingListDeleteGrpsioServiceBearerTokenFlag = mailingListDeleteGrpsioServiceFlags.String("bearer-token", "", "")
+		mailingListDeleteGrpsioServiceIfMatchFlag     = mailingListDeleteGrpsioServiceFlags.String("if-match", "", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
 	mailingListLivezFlags.Usage = mailingListLivezUsage
 	mailingListReadyzFlags.Usage = mailingListReadyzUsage
+	mailingListCreateGrpsioServiceFlags.Usage = mailingListCreateGrpsioServiceUsage
 	mailingListGetGrpsioServiceFlags.Usage = mailingListGetGrpsioServiceUsage
+	mailingListUpdateGrpsioServiceFlags.Usage = mailingListUpdateGrpsioServiceUsage
+	mailingListDeleteGrpsioServiceFlags.Usage = mailingListDeleteGrpsioServiceUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -99,8 +120,17 @@ func ParseEndpoint(
 			case "readyz":
 				epf = mailingListReadyzFlags
 
+			case "create-grpsio-service":
+				epf = mailingListCreateGrpsioServiceFlags
+
 			case "get-grpsio-service":
 				epf = mailingListGetGrpsioServiceFlags
+
+			case "update-grpsio-service":
+				epf = mailingListUpdateGrpsioServiceFlags
+
+			case "delete-grpsio-service":
+				epf = mailingListDeleteGrpsioServiceFlags
 
 			}
 
@@ -131,9 +161,18 @@ func ParseEndpoint(
 				endpoint = c.Livez()
 			case "readyz":
 				endpoint = c.Readyz()
+			case "create-grpsio-service":
+				endpoint = c.CreateGrpsioService()
+				data, err = mailinglistc.BuildCreateGrpsioServicePayload(*mailingListCreateGrpsioServiceBodyFlag, *mailingListCreateGrpsioServiceVersionFlag, *mailingListCreateGrpsioServiceBearerTokenFlag)
 			case "get-grpsio-service":
 				endpoint = c.GetGrpsioService()
 				data, err = mailinglistc.BuildGetGrpsioServicePayload(*mailingListGetGrpsioServiceUIDFlag, *mailingListGetGrpsioServiceVersionFlag, *mailingListGetGrpsioServiceBearerTokenFlag)
+			case "update-grpsio-service":
+				endpoint = c.UpdateGrpsioService()
+				data, err = mailinglistc.BuildUpdateGrpsioServicePayload(*mailingListUpdateGrpsioServiceBodyFlag, *mailingListUpdateGrpsioServiceUIDFlag, *mailingListUpdateGrpsioServiceVersionFlag, *mailingListUpdateGrpsioServiceBearerTokenFlag, *mailingListUpdateGrpsioServiceIfMatchFlag)
+			case "delete-grpsio-service":
+				endpoint = c.DeleteGrpsioService()
+				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
 			}
 		}
 	}
@@ -154,7 +193,10 @@ Usage:
 COMMAND:
     livez: Check if the service is alive.
     readyz: Check if the service is able to take inbound requests.
+    create-grpsio-service: Create GroupsIO service with type-specific validation rules
     get-grpsio-service: Get groupsIO service details by ID
+    update-grpsio-service: Update GroupsIO service
+    delete-grpsio-service: Delete GroupsIO service
 
 Additional help:
     %[1]s mailing-list COMMAND --help
@@ -180,15 +222,101 @@ Example:
 `, os.Args[0])
 }
 
-func mailingListGetGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-service -uid STRING -version STRING -bearer-token STRING
+func mailingListCreateGrpsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-service -body JSON -version STRING -bearer-token STRING
 
-Get groupsIO service details by ID
-    -uid STRING: Service unique identifier
+Create GroupsIO service with type-specific validation rules
+    -body JSON: 
     -version STRING: 
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-service --uid "Est est delectus et eum." --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list create-grpsio-service --body '{
+      "auditors": [
+         "auditor_user_id1",
+         "auditor_user_id2"
+      ],
+      "domain": "lists.project.org",
+      "global_owners": [
+         "admin@example.com"
+      ],
+      "group_id": 12345,
+      "group_name": "project-name",
+      "prefix": "formation",
+      "project_slug": "cncf",
+      "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "public": true,
+      "status": "created",
+      "type": "primary",
+      "url": "https://lists.project.org",
+      "writers": [
+         "manager_user_id1",
+         "manager_user_id2"
+      ]
+   }' --version "1" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListGetGrpsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-service -uid STRING -version STRING -bearer-token STRING
+
+Get groupsIO service details by ID
+    -uid STRING: Service UID -- unique identifier for the service
+    -version STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListUpdateGrpsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+
+Update GroupsIO service
+    -body JSON: 
+    -uid STRING: Service UID -- unique identifier for the service
+    -version STRING: 
+    -bearer-token STRING: 
+    -if-match STRING: 
+
+Example:
+    %[1]s mailing-list update-grpsio-service --body '{
+      "auditors": [
+         "auditor_user_id1",
+         "auditor_user_id2"
+      ],
+      "domain": "lists.project.org",
+      "global_owners": [
+         "admin@example.com"
+      ],
+      "group_id": 12345,
+      "group_name": "project-name",
+      "prefix": "formation",
+      "project_slug": "cncf",
+      "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "public": true,
+      "status": "created",
+      "type": "primary",
+      "url": "https://lists.project.org",
+      "writers": [
+         "manager_user_id1",
+         "manager_user_id2"
+      ]
+   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+`, os.Args[0])
+}
+
+func mailingListDeleteGrpsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-service -uid STRING -version STRING -bearer-token STRING -if-match STRING
+
+Delete GroupsIO service
+    -uid STRING: Service UID -- unique identifier for the service
+    -version STRING: 
+    -bearer-token STRING: 
+    -if-match STRING: 
+
+Example:
+    %[1]s mailing-list delete-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }

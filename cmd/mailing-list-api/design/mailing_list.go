@@ -52,17 +52,51 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	// Service Management endpoint
+	// Service Management endpoints
+	dsl.Method("create-grpsio-service", func() {
+		dsl.Description("Create GroupsIO service with type-specific validation rules")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+
+			ServiceBaseAttributes()
+
+			WritersAttribute()
+			AuditorsAttribute()
+
+			// Only common required fields - type-specific validation handled in service layer
+			dsl.Required("type", "project_uid")
+		})
+		dsl.Result(ServiceFull)
+		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid type, missing required fields, or validation failures")
+		dsl.Error("NotFound", NotFoundError, "Resource not found")
+		dsl.Error("Conflict", ConflictError, "Conflict")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.POST("/groupsio/services")
+			dsl.Param("version:v")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusCreated)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
 	dsl.Method("get-grpsio-service", func() {
 		dsl.Description("Get groupsIO service details by ID")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			VersionAttribute()
-			dsl.Attribute("uid", dsl.String, "Service unique identifier")
+			ServiceUIDAttribute()
 		})
 		dsl.Result(func() {
-			dsl.Attribute("service", ServiceModel)
+			dsl.Attribute("service", ServiceWithReadonlyAttributes)
 			ETagAttribute()
 			dsl.Required("service")
 		})
@@ -81,6 +115,72 @@ var _ = dsl.Service("mailing-list", func() {
 			})
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
 			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	dsl.Method("update-grpsio-service", func() {
+		dsl.Description("Update GroupsIO service")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			IfMatchAttribute()
+
+			ServiceUIDAttribute()
+			ServiceBaseAttributes()
+
+			WritersAttribute()
+			AuditorsAttribute()
+
+			dsl.Required("type", "project_uid")
+		})
+		dsl.Result(ServiceWithReadonlyAttributes)
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Resource not found")
+		dsl.Error("Conflict", ConflictError, "Conflict")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.PUT("/groupsio/services/{uid}")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Header("if_match:If-Match")
+			dsl.Response(dsl.StatusOK)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	dsl.Method("delete-grpsio-service", func() {
+		dsl.Description("Delete GroupsIO service")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			IfMatchAttribute()
+			ServiceUIDAttribute()
+		})
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Resource not found")
+		dsl.Error("Conflict", ConflictError, "Conflict")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.DELETE("/groupsio/services/{uid}")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Header("if_match:If-Match")
+			dsl.Response(dsl.StatusNoContent)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
 			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
 			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
 		})

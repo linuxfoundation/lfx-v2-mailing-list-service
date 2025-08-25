@@ -14,4 +14,6 @@ import (
 type GrpsIOServiceReader interface {
 	// GetGrpsIOService retrieves a single service by ID and returns ETag revision
 	GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error)
+	// GetRevision retrieves only the revision for a given UID
+	GetRevision(ctx context.Context, uid string) (uint64, error)
 }

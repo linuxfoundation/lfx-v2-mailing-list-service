@@ -16,15 +16,15 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 )
 
 var (
 	natsStorageClient   port.GrpsIOServiceReaderWriter
 	natsMessagingClient port.ProjectReader
-	mockStorageClient   port.GrpsIOServiceReaderWriter
+	natsPublisherClient port.MessagePublisher
 
 	natsDoOnce sync.Once
-	mockDoOnce sync.Once
 )
 
 func natsInit(ctx context.Context) {
@@ -74,6 +74,7 @@ func natsInit(ctx context.Context) {
 		}
 		natsStorageClient = nats.NewStorage(client)
 		natsMessagingClient = nats.NewMessageRequest(client)
+		natsPublisherClient = nats.NewGrpsIOServicePublisher(client)
 	})
 }
 
@@ -87,19 +88,10 @@ func natsMessaging(ctx context.Context) port.ProjectReader {
 	return natsMessagingClient
 }
 
-func mockInit(ctx context.Context) {
-	mockDoOnce.Do(func() {
-		slog.InfoContext(ctx, "initializing shared mock service")
-		mockStorageClient = infrastructure.NewMockService()
-	})
+func natsPublisher(ctx context.Context) port.MessagePublisher {
+	natsInit(ctx)
+	return natsPublisherClient
 }
-
-func mockStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
-	mockInit(ctx)
-	return mockStorageClient
-}
-
-// TODO: MailingListStorage - Add when MailingListReaderWriter port is implemented
 
 // AuthService initializes the authentication service implementation
 func AuthService(ctx context.Context) port.Authenticator {
@@ -144,6 +136,10 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 	}
 
 	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock project retriever")
+		projectReader = infrastructure.NewMockProjectRetriever(infrastructure.NewMockRepository())
+
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS project retriever")
 		natsClient := natsMessaging(ctx)
@@ -166,12 +162,13 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "nats"
 	}
 
 	switch repoSource {
 	case "mock":
-		grpsIOServiceReader = mockStorage(ctx)
+		slog.InfoContext(ctx, "initializing mock grpsio service reader")
+		grpsIOServiceReader = infrastructure.NewMockGrpsIOServiceReader(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -193,12 +190,13 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
-		repoSource = "mock"
+		repoSource = "nats"
 	}
 
 	switch repoSource {
 	case "mock":
-		storage = mockStorage(ctx)
+		slog.InfoContext(ctx, "initializing mock grpsio service reader writer")
+		storage = infrastructure.NewMockGrpsIOServiceReaderWriter(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -213,4 +211,92 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 	}
 
 	return storage
+}
+
+// GrpsIOServiceWriter initializes the service writer implementation
+func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
+	var grpsIOServiceWriter port.GrpsIOServiceWriter
+
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock grpsio service writer")
+		grpsIOServiceWriter = infrastructure.NewMockGrpsIOServiceWriter(infrastructure.NewMockRepository())
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS service writer")
+		natsClient := natsStorage(ctx)
+		if natsClient == nil {
+			log.Fatalf("failed to initialize NATS client")
+		}
+		grpsIOServiceWriter = natsClient
+
+	default:
+		log.Fatalf("unsupported service writer implementation: %s", repoSource)
+	}
+
+	return grpsIOServiceWriter
+}
+
+// MessagePublisher initializes the service publisher implementation
+func MessagePublisher(ctx context.Context) port.MessagePublisher {
+	var publisher port.MessagePublisher
+
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock service publisher")
+		publisher = infrastructure.NewMockMessagePublisher()
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS service publisher")
+		natsPublisher := natsPublisher(ctx)
+		if natsPublisher == nil {
+			log.Fatalf("failed to initialize NATS publisher")
+		}
+		publisher = natsPublisher
+
+	default:
+		log.Fatalf("unsupported service publisher implementation: %s", repoSource)
+	}
+
+	return publisher
+}
+
+// GrpsIOServiceReaderOrchestrator initializes the service reader orchestrator
+func GrpsIOServiceReaderOrchestrator(ctx context.Context) service.GrpsIOServiceReader {
+	serviceReader := GrpsIOServiceReader(ctx)
+
+	slog.InfoContext(ctx, "initializing service reader orchestrator")
+
+	return service.NewGrpsIOServiceReaderOrchestrator(
+		service.WithServiceReader(serviceReader),
+	)
+}
+
+// GrpsIOServiceWriterOrchestrator initializes the service writer orchestrator
+func GrpsIOServiceWriterOrchestrator(ctx context.Context) service.GrpsIOServiceWriter {
+	serviceWriter := GrpsIOServiceWriter(ctx)
+	serviceReader := GrpsIOServiceReader(ctx)
+	projectReader := ProjectRetriever(ctx)
+	publisher := MessagePublisher(ctx)
+
+	slog.InfoContext(ctx, "initializing service writer orchestrator with concurrent message publishing")
+
+	return service.NewGrpsIOServiceWriterOrchestrator(
+		service.WithServiceWriter(serviceWriter),
+		service.WithGrpsIOServiceReader(serviceReader),
+		service.WithProjectRetriever(projectReader),
+		service.WithPublisher(publisher),
+	)
 }

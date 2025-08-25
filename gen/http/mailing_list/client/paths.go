@@ -22,7 +22,22 @@ func ReadyzMailingListPath() string {
 	return "/readyz"
 }
 
+// CreateGrpsioServiceMailingListPath returns the URL path to the mailing-list service create-grpsio-service HTTP endpoint.
+func CreateGrpsioServiceMailingListPath() string {
+	return "/groupsio/services"
+}
+
 // GetGrpsioServiceMailingListPath returns the URL path to the mailing-list service get-grpsio-service HTTP endpoint.
 func GetGrpsioServiceMailingListPath(uid string) string {
+	return fmt.Sprintf("/groupsio/services/%v", uid)
+}
+
+// UpdateGrpsioServiceMailingListPath returns the URL path to the mailing-list service update-grpsio-service HTTP endpoint.
+func UpdateGrpsioServiceMailingListPath(uid string) string {
+	return fmt.Sprintf("/groupsio/services/%v", uid)
+}
+
+// DeleteGrpsioServiceMailingListPath returns the URL path to the mailing-list service delete-grpsio-service HTTP endpoint.
+func DeleteGrpsioServiceMailingListPath(uid string) string {
 	return fmt.Sprintf("/groupsio/services/%v", uid)
 }

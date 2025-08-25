@@ -1,0 +1,116 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+apiVersion: heimdall.dadrus.github.com/v1alpha4
+kind: RuleSet
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    # GroupsIO Services endpoints
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:create"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /groupsio/services
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        # TODO: update this authorizer check once we have a way to get the project_uid from the request body.
+        # Check that user has writer permission on the project
+        - authorizer: allow_all
+        {{- else }}
+        # When OpenFGA is disabled, allow all requests
+        # (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:get"
+      match:
+        methods:
+          - GET
+        routes:
+          - path: /groupsio/services/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: viewer
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:update"
+      match:
+        methods:
+          - PUT
+        routes:
+          - path: /groupsio/services/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:delete"
+      match:
+        methods:
+          - DELETE
+        routes:
+          - path: /groupsio/services/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: owner
+              object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        # When OpenFGA is disabled, allow all requests
+        # (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
