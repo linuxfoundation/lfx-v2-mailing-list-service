@@ -15,6 +15,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 )
 
 // GrpsIOServiceWriter defines the interface for service write operations
@@ -39,10 +40,10 @@ func WithServiceWriter(writer port.GrpsIOServiceWriter) grpsIOServiceWriterOrche
 	}
 }
 
-// WithProjectRetriever sets the project reader
-func WithProjectRetriever(reader port.ProjectReader) grpsIOServiceWriterOrchestratorOption {
+// WithEntityAttributeReader sets the entity attribute reader
+func WithEntityAttributeReader(reader port.EntityAttributeReader) grpsIOServiceWriterOrchestratorOption {
 	return func(w *grpsIOServiceWriterOrchestrator) {
-		w.projectReader = reader
+		w.entityReader = reader
 	}
 }
 
@@ -64,7 +65,7 @@ func WithGrpsIOServiceReader(reader port.GrpsIOServiceReader) grpsIOServiceWrite
 type grpsIOServiceWriterOrchestrator struct {
 	grpsIOServiceWriter port.GrpsIOServiceWriter
 	grpsIOServiceReader port.GrpsIOServiceReader
-	projectReader       port.ProjectReader
+	entityReader        port.EntityAttributeReader
 	publisher           port.MessagePublisher
 }
 
@@ -347,7 +348,7 @@ func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx contex
 	}
 
 	// Fetch project slug
-	slug, err := sw.projectReader.Slug(ctx, service.ProjectUID)
+	slug, err := sw.entityReader.ProjectSlug(ctx, service.ProjectUID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve project slug",
 			"error", err,
@@ -357,7 +358,7 @@ func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx contex
 	}
 
 	// Fetch project name
-	name, err := sw.projectReader.Name(ctx, service.ProjectUID)
+	name, err := sw.entityReader.ProjectName(ctx, service.ProjectUID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve project name",
 			"error", err,
@@ -575,6 +576,9 @@ func (sw *grpsIOServiceWriterOrchestrator) deleteKeys(ctx context.Context, keys 
 				"key", key,
 				"error", err,
 				"is_rollback", isRollback,
+				// This is critical because if we don't delete them,
+				// constraint keys would be locked for reuse for a long time.
+				log.PriorityCritical(),
 			)
 		} else {
 			slog.DebugContext(ctx, "successfully deleted key",

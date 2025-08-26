@@ -234,3 +234,81 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 	})
 	dsl.Required("message")
 })
+
+// MailingListBaseAttributes is the DSL attributes for a GroupsIO mailing list base.
+func MailingListBaseAttributes() {
+	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
+		dsl.Example("technical-steering-committee")
+		dsl.Pattern(`^[a-z][a-z0-9-]*[a-z0-9]$`)
+	})
+	dsl.Attribute("public", dsl.Boolean, "Whether the mailing list is publicly accessible", func() {
+		dsl.Default(false)
+		dsl.Example(false)
+	})
+	dsl.Attribute("type", dsl.String, "Mailing list type", func() {
+		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
+		dsl.Example("discussion_moderated")
+	})
+	dsl.Attribute("committee_uid", dsl.String, "Committee UUID for committee-based mailing lists", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
+		dsl.Elem(func() {
+			dsl.Enum("voting_rep", "alt_voting_rep", "observer", "emeritus")
+		})
+		dsl.Example([]string{"voting_rep", "alt_voting_rep"})
+	})
+	dsl.Attribute("description", dsl.String, "Mailing list description (minimum 11 characters)", func() {
+		dsl.MinLength(11)
+		dsl.Example("Technical steering committee discussions")
+	})
+	dsl.Attribute("title", dsl.String, "Mailing list title", func() {
+		dsl.Example("Technical Steering Committee")
+	})
+	dsl.Attribute("subject_tag", dsl.String, "Subject tag prefix", func() {
+		dsl.Example("[TSC]")
+	})
+	dsl.Attribute("parent_uid", dsl.String, "Parent service UUID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+
+	// Audit trail attributes (optional)
+	WritersAttribute()
+	AuditorsAttribute()
+}
+
+// MailingListUIDAttribute is the DSL attribute for mailing list UID.
+func MailingListUIDAttribute() {
+	dsl.Attribute("uid", dsl.String, "Mailing list UID -- unique identifier for the mailing list", func() {
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+		dsl.Format(dsl.FormatUUID)
+	})
+}
+
+// MailingListFull is the DSL type for a complete mailing list representation with all attributes.
+var MailingListFull = dsl.Type("mailing-list-full", func() {
+	dsl.Description("A complete representation of GroupsIO mailing lists with all attributes including access control and audit trail.")
+
+	MailingListUIDAttribute()
+	MailingListBaseAttributes()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+	LastReviewedAtAttribute()
+	LastReviewedByAttribute()
+})
+
+// MailingListWithReadonlyAttributes is the DSL type for a mailing list with readonly attributes.
+var MailingListWithReadonlyAttributes = dsl.Type("mailing-list-with-readonly-attributes", func() {
+	dsl.Description("A representation of GroupsIO mailing lists with readonly attributes.")
+
+	MailingListUIDAttribute()
+	MailingListBaseAttributes()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+})
