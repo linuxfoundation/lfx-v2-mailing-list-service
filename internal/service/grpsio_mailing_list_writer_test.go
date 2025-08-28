@@ -657,7 +657,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Relations:  map[string][]string{},
 				References: map[string]string{
 					"project": "project-1",
-					"service": "service-1",
+					"groupsio_service": "service-1",
 				},
 			},
 		},
@@ -678,7 +678,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				References: map[string]string{
 					"project":   "project-2",
 					"committee": "committee-1",
-					"service":   "service-2",
+					"groupsio_service":   "service-2",
 				},
 			},
 		},
