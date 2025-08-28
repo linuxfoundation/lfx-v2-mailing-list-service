@@ -13,7 +13,7 @@ const (
 	RelationCommittee = "committee"
 
 	// RelationService defines the parent service relation used for service-level authorization inheritance
-	RelationService = "service"
+	RelationService = "groupsio_service"
 
 	// RelationViewer defines the viewer permission level
 	RelationViewer = "viewer"
