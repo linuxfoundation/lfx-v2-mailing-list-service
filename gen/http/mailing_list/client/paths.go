@@ -41,3 +41,8 @@ func UpdateGrpsioServiceMailingListPath(uid string) string {
 func DeleteGrpsioServiceMailingListPath(uid string) string {
 	return fmt.Sprintf("/groupsio/services/%v", uid)
 }
+
+// CreateGrpsioMailingListMailingListPath returns the URL path to the mailing-list service create-grpsio-mailing-list HTTP endpoint.
+func CreateGrpsioMailingListMailingListPath() string {
+	return "/groupsio/mailing-list"
+}

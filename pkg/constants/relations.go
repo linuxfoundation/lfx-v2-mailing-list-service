@@ -12,6 +12,9 @@ const (
 	// RelationCommittee defines the committee relation used for committee-based authorization
 	RelationCommittee = "committee"
 
+	// RelationService defines the parent service relation used for service-level authorization inheritance
+	RelationService = "service"
+
 	// RelationViewer defines the viewer permission level
 	RelationViewer = "viewer"
 

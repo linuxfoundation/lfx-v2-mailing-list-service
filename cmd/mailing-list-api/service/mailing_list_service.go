@@ -22,12 +22,12 @@ import (
 type mailingListService struct {
 	auth                     port.Authenticator
 	grpsIOReaderOrchestrator service.GrpsIOServiceReader
-	grpsIOWriterOrchestrator service.GrpsIOServiceWriter
+	grpsIOWriterOrchestrator service.GrpsIOWriter
 	storage                  port.GrpsIOReaderWriter
 }
 
 // NewMailingList returns the mailing list service implementation.
-func NewMailingList(auth port.Authenticator, grpsIOReaderOrchestrator service.GrpsIOServiceReader, grpsIOWriterOrchestrator service.GrpsIOServiceWriter, storage port.GrpsIOReaderWriter) mailinglistservice.Service {
+func NewMailingList(auth port.Authenticator, grpsIOReaderOrchestrator service.GrpsIOServiceReader, grpsIOWriterOrchestrator service.GrpsIOWriter, storage port.GrpsIOReaderWriter) mailinglistservice.Service {
 	return &mailingListService{
 		auth:                     auth,
 		grpsIOReaderOrchestrator: grpsIOReaderOrchestrator,
@@ -196,6 +196,37 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 
 	slog.InfoContext(ctx, "successfully deleted service", "service_uid", payload.UID, "service_type", existingService.Type)
 	return nil
+}
+
+// CreateGrpsioMailingList creates a new GroupsIO mailing list with comprehensive validation
+func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListPayload) (result *mailinglistservice.MailingListFull, err error) {
+	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list", "group_name", payload.GroupName, "service_uid", payload.ServiceUID)
+
+	// Validate mailing list creation requirements
+	if err := validateMailingListCreation(payload); err != nil {
+		slog.WarnContext(ctx, "mailing list creation validation failed", "error", err, "group_name", payload.GroupName)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Generate new UID for the mailing list
+	mailingListUID := uuid.New().String()
+
+	// Convert GOA payload to domain model
+	domainMailingList := s.convertMailingListPayloadToDomain(payload)
+	domainMailingList.UID = mailingListUID
+
+	// Execute use case
+	createdMailingList, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create mailing list", "error", err, "group_name", payload.GroupName)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	result = s.convertMailingListDomainToResponse(createdMailingList)
+
+	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID)
+	return result, nil
 }
 
 // Helper functions

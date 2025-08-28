@@ -196,8 +196,11 @@ var _ = dsl.Service("mailing-list", func() {
 
 			MailingListBaseAttributes()
 
+			WritersAttribute()
+			AuditorsAttribute()
+
 			// Required fields for mailing list creation
-			dsl.Required("group_name", "public", "type", "description", "title", "parent_id")
+			dsl.Required("group_name", "public", "type", "description", "title", "service_uid")
 		})
 		dsl.Result(MailingListFull)
 		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid data, missing required fields, or validation failures")

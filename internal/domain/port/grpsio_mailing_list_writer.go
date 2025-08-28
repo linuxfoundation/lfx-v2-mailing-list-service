@@ -11,8 +11,10 @@ import (
 
 // GrpsIOMailingListWriter defines the interface for writing mailing list data
 type GrpsIOMailingListWriter interface {
-	// CreateGrpsIOMailingList creates a new GroupsIO mailing list with secondary indices
-	CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error)
+	BaseGrpsIOWriter
+
+	// CreateGrpsIOMailingList creates a new GroupsIO mailing list and returns the mailing list with revision
+	CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error)
 
 	// UpdateGrpsIOMailingList updates an existing GroupsIO mailing list
 	UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error)
@@ -20,15 +22,9 @@ type GrpsIOMailingListWriter interface {
 	// DeleteGrpsIOMailingList deletes a GroupsIO mailing list and its indices
 	DeleteGrpsIOMailingList(ctx context.Context, uid string) error
 
-	// UpdateSecondaryIndices updates secondary indices for a mailing list
-	UpdateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) error
+	// CreateSecondaryIndices creates secondary indices for a mailing list and returns the created keys
+	CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error)
 
 	// UniqueMailingListGroupName validates that group name is unique within parent service
 	UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error)
-
-	// GetKeyRevision retrieves the revision for a given key (used for cleanup operations)
-	GetKeyRevision(ctx context.Context, key string) (uint64, error)
-
-	// Delete removes a key with the given revision (used for cleanup and rollback)
-	Delete(ctx context.Context, key string, revision uint64) error
 }

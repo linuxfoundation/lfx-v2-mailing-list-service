@@ -56,12 +56,12 @@ func main() {
 	)
 
 	// Initialize dependencies using provider pattern
-	storage := service.GrpsIOServiceReaderWriter(ctx)
+	storage := service.GrpsIOReaderWriter(ctx)
 	authService := service.AuthService(ctx)
 
 	// Create orchestrators using provider functions
-	readGrpsIOService := service.GrpsIOServiceReaderOrchestrator(ctx)
-	writeGrpsIOService := service.GrpsIOServiceWriterOrchestrator(ctx)
+	readGrpsIOService := service.GrpsIOReaderOrchestrator(ctx)
+	writeGrpsIOService := service.GrpsIOWriterOrchestrator(ctx)
 
 	// Initialize the mailing list service with service management endpoints
 	mailingListServiceSvc := service.NewMailingList(authService, readGrpsIOService, writeGrpsIOService, storage)

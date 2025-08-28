@@ -17,12 +17,13 @@ import (
 
 // Endpoints wraps the "mailing-list" service endpoints.
 type Endpoints struct {
-	Livez               goa.Endpoint
-	Readyz              goa.Endpoint
-	CreateGrpsioService goa.Endpoint
-	GetGrpsioService    goa.Endpoint
-	UpdateGrpsioService goa.Endpoint
-	DeleteGrpsioService goa.Endpoint
+	Livez                   goa.Endpoint
+	Readyz                  goa.Endpoint
+	CreateGrpsioService     goa.Endpoint
+	GetGrpsioService        goa.Endpoint
+	UpdateGrpsioService     goa.Endpoint
+	DeleteGrpsioService     goa.Endpoint
+	CreateGrpsioMailingList goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -30,12 +31,13 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		Livez:               NewLivezEndpoint(s),
-		Readyz:              NewReadyzEndpoint(s),
-		CreateGrpsioService: NewCreateGrpsioServiceEndpoint(s, a.JWTAuth),
-		GetGrpsioService:    NewGetGrpsioServiceEndpoint(s, a.JWTAuth),
-		UpdateGrpsioService: NewUpdateGrpsioServiceEndpoint(s, a.JWTAuth),
-		DeleteGrpsioService: NewDeleteGrpsioServiceEndpoint(s, a.JWTAuth),
+		Livez:                   NewLivezEndpoint(s),
+		Readyz:                  NewReadyzEndpoint(s),
+		CreateGrpsioService:     NewCreateGrpsioServiceEndpoint(s, a.JWTAuth),
+		GetGrpsioService:        NewGetGrpsioServiceEndpoint(s, a.JWTAuth),
+		UpdateGrpsioService:     NewUpdateGrpsioServiceEndpoint(s, a.JWTAuth),
+		DeleteGrpsioService:     NewDeleteGrpsioServiceEndpoint(s, a.JWTAuth),
+		CreateGrpsioMailingList: NewCreateGrpsioMailingListEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -47,6 +49,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetGrpsioService = m(e.GetGrpsioService)
 	e.UpdateGrpsioService = m(e.UpdateGrpsioService)
 	e.DeleteGrpsioService = m(e.DeleteGrpsioService)
+	e.CreateGrpsioMailingList = m(e.CreateGrpsioMailingList)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -154,5 +157,28 @@ func NewDeleteGrpsioServiceEndpoint(s Service, authJWTFn security.AuthJWTFunc) g
 			return nil, err
 		}
 		return nil, s.DeleteGrpsioService(ctx, p)
+	}
+}
+
+// NewCreateGrpsioMailingListEndpoint returns an endpoint function that calls
+// the method "create-grpsio-mailing-list" of service "mailing-list".
+func NewCreateGrpsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*CreateGrpsioMailingListPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.CreateGrpsioMailingList(ctx, p)
 	}
 }

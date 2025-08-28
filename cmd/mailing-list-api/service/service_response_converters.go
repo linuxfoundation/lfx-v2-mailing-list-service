@@ -33,7 +33,7 @@ func (s *mailingListService) convertDomainToFullResponse(service *model.GrpsIOSe
 		Public:       service.Public,
 	}
 
-	// Handle timestamps - committee pattern: convert time.Time to *string
+	// Handle timestamps
 	if !service.CreatedAt.IsZero() {
 		createdAt := service.CreatedAt.Format(time.RFC3339)
 		result.CreatedAt = &createdAt
@@ -75,7 +75,7 @@ func (s *mailingListService) convertDomainToStandardResponse(service *model.Grps
 		Public:       service.Public,
 	}
 
-	// Handle timestamps - committee pattern: convert time.Time to *string
+	// Handle timestamps
 	if !service.CreatedAt.IsZero() {
 		createdAt := service.CreatedAt.Format(time.RFC3339)
 		result.CreatedAt = &createdAt
@@ -92,4 +92,53 @@ func (s *mailingListService) convertDomainToStandardResponse(service *model.Grps
 	result.Auditors = service.Auditors
 
 	return result
+}
+
+// convertMailingListDomainToResponse converts domain mailing list to full response (for CREATE operations)
+func (s *mailingListService) convertMailingListDomainToResponse(ml *model.GrpsIOMailingList) *mailinglistservice.MailingListFull {
+	if ml == nil {
+		return &mailinglistservice.MailingListFull{}
+	}
+
+	result := &mailinglistservice.MailingListFull{
+		UID:              &ml.UID,
+		GroupName:        &ml.GroupName,
+		Public:           ml.Public,
+		Type:             &ml.Type,
+		CommitteeUID:     stringToPointer(ml.CommitteeUID),
+		CommitteeFilters: ml.CommitteeFilters,
+		Description:      &ml.Description,
+		Title:            &ml.Title,
+		SubjectTag:       stringToPointer(ml.SubjectTag),
+		ServiceUID:       &ml.ServiceUID,
+		ProjectUID:       &ml.ProjectUID,  // This is inherited from parent in orchestrator
+		ProjectName:      &ml.ProjectName, // Inherited from parent service
+		ProjectSlug:      &ml.ProjectSlug, // Inherited from parent service
+		Writers:          ml.Writers,
+		Auditors:         ml.Auditors,
+	}
+
+	// Handle timestamps
+	if !ml.CreatedAt.IsZero() {
+		createdAt := ml.CreatedAt.Format(time.RFC3339)
+		result.CreatedAt = &createdAt
+	}
+
+	if !ml.UpdatedAt.IsZero() {
+		updatedAt := ml.UpdatedAt.Format(time.RFC3339)
+		result.UpdatedAt = &updatedAt
+	}
+
+	result.LastReviewedAt = ml.LastReviewedAt
+	result.LastReviewedBy = ml.LastReviewedBy
+
+	return result
+}
+
+// stringToPointer converts empty string to nil pointer, non-empty string to pointer
+func stringToPointer(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

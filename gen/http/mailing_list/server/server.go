@@ -20,14 +20,15 @@ import (
 
 // Server lists the mailing-list service endpoint HTTP handlers.
 type Server struct {
-	Mounts              []*MountPoint
-	Livez               http.Handler
-	Readyz              http.Handler
-	CreateGrpsioService http.Handler
-	GetGrpsioService    http.Handler
-	UpdateGrpsioService http.Handler
-	DeleteGrpsioService http.Handler
-	GenHTTPOpenapi3JSON http.Handler
+	Mounts                  []*MountPoint
+	Livez                   http.Handler
+	Readyz                  http.Handler
+	CreateGrpsioService     http.Handler
+	GetGrpsioService        http.Handler
+	UpdateGrpsioService     http.Handler
+	DeleteGrpsioService     http.Handler
+	CreateGrpsioMailingList http.Handler
+	GenHTTPOpenapi3JSON     http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -68,15 +69,17 @@ func New(
 			{"GetGrpsioService", "GET", "/groupsio/services/{uid}"},
 			{"UpdateGrpsioService", "PUT", "/groupsio/services/{uid}"},
 			{"DeleteGrpsioService", "DELETE", "/groupsio/services/{uid}"},
+			{"CreateGrpsioMailingList", "POST", "/groupsio/mailing-list"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		Livez:               NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
-		Readyz:              NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
-		CreateGrpsioService: NewCreateGrpsioServiceHandler(e.CreateGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioService:    NewGetGrpsioServiceHandler(e.GetGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioService: NewUpdateGrpsioServiceHandler(e.UpdateGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		DeleteGrpsioService: NewDeleteGrpsioServiceHandler(e.DeleteGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
+		Livez:                   NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
+		Readyz:                  NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
+		CreateGrpsioService:     NewCreateGrpsioServiceHandler(e.CreateGrpsioService, mux, decoder, encoder, errhandler, formatter),
+		GetGrpsioService:        NewGetGrpsioServiceHandler(e.GetGrpsioService, mux, decoder, encoder, errhandler, formatter),
+		UpdateGrpsioService:     NewUpdateGrpsioServiceHandler(e.UpdateGrpsioService, mux, decoder, encoder, errhandler, formatter),
+		DeleteGrpsioService:     NewDeleteGrpsioServiceHandler(e.DeleteGrpsioService, mux, decoder, encoder, errhandler, formatter),
+		CreateGrpsioMailingList: NewCreateGrpsioMailingListHandler(e.CreateGrpsioMailingList, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON:     http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -91,6 +94,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetGrpsioService = m(s.GetGrpsioService)
 	s.UpdateGrpsioService = m(s.UpdateGrpsioService)
 	s.DeleteGrpsioService = m(s.DeleteGrpsioService)
+	s.CreateGrpsioMailingList = m(s.CreateGrpsioMailingList)
 }
 
 // MethodNames returns the methods served.
@@ -104,6 +108,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetGrpsioServiceHandler(mux, h.GetGrpsioService)
 	MountUpdateGrpsioServiceHandler(mux, h.UpdateGrpsioService)
 	MountDeleteGrpsioServiceHandler(mux, h.DeleteGrpsioService)
+	MountCreateGrpsioMailingListHandler(mux, h.CreateGrpsioMailingList)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
@@ -396,6 +401,60 @@ func NewDeleteGrpsioServiceHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "delete-grpsio-service")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountCreateGrpsioMailingListHandler configures the mux to serve the
+// "mailing-list" service "create-grpsio-mailing-list" endpoint.
+func MountCreateGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/mailing-list", f)
+}
+
+// NewCreateGrpsioMailingListHandler creates a HTTP handler which loads the
+// HTTP request and calls the "mailing-list" service
+// "create-grpsio-mailing-list" endpoint.
+func NewCreateGrpsioMailingListHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCreateGrpsioMailingListRequest(mux, decoder)
+		encodeResponse = EncodeCreateGrpsioMailingListResponse(encoder)
+		encodeError    = EncodeCreateGrpsioMailingListError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "create-grpsio-mailing-list")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {

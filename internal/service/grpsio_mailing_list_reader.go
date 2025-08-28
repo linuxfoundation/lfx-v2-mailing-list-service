@@ -8,44 +8,16 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
 
-// GrpsIOMailingListReader defines the interface for mailing list read operations
-type GrpsIOMailingListReader interface {
-	// GetGrpsIOMailingList retrieves a single mailing list by UID
-	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID
-	GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID
-	GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByProject retrieves mailing lists by project ID
-	GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error)
-}
-
-// grpsIOMailingListReaderOrchestratorOption defines a function type for setting options
-type grpsIOMailingListReaderOrchestratorOption func(*grpsIOMailingListReaderOrchestrator)
-
-// WithMailingListReader sets the mailing list reader
-func WithMailingListReader(reader port.GrpsIOMailingListReader) grpsIOMailingListReaderOrchestratorOption {
-	return func(r *grpsIOMailingListReaderOrchestrator) {
-		r.grpsIOMailingListReader = reader
-	}
-}
-
-// grpsIOMailingListReaderOrchestrator orchestrates the mailing list reading process
-type grpsIOMailingListReaderOrchestrator struct {
-	grpsIOMailingListReader port.GrpsIOMailingListReader
-}
-
 // GetGrpsIOMailingList retrieves a single mailing list by UID
-func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error) {
+func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "executing get mailing list use case",
 		"mailing_list_uid", uid,
 	)
 
 	// Get mailing list from storage
-	mailingList, err := mlr.grpsIOMailingListReader.GetGrpsIOMailingList(ctx, uid)
+	mailingList, err := mlr.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get mailing list",
 			"error", err,
@@ -63,13 +35,13 @@ func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingList(ctx context
 }
 
 // GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID
-func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error) {
+func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "executing get mailing lists by parent use case",
 		"parent_id", parentID,
 	)
 
 	// Get mailing lists from storage
-	mailingLists, err := mlr.grpsIOMailingListReader.GetGrpsIOMailingListsByParent(ctx, parentID)
+	mailingLists, err := mlr.grpsIOReader.GetGrpsIOMailingListsByParent(ctx, parentID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get mailing lists by parent",
 			"error", err,
@@ -87,13 +59,13 @@ func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByParent(ct
 }
 
 // GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID
-func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error) {
+func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "executing get mailing lists by committee use case",
 		"committee_id", committeeID,
 	)
 
 	// Get mailing lists from storage
-	mailingLists, err := mlr.grpsIOMailingListReader.GetGrpsIOMailingListsByCommittee(ctx, committeeID)
+	mailingLists, err := mlr.grpsIOReader.GetGrpsIOMailingListsByCommittee(ctx, committeeID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get mailing lists by committee",
 			"error", err,
@@ -111,13 +83,13 @@ func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByCommittee
 }
 
 // GetGrpsIOMailingListsByProject retrieves mailing lists by project ID
-func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error) {
+func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "executing get mailing lists by project use case",
 		"project_id", projectID,
 	)
 
 	// Get mailing lists from storage
-	mailingLists, err := mlr.grpsIOMailingListReader.GetGrpsIOMailingListsByProject(ctx, projectID)
+	mailingLists, err := mlr.grpsIOReader.GetGrpsIOMailingListsByProject(ctx, projectID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get mailing lists by project",
 			"error", err,
@@ -132,16 +104,4 @@ func (mlr *grpsIOMailingListReaderOrchestrator) GetGrpsIOMailingListsByProject(c
 	)
 
 	return mailingLists, nil
-}
-
-// NewGrpsIOMailingListReaderOrchestrator creates a new mailing list reader use case using the option pattern
-func NewGrpsIOMailingListReaderOrchestrator(opts ...grpsIOMailingListReaderOrchestratorOption) GrpsIOMailingListReader {
-	mlr := &grpsIOMailingListReaderOrchestrator{}
-	for _, opt := range opts {
-		opt(mlr)
-	}
-	if mlr.grpsIOMailingListReader == nil {
-		panic("grpsIOMailingListReader is required")
-	}
-	return mlr
 }

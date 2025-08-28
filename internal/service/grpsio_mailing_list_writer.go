@@ -11,36 +11,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-// GrpsIOMailingListWriterOrchestrator orchestrates mailing list creation with comprehensive validation
-type GrpsIOMailingListWriterOrchestrator struct {
-	storage          port.GrpsIOReaderWriter
-	entityReader     port.EntityAttributeReader
-	messagePublisher port.MessagePublisher
-}
-
-// NewGrpsIOMailingListWriterOrchestrator creates a new mailing list writer orchestrator
-func NewGrpsIOMailingListWriterOrchestrator(
-	storage port.GrpsIOReaderWriter,
-	entityReader port.EntityAttributeReader,
-	messagePublisher port.MessagePublisher,
-) *GrpsIOMailingListWriterOrchestrator {
-	return &GrpsIOMailingListWriterOrchestrator{
-		storage:          storage,
-		entityReader:     entityReader,
-		messagePublisher: messagePublisher,
-	}
-}
-
 // CreateGrpsIOMailingList creates a new mailing list with comprehensive validation and messaging
-func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
+func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "orchestrator: creating mailing list",
 		"group_name", request.GroupName,
-		"parent_uid", request.ParentUID,
+		"parent_uid", request.ServiceUID,
 		"committee_uid", request.CommitteeUID)
 
 	// For rollback purposes
@@ -50,7 +29,7 @@ func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx conte
 	)
 	defer func() {
 		if err := recover(); err != nil || rollbackRequired {
-			ml.deleteMailingListKeys(ctx, keys, true)
+			ml.deleteKeys(ctx, keys, true)
 		}
 	}()
 
@@ -100,7 +79,7 @@ func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx conte
 	}
 
 	// Step 8: Create mailing list in storage
-	createdMailingList, err := ml.storage.CreateGrpsIOMailingList(ctx, request)
+	createdMailingList, _, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list in storage", "error", err)
 		rollbackRequired = true
@@ -108,8 +87,18 @@ func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx conte
 	}
 	keys = append(keys, createdMailingList.UID)
 
+	// Step 8.1: Create secondary indices for the mailing list
+	secondaryKeys, err := ml.createMailingListSecondaryIndices(ctx, createdMailingList)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create mailing list secondary indices", "error", err)
+		rollbackRequired = true
+		return nil, err
+	}
+	// Add secondary keys to rollback list
+	keys = append(keys, secondaryKeys...)
+
 	// Step 9: Publish messages concurrently (indexer + access control)
-	if err := ml.publishMessages(ctx, createdMailingList); err != nil {
+	if err := ml.publishMailingListMessages(ctx, createdMailingList); err != nil {
 		// Log warning but don't fail the operation - mailing list is already created
 		slog.WarnContext(ctx, "failed to publish messages", "error", err, "mailing_list_uid", createdMailingList.UID)
 	}
@@ -117,7 +106,7 @@ func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx conte
 	slog.InfoContext(ctx, "mailing list created successfully",
 		"mailing_list_uid", createdMailingList.UID,
 		"group_name", createdMailingList.GroupName,
-		"parent_uid", createdMailingList.ParentUID,
+		"parent_uid", createdMailingList.ServiceUID,
 		"public", createdMailingList.Public,
 		"committee_based", createdMailingList.IsCommitteeBased())
 
@@ -125,30 +114,34 @@ func (ml *GrpsIOMailingListWriterOrchestrator) CreateGrpsIOMailingList(ctx conte
 }
 
 // validateAndInheritFromParent validates parent service exists and inherits metadata
-func (ml *GrpsIOMailingListWriterOrchestrator) validateAndInheritFromParent(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOService, error) {
-	slog.DebugContext(ctx, "validating parent service", "parent_uid", request.ParentUID)
+func (ml *grpsIOWriterOrchestrator) validateAndInheritFromParent(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "validating parent service", "parent_uid", request.ServiceUID)
 
 	// Get parent service from storage
-	parentService, _, err := ml.storage.GetGrpsIOService(ctx, request.ParentUID)
+	parentService, _, err := ml.grpsIOReader.GetGrpsIOService(ctx, request.ServiceUID)
 	if err != nil {
-		slog.WarnContext(ctx, "parent service validation failed", "parent_uid", request.ParentUID, "error", err)
+		slog.WarnContext(ctx, "parent service validation failed", "parent_uid", request.ServiceUID, "error", err)
 		return nil, errors.NewNotFound("parent service not found")
 	}
 
-	// Inherit project UID from parent service
+	// Inherit project metadata from parent service
 	request.ProjectUID = parentService.ProjectUID
+	request.ProjectName = parentService.ProjectName
+	request.ProjectSlug = parentService.ProjectSlug
 
 	slog.DebugContext(ctx, "parent service validated successfully",
-		"parent_uid", request.ParentUID,
+		"parent_uid", request.ServiceUID,
 		"parent_type", parentService.Type,
 		"project_uid", parentService.ProjectUID,
+		"project_name", parentService.ProjectName,
+		"project_slug", parentService.ProjectSlug,
 		"prefix", parentService.Prefix)
 
 	return parentService, nil
 }
 
 // validateAndPopulateCommittee validates committee exists and populates committee metadata
-func (ml *GrpsIOMailingListWriterOrchestrator) validateAndPopulateCommittee(ctx context.Context, request *model.GrpsIOMailingList, projectID string) error {
+func (ml *grpsIOWriterOrchestrator) validateAndPopulateCommittee(ctx context.Context, request *model.GrpsIOMailingList, projectID string) error {
 	if request.CommitteeUID == "" {
 		// No committee specified, validation not needed
 		return nil
@@ -179,35 +172,34 @@ func (ml *GrpsIOMailingListWriterOrchestrator) validateAndPopulateCommittee(ctx 
 	return nil
 }
 
-
 // reserveMailingListConstraints reserves unique constraints for mailing list creation
-func (ml *GrpsIOMailingListWriterOrchestrator) reserveMailingListConstraints(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
+func (ml *grpsIOWriterOrchestrator) reserveMailingListConstraints(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
 	// For mailing lists, we have one constraint type: unique group name within parent service
-	return ml.storage.UniqueMailingListGroupName(ctx, mailingList)
+	return ml.grpsIOWriter.UniqueMailingListGroupName(ctx, mailingList)
 }
 
-// publishMessages publishes indexer and access control messages concurrently
-func (ml *GrpsIOMailingListWriterOrchestrator) publishMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
+// publishMailingListMessages publishes indexer and access control messages concurrently
+func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
 	slog.DebugContext(ctx, "publishing messages for mailing list",
 		"mailing_list_uid", mailingList.UID)
 
 	// Build indexer message
-	indexerMessage, err := ml.buildIndexerMessage(ctx, mailingList)
+	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList)
 	if err != nil {
 		return fmt.Errorf("failed to build indexer message: %w", err)
 	}
 
 	// Build access control message
-	accessMessage := ml.buildAccessControlMessage(mailingList)
+	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
 
 	// Publish indexer message
-	if err := ml.messagePublisher.Indexer(ctx, "mailing-list.created", indexerMessage); err != nil {
+	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, indexerMessage); err != nil {
 		slog.ErrorContext(ctx, "failed to publish indexer message", "error", err)
 		return fmt.Errorf("failed to publish indexer message: %w", err)
 	}
 
 	// Publish access control message
-	if err := ml.messagePublisher.Access(ctx, "mailing-list.access", accessMessage); err != nil {
+	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
 		slog.ErrorContext(ctx, "failed to publish access control message", "error", err)
 		return fmt.Errorf("failed to publish access control message: %w", err)
 	}
@@ -220,21 +212,22 @@ func (ml *GrpsIOMailingListWriterOrchestrator) publishMessages(ctx context.Conte
 	return nil
 }
 
-// buildIndexerMessage builds an indexer message for search capabilities
-func (ml *GrpsIOMailingListWriterOrchestrator) buildIndexerMessage(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.IndexerMessage, error) {
+// buildMailingListIndexerMessage builds an indexer message for search capabilities
+func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.IndexerMessage, error) {
 	indexerMessage := &model.IndexerMessage{
 		Action: model.ActionCreated,
-		Tags:   ml.buildMessageTags(mailingList),
+		Tags:   mailingList.Tags(),
 	}
 
 	// Build the message with proper context and authorization headers
 	return indexerMessage.Build(ctx, mailingList)
 }
 
-// buildAccessControlMessage builds an access control message for OpenFGA
-func (ml *GrpsIOMailingListWriterOrchestrator) buildAccessControlMessage(mailingList *model.GrpsIOMailingList) *model.AccessMessage {
+// buildMailingListAccessControlMessage builds an access control message for OpenFGA
+func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailingList *model.GrpsIOMailingList) *model.AccessMessage {
 	references := map[string]string{
 		constants.RelationProject: mailingList.ProjectUID, // Required for project inheritance
+		constants.RelationService: mailingList.ServiceUID, // Required for service-level permission inheritance
 	}
 
 	// Add committee reference for committee-based lists (enables committee-level authorization)
@@ -244,116 +237,37 @@ func (ml *GrpsIOMailingListWriterOrchestrator) buildAccessControlMessage(mailing
 
 	return &model.AccessMessage{
 		UID:        mailingList.UID,
-		ObjectType: mailingList.GetAccessControlObjectType(),
+		ObjectType: "groupsio_mailing_list",
 		Public:     mailingList.Public,    // Using Public bool instead of Visibility
 		Relations:  map[string][]string{}, // Reserved for future use
 		References: references,
 	}
 }
 
-// buildMessageTags builds tags for indexer message to enable faceted search
-func (ml *GrpsIOMailingListWriterOrchestrator) buildMessageTags(mailingList *model.GrpsIOMailingList) []string {
-	tags := []string{
-		fmt.Sprintf("project_uid:%s", mailingList.ProjectUID),
-		fmt.Sprintf("parent_uid:%s", mailingList.ParentUID),
-		fmt.Sprintf("type:%s", mailingList.Type),
-		fmt.Sprintf("public:%t", mailingList.Public),
-	}
-
-	// Add committee tag if committee-based
-	if mailingList.CommitteeUID != "" {
-		tags = append(tags, fmt.Sprintf("committee:%s", mailingList.CommitteeUID))
-	}
-
-	// Add committee filter tags
-	for _, filter := range mailingList.CommitteeFilters {
-		tags = append(tags, fmt.Sprintf("committee_filter:%s", filter))
-	}
-
-	return tags
-}
-
-// deleteMailingListKeys removes keys by getting their revision and deleting them
-// This is used both for rollback scenarios and cleanup of mailing lists
-func (ml *GrpsIOMailingListWriterOrchestrator) deleteMailingListKeys(ctx context.Context, keys []string, isRollback bool) {
-	if len(keys) == 0 {
-		return
-	}
-
-	slog.DebugContext(ctx, "deleting mailing list keys",
-		"keys", keys,
-		"is_rollback", isRollback,
-	)
-
-	for _, key := range keys {
-		// Get revision first, then delete (same pattern as service)
-		var rev uint64
-		var errGet error
-
-		// Check if this is a mailing list UID or a constraint key
-		if ml.isMailingListUID(key) {
-			// This is a mailing list UID - delete the mailing list directly
-			err := ml.storage.DeleteGrpsIOMailingList(ctx, key)
-			if err != nil {
-				slog.ErrorContext(ctx, "failed to delete mailing list",
-					"key", key,
-					"error", err,
-					"is_rollback", isRollback,
-				)
-			} else {
-				slog.DebugContext(ctx, "successfully deleted mailing list",
-					"mailing_list_uid", key,
-					"is_rollback", isRollback,
-				)
-			}
-		} else {
-			// This is a constraint key - get revision and delete
-			rev, errGet = ml.storage.GetKeyRevision(ctx, key)
-			if errGet != nil {
-				slog.ErrorContext(ctx, "failed to get revision for key deletion",
-					"key", key,
-					"error", errGet,
-					"is_rollback", isRollback,
-				)
-				continue
-			}
-
-			err := ml.storage.Delete(ctx, key, rev)
-			if err != nil {
-				slog.ErrorContext(ctx, "failed to delete constraint key",
-					"key", key,
-					"error", err,
-					"is_rollback", isRollback,
-				)
-			} else {
-				slog.DebugContext(ctx, "successfully deleted constraint key",
-					"constraint_key", key,
-					"is_rollback", isRollback,
-				)
-			}
-		}
-	}
-
-	slog.DebugContext(ctx, "mailing list key deletion completed",
-		"keys_count", len(keys),
-		"is_rollback", isRollback,
-	)
-}
-
-// isMailingListUID checks if a key is a mailing list UID (UUIDs) vs constraint key (prefixed)
-func (ml *GrpsIOMailingListWriterOrchestrator) isMailingListUID(key string) bool {
-	// Constraint keys start with "lookup:" prefix, UIDs are UUIDs with dashes
-	return len(key) == 36 && key[8] == '-' && key[13] == '-' && key[18] == '-' && key[23] == '-'
-}
-
 // UpdateGrpsIOMailingList updates an existing mailing list (TODO: implement in future PR)
-func (ml *GrpsIOMailingListWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
+func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
 	// TODO: Implement in future PR for PUT endpoint
 	return nil, errors.NewServiceUnavailable("update mailing list not implemented yet")
 }
 
+// createMailingListSecondaryIndices creates all secondary indices for the mailing list in the orchestrator layer
+func (ml *grpsIOWriterOrchestrator) createMailingListSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
+	// Use CreateSecondaryIndices method from the storage layer interface
+	createdKeys, err := ml.grpsIOWriter.CreateSecondaryIndices(ctx, mailingList)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create secondary indices", "error", err)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "secondary indices created successfully",
+		"mailing_list_uid", mailingList.UID,
+		"indices_created", createdKeys)
+
+	return createdKeys, nil
+}
+
 // DeleteGrpsIOMailingList deletes a mailing list (TODO: implement in future PR)
-func (ml *GrpsIOMailingListWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
+func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
 	// TODO: Implement in future PR for DELETE endpoint
 	return errors.NewServiceUnavailable("delete mailing list not implemented yet")
 }

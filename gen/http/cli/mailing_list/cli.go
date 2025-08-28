@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service)
+	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|create-grpsio-mailing-list)
 `
 }
 
@@ -71,6 +71,11 @@ func ParseEndpoint(
 		mailingListDeleteGrpsioServiceVersionFlag     = mailingListDeleteGrpsioServiceFlags.String("version", "", "")
 		mailingListDeleteGrpsioServiceBearerTokenFlag = mailingListDeleteGrpsioServiceFlags.String("bearer-token", "", "")
 		mailingListDeleteGrpsioServiceIfMatchFlag     = mailingListDeleteGrpsioServiceFlags.String("if-match", "", "")
+
+		mailingListCreateGrpsioMailingListFlags           = flag.NewFlagSet("create-grpsio-mailing-list", flag.ExitOnError)
+		mailingListCreateGrpsioMailingListBodyFlag        = mailingListCreateGrpsioMailingListFlags.String("body", "REQUIRED", "")
+		mailingListCreateGrpsioMailingListVersionFlag     = mailingListCreateGrpsioMailingListFlags.String("version", "", "")
+		mailingListCreateGrpsioMailingListBearerTokenFlag = mailingListCreateGrpsioMailingListFlags.String("bearer-token", "", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
 	mailingListLivezFlags.Usage = mailingListLivezUsage
@@ -79,6 +84,7 @@ func ParseEndpoint(
 	mailingListGetGrpsioServiceFlags.Usage = mailingListGetGrpsioServiceUsage
 	mailingListUpdateGrpsioServiceFlags.Usage = mailingListUpdateGrpsioServiceUsage
 	mailingListDeleteGrpsioServiceFlags.Usage = mailingListDeleteGrpsioServiceUsage
+	mailingListCreateGrpsioMailingListFlags.Usage = mailingListCreateGrpsioMailingListUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -132,6 +138,9 @@ func ParseEndpoint(
 			case "delete-grpsio-service":
 				epf = mailingListDeleteGrpsioServiceFlags
 
+			case "create-grpsio-mailing-list":
+				epf = mailingListCreateGrpsioMailingListFlags
+
 			}
 
 		}
@@ -173,6 +182,9 @@ func ParseEndpoint(
 			case "delete-grpsio-service":
 				endpoint = c.DeleteGrpsioService()
 				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
+			case "create-grpsio-mailing-list":
+				endpoint = c.CreateGrpsioMailingList()
+				data, err = mailinglistc.BuildCreateGrpsioMailingListPayload(*mailingListCreateGrpsioMailingListBodyFlag, *mailingListCreateGrpsioMailingListVersionFlag, *mailingListCreateGrpsioMailingListBearerTokenFlag)
 			}
 		}
 	}
@@ -197,6 +209,7 @@ COMMAND:
     get-grpsio-service: Get groupsIO service details by ID
     update-grpsio-service: Update GroupsIO service
     delete-grpsio-service: Delete GroupsIO service
+    create-grpsio-mailing-list: Create GroupsIO mailing list/subgroup with comprehensive validation
 
 Additional help:
     %[1]s mailing-list COMMAND --help
@@ -318,5 +331,39 @@ Delete GroupsIO service
 
 Example:
     %[1]s mailing-list delete-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+`, os.Args[0])
+}
+
+func mailingListCreateGrpsioMailingListUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-mailing-list -body JSON -version STRING -bearer-token STRING
+
+Create GroupsIO mailing list/subgroup with comprehensive validation
+    -body JSON: 
+    -version STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list create-grpsio-mailing-list --body '{
+      "auditors": [
+         "auditor_user_id1",
+         "auditor_user_id2"
+      ],
+      "committee_filters": [
+         "voting_rep",
+         "alt_voting_rep"
+      ],
+      "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "description": "Technical steering committee discussions",
+      "group_name": "technical-steering-committee",
+      "public": false,
+      "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "subject_tag": "[TSC]",
+      "title": "Technical Steering Committee",
+      "type": "discussion_moderated",
+      "writers": [
+         "manager_user_id1",
+         "manager_user_id2"
+      ]
+   }' --version "1" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }

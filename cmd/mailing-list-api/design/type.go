@@ -128,6 +128,15 @@ func ProjectNameAttribute() {
 	})
 }
 
+// ProjectSlugAttribute is the DSL attribute for project slug (read-only).
+func ProjectSlugAttribute() {
+	dsl.Attribute("project_slug", dsl.String, "Project slug identifier (read-only)", func() {
+		dsl.Format(dsl.FormatRegexp)
+		dsl.Pattern(`^[a-z][a-z0-9_\-]*[a-z0-9]$`)
+		dsl.Example("cncf")
+	})
+}
+
 // WritersAttribute is the DSL attribute for service writers.
 func WritersAttribute() {
 	dsl.Attribute("writers", dsl.ArrayOf(dsl.String), "Manager user IDs who can edit/modify this service", func() {
@@ -235,7 +244,7 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 	dsl.Required("message")
 })
 
-// MailingListBaseAttributes is the DSL attributes for a GroupsIO mailing list base.
+// MailingListBaseAttributes defines attributes for mailing list requests (CREATE/UPDATE) - excludes project_uid.
 func MailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
 		dsl.Example("technical-steering-committee")
@@ -269,18 +278,11 @@ func MailingListBaseAttributes() {
 	dsl.Attribute("subject_tag", dsl.String, "Subject tag prefix", func() {
 		dsl.Example("[TSC]")
 	})
-	dsl.Attribute("parent_uid", dsl.String, "Parent service UUID", func() {
-		dsl.Format(dsl.FormatUUID)
-		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
-	})
-	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
+	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
 		dsl.Format(dsl.FormatUUID)
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 
-	// Audit trail attributes (optional)
-	WritersAttribute()
-	AuditorsAttribute()
 }
 
 // MailingListUIDAttribute is the DSL attribute for mailing list UID.
@@ -297,10 +299,21 @@ var MailingListFull = dsl.Type("mailing-list-full", func() {
 
 	MailingListUIDAttribute()
 	MailingListBaseAttributes()
+
+	// project_uid only appears in responses (inherited from parent service)
+	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+
+	ProjectNameAttribute()
+	ProjectSlugAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
 	LastReviewedAtAttribute()
 	LastReviewedByAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 })
 
 // MailingListWithReadonlyAttributes is the DSL type for a mailing list with readonly attributes.
@@ -309,6 +322,17 @@ var MailingListWithReadonlyAttributes = dsl.Type("mailing-list-with-readonly-att
 
 	MailingListUIDAttribute()
 	MailingListBaseAttributes()
+
+	// project_uid only appears in responses (inherited from parent service)
+	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+
+	ProjectNameAttribute()
+	ProjectSlugAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 })

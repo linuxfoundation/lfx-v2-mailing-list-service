@@ -27,9 +27,11 @@ type GrpsIOMailingList struct {
 	CommitteeFilters []string `json:"committee_filters"` // Committee member filters (optional)
 	Description      string   `json:"description"`       // Minimum 11 characters
 	Title            string   `json:"title"`
-	SubjectTag       string   `json:"subject_tag"` // Optional
-	ParentUID        string   `json:"parent_uid"`  // Parent service UUID (required)
-	ProjectUID       string   `json:"project_uid"` // Inherited from parent service
+	SubjectTag       string   `json:"subject_tag"`  // Optional
+	ServiceUID       string   `json:"service_uid"`  // Service UUID (required)
+	ProjectUID       string   `json:"project_uid"`  // Inherited from parent service
+	ProjectName      string   `json:"project_name"` // Inherited from parent service
+	ProjectSlug      string   `json:"project_slug"` // Inherited from parent service
 
 	// Audit trail fields (following GrpsIOService pattern)
 	LastReviewedAt *string  `json:"last_reviewed_at"` // Nullable timestamp
@@ -102,7 +104,7 @@ func (ml *GrpsIOMailingList) ValidateBasicFields() error {
 	}
 
 	// Parent ID validation
-	if ml.ParentUID == "" {
+	if ml.ServiceUID == "" {
 		return errors.NewValidation("parent_id is required")
 	}
 
@@ -154,26 +156,16 @@ func (ml *GrpsIOMailingList) IsCommitteeBased() bool {
 	return ml.CommitteeUID != "" || len(ml.CommitteeFilters) > 0
 }
 
-// IsPublic returns true if the mailing list is publicly accessible
-func (ml *GrpsIOMailingList) IsPublic() bool {
-	return ml.Public
-}
-
-// GetAccessControlObjectType returns the OpenFGA object type for this mailing list
-func (ml *GrpsIOMailingList) GetAccessControlObjectType() string {
-	return "groupsio_mailing_list"
-}
-
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
 func (ml *GrpsIOMailingList) BuildIndexKey(ctx context.Context) string {
 	// Combine parent_id and group_name for uniqueness constraint
-	data := fmt.Sprintf("%s|%s", ml.ParentUID, ml.GroupName)
+	data := fmt.Sprintf("%s|%s", ml.ServiceUID, ml.GroupName)
 
 	hash := sha256.Sum256([]byte(data))
 	key := hex.EncodeToString(hash[:])
 
 	slog.DebugContext(ctx, "mailing list index key built",
-		"parent_uid", ml.ParentUID,
+		"parent_uid", ml.ServiceUID,
 		"group_name", ml.GroupName,
 		"key", key,
 	)
@@ -194,23 +186,32 @@ func (ml *GrpsIOMailingList) Tags() []string {
 		tags = append(tags, tag)
 	}
 
-	if ml.ParentUID != "" {
-		tag := fmt.Sprintf("parent_uid:%s", ml.ParentUID)
-		tags = append(tags, tag)
-	}
-
-	if ml.UID != "" {
-		tag := fmt.Sprintf("groupsio_mailing_list_uid:%s", ml.UID)
+	if ml.ServiceUID != "" {
+		tag := fmt.Sprintf("groupsio_service_uid:%s", ml.ServiceUID)
 		tags = append(tags, tag)
 	}
 
 	if ml.Type != "" {
-		tag := fmt.Sprintf("mailing_list_type:%s", ml.Type)
+		tag := fmt.Sprintf("type:%s", ml.Type)
 		tags = append(tags, tag)
 	}
 
+	// Add public tag
+	tag := fmt.Sprintf("public:%t", ml.Public)
+	tags = append(tags, tag)
+
+	// Add committee tag if committee-based
 	if ml.CommitteeUID != "" {
-		tag := fmt.Sprintf("committee:%s", ml.CommitteeUID)
+		tags = append(tags, fmt.Sprintf("committee_uid:%s", ml.CommitteeUID))
+	}
+
+	// Add committee filter tags
+	for _, filter := range ml.CommitteeFilters {
+		tags = append(tags, fmt.Sprintf("committee_filter:%s", filter))
+	}
+
+	if ml.UID != "" {
+		tag := fmt.Sprintf("groupsio_mailing_list_uid:%s", ml.UID)
 		tags = append(tags, tag)
 	}
 

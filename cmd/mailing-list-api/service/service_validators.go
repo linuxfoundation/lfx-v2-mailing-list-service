@@ -203,3 +203,40 @@ func validateEmailAddresses(emails []string, fieldName string) error {
 	}
 	return nil
 }
+
+// validateMailingListCreation validates mailing list creation payload
+func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailingListPayload) error {
+	if payload == nil {
+		return errors.NewValidation("payload is required")
+	}
+
+	// Group name length validation (like old ITX service - max 34 chars)
+	if len(payload.GroupName) > 34 {
+		return errors.NewValidation("group name is too long (maximum 34 characters)")
+	}
+
+	// Committee filters validation
+	if len(payload.CommitteeFilters) > 0 && (payload.CommitteeUID == nil || *payload.CommitteeUID == "") {
+		return errors.NewValidation("committee must not be empty if committee_filters is non-empty")
+	}
+
+	// Validate committee filter values
+	validFilters := []string{"voting_rep", "alt_voting_rep", "observer", "emeritus"}
+	for _, filter := range payload.CommitteeFilters {
+		if !contains(validFilters, filter) {
+			return errors.NewValidation(fmt.Sprintf("invalid committee_filter: %s. Valid values: %v", filter, validFilters))
+		}
+	}
+
+	return nil
+}
+
+// contains checks if a string slice contains a specific string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
