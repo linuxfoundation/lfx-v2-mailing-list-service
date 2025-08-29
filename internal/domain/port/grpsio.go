@@ -7,10 +7,10 @@ import (
 	"context"
 )
 
-// GrpsIOServiceReaderWriter provides access to service reading and writing operations
-type GrpsIOServiceReaderWriter interface {
-	GrpsIOServiceReader
-	GrpsIOServiceWriter
+// GrpsIOReaderWriter combines all reader and writer operations for services and mailing lists
+type GrpsIOReaderWriter interface {
+	GrpsIOReader
+	GrpsIOWriter
 
 	// IsReady checks if the storage is ready by verifying the connection
 	IsReady(ctx context.Context) error

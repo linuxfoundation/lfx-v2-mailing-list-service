@@ -186,6 +186,41 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	// Mailing List Management endpoints
+	dsl.Method("create-grpsio-mailing-list", func() {
+		dsl.Description("Create GroupsIO mailing list/subgroup with comprehensive validation")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+
+			MailingListBaseAttributes()
+
+			WritersAttribute()
+			AuditorsAttribute()
+
+			// Required fields for mailing list creation
+			dsl.Required("group_name", "public", "type", "description", "title", "service_uid")
+		})
+		dsl.Result(MailingListFull)
+		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid data, missing required fields, or validation failures")
+		dsl.Error("NotFound", NotFoundError, "Parent service not found or committee not found")
+		dsl.Error("Conflict", ConflictError, "Mailing list with same name already exists")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.POST("/groupsio/mailing-lists")
+			dsl.Param("version:v")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusCreated)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
 	// Serve the file gen/http/openapi3.json for requests sent to /openapi.json.
 	dsl.Files("/openapi.json", "gen/http/openapi3.json")
 })

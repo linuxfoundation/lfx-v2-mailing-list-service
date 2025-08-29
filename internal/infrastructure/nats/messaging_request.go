@@ -33,16 +33,20 @@ func (m *messageRequest) get(ctx context.Context, subject, uid string) (string, 
 
 }
 
-func (m *messageRequest) Slug(ctx context.Context, uid string) (string, error) {
+func (m *messageRequest) ProjectSlug(ctx context.Context, uid string) (string, error) {
 	return m.get(ctx, constants.ProjectGetSlugSubject, uid)
 }
 
-func (m *messageRequest) Name(ctx context.Context, uid string) (string, error) {
+func (m *messageRequest) ProjectName(ctx context.Context, uid string) (string, error) {
 	return m.get(ctx, constants.ProjectGetNameSubject, uid)
 }
 
-// NewMessageRequest creates a new project reader implementation using NATS messaging.
-func NewMessageRequest(client *NATSClient) port.ProjectReader {
+func (m *messageRequest) CommitteeName(ctx context.Context, uid string) (string, error) {
+	return m.get(ctx, constants.CommitteeGetNameSubject, uid)
+}
+
+// NewEntityAttributeReader creates a new entity attribute reader implementation using NATS messaging.
+func NewEntityAttributeReader(client *NATSClient) port.EntityAttributeReader {
 	return &messageRequest{
 		client: client,
 	}

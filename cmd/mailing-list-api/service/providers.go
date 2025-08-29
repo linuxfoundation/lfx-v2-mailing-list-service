@@ -20,8 +20,8 @@ import (
 )
 
 var (
-	natsStorageClient   port.GrpsIOServiceReaderWriter
-	natsMessagingClient port.ProjectReader
+	natsStorageClient   port.GrpsIOReaderWriter
+	natsMessagingClient port.EntityAttributeReader
 	natsPublisherClient port.MessagePublisher
 
 	natsDoOnce sync.Once
@@ -73,17 +73,17 @@ func natsInit(ctx context.Context) {
 			log.Fatalf("failed to create NATS client: %v", errNewClient)
 		}
 		natsStorageClient = nats.NewStorage(client)
-		natsMessagingClient = nats.NewMessageRequest(client)
-		natsPublisherClient = nats.NewGrpsIOServicePublisher(client)
+		natsMessagingClient = nats.NewEntityAttributeReader(client)
+		natsPublisherClient = nats.NewMessagePublisher(client)
 	})
 }
 
-func natsStorage(ctx context.Context) port.GrpsIOServiceReaderWriter {
+func natsStorage(ctx context.Context) port.GrpsIOReaderWriter {
 	natsInit(ctx)
 	return natsStorageClient
 }
 
-func natsMessaging(ctx context.Context) port.ProjectReader {
+func natsMessaging(ctx context.Context) port.EntityAttributeReader {
 	natsInit(ctx)
 	return natsMessagingClient
 }
@@ -125,9 +125,9 @@ func AuthService(ctx context.Context) port.Authenticator {
 	return authService
 }
 
-// ProjectRetriever initializes the project retriever implementation based on the repository source
-func ProjectRetriever(ctx context.Context) port.ProjectReader {
-	var projectReader port.ProjectReader
+// EntityAttributeRetriever initializes the entity attribute retriever implementation based on the repository source
+func EntityAttributeRetriever(ctx context.Context) port.EntityAttributeReader {
+	var entityReader port.EntityAttributeReader
 
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
@@ -137,27 +137,27 @@ func ProjectRetriever(ctx context.Context) port.ProjectReader {
 
 	switch repoSource {
 	case "mock":
-		slog.InfoContext(ctx, "initializing mock project retriever")
-		projectReader = infrastructure.NewMockProjectRetriever(infrastructure.NewMockRepository())
+		slog.InfoContext(ctx, "initializing mock entity attribute retriever")
+		entityReader = infrastructure.NewMockEntityAttributeReader(infrastructure.NewMockRepository())
 
 	case "nats":
-		slog.InfoContext(ctx, "initializing NATS project retriever")
+		slog.InfoContext(ctx, "initializing NATS entity attribute retriever")
 		natsClient := natsMessaging(ctx)
 		if natsClient == nil {
 			log.Fatalf("failed to initialize NATS client")
 		}
-		projectReader = natsClient
+		entityReader = natsClient
 
 	default:
-		log.Fatalf("unsupported project reader implementation: %s", repoSource)
+		log.Fatalf("unsupported entity attribute reader implementation: %s", repoSource)
 	}
 
-	return projectReader
+	return entityReader
 }
 
-// GrpsIOServiceReader initializes the service reader implementation
-func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
-	var grpsIOServiceReader port.GrpsIOServiceReader
+// GrpsIOReader initializes the service reader implementation
+func GrpsIOReader(ctx context.Context) port.GrpsIOReader {
+	var grpsIOReader port.GrpsIOReader
 
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
@@ -168,7 +168,7 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 	switch repoSource {
 	case "mock":
 		slog.InfoContext(ctx, "initializing mock grpsio service reader")
-		grpsIOServiceReader = infrastructure.NewMockGrpsIOServiceReader(infrastructure.NewMockRepository())
+		grpsIOReader = infrastructure.NewMockGrpsIOReader(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -176,17 +176,18 @@ func GrpsIOServiceReader(ctx context.Context) port.GrpsIOServiceReader {
 		if natsClient == nil {
 			log.Fatalf("failed to initialize NATS client")
 		}
-		grpsIOServiceReader = natsClient
+		grpsIOReader = natsClient
 
 	default:
 		log.Fatalf("unsupported service reader implementation: %s", repoSource)
 	}
 
-	return grpsIOServiceReader
+	return grpsIOReader
 }
 
-func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWriter {
-	var storage port.GrpsIOServiceReaderWriter
+// GrpsIOReaderWriter initializes the service reader writer implementation
+func GrpsIOReaderWriter(ctx context.Context) port.GrpsIOReaderWriter {
+	var storage port.GrpsIOReaderWriter
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
@@ -195,8 +196,8 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 
 	switch repoSource {
 	case "mock":
-		slog.InfoContext(ctx, "initializing mock grpsio service reader writer")
-		storage = infrastructure.NewMockGrpsIOServiceReaderWriter(infrastructure.NewMockRepository())
+		slog.InfoContext(ctx, "initializing mock grpsio storage reader writer")
+		storage = infrastructure.NewMockGrpsIOReaderWriter(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service")
@@ -213,9 +214,9 @@ func GrpsIOServiceReaderWriter(ctx context.Context) port.GrpsIOServiceReaderWrit
 	return storage
 }
 
-// GrpsIOServiceWriter initializes the service writer implementation
-func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
-	var grpsIOServiceWriter port.GrpsIOServiceWriter
+// GrpsIOWriter initializes the service writer implementation
+func GrpsIOWriter(ctx context.Context) port.GrpsIOWriter {
+	var grpsIOWriter port.GrpsIOWriter
 
 	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
@@ -226,7 +227,7 @@ func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
 	switch repoSource {
 	case "mock":
 		slog.InfoContext(ctx, "initializing mock grpsio service writer")
-		grpsIOServiceWriter = infrastructure.NewMockGrpsIOServiceWriter(infrastructure.NewMockRepository())
+		grpsIOWriter = infrastructure.NewMockGrpsIOWriter(infrastructure.NewMockRepository())
 
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS service writer")
@@ -234,13 +235,13 @@ func GrpsIOServiceWriter(ctx context.Context) port.GrpsIOServiceWriter {
 		if natsClient == nil {
 			log.Fatalf("failed to initialize NATS client")
 		}
-		grpsIOServiceWriter = natsClient
+		grpsIOWriter = natsClient
 
 	default:
 		log.Fatalf("unsupported service writer implementation: %s", repoSource)
 	}
 
-	return grpsIOServiceWriter
+	return grpsIOWriter
 }
 
 // MessagePublisher initializes the service publisher implementation
@@ -273,30 +274,26 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	return publisher
 }
 
-// GrpsIOServiceReaderOrchestrator initializes the service reader orchestrator
-func GrpsIOServiceReaderOrchestrator(ctx context.Context) service.GrpsIOServiceReader {
-	serviceReader := GrpsIOServiceReader(ctx)
+// GrpsIOReaderOrchestrator initializes the service reader orchestrator
+func GrpsIOReaderOrchestrator(ctx context.Context) service.GrpsIOReader {
+	grpsIOReader := GrpsIOReader(ctx)
 
-	slog.InfoContext(ctx, "initializing service reader orchestrator")
-
-	return service.NewGrpsIOServiceReaderOrchestrator(
-		service.WithServiceReader(serviceReader),
+	return service.NewGrpsIOReaderOrchestrator(
+		service.WithGrpsIOReader(grpsIOReader),
 	)
 }
 
-// GrpsIOServiceWriterOrchestrator initializes the service writer orchestrator
-func GrpsIOServiceWriterOrchestrator(ctx context.Context) service.GrpsIOServiceWriter {
-	serviceWriter := GrpsIOServiceWriter(ctx)
-	serviceReader := GrpsIOServiceReader(ctx)
-	projectReader := ProjectRetriever(ctx)
+// GrpsIOWriterOrchestrator initializes the service writer orchestrator  
+func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
+	grpsIOWriter := GrpsIOWriter(ctx)
+	grpsIOReader := GrpsIOReader(ctx)
+	entityReader := EntityAttributeRetriever(ctx)
 	publisher := MessagePublisher(ctx)
 
-	slog.InfoContext(ctx, "initializing service writer orchestrator with concurrent message publishing")
-
-	return service.NewGrpsIOServiceWriterOrchestrator(
-		service.WithServiceWriter(serviceWriter),
-		service.WithGrpsIOServiceReader(serviceReader),
-		service.WithProjectRetriever(projectReader),
+	return service.NewGrpsIOWriterOrchestrator(
+		service.WithGrpsIOWriter(grpsIOWriter),
+		service.WithGrpsIOWriterReader(grpsIOReader),
+		service.WithEntityAttributeReader(entityReader),
 		service.WithPublisher(publisher),
 	)
 }

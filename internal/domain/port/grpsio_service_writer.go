@@ -11,6 +11,8 @@ import (
 
 // GrpsIOServiceWriter defines the interface for service write operations
 type GrpsIOServiceWriter interface {
+	BaseGrpsIOWriter
+
 	// CreateGrpsIOService creates a new service and returns the service with revision
 	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error)
 
@@ -29,10 +31,4 @@ type GrpsIOServiceWriter interface {
 
 	// UniqueProjectGroupID validates that the group_id is unique within the project for shared services
 	UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error)
-
-	// GetKeyRevision retrieves the revision for a given key (used for cleanup operations)
-	GetKeyRevision(ctx context.Context, key string) (uint64, error)
-
-	// Delete removes a key with the given revision (used for cleanup and rollback)
-	Delete(ctx context.Context, key string, revision uint64) error
 }

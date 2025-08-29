@@ -40,6 +40,34 @@ func (s *mailingListService) convertCreatePayloadToDomain(p *mailinglistservice.
 	return service
 }
 
+// convertMailingListPayloadToDomain converts GOA mailing list payload to domain model
+func (s *mailingListService) convertMailingListPayloadToDomain(p *mailinglistservice.CreateGrpsioMailingListPayload) *model.GrpsIOMailingList {
+	// Check for nil payload to avoid panic
+	if p == nil {
+		return &model.GrpsIOMailingList{}
+	}
+
+	now := time.Now()
+	mailingList := &model.GrpsIOMailingList{
+		GroupName:        p.GroupName,
+		Public:           p.Public,
+		Type:             p.Type,
+		CommitteeUID:     payloadStringValue(p.CommitteeUID),
+		CommitteeFilters: p.CommitteeFilters,
+		Description:      p.Description,
+		Title:            p.Title,
+		SubjectTag:       payloadStringValue(p.SubjectTag),
+		ServiceUID:       p.ServiceUID,
+		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
+		Writers:   p.Writers,
+		Auditors:  p.Auditors,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	return mailingList
+}
+
 // convertUpdatePayloadToDomain converts GOA update payload to domain model
 // convertPayloadToUpdateBase
 func (s *mailingListService) convertUpdatePayloadToDomain(existing *model.GrpsIOService, p *mailinglistservice.UpdateGrpsioServicePayload) *model.GrpsIOService {

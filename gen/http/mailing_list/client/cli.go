@@ -11,6 +11,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"unicode/utf8"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	goa "goa.design/goa/v3/pkg"
@@ -291,6 +292,88 @@ func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, m
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
+// BuildCreateGrpsioMailingListPayload builds the payload for the mailing-list
+// create-grpsio-mailing-list endpoint from CLI flags.
+func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody string, mailingListCreateGrpsioMailingListVersion string, mailingListCreateGrpsioMailingListBearerToken string) (*mailinglist.CreateGrpsioMailingListPayload, error) {
+	var err error
+	var body CreateGrpsioMailingListRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"voting_rep\",\n         \"alt_voting_rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-z][a-z0-9-]*[a-z0-9]$"))
+		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
+		}
+		if body.CommitteeUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+		}
+		for _, e := range body.CommitteeFilters {
+			if !(e == "voting_rep" || e == "alt_voting_rep" || e == "observer" || e == "emeritus") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"voting_rep", "alt_voting_rep", "observer", "emeritus"}))
+			}
+		}
+		if utf8.RuneCountInString(body.Description) < 11 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", body.Description, utf8.RuneCountInString(body.Description), 11, true))
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListCreateGrpsioMailingListVersion != "" {
+			version = &mailingListCreateGrpsioMailingListVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListCreateGrpsioMailingListBearerToken != "" {
+			bearerToken = &mailingListCreateGrpsioMailingListBearerToken
+		}
+	}
+	v := &mailinglist.CreateGrpsioMailingListPayload{
+		GroupName:    body.GroupName,
+		Public:       body.Public,
+		Type:         body.Type,
+		CommitteeUID: body.CommitteeUID,
+		Description:  body.Description,
+		Title:        body.Title,
+		SubjectTag:   body.SubjectTag,
+		ServiceUID:   body.ServiceUID,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
+	v.Version = version
+	v.BearerToken = bearerToken
 
 	return v, nil
 }

@@ -8,13 +8,19 @@ package constants
 const (
 	// RelationProject defines the project relation used for inheritance
 	RelationProject = "project"
-	
+
+	// RelationCommittee defines the committee relation used for committee-based authorization
+	RelationCommittee = "committee"
+
+	// RelationService defines the parent service relation used for service-level authorization inheritance
+	RelationService = "groupsio_service"
+
 	// RelationViewer defines the viewer permission level
 	RelationViewer = "viewer"
-	
+
 	// RelationWriter defines the writer permission level
 	RelationWriter = "writer"
-	
+
 	// RelationOwner defines the owner permission level
 	RelationOwner = "owner"
 )

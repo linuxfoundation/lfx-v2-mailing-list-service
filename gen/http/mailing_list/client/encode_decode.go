@@ -798,3 +798,166 @@ func DecodeDeleteGrpsioServiceResponse(decoder func(*http.Response) goahttp.Deco
 		}
 	}
 }
+
+// BuildCreateGrpsioMailingListRequest instantiates a HTTP request object with
+// method and path set to call the "mailing-list" service
+// "create-grpsio-mailing-list" endpoint
+func (c *Client) BuildCreateGrpsioMailingListRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CreateGrpsioMailingListMailingListPath()}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("mailing-list", "create-grpsio-mailing-list", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeCreateGrpsioMailingListRequest returns an encoder for requests sent to
+// the mailing-list create-grpsio-mailing-list server.
+func EncodeCreateGrpsioMailingListRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*mailinglist.CreateGrpsioMailingListPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("mailing-list", "create-grpsio-mailing-list", "*mailinglist.CreateGrpsioMailingListPayload", v)
+		}
+		if p.BearerToken != nil {
+			head := *p.BearerToken
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		values := req.URL.Query()
+		if p.Version != nil {
+			values.Add("v", *p.Version)
+		}
+		req.URL.RawQuery = values.Encode()
+		body := NewCreateGrpsioMailingListRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("mailing-list", "create-grpsio-mailing-list", err)
+		}
+		return nil
+	}
+}
+
+// DecodeCreateGrpsioMailingListResponse returns a decoder for responses
+// returned by the mailing-list create-grpsio-mailing-list endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeCreateGrpsioMailingListResponse may return the following errors:
+//   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *mailinglist.ConflictError): http.StatusConflict
+//   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - error: internal error
+func DecodeCreateGrpsioMailingListResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusCreated:
+			var (
+				body CreateGrpsioMailingListResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			res := NewCreateGrpsioMailingListMailingListFullCreated(&body)
+			return res, nil
+		case http.StatusBadRequest:
+			var (
+				body CreateGrpsioMailingListBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			return nil, NewCreateGrpsioMailingListBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body CreateGrpsioMailingListConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			return nil, NewCreateGrpsioMailingListConflict(&body)
+		case http.StatusInternalServerError:
+			var (
+				body CreateGrpsioMailingListInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			return nil, NewCreateGrpsioMailingListInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body CreateGrpsioMailingListNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			return nil, NewCreateGrpsioMailingListNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body CreateGrpsioMailingListServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			err = ValidateCreateGrpsioMailingListServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "create-grpsio-mailing-list", err)
+			}
+			return nil, NewCreateGrpsioMailingListServiceUnavailable(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "create-grpsio-mailing-list", resp.StatusCode, string(body))
+		}
+	}
+}

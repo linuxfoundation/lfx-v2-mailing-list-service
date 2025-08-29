@@ -22,6 +22,9 @@ const (
 	ProjectGetSlugSubject = "project.get.slug"
 	// ProjectGetNameSubject is the NATS subject for getting project name
 	ProjectGetNameSubject = "project.get.name"
+
+	// CommitteeGetNameSubject is the NATS subject for getting committee name
+	CommitteeGetNameSubject = "lfx.committee-api.get_name"
 )
 
 // Environment variables
