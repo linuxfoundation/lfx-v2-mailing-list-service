@@ -248,14 +248,11 @@ func TestNewGrpsIOReaderOrchestrator(t *testing.T) {
 		validate func(*testing.T, GrpsIOReader)
 	}{
 		{
-			name:    "create with no options",
+			name:    "create with no options panics",
 			options: []grpsIOReaderOrchestratorOption{},
 			validate: func(t *testing.T, reader GrpsIOReader) {
-				assert.NotNil(t, reader)
-				// Test that it can be used (though it will have nil dependencies)
-				orchestrator, ok := reader.(*grpsIOReaderOrchestrator)
-				assert.True(t, ok)
-				assert.Nil(t, orchestrator.grpsIOReader)
+				// This should never be called since we expect a panic
+				t.Fatal("Expected panic but got reader")
 			},
 		},
 		{
@@ -274,11 +271,16 @@ func TestNewGrpsIOReaderOrchestrator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Execute
-			reader := NewGrpsIOReaderOrchestrator(tt.options...)
-
-			// Validate
-			tt.validate(t, reader)
+			if tt.name == "create with no options panics" {
+				assert.Panics(t, func() {
+					NewGrpsIOReaderOrchestrator(tt.options...)
+				}, "Expected panic when creating orchestrator without dependencies")
+			} else {
+				// Execute normally for other tests
+				reader := NewGrpsIOReaderOrchestrator(tt.options...)
+				// Validate
+				tt.validate(t, reader)
+			}
 		})
 	}
 }
