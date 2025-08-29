@@ -12,6 +12,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
@@ -1062,12 +1063,12 @@ func (m *MockRepository) CreateSecondaryIndices(ctx context.Context, mailingList
 
 	// Mock implementation - return mock keys that would be created
 	createdKeys := []string{
-		fmt.Sprintf("mailing-list-parent-%s", mailingList.ServiceUID),
-		fmt.Sprintf("mailing-list-project-%s", mailingList.ProjectUID),
+		fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID),
+		fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID),
 	}
 
 	if mailingList.CommitteeUID != "" {
-		createdKeys = append(createdKeys, fmt.Sprintf("mailing-list-committee-%s", mailingList.CommitteeUID))
+		createdKeys = append(createdKeys, fmt.Sprintf(constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID))
 	}
 
 	return createdKeys, nil

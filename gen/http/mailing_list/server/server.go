@@ -69,7 +69,7 @@ func New(
 			{"GetGrpsioService", "GET", "/groupsio/services/{uid}"},
 			{"UpdateGrpsioService", "PUT", "/groupsio/services/{uid}"},
 			{"DeleteGrpsioService", "DELETE", "/groupsio/services/{uid}"},
-			{"CreateGrpsioMailingList", "POST", "/groupsio/mailing-list"},
+			{"CreateGrpsioMailingList", "POST", "/groupsio/mailing-lists"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
 		Livez:                   NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
@@ -433,7 +433,7 @@ func MountCreateGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/groupsio/mailing-list", f)
+	mux.Handle("POST", "/groupsio/mailing-lists", f)
 }
 
 // NewCreateGrpsioMailingListHandler creates a HTTP handler which loads the

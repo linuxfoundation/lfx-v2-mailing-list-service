@@ -58,5 +58,10 @@ func NewGrpsIOReaderOrchestrator(opts ...grpsIOReaderOrchestratorOption) GrpsIOR
 		opt(rc)
 	}
 
+	// Fail fast if required dependency is missing
+	if rc.grpsIOReader == nil {
+		panic("grpsIOReader dependency is required")
+	}
+
 	return rc
 }

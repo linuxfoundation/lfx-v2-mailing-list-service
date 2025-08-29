@@ -15,6 +15,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
@@ -657,7 +658,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Relations:  map[string][]string{},
 				References: map[string]string{
 					"project": "project-1",
-					"groupsio_service": "service-1",
+					constants.RelationService: "service-1",
 				},
 			},
 		},
@@ -678,7 +679,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				References: map[string]string{
 					"project":   "project-2",
 					"committee": "committee-1",
-					"groupsio_service":   "service-2",
+					constants.RelationService:   "service-2",
 				},
 			},
 		},

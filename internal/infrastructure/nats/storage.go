@@ -324,12 +324,12 @@ func (s *storage) createUniqueConstraintInBucket(ctx context.Context, bucket, un
 // detectBucketForKey determines which bucket to use based on key prefix patterns
 func (s *storage) detectBucketForKey(key string) string {
 	// Check if key is a mailing list related key (secondary indices or constraint keys)
-	if strings.HasPrefix(key, "mailing-list-") {
+	if strings.HasPrefix(key, constants.MailingListKeyPrefix) {
 		return constants.KVBucketNameGrpsIOMailingLists
 	}
 
-	// Service constraint keys (lookup/grpsio_services/)
-	if strings.HasPrefix(key, "lookup/grpsio_services/") {
+	// Service constraint keys
+	if strings.HasPrefix(key, constants.ServiceLookupKeyPrefix) {
 		return constants.KVBucketNameGrpsIOServices
 	}
 
@@ -455,8 +455,12 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 
 	var createdKeys []string
 
+	// TODO: When implementing GetGrpsIOMailingListsByParent/Project/Committee methods,
+	// use kv.Keys(ctx, prefix) to scan for keys matching the pattern, then extract
+	// UIDs from key suffixes and batch fetch the mailing lists
+
 	// Parent index
-	parentKey := fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID)
+	parentKey := fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID) + "/" + mailingList.UID
 	_, err := kv.Create(ctx, parentKey, []byte(mailingList.UID))
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create parent index", "error", err, "key", parentKey)
@@ -465,7 +469,7 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	createdKeys = append(createdKeys, parentKey)
 
 	// Project index
-	projectKey := fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID)
+	projectKey := fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID) + "/" + mailingList.UID
 	_, err = kv.Create(ctx, projectKey, []byte(mailingList.UID))
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create project index", "error", err, "key", projectKey)
@@ -475,7 +479,7 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 
 	// Committee index (only if committee-based)
 	if mailingList.CommitteeUID != "" {
-		committeeKey := fmt.Sprintf(constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID)
+		committeeKey := fmt.Sprintf(constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID) + "/" + mailingList.UID
 		_, err = kv.Create(ctx, committeeKey, []byte(mailingList.UID))
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create committee index", "error", err, "key", committeeKey)

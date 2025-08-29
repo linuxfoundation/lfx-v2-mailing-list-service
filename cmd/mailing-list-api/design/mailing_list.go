@@ -209,7 +209,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.POST("/groupsio/mailing-list")
+			dsl.POST("/groupsio/mailing-lists")
 			dsl.Param("version:v")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusCreated)
