@@ -104,6 +104,10 @@ app:
   logLevel: debug
   # logAddSource is a boolean to determine if the log source should be added
   logAddSource: true
+  # authSource is the authentication source (jwt or mock)
+  authSource: jwt
+  # jwtAuthDisabledMockLocalPrincipal is used for local development to bypass JWT validation
+  jwtAuthDisabledMockLocalPrincipal: ""
   # jwt is the configuration for JWT authentication
   # audience is the intended audience for the JWT token
   audience: lfx-v2-mailing-list-service

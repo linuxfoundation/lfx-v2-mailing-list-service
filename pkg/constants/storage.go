@@ -15,18 +15,18 @@ const (
 	KVLookupGrpsIOServicePrefix = "lookup/grpsio_services/%s"
 
 	// Mailing list secondary index key patterns
-	// KVLookupMailingListParentPrefix is the key pattern for parent service index
-	KVLookupMailingListParentPrefix = "mailing-list-parent-%s"
+	// KVLookupMailingListServicePrefix is the key pattern for service index
+	KVLookupMailingListServicePrefix = "lookup/mailing-list-service/%s"
 	// KVLookupMailingListCommitteePrefix is the key pattern for committee index
-	KVLookupMailingListCommitteePrefix = "mailing-list-committee-%s"
+	KVLookupMailingListCommitteePrefix = "lookup/mailing-list-committee/%s"
 	// KVLookupMailingListProjectPrefix is the key pattern for project index
-	KVLookupMailingListProjectPrefix = "mailing-list-project-%s"
-	// KVLookupMailingListConstraintPrefix is the key pattern for uniqueness constraint (parent_id + group_name)
-	KVLookupMailingListConstraintPrefix = "mailing-list-name-%s-%s"
+	KVLookupMailingListProjectPrefix = "lookup/mailing-list-project/%s"
+	// KVLookupMailingListConstraintPrefix is the key pattern for uniqueness constraint (service_id + group_name)
+	KVLookupMailingListConstraintPrefix = "lookup/mailing-list-name/%s/%s"
 
 	// Key prefixes for bucket detection
 	// MailingListKeyPrefix is the common prefix for all mailing list related keys
-	MailingListKeyPrefix = "mailing-list-"
+	MailingListKeyPrefix = "lookup/mailing-list/"
 	// ServiceLookupKeyPrefix is the prefix for service lookup keys
 	ServiceLookupKeyPrefix = "lookup/grpsio_services/"
 )

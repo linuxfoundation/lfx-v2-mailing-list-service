@@ -35,31 +35,6 @@ spec:
             values:
               aud: {{ .Values.app.audience }}
 
-    # GroupsIO Mailing List endpoints
-    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:create"
-      match:
-        methods:
-          - POST
-        routes:
-          - path: /groupsio/mailing-list
-      execute:
-        - authenticator: oidc
-        - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
-        - contextualizer: oidc_contextualizer
-        {{- end }}
-        {{- if .Values.openfga.enabled }}
-        # TODO: update this authorizer check once we have a way to get the parent_uid from the request body.
-        # Check that user has writer permission on the parent service
-        - authorizer: allow_all
-        {{- else }}
-        - authorizer: allow_all
-        {{- end }}
-        - finalizer: create_jwt
-          config:
-            values:
-              aud: {{ .Values.app.audience }}
-
     - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:get"
       match:
         methods:
@@ -86,31 +61,6 @@ spec:
             values:
               aud: {{ .Values.app.audience }}
 
-    # GroupsIO Mailing List endpoints
-    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:create"
-      match:
-        methods:
-          - POST
-        routes:
-          - path: /groupsio/mailing-list
-      execute:
-        - authenticator: oidc
-        - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
-        - contextualizer: oidc_contextualizer
-        {{- end }}
-        {{- if .Values.openfga.enabled }}
-        # TODO: update this authorizer check once we have a way to get the parent_uid from the request body.
-        # Check that user has writer permission on the parent service
-        - authorizer: allow_all
-        {{- else }}
-        - authorizer: allow_all
-        {{- end }}
-        - finalizer: create_jwt
-          config:
-            values:
-              aud: {{ .Values.app.audience }}
-
     - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-services:update"
       match:
         methods:
@@ -129,31 +79,6 @@ spec:
             values:
               relation: writer
               object: "groupsio_service:{{ "{{- .Request.URL.Captures.uid -}}" }}"
-        {{- else }}
-        - authorizer: allow_all
-        {{- end }}
-        - finalizer: create_jwt
-          config:
-            values:
-              aud: {{ .Values.app.audience }}
-
-    # GroupsIO Mailing List endpoints
-    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:create"
-      match:
-        methods:
-          - POST
-        routes:
-          - path: /groupsio/mailing-list
-      execute:
-        - authenticator: oidc
-        - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
-        - contextualizer: oidc_contextualizer
-        {{- end }}
-        {{- if .Values.openfga.enabled }}
-        # TODO: update this authorizer check once we have a way to get the parent_uid from the request body.
-        # Check that user has writer permission on the parent service
-        - authorizer: allow_all
         {{- else }}
         - authorizer: allow_all
         {{- end }}
@@ -196,7 +121,7 @@ spec:
         methods:
           - POST
         routes:
-          - path: /groupsio/mailing-list
+          - path: /groupsio/mailing-lists
       execute:
         - authenticator: oidc
         - authenticator: anonymous_authenticator

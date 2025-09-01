@@ -459,14 +459,14 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	// use kv.Keys(ctx, prefix) to scan for keys matching the pattern, then extract
 	// UIDs from key suffixes and batch fetch the mailing lists
 
-	// Parent index
-	parentKey := fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID) + "/" + mailingList.UID
-	_, err := kv.Create(ctx, parentKey, []byte(mailingList.UID))
+	// Service index
+	serviceKey := fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID) + "/" + mailingList.UID
+	_, err := kv.Create(ctx, serviceKey, []byte(mailingList.UID))
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create parent index", "error", err, "key", parentKey)
-		return createdKeys, errs.NewServiceUnavailable("failed to create parent index")
+		slog.ErrorContext(ctx, "failed to create service index", "error", err, "key", serviceKey)
+		return createdKeys, errs.NewServiceUnavailable("failed to create service index")
 	}
-	createdKeys = append(createdKeys, parentKey)
+	createdKeys = append(createdKeys, serviceKey)
 
 	// Project index
 	projectKey := fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID) + "/" + mailingList.UID

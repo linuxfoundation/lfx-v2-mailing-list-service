@@ -221,7 +221,7 @@ func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailing
 	}
 
 	// Validate committee filter values
-	validFilters := []string{"voting_rep", "alt_voting_rep", "observer", "emeritus"}
+	validFilters := []string{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}
 	for _, filter := range payload.CommitteeFilters {
 		if !contains(validFilters, filter) {
 			return errors.NewValidation(fmt.Sprintf("invalid committee_filter: %s. Valid values: %v", filter, validFilters))

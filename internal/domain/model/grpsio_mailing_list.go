@@ -54,10 +54,11 @@ const (
 
 // Valid committee filters
 const (
-	CommitteeFilterVotingRep    = "voting_rep"
-	CommitteeFilterAltVotingRep = "alt_voting_rep"
-	CommitteeFilterObserver     = "observer"
-	CommitteeFilterEmeritus     = "emeritus"
+	CommitteeFilterVotingRep    = "Voting Rep"
+	CommitteeFilterAltVotingRep = "Alternate Voting Rep"
+	CommitteeFilterObserver     = "Observer"
+	CommitteeFilterEmeritus     = "Emeritus"
+	CommitteeFilterNone         = "None"
 )
 
 // ValidCommitteeFilters returns all valid committee filter values
@@ -67,6 +68,7 @@ func ValidCommitteeFilters() []string {
 		CommitteeFilterAltVotingRep,
 		CommitteeFilterObserver,
 		CommitteeFilterEmeritus,
+		CommitteeFilterNone,
 	}
 }
 

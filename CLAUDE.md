@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make docker-build` - Build Docker image
 - `make docker-run` - Run service in Docker container locally
 - `make helm-install` - Deploy to Kubernetes using Helm
+- `make helm-install-local` - Deploy to Kubernetes with mock authentication for local testing
 
 ## Architecture
 
@@ -96,9 +97,43 @@ Environment-based configuration for:
 - JWT_AUDIENCE and JWKS_URL for authentication
 - Service runs on port 8080 by default
 
-### Testing Environment Variables
+### Local Development & Testing
+
+#### Environment Variables
 For local testing with mocks:
 - `export NATS_URL=nats://localhost:4222`
 - `export AUTH_SOURCE=mock` 
 - `export REPOSITORY_SOURCE=mock`
 - `export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-user"`
+
+#### Local Kubernetes Deployment with Mock Authentication
+For comprehensive integration testing using local Kubernetes cluster:
+
+1. **Deploy with Mock Authentication**:
+   ```bash
+   make helm-install-local
+   ```
+   This deploys the service with:
+   - `AUTH_SOURCE=mock` - Bypasses JWT validation
+   - `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-super-admin` - Mock principal
+   - `openfga.enabled=false` - Disables authorization 
+   - `heimdall.enabled=false` - Bypasses middleware
+
+2. **Run Integration Tests**:
+   ```bash
+   ./scripts/integration_test_mailing_list.sh
+   ```
+
+3. **Test Individual Endpoints**:
+   ```bash
+   # Any Bearer token works with mock auth
+   curl -H "Authorization: Bearer mock-token" \
+        http://lfx-v2-mailing-list-service.lfx.svc.cluster.local:8080/services
+   ```
+
+#### Configuration Files
+- `values.yaml` - Production configuration (JWT authentication)
+- `values.local.yaml` - Local testing override (mock authentication)
+- Use `-f values.local.yaml` for local deployment only
+
+**⚠️ Security Warning**: Never use mock authentication in production environments.

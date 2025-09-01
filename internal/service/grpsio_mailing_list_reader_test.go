@@ -30,7 +30,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 		Type:             "discussion_open",
 		CommitteeUID:     "committee-1",
 		CommitteeName:    "Technical Advisory Committee",
-		CommitteeFilters: []string{"voting_rep", "observer"},
+		CommitteeFilters: []string{"Voting Rep", "Observer"},
 		Description:      "Development discussions and technical matters for the project",
 		Title:            "Development List",
 		SubjectTag:       "[DEV]",
@@ -71,7 +71,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 				assert.Equal(t, "discussion_open", mailingList.Type)
 				assert.Equal(t, "committee-1", mailingList.CommitteeUID)
 				assert.Equal(t, "Technical Advisory Committee", mailingList.CommitteeName)
-				assert.Equal(t, []string{"voting_rep", "observer"}, mailingList.CommitteeFilters)
+				assert.Equal(t, []string{"Voting Rep", "Observer"}, mailingList.CommitteeFilters)
 				assert.Equal(t, "Development discussions and technical matters for the project", mailingList.Description)
 				assert.Equal(t, "Development List", mailingList.Title)
 				assert.Equal(t, "[DEV]", mailingList.SubjectTag)
@@ -295,7 +295,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingListsByCommittee(t *testing.T) 
 			Type:             "discussion_moderated",
 			CommitteeUID:     committeeUID,
 			CommitteeName:    "Technical Committee",
-			CommitteeFilters: []string{"voting_rep"},
+			CommitteeFilters: []string{"Voting Rep"},
 			Description:      "Committee development discussions",
 			Title:            "Committee Development List",
 			ServiceUID:       "service-1",
@@ -312,7 +312,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingListsByCommittee(t *testing.T) 
 			Type:             "discussion_open",
 			CommitteeUID:     committeeUID,
 			CommitteeName:    "Technical Committee",
-			CommitteeFilters: []string{"voting_rep", "observer"},
+			CommitteeFilters: []string{"Voting Rep", "Observer"},
 			Description:      "General committee discussions",
 			Title:            "Committee General List",
 			ServiceUID:       "service-2",
@@ -376,11 +376,11 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingListsByCommittee(t *testing.T) 
 					case "committee-dev":
 						foundDev = true
 						assert.Equal(t, "discussion_moderated", ml.Type)
-						assert.Equal(t, []string{"voting_rep"}, ml.CommitteeFilters)
+						assert.Equal(t, []string{"Voting Rep"}, ml.CommitteeFilters)
 					case "committee-general":
 						foundGeneral = true
 						assert.Equal(t, "discussion_open", ml.Type)
-						assert.Equal(t, []string{"voting_rep", "observer"}, ml.CommitteeFilters)
+						assert.Equal(t, []string{"Voting Rep", "Observer"}, ml.CommitteeFilters)
 					}
 				}
 				assert.True(t, foundDev, "Expected to find 'committee-dev' mailing list")
@@ -612,7 +612,7 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 			Type:             "discussion_open",
 			CommitteeUID:     committeeUID,
 			CommitteeName:    "Integration Technical Committee",
-			CommitteeFilters: []string{"voting_rep", "observer"},
+			CommitteeFilters: []string{"Voting Rep", "Observer"},
 			Description:      "Integration development discussions and technical matters",
 			Title:            "Integration Development List",
 			SubjectTag:       "[INTEGRATION-DEV]",
@@ -688,7 +688,7 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 		assert.Equal(t, "integration-dev", mlsByCommittee[0].GroupName)
 		assert.Equal(t, committeeUID, mlsByCommittee[0].CommitteeUID)
 		assert.Equal(t, "Integration Technical Committee", mlsByCommittee[0].CommitteeName)
-		assert.Equal(t, []string{"voting_rep", "observer"}, mlsByCommittee[0].CommitteeFilters)
+		assert.Equal(t, []string{"Voting Rep", "Observer"}, mlsByCommittee[0].CommitteeFilters)
 
 		// Test retrieval by project
 		mlsByProject, err := reader.GetGrpsIOMailingListsByProject(ctx, projectUID)

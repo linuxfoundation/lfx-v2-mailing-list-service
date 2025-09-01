@@ -477,16 +477,17 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: emeritus
+                    example: Observer
                     enum:
-                        - voting_rep
-                        - alt_voting_rep
-                        - observer
-                        - emeritus
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
                 description: Committee member filters
                 example:
-                    - voting_rep
-                    - alt_voting_rep
+                    - Voting Rep
+                    - Alternate Voting Rep
             committee_uid:
                 type: string
                 description: Committee UUID for committee-based mailing lists
@@ -542,8 +543,8 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committee_filters:
-                - voting_rep
-                - alt_voting_rep
+                - Voting Rep
+                - Alternate Voting Rep
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -682,16 +683,17 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: emeritus
+                    example: Voting Rep
                     enum:
-                        - voting_rep
-                        - alt_voting_rep
-                        - observer
-                        - emeritus
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
                 description: Committee member filters
                 example:
-                    - voting_rep
-                    - alt_voting_rep
+                    - Voting Rep
+                    - Alternate Voting Rep
             committee_uid:
                 type: string
                 description: Committee UUID for committee-based mailing lists
@@ -786,8 +788,8 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committee_filters:
-                - voting_rep
-                - alt_voting_rep
+                - Voting Rep
+                - Alternate Voting Rep
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions

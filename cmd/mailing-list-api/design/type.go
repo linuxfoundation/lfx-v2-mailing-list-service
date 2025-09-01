@@ -264,9 +264,9 @@ func MailingListBaseAttributes() {
 	})
 	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
 		dsl.Elem(func() {
-			dsl.Enum("voting_rep", "alt_voting_rep", "observer", "emeritus")
+			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
 		})
-		dsl.Example([]string{"voting_rep", "alt_voting_rep"})
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
 	})
 	dsl.Attribute("description", dsl.String, "Mailing list description (minimum 11 characters)", func() {
 		dsl.MinLength(11)

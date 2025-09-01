@@ -1063,7 +1063,7 @@ func (m *MockRepository) CreateSecondaryIndices(ctx context.Context, mailingList
 
 	// Mock implementation - return mock keys that would be created
 	createdKeys := []string{
-		fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID),
+		fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID),
 		fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID),
 	}
 

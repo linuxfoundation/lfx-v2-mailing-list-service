@@ -1,0 +1,27 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+# Local development values override
+# This file configures the service for local testing with mock authentication
+# DO NOT USE IN PRODUCTION
+
+# app is the configuration for the application
+app:
+  # Use mock authentication for local testing
+  authSource: mock
+  # Mock principal for local development - bypasses JWT validation
+  jwtAuthDisabledMockLocalPrincipal: "test-super-admin"
+  # Enable debug logging for local development
+  logLevel: debug
+
+# Disable OpenFGA authorization for local testing
+openfga:
+  enabled: false
+
+# Disable Heimdall middleware for local testing
+heimdall:
+  enabled: false
+
+# Disable Authelia authentication for local testing
+authelia:
+  enabled: false

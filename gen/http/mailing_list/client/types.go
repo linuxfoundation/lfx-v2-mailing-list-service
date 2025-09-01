@@ -1231,8 +1231,8 @@ func ValidateCreateGrpsioMailingListResponseBody(body *CreateGrpsioMailingListRe
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
 	for _, e := range body.CommitteeFilters {
-		if !(e == "voting_rep" || e == "alt_voting_rep" || e == "observer" || e == "emeritus") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"voting_rep", "alt_voting_rep", "observer", "emeritus"}))
+		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
 		}
 	}
 	if body.Description != nil {

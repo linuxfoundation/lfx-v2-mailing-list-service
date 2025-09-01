@@ -349,8 +349,8 @@ Example:
          "auditor_user_id2"
       ],
       "committee_filters": [
-         "voting_rep",
-         "alt_voting_rep"
+         "Voting Rep",
+         "Alternate Voting Rep"
       ],
       "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "description": "Technical steering committee discussions",
