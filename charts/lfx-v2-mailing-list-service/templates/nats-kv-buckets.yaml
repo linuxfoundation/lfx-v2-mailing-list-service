@@ -19,8 +19,8 @@ spec:
   maxBytes: {{ .Values.nats.groupsio_services_kv_bucket.maxBytes }}
   compression: {{ .Values.nats.groupsio_services_kv_bucket.compression }}
 {{- end }}
-{{- if .Values.nats.groupsio_mailing_lists_kv_bucket.creation -}}
 ---
+{{- if .Values.nats.groupsio_mailing_lists_kv_bucket.creation -}}
 apiVersion: jetstream.nats.io/v1beta2
 kind: KeyValue
 metadata:
