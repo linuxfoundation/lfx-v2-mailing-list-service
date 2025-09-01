@@ -14,7 +14,3 @@ useDefault = true
         '''.*_test\.go$''',
         '''(go.mod|go.sum)$'''
     ]
-    regexes = [
-        # Exclude lines in CLAUDE.md that contain mock data
-        '''.*CLAUDE\.md.*mock.*'''
-    ] 
