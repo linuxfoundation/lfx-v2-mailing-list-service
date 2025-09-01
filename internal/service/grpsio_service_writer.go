@@ -11,65 +11,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-// GrpsIOServiceWriter defines the interface for service write operations
-type GrpsIOServiceWriter interface {
-	// CreateGrpsIOService creates a new service and returns the service with revision
-	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error)
-
-	// UpdateGrpsIOService updates an existing service with expected revision and returns updated service with new revision
-	UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error)
-
-	// DeleteGrpsIOService deletes a service by UID with expected revision
-	DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error
-}
-
-// grpsIOServiceWriterOrchestratorOption defines a function type for setting options
-type grpsIOServiceWriterOrchestratorOption func(*grpsIOServiceWriterOrchestrator)
-
-// WithServiceWriter sets the service writer
-func WithServiceWriter(writer port.GrpsIOServiceWriter) grpsIOServiceWriterOrchestratorOption {
-	return func(w *grpsIOServiceWriterOrchestrator) {
-		w.grpsIOServiceWriter = writer
-	}
-}
-
-// WithProjectRetriever sets the project reader
-func WithProjectRetriever(reader port.ProjectReader) grpsIOServiceWriterOrchestratorOption {
-	return func(w *grpsIOServiceWriterOrchestrator) {
-		w.projectReader = reader
-	}
-}
-
-// WithPublisher sets the publisher
-func WithPublisher(publisher port.MessagePublisher) grpsIOServiceWriterOrchestratorOption {
-	return func(w *grpsIOServiceWriterOrchestrator) {
-		w.publisher = publisher
-	}
-}
-
-// WithGrpsIOServiceReader sets the service reader for the writer orchestrator
-func WithGrpsIOServiceReader(reader port.GrpsIOServiceReader) grpsIOServiceWriterOrchestratorOption {
-	return func(w *grpsIOServiceWriterOrchestrator) {
-		w.grpsIOServiceReader = reader
-	}
-}
-
-// grpsIOServiceWriterOrchestrator orchestrates the service writing process
-type grpsIOServiceWriterOrchestrator struct {
-	grpsIOServiceWriter port.GrpsIOServiceWriter
-	grpsIOServiceReader port.GrpsIOServiceReader
-	projectReader       port.ProjectReader
-	publisher           port.MessagePublisher
-}
-
 // CreateGrpsIOService creates a new service with transactional operations and rollback
-func (sw *grpsIOServiceWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
+func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "executing create service use case",
 		"service_type", service.Type,
 		"service_domain", service.Domain,
@@ -121,7 +69,7 @@ func (sw *grpsIOServiceWriterOrchestrator) CreateGrpsIOService(ctx context.Conte
 	}
 
 	// Step 3: Create service in storage
-	createdService, revision, err := sw.grpsIOServiceWriter.CreateGrpsIOService(ctx, service)
+	createdService, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service",
 			"error", err,
@@ -140,7 +88,7 @@ func (sw *grpsIOServiceWriterOrchestrator) CreateGrpsIOService(ctx context.Conte
 
 	// Step 4: Publish messages (indexer and access control)
 	if sw.publisher != nil {
-		if err := sw.publishMessages(ctx, createdService, model.ActionCreated); err != nil {
+		if err := sw.publishServiceMessages(ctx, createdService, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish messages", "error", err)
 			// Don't rollback on message failure, service creation succeeded
 		}
@@ -150,7 +98,7 @@ func (sw *grpsIOServiceWriterOrchestrator) CreateGrpsIOService(ctx context.Conte
 }
 
 // UpdateGrpsIOService updates an existing service with transactional patterns
-func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
+func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "executing update service use case",
 		"service_uid", uid,
 		"expected_revision", expectedRevision,
@@ -206,7 +154,7 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 	)
 
 	// Retrieve existing service to merge data properly
-	existing, existingRevision, err := sw.grpsIOServiceReader.GetGrpsIOService(ctx, uid)
+	existing, existingRevision, err := sw.grpsIOReader.GetGrpsIOService(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing service",
 			"error", err,
@@ -229,7 +177,7 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 	sw.mergeServiceData(ctx, existing, service)
 
 	// Update service in storage
-	updatedService, revision, err := sw.grpsIOServiceWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
+	updatedService, revision, err := sw.grpsIOWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update service",
 			"error", err,
@@ -247,7 +195,7 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 
 	// Publish update messages
 	if sw.publisher != nil {
-		if err := sw.publishMessages(ctx, updatedService, model.ActionUpdated); err != nil {
+		if err := sw.publishServiceMessages(ctx, updatedService, model.ActionUpdated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish update messages", "error", err)
 			// Don't fail the update on message publishing errors
 		}
@@ -259,14 +207,14 @@ func (sw *grpsIOServiceWriterOrchestrator) UpdateGrpsIOService(ctx context.Conte
 }
 
 // DeleteGrpsIOService deletes a service with message publishing
-func (sw *grpsIOServiceWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error {
+func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error {
 	slog.DebugContext(ctx, "executing delete service use case",
 		"service_uid", uid,
 		"expected_revision", expectedRevision,
 	)
 
 	// Step 1: Retrieve existing service data to get all the information needed for cleanup
-	existing, existingRevision, err := sw.grpsIOServiceReader.GetGrpsIOService(ctx, uid)
+	existing, existingRevision, err := sw.grpsIOReader.GetGrpsIOService(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing service for deletion",
 			"error", err,
@@ -305,7 +253,7 @@ func (sw *grpsIOServiceWriterOrchestrator) DeleteGrpsIOService(ctx context.Conte
 	)
 
 	// Step 3: Delete the main service record
-	err = sw.grpsIOServiceWriter.DeleteGrpsIOService(ctx, uid, expectedRevision)
+	err = sw.grpsIOWriter.DeleteGrpsIOService(ctx, uid, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete service",
 			"error", err,
@@ -327,7 +275,7 @@ func (sw *grpsIOServiceWriterOrchestrator) DeleteGrpsIOService(ctx context.Conte
 
 	// Step 5: Publish delete messages
 	if sw.publisher != nil {
-		if err := sw.publishDeleteMessages(ctx, uid); err != nil {
+		if err := sw.publishServiceDeleteMessages(ctx, uid); err != nil {
 			slog.ErrorContext(ctx, "failed to publish delete messages", "error", err)
 		}
 	}
@@ -341,13 +289,13 @@ func (sw *grpsIOServiceWriterOrchestrator) DeleteGrpsIOService(ctx context.Conte
 }
 
 // validateAndPopulateProject validates project exists and populates project metadata
-func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx context.Context, service *model.GrpsIOService) error {
+func (sw *grpsIOWriterOrchestrator) validateAndPopulateProject(ctx context.Context, service *model.GrpsIOService) error {
 	if service.ProjectUID == "" {
 		return errors.NewValidation("project_uid is required")
 	}
 
 	// Fetch project slug
-	slug, err := sw.projectReader.Slug(ctx, service.ProjectUID)
+	slug, err := sw.entityReader.ProjectSlug(ctx, service.ProjectUID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve project slug",
 			"error", err,
@@ -357,7 +305,7 @@ func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx contex
 	}
 
 	// Fetch project name
-	name, err := sw.projectReader.Name(ctx, service.ProjectUID)
+	name, err := sw.entityReader.ProjectName(ctx, service.ProjectUID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve project name",
 			"error", err,
@@ -374,43 +322,55 @@ func (sw *grpsIOServiceWriterOrchestrator) validateAndPopulateProject(ctx contex
 }
 
 // reserveUniqueConstraints reserves unique constraints based on service type
-func (sw *grpsIOServiceWriterOrchestrator) reserveUniqueConstraints(ctx context.Context, service *model.GrpsIOService) (string, error) {
+func (sw *grpsIOWriterOrchestrator) reserveUniqueConstraints(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	switch service.Type {
 	case "primary":
 		// Primary service: unique by project only
-		return sw.grpsIOServiceWriter.UniqueProjectType(ctx, service)
+		return sw.grpsIOWriter.UniqueProjectType(ctx, service)
 	case "formation":
 		// Formation service: unique by project + prefix
-		return sw.grpsIOServiceWriter.UniqueProjectPrefix(ctx, service)
+		return sw.grpsIOWriter.UniqueProjectPrefix(ctx, service)
 	case "shared":
 		// Shared service: unique by project + group_id
-		return sw.grpsIOServiceWriter.UniqueProjectGroupID(ctx, service)
+		return sw.grpsIOWriter.UniqueProjectGroupID(ctx, service)
 	default:
 		slog.WarnContext(ctx, "unknown service type - no constraint validation", "type", service.Type)
 		return "", nil
 	}
 }
 
-// publishMessages publishes indexer and access control messages concurrently
-func (sw *grpsIOServiceWriterOrchestrator) publishMessages(ctx context.Context, service *model.GrpsIOService, action model.MessageAction) error {
+// publishServiceMessages publishes service-specific messages
+func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, service *model.GrpsIOService, action model.MessageAction) error {
 	if sw.publisher == nil {
-		slog.WarnContext(ctx, "publisher not available, skipping message publishing")
+		slog.WarnContext(ctx, "publisher not available, skipping service message publishing")
 		return nil
 	}
 
 	// Build indexer message
-	indexerMessage, err := sw.buildIndexerMessage(ctx, service, action, service.Tags())
+	indexerMessage := &model.IndexerMessage{
+		Action: action,
+		Tags:   service.Tags(),
+	}
+	builtIndexerMessage, err := indexerMessage.Build(ctx, service)
 	if err != nil {
-		return fmt.Errorf("failed to build indexer message: %w", err)
+		return fmt.Errorf("failed to build service indexer message: %w", err)
 	}
 
 	// Build access control message
-	accessMessage := sw.buildAccessControlMessage(ctx, service)
+	accessMessage := &model.AccessMessage{
+		UID:        service.UID,
+		ObjectType: "groupsio_service",
+		Public:     service.Public,
+		Relations:  map[string][]string{},
+		References: map[string]string{
+			constants.RelationProject: service.ProjectUID,
+		},
+	}
 
 	// Publish messages concurrently
 	messages := []func() error{
 		func() error {
-			return sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSubject, indexerMessage)
+			return sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSubject, builtIndexerMessage)
 		},
 		func() error {
 			return sw.publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMessage)
@@ -420,14 +380,14 @@ func (sw *grpsIOServiceWriterOrchestrator) publishMessages(ctx context.Context, 
 	// Execute all messages concurrently
 	errPublishingMessage := concurrent.NewWorkerPool(len(messages)).Run(ctx, messages...)
 	if errPublishingMessage != nil {
-		slog.ErrorContext(ctx, "failed to publish messages",
+		slog.ErrorContext(ctx, "failed to publish service messages",
 			"error", errPublishingMessage,
 			"service_id", service.UID,
 		)
 		return errPublishingMessage
 	}
 
-	slog.DebugContext(ctx, "messages published successfully",
+	slog.DebugContext(ctx, "service messages published successfully",
 		"service_id", service.UID,
 		"action", action,
 	)
@@ -435,23 +395,23 @@ func (sw *grpsIOServiceWriterOrchestrator) publishMessages(ctx context.Context, 
 	return nil
 }
 
-// publishDeleteMessages publishes delete messages concurrently
-func (sw *grpsIOServiceWriterOrchestrator) publishDeleteMessages(ctx context.Context, uid string) error {
+// publishServiceDeleteMessages publishes service delete messages concurrently
+func (sw *grpsIOWriterOrchestrator) publishServiceDeleteMessages(ctx context.Context, uid string) error {
 	if sw.publisher == nil {
-		slog.WarnContext(ctx, "publisher not available, skipping delete message publishing")
+		slog.WarnContext(ctx, "publisher not available, skipping service delete message publishing")
 		return nil
 	}
 
 	// For delete messages, we just need the UID
 	indexerMessage := &model.IndexerMessage{
 		Action: model.ActionDeleted,
-		Tags:   []string{}, // No tags needed for deletion
+		Tags:   []string{},
 	}
 
 	builtMessage, err := indexerMessage.Build(ctx, uid)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to build delete indexer message", "error", err, "service_uid", uid)
-		return fmt.Errorf("failed to build delete indexer message: %w", err)
+		slog.ErrorContext(ctx, "failed to build service delete indexer message", "error", err, "service_uid", uid)
+		return fmt.Errorf("failed to build service delete indexer message: %w", err)
 	}
 
 	// Publish delete messages concurrently
@@ -467,52 +427,19 @@ func (sw *grpsIOServiceWriterOrchestrator) publishDeleteMessages(ctx context.Con
 	// Execute all messages concurrently
 	errPublishingMessage := concurrent.NewWorkerPool(len(messages)).Run(ctx, messages...)
 	if errPublishingMessage != nil {
-		slog.ErrorContext(ctx, "failed to publish delete messages",
+		slog.ErrorContext(ctx, "failed to publish service delete messages",
 			"error", errPublishingMessage,
 			"service_uid", uid,
 		)
 		return errPublishingMessage
 	}
 
-	slog.DebugContext(ctx, "delete messages published successfully", "service_uid", uid)
+	slog.DebugContext(ctx, "service delete messages published successfully", "service_uid", uid)
 	return nil
 }
 
-// buildIndexerMessage builds an indexer message for the service
-func (sw *grpsIOServiceWriterOrchestrator) buildIndexerMessage(ctx context.Context, service *model.GrpsIOService, action model.MessageAction, tags []string) (*model.IndexerMessage, error) {
-	indexerMessage := &model.IndexerMessage{
-		Action: action,
-		Tags:   tags,
-	}
-
-	return indexerMessage.Build(ctx, service)
-}
-
-// buildAccessControlMessage builds an access control message for the service
-func (sw *grpsIOServiceWriterOrchestrator) buildAccessControlMessage(ctx context.Context, service *model.GrpsIOService) *model.AccessMessage {
-	message := &model.AccessMessage{
-		UID:        service.UID,
-		ObjectType: "groupsio_service",
-		Public:     service.Public,
-		// Relations is reserved for future use and is intentionally left empty
-		Relations: map[string][]string{},
-		References: map[string]string{
-			// project is required in the flow for inheritance
-			constants.RelationProject: service.ProjectUID,
-		},
-	}
-
-	slog.DebugContext(ctx, "building access control message",
-		"service_id", service.UID,
-		"public", service.Public,
-		"project_uid", service.ProjectUID,
-	)
-
-	return message
-}
-
 // mergeServiceData merges existing service data with updated fields
-func (sw *grpsIOServiceWriterOrchestrator) mergeServiceData(ctx context.Context, existing *model.GrpsIOService, updated *model.GrpsIOService) {
+func (sw *grpsIOWriterOrchestrator) mergeServiceData(ctx context.Context, existing *model.GrpsIOService, updated *model.GrpsIOService) {
 	// Preserve immutable fields
 	updated.UID = existing.UID
 	updated.CreatedAt = existing.CreatedAt
@@ -533,71 +460,3 @@ func (sw *grpsIOServiceWriterOrchestrator) mergeServiceData(ctx context.Context,
 	)
 }
 
-// deleteKeys removes keys by getting their revision and deleting them
-// This is used both for rollback scenarios and cleanup of stale keys
-func (sw *grpsIOServiceWriterOrchestrator) deleteKeys(ctx context.Context, keys []string, isRollback bool) {
-	if len(keys) == 0 {
-		return
-	}
-
-	slog.DebugContext(ctx, "deleting keys",
-		"keys", keys,
-		"is_rollback", isRollback,
-	)
-
-	for _, key := range keys {
-		// For service UIDs, use the reader interface; for constraint keys, get revision directly from storage
-		var rev uint64
-		var errGet error
-
-		// Try to get revision using reader interface first (for service UIDs)
-		if sw.grpsIOServiceReader != nil {
-			rev, errGet = sw.grpsIOServiceReader.GetRevision(ctx, key)
-		}
-
-		// If reader method fails, try the direct storage approach (for constraint keys)
-		if errGet != nil {
-			rev, errGet = sw.grpsIOServiceWriter.GetKeyRevision(ctx, key)
-		}
-
-		if errGet != nil {
-			slog.ErrorContext(ctx, "failed to get revision for key deletion",
-				"key", key,
-				"error", errGet,
-				"is_rollback", isRollback,
-			)
-			continue
-		}
-
-		err := sw.grpsIOServiceWriter.Delete(ctx, key, rev)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to delete key",
-				"key", key,
-				"error", err,
-				"is_rollback", isRollback,
-			)
-		} else {
-			slog.DebugContext(ctx, "successfully deleted key",
-				"key", key,
-				"is_rollback", isRollback,
-			)
-		}
-	}
-
-	slog.DebugContext(ctx, "key deletion completed",
-		"keys_count", len(keys),
-		"is_rollback", isRollback,
-	)
-}
-
-// NewGrpsIOServiceWriterOrchestrator creates a new service writer use case using the option pattern
-func NewGrpsIOServiceWriterOrchestrator(opts ...grpsIOServiceWriterOrchestratorOption) GrpsIOServiceWriter {
-	sw := &grpsIOServiceWriterOrchestrator{}
-	for _, opt := range opts {
-		opt(sw)
-	}
-	if sw.grpsIOServiceWriter == nil {
-		panic("grpsIOServiceWriter is required")
-	}
-	return sw
-}

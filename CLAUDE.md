@@ -86,6 +86,8 @@ Request-scoped data flows through context.Context:
 - Unit tests alongside source files (`*_test.go`)
 - Mock implementations in `internal/infrastructure/mock/`
 - Integration tests use testify/suite patterns
+- Run individual test: `go test -v ./path/to/package -run TestName`
+- Run with coverage: `go test -v -race -coverprofile=coverage.out ./...`
 - Always run `make test` before committing
 
 ### Configuration
@@ -93,3 +95,10 @@ Environment-based configuration for:
 - NATS_URL for messaging service connectivity  
 - JWT_AUDIENCE and JWKS_URL for authentication
 - Service runs on port 8080 by default
+
+### Testing Environment Variables
+For local testing with mocks:
+- `export NATS_URL=nats://localhost:4222`
+- `export AUTH_SOURCE=mock` 
+- `export REPOSITORY_SOURCE=mock`
+- `export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-user"`

@@ -12,7 +12,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-// messagingPublisher implements the GrpsIOServicePublisher interface using NATS
+// messagingPublisher implements the MessagePublisher interface using NATS
 type messagingPublisher struct {
 	client *NATSClient
 }
@@ -71,8 +71,8 @@ func (m *messagingPublisher) publish(ctx context.Context, subject string, messag
 	return nil
 }
 
-// NewGrpsIOServicePublisher creates a new GrpsIOServicePublisher using NATS
-func NewGrpsIOServicePublisher(client *NATSClient) port.MessagePublisher {
+// NewMessagePublisher creates a new MessagePublisher using NATS
+func NewMessagePublisher(client *NATSClient) port.MessagePublisher {
 	return &messagingPublisher{
 		client: client,
 	}

@@ -28,6 +28,8 @@ type Service interface {
 	UpdateGrpsioService(context.Context, *UpdateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error)
 	// Delete GroupsIO service
 	DeleteGrpsioService(context.Context, *DeleteGrpsioServicePayload) (err error)
+	// Create GroupsIO mailing list/subgroup with comprehensive validation
+	CreateGrpsioMailingList(context.Context, *CreateGrpsioMailingListPayload) (res *MailingListFull, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -50,7 +52,38 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [6]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service"}
+var MethodNames = [7]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list"}
+
+// CreateGrpsioMailingListPayload is the payload type of the mailing-list
+// service create-grpsio-mailing-list method.
+type CreateGrpsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// Mailing list group name
+	GroupName string
+	// Whether the mailing list is publicly accessible
+	Public bool
+	// Mailing list type
+	Type string
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string
+	// Committee member filters
+	CommitteeFilters []string
+	// Mailing list description (minimum 11 characters)
+	Description string
+	// Mailing list title
+	Title string
+	// Subject tag prefix
+	SubjectTag *string
+	// Service UUID
+	ServiceUID string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
 
 // CreateGrpsioServicePayload is the payload type of the mailing-list service
 // create-grpsio-service method.
@@ -118,6 +151,49 @@ type GetGrpsioServiceResult struct {
 	Service *ServiceWithReadonlyAttributes
 	// ETag header value
 	Etag *string
+}
+
+// MailingListFull is the result type of the mailing-list service
+// create-grpsio-mailing-list method.
+type MailingListFull struct {
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string
+	// Mailing list group name
+	GroupName *string
+	// Whether the mailing list is publicly accessible
+	Public bool
+	// Mailing list type
+	Type *string
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string
+	// Committee member filters
+	CommitteeFilters []string
+	// Mailing list description (minimum 11 characters)
+	Description *string
+	// Mailing list title
+	Title *string
+	// Subject tag prefix
+	SubjectTag *string
+	// Service UUID
+	ServiceUID *string
+	// LFXv2 Project UID (inherited from parent service)
+	ProjectUID *string
+	// Project name (read-only)
+	ProjectName *string
+	// Project slug identifier (read-only)
+	ProjectSlug *string
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
+	// The timestamp when the service was last reviewed in RFC3339 format
+	LastReviewedAt *string
+	// The user ID who last reviewed this service
+	LastReviewedBy *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
 }
 
 // ServiceFull is the result type of the mailing-list service

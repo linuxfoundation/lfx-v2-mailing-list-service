@@ -13,6 +13,77 @@ produces:
     - application/xml
     - application/gob
 paths:
+    /groupsio/mailing-lists:
+        post:
+            tags:
+                - mailing-list
+            summary: create-grpsio-mailing-list mailing-list
+            description: Create GroupsIO mailing list/subgroup with comprehensive validation
+            operationId: mailing-list#create-grpsio-mailing-list
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Create-Grpsio-Mailing-ListRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListCreateGrpsioMailingListRequestBody'
+                    required:
+                        - group_name
+                        - public
+                        - type
+                        - description
+                        - title
+                        - service_uid
+            responses:
+                "201":
+                    description: Created response.
+                    schema:
+                        $ref: '#/definitions/MailingListFull'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services:
         post:
             tags:
@@ -389,6 +460,108 @@ definitions:
             message: An internal server error occurred.
         required:
             - message
+    MailingListCreateGrpsioMailingListRequestBody:
+        title: MailingListCreateGrpsioMailingListRequestBody
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    type: string
+                    example: Occaecati nam.
+                description: Auditor user IDs who can audit this service
+                example:
+                    - auditor_user_id1
+                    - auditor_user_id2
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: emeritus
+                    enum:
+                        - voting_rep
+                        - alt_voting_rep
+                        - observer
+                        - emeritus
+                description: Committee member filters
+                example:
+                    - voting_rep
+                    - alt_voting_rep
+            committee_uid:
+                type: string
+                description: Committee UUID for committee-based mailing lists
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            description:
+                type: string
+                description: Mailing list description (minimum 11 characters)
+                example: Technical steering committee discussions
+                minLength: 11
+            group_name:
+                type: string
+                description: Mailing list group name
+                example: technical-steering-committee
+                pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+            public:
+                type: boolean
+                description: Whether the mailing list is publicly accessible
+                default: false
+                example: false
+            service_uid:
+                type: string
+                description: Service UUID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            subject_tag:
+                type: string
+                description: Subject tag prefix
+                example: '[TSC]'
+            title:
+                type: string
+                description: Mailing list title
+                example: Technical Steering Committee
+            type:
+                type: string
+                description: Mailing list type
+                example: discussion_moderated
+                enum:
+                    - announcement
+                    - discussion_moderated
+                    - discussion_open
+            writers:
+                type: array
+                items:
+                    type: string
+                    example: Tempora voluptas nam eaque et quas voluptatem.
+                description: Manager user IDs who can edit/modify this service
+                example:
+                    - manager_user_id1
+                    - manager_user_id2
+        example:
+            auditors:
+                - auditor_user_id1
+                - auditor_user_id2
+            committee_filters:
+                - voting_rep
+                - alt_voting_rep
+            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            description: Technical steering committee discussions
+            group_name: technical-steering-committee
+            public: false
+            service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            subject_tag: '[TSC]'
+            title: Technical Steering Committee
+            type: discussion_moderated
+            writers:
+                - manager_user_id1
+                - manager_user_id2
+        required:
+            - group_name
+            - public
+            - type
+            - description
+            - title
+            - service_uid
     MailingListCreateGrpsioServiceRequestBody:
         title: MailingListCreateGrpsioServiceRequestBody
         type: object
@@ -492,6 +665,148 @@ definitions:
         required:
             - type
             - project_uid
+    MailingListFull:
+        title: MailingListFull
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    type: string
+                    example: Quis magni qui non quis dolor voluptatem.
+                description: Auditor user IDs who can audit this service
+                example:
+                    - auditor_user_id1
+                    - auditor_user_id2
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: emeritus
+                    enum:
+                        - voting_rep
+                        - alt_voting_rep
+                        - observer
+                        - emeritus
+                description: Committee member filters
+                example:
+                    - voting_rep
+                    - alt_voting_rep
+            committee_uid:
+                type: string
+                description: Committee UUID for committee-based mailing lists
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            created_at:
+                type: string
+                description: The timestamp when the service was created (read-only)
+                example: "2023-01-15T10:30:00Z"
+                format: date-time
+            description:
+                type: string
+                description: Mailing list description (minimum 11 characters)
+                example: Technical steering committee discussions
+                minLength: 11
+            group_name:
+                type: string
+                description: Mailing list group name
+                example: technical-steering-committee
+                pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+            last_reviewed_at:
+                type: string
+                description: The timestamp when the service was last reviewed in RFC3339 format
+                example: "2025-08-04T09:00:00Z"
+                format: date-time
+            last_reviewed_by:
+                type: string
+                description: The user ID who last reviewed this service
+                example: user_id_12345
+            project_name:
+                type: string
+                description: Project name (read-only)
+                example: Cloud Native Computing Foundation
+            project_slug:
+                type: string
+                description: Project slug identifier (read-only)
+                example: cncf
+                format: regexp
+                pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+            project_uid:
+                type: string
+                description: LFXv2 Project UID (inherited from parent service)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            public:
+                type: boolean
+                description: Whether the mailing list is publicly accessible
+                default: false
+                example: false
+            service_uid:
+                type: string
+                description: Service UUID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            subject_tag:
+                type: string
+                description: Subject tag prefix
+                example: '[TSC]'
+            title:
+                type: string
+                description: Mailing list title
+                example: Technical Steering Committee
+            type:
+                type: string
+                description: Mailing list type
+                example: discussion_moderated
+                enum:
+                    - announcement
+                    - discussion_moderated
+                    - discussion_open
+            uid:
+                type: string
+                description: Mailing list UID -- unique identifier for the mailing list
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            updated_at:
+                type: string
+                description: The timestamp when the service was last updated (read-only)
+                example: "2023-06-20T14:45:30Z"
+                format: date-time
+            writers:
+                type: array
+                items:
+                    type: string
+                    example: Enim quis iure.
+                description: Manager user IDs who can edit/modify this service
+                example:
+                    - manager_user_id1
+                    - manager_user_id2
+        example:
+            auditors:
+                - auditor_user_id1
+                - auditor_user_id2
+            committee_filters:
+                - voting_rep
+                - alt_voting_rep
+            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            created_at: "2023-01-15T10:30:00Z"
+            description: Technical steering committee discussions
+            group_name: technical-steering-committee
+            last_reviewed_at: "2025-08-04T09:00:00Z"
+            last_reviewed_by: user_id_12345
+            project_name: Cloud Native Computing Foundation
+            project_slug: cncf
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            public: false
+            service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            subject_tag: '[TSC]'
+            title: Technical Steering Committee
+            type: discussion_moderated
+            uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            updated_at: "2023-06-20T14:45:30Z"
+            writers:
+                - manager_user_id1
+                - manager_user_id2
     MailingListGetGrpsioServiceResponseBody:
         title: MailingListGetGrpsioServiceResponseBody
         $ref: '#/definitions/ServiceWithReadonlyAttributes'

@@ -8,15 +8,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/mail"
-	"strings"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"goa.design/goa/v3/security"
@@ -24,19 +20,19 @@ import (
 
 // mailingListService is the implementation of the mailing list service.
 type mailingListService struct {
-	auth                            port.Authenticator
-	grpsIOServiceReaderOrchestrator service.GrpsIOServiceReader
-	grpsIOServiceWriterOrchestrator service.GrpsIOServiceWriter
-	storage                         port.GrpsIOServiceReaderWriter
+	auth                     port.Authenticator
+	grpsIOReaderOrchestrator service.GrpsIOServiceReader
+	grpsIOWriterOrchestrator service.GrpsIOWriter
+	storage                  port.GrpsIOReaderWriter
 }
 
 // NewMailingList returns the mailing list service implementation.
-func NewMailingList(auth port.Authenticator, grpsIOServiceReaderOrchestrator service.GrpsIOServiceReader, grpsIOServiceWriterOrchestrator service.GrpsIOServiceWriter, storage port.GrpsIOServiceReaderWriter) mailinglistservice.Service {
+func NewMailingList(auth port.Authenticator, grpsIOReaderOrchestrator service.GrpsIOServiceReader, grpsIOWriterOrchestrator service.GrpsIOWriter, storage port.GrpsIOReaderWriter) mailinglistservice.Service {
 	return &mailingListService{
-		auth:                            auth,
-		grpsIOServiceReaderOrchestrator: grpsIOServiceReaderOrchestrator,
-		grpsIOServiceWriterOrchestrator: grpsIOServiceWriterOrchestrator,
-		storage:                         storage,
+		auth:                     auth,
+		grpsIOReaderOrchestrator: grpsIOReaderOrchestrator,
+		grpsIOWriterOrchestrator: grpsIOWriterOrchestrator,
+		storage:                  storage,
 	}
 }
 
@@ -75,7 +71,7 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 	slog.DebugContext(ctx, "mailingListService.get-grpsio-service", "service_uid", payload.UID)
 
 	// Execute use case
-	service, revision, err := s.grpsIOServiceReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
+	service, revision, err := s.grpsIOReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get service", "error", err, "service_uid", payload.UID)
 		return nil, wrapError(ctx, err)
@@ -113,7 +109,7 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	domainService.UID = serviceUID
 
 	// Execute use case
-	createdService, revision, err := s.grpsIOServiceWriterOrchestrator.CreateGrpsIOService(ctx, domainService)
+	createdService, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOService(ctx, domainService)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service", "error", err, "service_type", payload.Type)
 		return nil, wrapError(ctx, err)
@@ -138,7 +134,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Retrieve existing service for immutability validation
-	existingService, _, err := s.grpsIOServiceReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
+	existingService, _, err := s.grpsIOReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing service for update validation", "error", err, "service_uid", payload.UID)
 		return nil, wrapError(ctx, err)
@@ -154,7 +150,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	domainService := s.convertUpdatePayloadToDomain(existingService, payload)
 
 	// Execute use case
-	updatedService, revision, err := s.grpsIOServiceWriterOrchestrator.UpdateGrpsIOService(ctx, *payload.UID, domainService, expectedRevision)
+	updatedService, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOService(ctx, *payload.UID, domainService, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update service", "error", err, "service_uid", payload.UID)
 		return nil, wrapError(ctx, err)
@@ -179,7 +175,7 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Retrieve existing service for deletion protection validation
-	existingService, _, err := s.grpsIOServiceReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
+	existingService, _, err := s.grpsIOReaderOrchestrator.GetGrpsIOService(ctx, *payload.UID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing service for delete validation", "error", err, "service_uid", payload.UID)
 		return wrapError(ctx, err)
@@ -192,7 +188,7 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Execute use case
-	err = s.grpsIOServiceWriterOrchestrator.DeleteGrpsIOService(ctx, *payload.UID, expectedRevision)
+	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOService(ctx, *payload.UID, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete service", "error", err, "service_uid", payload.UID)
 		return wrapError(ctx, err)
@@ -200,6 +196,37 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 
 	slog.InfoContext(ctx, "successfully deleted service", "service_uid", payload.UID, "service_type", existingService.Type)
 	return nil
+}
+
+// CreateGrpsioMailingList creates a new GroupsIO mailing list with comprehensive validation
+func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListPayload) (result *mailinglistservice.MailingListFull, err error) {
+	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list", "group_name", payload.GroupName, "service_uid", payload.ServiceUID)
+
+	// Validate mailing list creation requirements
+	if err := validateMailingListCreation(payload); err != nil {
+		slog.WarnContext(ctx, "mailing list creation validation failed", "error", err, "group_name", payload.GroupName)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Generate new UID for the mailing list
+	mailingListUID := uuid.New().String()
+
+	// Convert GOA payload to domain model
+	domainMailingList := s.convertMailingListPayloadToDomain(payload)
+	domainMailingList.UID = mailingListUID
+
+	// Execute use case
+	createdMailingList, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create mailing list", "error", err, "group_name", payload.GroupName)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	result = s.convertMailingListDomainToResponse(createdMailingList)
+
+	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID)
+	return result, nil
 }
 
 // Helper functions
@@ -218,166 +245,4 @@ func payloadInt64Value(val *int64) int64 {
 		return 0
 	}
 	return *val
-}
-
-// validateServiceCreationRules validates type-specific business rules for service creation
-func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
-	serviceType := payload.Type
-
-	switch serviceType {
-	case "primary":
-		return validatePrimaryRules(payload)
-	case "formation":
-		return validateFormationRules(payload)
-	case "shared":
-		return validateSharedRules(payload)
-	default:
-		return errors.NewValidation(fmt.Sprintf("invalid service type: %s. Must be one of: primary, formation, shared", serviceType))
-	}
-}
-
-// validatePrimaryRules validates rules for primary service type
-func validatePrimaryRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
-	// primary rules:
-	// - prefix must NOT be provided (will return 400 error)
-	// - global_owners must be provided and contain at least one valid email
-	// - No existing non-formation service for the project (TODO: implement project validation)
-
-	if payload.Prefix != nil && *payload.Prefix != "" {
-		return errors.NewValidation("prefix must not be provided for primary service type")
-	}
-
-	// global_owners is required for primary services
-	if len(payload.GlobalOwners) == 0 {
-		return errors.NewValidation("global_owners is required and must contain at least one email address for primary service type")
-	}
-
-	// Validate global_owners email addresses
-	if err := validateEmailAddresses(payload.GlobalOwners, "global_owners"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateFormationRules validates rules for formation service type
-func validateFormationRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
-	// formation rules:
-	// - prefix must be non-empty string
-
-	if payload.Prefix == nil || strings.TrimSpace(*payload.Prefix) == "" {
-		return errors.NewValidation("prefix is required and must be non-empty for formation service type")
-	}
-
-	// Validate global_owners email addresses if provided
-	if err := validateEmailAddresses(payload.GlobalOwners, "global_owners"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateSharedRules validates rules for shared service type
-func validateSharedRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
-	// shared rules:
-	// - prefix must be non-empty string
-	// - group_id must be valid Groups.io group ID
-	// - global_owners must NOT be provided (will return 400 error)
-
-	if payload.Prefix == nil || strings.TrimSpace(*payload.Prefix) == "" {
-		return errors.NewValidation("prefix is required and must be non-empty for shared service type")
-	}
-
-	if payload.GroupID == nil || *payload.GroupID <= 0 {
-		return errors.NewValidation("group_id is required and must be a valid Groups.io group ID for shared service type")
-	}
-
-	if len(payload.GlobalOwners) > 0 {
-		return errors.NewValidation("global_owners must not be provided for shared service type")
-	}
-
-	return nil
-}
-
-// validateUpdateImmutabilityConstraints validates that only mutable fields are being modified
-func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payload *mailinglistservice.UpdateGrpsioServicePayload) error {
-	// Immutable Fields: type, project_uid, prefix, domain, group_id, url, group_name
-	// Mutable Fields: global_owners, status, public only
-
-	if payload.Type != existing.Type {
-		return errors.NewValidation(fmt.Sprintf("field 'type' is immutable. Cannot change from '%s' to '%s'", existing.Type, payload.Type))
-	}
-
-	if payload.ProjectUID != existing.ProjectUID {
-		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, payload.ProjectUID))
-	}
-
-	// Check prefix immutability
-	if payload.Prefix != nil && *payload.Prefix != existing.Prefix {
-		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, *payload.Prefix))
-	}
-
-	// Check domain immutability
-	if payload.Domain != nil && *payload.Domain != existing.Domain {
-		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, *payload.Domain))
-	}
-
-	// Check group_id immutability
-	if payload.GroupID != nil && *payload.GroupID != existing.GroupID {
-		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, *payload.GroupID))
-	}
-
-	// Check url immutability
-	if payload.URL != nil && *payload.URL != existing.URL {
-		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, *payload.URL))
-	}
-
-	// Check group_name immutability
-	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
-		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, *payload.GroupName))
-	}
-
-	// Validate global_owners email addresses if being updated
-	if err := validateEmailAddresses(payload.GlobalOwners, "global_owners"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateDeleteProtectionRules validates deletion protection rules based on service type
-func validateDeleteProtectionRules(service *model.GrpsIOService) error {
-	// Delete Protection Rules:
-	// - primary services: Cannot be deleted (critical infrastructure protection)
-	// - formation/shared services: Can be deleted by owner only (TODO: implement owner check)
-
-	switch service.Type {
-	case "primary":
-		return errors.NewValidation("Primary services cannot be deleted as they are critical infrastructure components")
-	case "formation":
-		// TODO: Add owner permission check when OpenFGA integration is complete
-		// For now, allow deletion of formation services
-		slog.Debug("Allowing deletion of formation service", "service_id", service.UID, "type", service.Type)
-		return nil
-	case "shared":
-		// TODO: Add owner permission check when OpenFGA integration is complete
-		// For now, allow deletion of shared services
-		slog.Debug("Allowing deletion of shared service", "service_id", service.UID, "type", service.Type)
-		return nil
-	default:
-		return errors.NewValidation(fmt.Sprintf("Unknown service type '%s' - deletion not permitted", service.Type))
-	}
-}
-
-// validateEmailAddresses validates a slice of email addresses
-func validateEmailAddresses(emails []string, fieldName string) error {
-	if emails == nil {
-		return nil
-	}
-	for _, email := range emails {
-		if _, err := mail.ParseAddress(email); err != nil {
-			return errors.NewValidation(fmt.Sprintf("invalid email address in %s: %s", fieldName, email))
-		}
-	}
-	return nil
 }
