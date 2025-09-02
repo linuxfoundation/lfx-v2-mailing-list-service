@@ -92,7 +92,34 @@ type CreateGrpsioMailingListRequestBody struct {
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
 	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
-	// Mailing list description (minimum 11 characters)
+	// Mailing list description (11-500 characters)
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Mailing list title
+	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
+	// Subject tag prefix
+	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// Service UUID
+	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+}
+
+// UpdateGrpsioMailingListRequestBody is the type of the "mailing-list" service
+// "update-grpsio-mailing-list" endpoint HTTP request body.
+type UpdateGrpsioMailingListRequestBody struct {
+	// Mailing list group name
+	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Whether the mailing list is publicly accessible
+	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	// Mailing list type
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Committee member filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Mailing list description (11-500 characters)
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Mailing list title
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
@@ -221,7 +248,7 @@ type CreateGrpsioMailingListResponseBody struct {
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
 	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
-	// Mailing list description (minimum 11 characters)
+	// Mailing list description (11-500 characters)
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Mailing list title
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
@@ -243,6 +270,49 @@ type CreateGrpsioMailingListResponseBody struct {
 	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
 	// The user ID who last reviewed this service
 	LastReviewedBy *string `form:"last_reviewed_by,omitempty" json:"last_reviewed_by,omitempty" xml:"last_reviewed_by,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+}
+
+// GetGrpsioMailingListResponseBody is the type of the "mailing-list" service
+// "get-grpsio-mailing-list" endpoint HTTP response body.
+type GetGrpsioMailingListResponseBody MailingListWithReadonlyAttributesResponseBody
+
+// UpdateGrpsioMailingListResponseBody is the type of the "mailing-list"
+// service "update-grpsio-mailing-list" endpoint HTTP response body.
+type UpdateGrpsioMailingListResponseBody struct {
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
+	// Mailing list group name
+	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Whether the mailing list is publicly accessible
+	Public bool `form:"public" json:"public" xml:"public"`
+	// Mailing list type
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Committee member filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Mailing list description (11-500 characters)
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Mailing list title
+	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
+	// Subject tag prefix
+	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// Service UUID
+	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// LFXv2 Project UID (inherited from parent service)
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name (read-only)
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
+	// Project slug identifier (read-only)
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 	// Manager user IDs who can edit/modify this service
 	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
 	// Auditor user IDs who can audit this service
@@ -449,6 +519,118 @@ type CreateGrpsioMailingListServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetGrpsioMailingListBadRequestResponseBody is the type of the "mailing-list"
+// service "get-grpsio-mailing-list" endpoint HTTP response body for the
+// "BadRequest" error.
+type GetGrpsioMailingListBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "get-grpsio-mailing-list" endpoint HTTP response body
+// for the "InternalServerError" error.
+type GetGrpsioMailingListInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioMailingListNotFoundResponseBody is the type of the "mailing-list"
+// service "get-grpsio-mailing-list" endpoint HTTP response body for the
+// "NotFound" error.
+type GetGrpsioMailingListNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGrpsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-grpsio-mailing-list" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type GetGrpsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGrpsioMailingListBadRequestResponseBody is the type of the
+// "mailing-list" service "update-grpsio-mailing-list" endpoint HTTP response
+// body for the "BadRequest" error.
+type UpdateGrpsioMailingListBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGrpsioMailingListConflictResponseBody is the type of the
+// "mailing-list" service "update-grpsio-mailing-list" endpoint HTTP response
+// body for the "Conflict" error.
+type UpdateGrpsioMailingListConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGrpsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "update-grpsio-mailing-list" endpoint HTTP response
+// body for the "InternalServerError" error.
+type UpdateGrpsioMailingListInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGrpsioMailingListNotFoundResponseBody is the type of the
+// "mailing-list" service "update-grpsio-mailing-list" endpoint HTTP response
+// body for the "NotFound" error.
+type UpdateGrpsioMailingListNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGrpsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "update-grpsio-mailing-list" endpoint HTTP response
+// body for the "ServiceUnavailable" error.
+type UpdateGrpsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteGrpsioMailingListBadRequestResponseBody is the type of the
+// "mailing-list" service "delete-grpsio-mailing-list" endpoint HTTP response
+// body for the "BadRequest" error.
+type DeleteGrpsioMailingListBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteGrpsioMailingListConflictResponseBody is the type of the
+// "mailing-list" service "delete-grpsio-mailing-list" endpoint HTTP response
+// body for the "Conflict" error.
+type DeleteGrpsioMailingListConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteGrpsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "delete-grpsio-mailing-list" endpoint HTTP response
+// body for the "InternalServerError" error.
+type DeleteGrpsioMailingListInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteGrpsioMailingListNotFoundResponseBody is the type of the
+// "mailing-list" service "delete-grpsio-mailing-list" endpoint HTTP response
+// body for the "NotFound" error.
+type DeleteGrpsioMailingListNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteGrpsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "delete-grpsio-mailing-list" endpoint HTTP response
+// body for the "ServiceUnavailable" error.
+type DeleteGrpsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // ServiceWithReadonlyAttributesResponseBody is used to define fields on
 // response body types.
 type ServiceWithReadonlyAttributesResponseBody struct {
@@ -491,6 +673,45 @@ type ServiceWithReadonlyAttributesResponseBody struct {
 	LastAuditedBy *string `form:"last_audited_by,omitempty" json:"last_audited_by,omitempty" xml:"last_audited_by,omitempty"`
 	// The timestamp when the service was last audited
 	LastAuditedTime *string `form:"last_audited_time,omitempty" json:"last_audited_time,omitempty" xml:"last_audited_time,omitempty"`
+	// Manager user IDs who can edit/modify this service
+	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor user IDs who can audit this service
+	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+}
+
+// MailingListWithReadonlyAttributesResponseBody is used to define fields on
+// response body types.
+type MailingListWithReadonlyAttributesResponseBody struct {
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
+	// Mailing list group name
+	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Whether the mailing list is publicly accessible
+	Public bool `form:"public" json:"public" xml:"public"`
+	// Mailing list type
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Committee member filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Mailing list description (11-500 characters)
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Mailing list title
+	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
+	// Subject tag prefix
+	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// Service UUID
+	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// LFXv2 Project UID (inherited from parent service)
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name (read-only)
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
+	// Project slug identifier (read-only)
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 	// Manager user IDs who can edit/modify this service
 	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
 	// Auditor user IDs who can audit this service
@@ -668,6 +889,100 @@ func NewCreateGrpsioMailingListResponseBody(res *mailinglist.MailingListFull) *C
 		UpdatedAt:      res.UpdatedAt,
 		LastReviewedAt: res.LastReviewedAt,
 		LastReviewedBy: res.LastReviewedBy,
+	}
+	{
+		var zero bool
+		if body.Public == zero {
+			body.Public = false
+		}
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
+	}
+	if res.Writers != nil {
+		body.Writers = make([]string, len(res.Writers))
+		for i, val := range res.Writers {
+			body.Writers[i] = val
+		}
+	}
+	if res.Auditors != nil {
+		body.Auditors = make([]string, len(res.Auditors))
+		for i, val := range res.Auditors {
+			body.Auditors[i] = val
+		}
+	}
+	return body
+}
+
+// NewGetGrpsioMailingListResponseBody builds the HTTP response body from the
+// result of the "get-grpsio-mailing-list" endpoint of the "mailing-list"
+// service.
+func NewGetGrpsioMailingListResponseBody(res *mailinglist.GetGrpsioMailingListResult) *GetGrpsioMailingListResponseBody {
+	body := &GetGrpsioMailingListResponseBody{
+		UID:          res.MailingList.UID,
+		GroupName:    res.MailingList.GroupName,
+		Public:       res.MailingList.Public,
+		Type:         res.MailingList.Type,
+		CommitteeUID: res.MailingList.CommitteeUID,
+		Description:  res.MailingList.Description,
+		Title:        res.MailingList.Title,
+		SubjectTag:   res.MailingList.SubjectTag,
+		ServiceUID:   res.MailingList.ServiceUID,
+		ProjectUID:   res.MailingList.ProjectUID,
+		ProjectName:  res.MailingList.ProjectName,
+		ProjectSlug:  res.MailingList.ProjectSlug,
+		CreatedAt:    res.MailingList.CreatedAt,
+		UpdatedAt:    res.MailingList.UpdatedAt,
+	}
+	{
+		var zero bool
+		if body.Public == zero {
+			body.Public = false
+		}
+	}
+	if res.MailingList.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.MailingList.CommitteeFilters))
+		for i, val := range res.MailingList.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
+	}
+	if res.MailingList.Writers != nil {
+		body.Writers = make([]string, len(res.MailingList.Writers))
+		for i, val := range res.MailingList.Writers {
+			body.Writers[i] = val
+		}
+	}
+	if res.MailingList.Auditors != nil {
+		body.Auditors = make([]string, len(res.MailingList.Auditors))
+		for i, val := range res.MailingList.Auditors {
+			body.Auditors[i] = val
+		}
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListResponseBody builds the HTTP response body from
+// the result of the "update-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewUpdateGrpsioMailingListResponseBody(res *mailinglist.MailingListWithReadonlyAttributes) *UpdateGrpsioMailingListResponseBody {
+	body := &UpdateGrpsioMailingListResponseBody{
+		UID:          res.UID,
+		GroupName:    res.GroupName,
+		Public:       res.Public,
+		Type:         res.Type,
+		CommitteeUID: res.CommitteeUID,
+		Description:  res.Description,
+		Title:        res.Title,
+		SubjectTag:   res.SubjectTag,
+		ServiceUID:   res.ServiceUID,
+		ProjectUID:   res.ProjectUID,
+		ProjectName:  res.ProjectName,
+		ProjectSlug:  res.ProjectSlug,
+		CreatedAt:    res.CreatedAt,
+		UpdatedAt:    res.UpdatedAt,
 	}
 	{
 		var zero bool
@@ -945,6 +1260,146 @@ func NewCreateGrpsioMailingListServiceUnavailableResponseBody(res *mailinglist.S
 	return body
 }
 
+// NewGetGrpsioMailingListBadRequestResponseBody builds the HTTP response body
+// from the result of the "get-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewGetGrpsioMailingListBadRequestResponseBody(res *mailinglist.BadRequestError) *GetGrpsioMailingListBadRequestResponseBody {
+	body := &GetGrpsioMailingListBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioMailingListInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "get-grpsio-mailing-list" endpoint of
+// the "mailing-list" service.
+func NewGetGrpsioMailingListInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGrpsioMailingListInternalServerErrorResponseBody {
+	body := &GetGrpsioMailingListInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioMailingListNotFoundResponseBody builds the HTTP response body
+// from the result of the "get-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewGetGrpsioMailingListNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGrpsioMailingListNotFoundResponseBody {
+	body := &GetGrpsioMailingListNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGrpsioMailingListServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "get-grpsio-mailing-list" endpoint of
+// the "mailing-list" service.
+func NewGetGrpsioMailingListServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGrpsioMailingListServiceUnavailableResponseBody {
+	body := &GetGrpsioMailingListServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListBadRequestResponseBody builds the HTTP response
+// body from the result of the "update-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewUpdateGrpsioMailingListBadRequestResponseBody(res *mailinglist.BadRequestError) *UpdateGrpsioMailingListBadRequestResponseBody {
+	body := &UpdateGrpsioMailingListBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListConflictResponseBody builds the HTTP response body
+// from the result of the "update-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewUpdateGrpsioMailingListConflictResponseBody(res *mailinglist.ConflictError) *UpdateGrpsioMailingListConflictResponseBody {
+	body := &UpdateGrpsioMailingListConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "update-grpsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewUpdateGrpsioMailingListInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *UpdateGrpsioMailingListInternalServerErrorResponseBody {
+	body := &UpdateGrpsioMailingListInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListNotFoundResponseBody builds the HTTP response body
+// from the result of the "update-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewUpdateGrpsioMailingListNotFoundResponseBody(res *mailinglist.NotFoundError) *UpdateGrpsioMailingListNotFoundResponseBody {
+	body := &UpdateGrpsioMailingListNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGrpsioMailingListServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "update-grpsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewUpdateGrpsioMailingListServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *UpdateGrpsioMailingListServiceUnavailableResponseBody {
+	body := &UpdateGrpsioMailingListServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteGrpsioMailingListBadRequestResponseBody builds the HTTP response
+// body from the result of the "delete-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewDeleteGrpsioMailingListBadRequestResponseBody(res *mailinglist.BadRequestError) *DeleteGrpsioMailingListBadRequestResponseBody {
+	body := &DeleteGrpsioMailingListBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteGrpsioMailingListConflictResponseBody builds the HTTP response body
+// from the result of the "delete-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewDeleteGrpsioMailingListConflictResponseBody(res *mailinglist.ConflictError) *DeleteGrpsioMailingListConflictResponseBody {
+	body := &DeleteGrpsioMailingListConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteGrpsioMailingListInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "delete-grpsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewDeleteGrpsioMailingListInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *DeleteGrpsioMailingListInternalServerErrorResponseBody {
+	body := &DeleteGrpsioMailingListInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteGrpsioMailingListNotFoundResponseBody builds the HTTP response body
+// from the result of the "delete-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewDeleteGrpsioMailingListNotFoundResponseBody(res *mailinglist.NotFoundError) *DeleteGrpsioMailingListNotFoundResponseBody {
+	body := &DeleteGrpsioMailingListNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteGrpsioMailingListServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "delete-grpsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewDeleteGrpsioMailingListServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *DeleteGrpsioMailingListServiceUnavailableResponseBody {
+	body := &DeleteGrpsioMailingListServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateGrpsioServicePayload builds a mailing-list service
 // create-grpsio-service endpoint payload.
 func NewCreateGrpsioServicePayload(body *CreateGrpsioServiceRequestBody, version *string, bearerToken *string) *mailinglist.CreateGrpsioServicePayload {
@@ -1095,6 +1550,68 @@ func NewCreateGrpsioMailingListPayload(body *CreateGrpsioMailingListRequestBody,
 	return v
 }
 
+// NewGetGrpsioMailingListPayload builds a mailing-list service
+// get-grpsio-mailing-list endpoint payload.
+func NewGetGrpsioMailingListPayload(uid string, version *string, bearerToken *string) *mailinglist.GetGrpsioMailingListPayload {
+	v := &mailinglist.GetGrpsioMailingListPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewUpdateGrpsioMailingListPayload builds a mailing-list service
+// update-grpsio-mailing-list endpoint payload.
+func NewUpdateGrpsioMailingListPayload(body *UpdateGrpsioMailingListRequestBody, uid string, version *string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioMailingListPayload {
+	v := &mailinglist.UpdateGrpsioMailingListPayload{
+		GroupName:    *body.GroupName,
+		Public:       *body.Public,
+		Type:         *body.Type,
+		CommitteeUID: body.CommitteeUID,
+		Description:  *body.Description,
+		Title:        *body.Title,
+		SubjectTag:   body.SubjectTag,
+		ServiceUID:   *body.ServiceUID,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
+
+	return v
+}
+
+// NewDeleteGrpsioMailingListPayload builds a mailing-list service
+// delete-grpsio-mailing-list endpoint payload.
+func NewDeleteGrpsioMailingListPayload(uid string, version *string, bearerToken *string, ifMatch *string) *mailinglist.DeleteGrpsioMailingListPayload {
+	v := &mailinglist.DeleteGrpsioMailingListPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
+
+	return v
+}
+
 // ValidateCreateGrpsioServiceRequestBody runs the validations defined on
 // Create-Grpsio-ServiceRequestBody
 func ValidateCreateGrpsioServiceRequestBody(body *CreateGrpsioServiceRequestBody) (err error) {
@@ -1181,7 +1698,17 @@ func ValidateCreateGrpsioMailingListRequestBody(body *CreateGrpsioMailingListReq
 		err = goa.MergeErrors(err, goa.MissingFieldError("service_uid", "body"))
 	}
 	if body.GroupName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-z][a-z0-9-]*[a-z0-9]$"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$"))
+	}
+	if body.GroupName != nil {
+		if utf8.RuneCountInString(*body.GroupName) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 3, true))
+		}
+	}
+	if body.GroupName != nil {
+		if utf8.RuneCountInString(*body.GroupName) > 34 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
+		}
 	}
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
@@ -1199,6 +1726,104 @@ func ValidateCreateGrpsioMailingListRequestBody(body *CreateGrpsioMailingListReq
 	if body.Description != nil {
 		if utf8.RuneCountInString(*body.Description) < 11 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", *body.Description, utf8.RuneCountInString(*body.Description), 11, true))
+		}
+	}
+	if body.Description != nil {
+		if utf8.RuneCountInString(*body.Description) > 500 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", *body.Description, utf8.RuneCountInString(*body.Description), 500, false))
+		}
+	}
+	if body.Title != nil {
+		if utf8.RuneCountInString(*body.Title) < 5 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", *body.Title, utf8.RuneCountInString(*body.Title), 5, true))
+		}
+	}
+	if body.Title != nil {
+		if utf8.RuneCountInString(*body.Title) > 100 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", *body.Title, utf8.RuneCountInString(*body.Title), 100, false))
+		}
+	}
+	if body.SubjectTag != nil {
+		if utf8.RuneCountInString(*body.SubjectTag) > 50 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.subject_tag", *body.SubjectTag, utf8.RuneCountInString(*body.SubjectTag), 50, false))
+		}
+	}
+	if body.ServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", *body.ServiceUID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidateUpdateGrpsioMailingListRequestBody runs the validations defined on
+// Update-Grpsio-Mailing-ListRequestBody
+func ValidateUpdateGrpsioMailingListRequestBody(body *UpdateGrpsioMailingListRequestBody) (err error) {
+	if body.GroupName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	if body.Public == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("public", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.Title == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("title", "body"))
+	}
+	if body.ServiceUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_uid", "body"))
+	}
+	if body.GroupName != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$"))
+	}
+	if body.GroupName != nil {
+		if utf8.RuneCountInString(*body.GroupName) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 3, true))
+		}
+	}
+	if body.GroupName != nil {
+		if utf8.RuneCountInString(*body.GroupName) > 34 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
+		}
+	}
+	if body.Type != nil {
+		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
+		}
+	}
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+	}
+	for _, e := range body.CommitteeFilters {
+		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+		}
+	}
+	if body.Description != nil {
+		if utf8.RuneCountInString(*body.Description) < 11 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", *body.Description, utf8.RuneCountInString(*body.Description), 11, true))
+		}
+	}
+	if body.Description != nil {
+		if utf8.RuneCountInString(*body.Description) > 500 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", *body.Description, utf8.RuneCountInString(*body.Description), 500, false))
+		}
+	}
+	if body.Title != nil {
+		if utf8.RuneCountInString(*body.Title) < 5 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", *body.Title, utf8.RuneCountInString(*body.Title), 5, true))
+		}
+	}
+	if body.Title != nil {
+		if utf8.RuneCountInString(*body.Title) > 100 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", *body.Title, utf8.RuneCountInString(*body.Title), 100, false))
+		}
+	}
+	if body.SubjectTag != nil {
+		if utf8.RuneCountInString(*body.SubjectTag) > 50 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.subject_tag", *body.SubjectTag, utf8.RuneCountInString(*body.SubjectTag), 50, false))
 		}
 	}
 	if body.ServiceUID != nil {

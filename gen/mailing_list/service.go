@@ -30,6 +30,12 @@ type Service interface {
 	DeleteGrpsioService(context.Context, *DeleteGrpsioServicePayload) (err error)
 	// Create GroupsIO mailing list/subgroup with comprehensive validation
 	CreateGrpsioMailingList(context.Context, *CreateGrpsioMailingListPayload) (res *MailingListFull, err error)
+	// Get GroupsIO mailing list details by UID
+	GetGrpsioMailingList(context.Context, *GetGrpsioMailingListPayload) (res *GetGrpsioMailingListResult, err error)
+	// Update GroupsIO mailing list
+	UpdateGrpsioMailingList(context.Context, *UpdateGrpsioMailingListPayload) (res *MailingListWithReadonlyAttributes, err error)
+	// Delete GroupsIO mailing list
+	DeleteGrpsioMailingList(context.Context, *DeleteGrpsioMailingListPayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -52,7 +58,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [7]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list"}
+var MethodNames = [10]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list"}
 
 // CreateGrpsioMailingListPayload is the payload type of the mailing-list
 // service create-grpsio-mailing-list method.
@@ -71,7 +77,7 @@ type CreateGrpsioMailingListPayload struct {
 	CommitteeUID *string
 	// Committee member filters
 	CommitteeFilters []string
-	// Mailing list description (minimum 11 characters)
+	// Mailing list description (11-500 characters)
 	Description string
 	// Mailing list title
 	Title string
@@ -121,6 +127,19 @@ type CreateGrpsioServicePayload struct {
 	Auditors []string
 }
 
+// DeleteGrpsioMailingListPayload is the payload type of the mailing-list
+// service delete-grpsio-mailing-list method.
+type DeleteGrpsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// If-Match header value for conditional requests
+	IfMatch *string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string
+}
+
 // DeleteGrpsioServicePayload is the payload type of the mailing-list service
 // delete-grpsio-service method.
 type DeleteGrpsioServicePayload struct {
@@ -132,6 +151,25 @@ type DeleteGrpsioServicePayload struct {
 	IfMatch *string
 	// Service UID -- unique identifier for the service
 	UID *string
+}
+
+// GetGrpsioMailingListPayload is the payload type of the mailing-list service
+// get-grpsio-mailing-list method.
+type GetGrpsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string
+}
+
+// GetGrpsioMailingListResult is the result type of the mailing-list service
+// get-grpsio-mailing-list method.
+type GetGrpsioMailingListResult struct {
+	MailingList *MailingListWithReadonlyAttributes
+	// ETag header value
+	Etag *string
 }
 
 // GetGrpsioServicePayload is the payload type of the mailing-list service
@@ -168,7 +206,7 @@ type MailingListFull struct {
 	CommitteeUID *string
 	// Committee member filters
 	CommitteeFilters []string
-	// Mailing list description (minimum 11 characters)
+	// Mailing list description (11-500 characters)
 	Description *string
 	// Mailing list title
 	Title *string
@@ -190,6 +228,45 @@ type MailingListFull struct {
 	LastReviewedAt *string
 	// The user ID who last reviewed this service
 	LastReviewedBy *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
+
+// MailingListWithReadonlyAttributes is the result type of the mailing-list
+// service update-grpsio-mailing-list method.
+type MailingListWithReadonlyAttributes struct {
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string
+	// Mailing list group name
+	GroupName *string
+	// Whether the mailing list is publicly accessible
+	Public bool
+	// Mailing list type
+	Type *string
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string
+	// Committee member filters
+	CommitteeFilters []string
+	// Mailing list description (11-500 characters)
+	Description *string
+	// Mailing list title
+	Title *string
+	// Subject tag prefix
+	SubjectTag *string
+	// Service UUID
+	ServiceUID *string
+	// LFXv2 Project UID (inherited from parent service)
+	ProjectUID *string
+	// Project name (read-only)
+	ProjectName *string
+	// Project slug identifier (read-only)
+	ProjectSlug *string
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
 	// Manager user IDs who can edit/modify this service
 	Writers []string
 	// Auditor user IDs who can audit this service
@@ -286,6 +363,41 @@ type ServiceWithReadonlyAttributes struct {
 	LastAuditedBy *string
 	// The timestamp when the service was last audited
 	LastAuditedTime *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
+
+// UpdateGrpsioMailingListPayload is the payload type of the mailing-list
+// service update-grpsio-mailing-list method.
+type UpdateGrpsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// If-Match header value for conditional requests
+	IfMatch *string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID *string
+	// Mailing list group name
+	GroupName string
+	// Whether the mailing list is publicly accessible
+	Public bool
+	// Mailing list type
+	Type string
+	// Committee UUID for committee-based mailing lists
+	CommitteeUID *string
+	// Committee member filters
+	CommitteeFilters []string
+	// Mailing list description (11-500 characters)
+	Description string
+	// Mailing list title
+	Title string
+	// Subject tag prefix
+	SubjectTag *string
+	// Service UUID
+	ServiceUID string
 	// Manager user IDs who can edit/modify this service
 	Writers []string
 	// Auditor user IDs who can audit this service

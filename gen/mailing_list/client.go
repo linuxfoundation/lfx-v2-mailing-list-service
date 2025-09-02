@@ -23,10 +23,13 @@ type Client struct {
 	UpdateGrpsioServiceEndpoint     goa.Endpoint
 	DeleteGrpsioServiceEndpoint     goa.Endpoint
 	CreateGrpsioMailingListEndpoint goa.Endpoint
+	GetGrpsioMailingListEndpoint    goa.Endpoint
+	UpdateGrpsioMailingListEndpoint goa.Endpoint
+	DeleteGrpsioMailingListEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                   livez,
 		ReadyzEndpoint:                  readyz,
@@ -35,6 +38,9 @@ func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsi
 		UpdateGrpsioServiceEndpoint:     updateGrpsioService,
 		DeleteGrpsioServiceEndpoint:     deleteGrpsioService,
 		CreateGrpsioMailingListEndpoint: createGrpsioMailingList,
+		GetGrpsioMailingListEndpoint:    getGrpsioMailingList,
+		UpdateGrpsioMailingListEndpoint: updateGrpsioMailingList,
+		DeleteGrpsioMailingListEndpoint: deleteGrpsioMailingList,
 	}
 }
 
@@ -144,4 +150,53 @@ func (c *Client) CreateGrpsioMailingList(ctx context.Context, p *CreateGrpsioMai
 		return
 	}
 	return ires.(*MailingListFull), nil
+}
+
+// GetGrpsioMailingList calls the "get-grpsio-mailing-list" endpoint of the
+// "mailing-list" service.
+// GetGrpsioMailingList may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGrpsioMailingList(ctx context.Context, p *GetGrpsioMailingListPayload) (res *GetGrpsioMailingListResult, err error) {
+	var ires any
+	ires, err = c.GetGrpsioMailingListEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GetGrpsioMailingListResult), nil
+}
+
+// UpdateGrpsioMailingList calls the "update-grpsio-mailing-list" endpoint of
+// the "mailing-list" service.
+// UpdateGrpsioMailingList may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or validation failure
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMailingListPayload) (res *MailingListWithReadonlyAttributes, err error) {
+	var ires any
+	ires, err = c.UpdateGrpsioMailingListEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*MailingListWithReadonlyAttributes), nil
+}
+
+// DeleteGrpsioMailingList calls the "delete-grpsio-mailing-list" endpoint of
+// the "mailing-list" service.
+// DeleteGrpsioMailingList may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or deletion not allowed
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) DeleteGrpsioMailingList(ctx context.Context, p *DeleteGrpsioMailingListPayload) (err error) {
+	_, err = c.DeleteGrpsioMailingListEndpoint(ctx, p)
+	return
 }

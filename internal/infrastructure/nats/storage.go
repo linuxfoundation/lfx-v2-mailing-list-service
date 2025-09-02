@@ -404,7 +404,7 @@ func (s *storage) IsReady(ctx context.Context) error {
 }
 
 // GetGrpsIOMailingList retrieves a single mailing list by UID
-func (s *storage) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error) {
+func (s *storage) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: getting mailing list",
 		"mailing_list_uid", uid)
 
@@ -413,10 +413,10 @@ func (s *storage) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			slog.DebugContext(ctx, "mailing list not found", "mailing_list_uid", uid, "error", err)
-			return nil, errs.NewNotFound("mailing list not found")
+			return nil, 0, errs.NewNotFound("mailing list not found")
 		}
 		slog.ErrorContext(ctx, "failed to get mailing list", "error", err, "mailing_list_uid", uid)
-		return nil, errs.NewServiceUnavailable("failed to get mailing list")
+		return nil, 0, errs.NewServiceUnavailable("failed to get mailing list")
 	}
 
 	slog.DebugContext(ctx, "nats storage: mailing list retrieved",
@@ -424,7 +424,30 @@ func (s *storage) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.
 		"group_name", mailingList.GroupName,
 		"revision", rev)
 
-	return mailingList, nil
+	return mailingList, rev, nil
+}
+
+// GetMailingListRevision retrieves only the revision for a given UID
+func (s *storage) GetMailingListRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting mailing list revision", "mailing_list_uid", uid)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGrpsIOMailingLists]
+	if !exists || kv == nil {
+		return 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	entry, err := kv.Get(ctx, uid)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "mailing list not found", "mailing_list_uid", uid, "error", err)
+			return 0, errs.NewNotFound("mailing list not found")
+		}
+		slog.ErrorContext(ctx, "failed to get mailing list revision", "error", err, "mailing_list_uid", uid)
+		return 0, errs.NewServiceUnavailable("failed to get mailing list revision")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list revision retrieved", "mailing_list_uid", uid, "revision", entry.Revision())
+	return entry.Revision(), nil
 }
 
 // CreateGrpsIOMailingList creates a new mailing list in NATS KV store (following service pattern)
@@ -454,10 +477,6 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	}
 
 	var createdKeys []string
-
-	// TODO: When implementing GetGrpsIOMailingListsByParent/Project/Committee methods,
-	// use kv.Keys(ctx, prefix) to scan for keys matching the pattern, then extract
-	// UIDs from key suffixes and batch fetch the mailing lists
 
 	// Service index
 	serviceKey := fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID) + "/" + mailingList.UID
@@ -495,16 +514,97 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	return createdKeys, nil
 }
 
-// DeleteGrpsIOMailingList deletes a mailing list and all its secondary indices (TODO: implement in future PR)
-func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
-	// TODO: Implement in future PR for DELETE endpoint
-	return errs.NewServiceUnavailable("delete mailing list not implemented yet")
+// UpdateGrpsIOMailingList updates an existing mailing list with optimistic concurrency control
+func (s *storage) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: updating mailing list",
+		"mailing_list_uid", uid,
+		"expected_revision", expectedRevision)
+
+	rev, err := s.putWithRevision(ctx, constants.KVBucketNameGrpsIOMailingLists, uid, mailingList, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update mailing list", "error", err, "mailing_list_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to update mailing list")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list updated",
+		"mailing_list_uid", uid,
+		"revision", rev)
+
+	return mailingList, rev, nil
 }
 
-// UpdateGrpsIOMailingList updates an existing mailing list (TODO: implement in future PR)
-func (s *storage) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
-	// TODO: Implement in future PR for PUT endpoint
-	return nil, errs.NewServiceUnavailable("update mailing list not implemented yet")
+// DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control
+func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
+	slog.DebugContext(ctx, "nats storage: deleting mailing list",
+		"mailing_list_uid", uid,
+		"expected_revision", expectedRevision)
+
+	// First, get the mailing list to retrieve its indices data
+	mailingList := &model.GrpsIOMailingList{}
+	_, err := s.get(ctx, constants.KVBucketNameGrpsIOMailingLists, uid, mailingList, false)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "mailing list not found for deletion", "mailing_list_uid", uid, "error", err)
+			return errs.NewNotFound("mailing list not found")
+		}
+		slog.ErrorContext(ctx, "failed to get mailing list for deletion", "error", err, "mailing_list_uid", uid)
+		return errs.NewServiceUnavailable("failed to get mailing list for deletion")
+	}
+
+	// Delete the main record with optimistic concurrency control using helper
+	err = s.delete(ctx, constants.KVBucketNameGrpsIOMailingLists, uid, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to delete mailing list", "error", err, "mailing_list_uid", uid)
+		return err // Helper already wraps errors appropriately
+	}
+
+	// Clean up secondary indices (best effort - don't fail if they don't exist)
+	s.deleteMailingListSecondaryIndices(ctx, mailingList)
+
+	// Clean up unique constraint
+	constraintKey := fmt.Sprintf(constants.KVLookupMailingListConstraintPrefix, mailingList.ServiceUID, mailingList.GroupName)
+	kv, exists := s.client.kvStore[constants.KVBucketNameGrpsIOMailingLists]
+	if exists && kv != nil {
+		err = kv.Delete(ctx, constraintKey)
+		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "failed to delete mailing list constraint", "error", err, "constraint_key", constraintKey)
+			// Don't fail the operation for constraint cleanup
+		}
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list deleted", "mailing_list_uid", uid)
+	return nil
+}
+
+// deleteMailingListSecondaryIndices removes all secondary indices for a mailing list (best effort)
+func (s *storage) deleteMailingListSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) {
+	kv, exists := s.client.kvStore[constants.KVBucketNameGrpsIOMailingLists]
+	if !exists || kv == nil {
+		return
+	}
+
+	// Service index
+	serviceKey := fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID) + "/" + mailingList.UID
+	err := kv.Delete(ctx, serviceKey)
+	if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+		slog.WarnContext(ctx, "failed to delete service index", "error", err, "key", serviceKey)
+	}
+
+	// Project index
+	projectKey := fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID) + "/" + mailingList.UID
+	err = kv.Delete(ctx, projectKey)
+	if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+		slog.WarnContext(ctx, "failed to delete project index", "error", err, "key", projectKey)
+	}
+
+	// Committee index (only if committee-based)
+	if mailingList.CommitteeUID != "" {
+		committeeKey := fmt.Sprintf(constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID) + "/" + mailingList.UID
+		err = kv.Delete(ctx, committeeKey)
+		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "failed to delete committee index", "error", err, "key", committeeKey)
+		}
+	}
 }
 
 // CreateSecondaryIndices creates secondary indices for a mailing list (used by orchestrator)
@@ -513,23 +613,6 @@ func (s *storage) CreateSecondaryIndices(ctx context.Context, mailingList *model
 	return s.createMailingListSecondaryIndices(ctx, mailingList)
 }
 
-// GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID (TODO: implement in future PR)
-func (s *storage) GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error) {
-	// TODO: Implement in future PR for GET list endpoints
-	return nil, errs.NewServiceUnavailable("get mailing lists by parent not implemented yet")
-}
-
-// GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID (TODO: implement in future PR)
-func (s *storage) GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error) {
-	// TODO: Implement in future PR for GET list endpoints
-	return nil, errs.NewServiceUnavailable("get mailing lists by committee not implemented yet")
-}
-
-// GetGrpsIOMailingListsByProject retrieves mailing lists by project ID (TODO: implement in future PR)
-func (s *storage) GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error) {
-	// TODO: Implement in future PR for GET list endpoints
-	return nil, errs.NewServiceUnavailable("get mailing lists by project not implemented yet")
-}
 
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (s *storage) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {

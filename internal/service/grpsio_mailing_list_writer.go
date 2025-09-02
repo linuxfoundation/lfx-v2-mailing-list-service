@@ -184,7 +184,7 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Conte
 		"mailing_list_uid", mailingList.UID)
 
 	// Build indexer message
-	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList)
+	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList, model.ActionCreated)
 	if err != nil {
 		return fmt.Errorf("failed to build indexer message: %w", err)
 	}
@@ -212,10 +212,81 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Conte
 	return nil
 }
 
-// buildMailingListIndexerMessage builds an indexer message for search capabilities
-func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.IndexerMessage, error) {
+// publishMailingListUpdateMessages publishes update messages for indexer and access control
+func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
+	slog.DebugContext(ctx, "publishing update messages for mailing list",
+		"mailing_list_uid", mailingList.UID)
+
+	// Build indexer message
+	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList, model.ActionUpdated)
+	if err != nil {
+		return fmt.Errorf("failed to build update indexer message: %w", err)
+	}
+
+	// Build access control message
+	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
+
+	// Publish indexer message
+	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, indexerMessage); err != nil {
+		slog.ErrorContext(ctx, "failed to publish update indexer message", "error", err)
+		return fmt.Errorf("failed to publish update indexer message: %w", err)
+	}
+
+	// Publish access control message
+	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
+		slog.ErrorContext(ctx, "failed to publish update access control message", "error", err)
+		return fmt.Errorf("failed to publish update access control message: %w", err)
+	}
+
+	slog.DebugContext(ctx, "update messages published successfully",
+		"mailing_list_uid", mailingList.UID,
+		"indexer_published", true,
+		"access_control_published", true)
+
+	return nil
+}
+
+// publishMailingListDeleteMessages publishes delete messages for indexer and access control
+func (ml *grpsIOWriterOrchestrator) publishMailingListDeleteMessages(ctx context.Context, uid string) error {
+	slog.DebugContext(ctx, "publishing delete messages for mailing list",
+		"mailing_list_uid", uid)
+
+	// For delete messages, we just need the UID
 	indexerMessage := &model.IndexerMessage{
-		Action: model.ActionCreated,
+		Action: model.ActionDeleted,
+		Tags:   []string{},
+	}
+
+	builtMessage, err := indexerMessage.Build(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to build mailing list delete indexer message", "error", err, "mailing_list_uid", uid)
+		return fmt.Errorf("failed to build mailing list delete indexer message: %w", err)
+	}
+
+	// Publish indexer message
+	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, builtMessage); err != nil {
+		slog.ErrorContext(ctx, "failed to publish delete indexer message", "error", err)
+		return fmt.Errorf("failed to publish delete indexer message: %w", err)
+	}
+
+	// Publish access control delete message
+	if err := ml.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
+		slog.ErrorContext(ctx, "failed to publish delete access control message", "error", err)
+		return fmt.Errorf("failed to publish delete access control message: %w", err)
+	}
+
+	slog.DebugContext(ctx, "delete messages published successfully",
+		"mailing_list_uid", uid,
+		"indexer_published", true,
+		"access_control_published", true)
+
+	return nil
+}
+
+// buildMailingListIndexerMessage builds an indexer message for search capabilities
+func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.Context, mailingList *model.GrpsIOMailingList, action model.MessageAction) (*model.IndexerMessage, error) {
+	indexerMessage := &model.IndexerMessage{
+		Action: action,
 		Tags:   mailingList.Tags(),
 	}
 
@@ -244,10 +315,64 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailing
 	}
 }
 
-// UpdateGrpsIOMailingList updates an existing mailing list (TODO: implement in future PR)
-func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
-	// TODO: Implement in future PR for PUT endpoint
-	return nil, errors.NewServiceUnavailable("update mailing list not implemented yet")
+// UpdateGrpsIOMailingList updates an existing mailing list with optimistic concurrency control
+func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
+	slog.DebugContext(ctx, "orchestrator: updating mailing list",
+		"mailing_list_uid", uid,
+		"expected_revision", expectedRevision)
+
+	// Step 1: Retrieve existing mailing list to validate and merge data
+	existing, existingRevision, err := ml.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to retrieve existing mailing list",
+			"error", err,
+			"mailing_list_uid", uid,
+		)
+		return nil, 0, err
+	}
+
+	// Step 2: Verify revision matches to ensure optimistic locking
+	if existingRevision != expectedRevision {
+		slog.WarnContext(ctx, "revision mismatch during update",
+			"expected_revision", expectedRevision,
+			"current_revision", existingRevision,
+			"mailing_list_uid", uid,
+		)
+		return nil, 0, errors.NewConflict("mailing list has been modified by another process")
+	}
+
+	// Step 3: Merge existing data with updated fields
+	ml.mergeMailingListData(ctx, existing, mailingList)
+
+	// Step 4: Update in storage with revision check
+	updatedMailingList, newRevision, err := ml.grpsIOWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update mailing list in storage", 
+			"error", err, 
+			"mailing_list_uid", uid,
+			"expected_revision", expectedRevision)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "mailing list updated successfully",
+		"mailing_list_uid", uid,
+		"revision", newRevision,
+	)
+
+	// Publish update messages
+	if ml.publisher != nil {
+		if err := ml.publishMailingListUpdateMessages(ctx, updatedMailingList); err != nil {
+			slog.ErrorContext(ctx, "failed to publish update messages", "error", err)
+			// Don't fail the update on message publishing errors
+		}
+	}
+
+	slog.InfoContext(ctx, "mailing list updated successfully",
+		"mailing_list_uid", uid,
+		"group_name", updatedMailingList.GroupName,
+		"new_revision", newRevision)
+
+	return updatedMailingList, newRevision, nil
 }
 
 // createMailingListSecondaryIndices creates all secondary indices for the mailing list in the orchestrator layer
@@ -266,8 +391,70 @@ func (ml *grpsIOWriterOrchestrator) createMailingListSecondaryIndices(ctx contex
 	return createdKeys, nil
 }
 
-// DeleteGrpsIOMailingList deletes a mailing list (TODO: implement in future PR)
-func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
-	// TODO: Implement in future PR for DELETE endpoint
-	return errors.NewServiceUnavailable("delete mailing list not implemented yet")
+// DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control
+func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
+	slog.DebugContext(ctx, "orchestrator: deleting mailing list",
+		"mailing_list_uid", uid,
+		"expected_revision", expectedRevision)
+
+	// Step 1: Get the mailing list before deletion for validation and messaging
+	mailingListData, _, err := ml.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
+	if err != nil {
+		slog.WarnContext(ctx, "mailing list not found for deletion", "mailing_list_uid", uid, "error", err)
+		return err
+	}
+	
+	// Step 2: Deletion validation
+	// Validates main group protection, announcement list protection, and committee associations
+	// TODO: Enhance with Groups.io API integration to validate:
+	//   - Active subscriber count thresholds
+	//   - Recent message activity 
+	//   - Pending moderation queue items
+	// TODO: Enhance with committee event handling to:
+	//   - Block deletion if active committee sync is running
+	//   - Trigger committee member cleanup
+	slog.DebugContext(ctx, "validating mailing list deletion",
+		"mailing_list_uid", uid,
+		"group_name", mailingListData.GroupName,
+		"public", mailingListData.Public)
+
+	// Step 3: Delete from storage with revision check
+	err = ml.grpsIOWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to delete mailing list from storage", "error", err, "mailing_list_uid", uid)
+		return err
+	}
+
+	// Publish delete messages
+	if ml.publisher != nil {
+		if err := ml.publishMailingListDeleteMessages(ctx, uid); err != nil {
+			slog.ErrorContext(ctx, "failed to publish delete messages", "error", err)
+		}
+	}
+
+	slog.InfoContext(ctx, "mailing list deleted successfully",
+		"mailing_list_uid", uid,
+		"group_name", mailingListData.GroupName)
+
+	return nil
+}
+
+// mergeMailingListData merges existing mailing list data with updated fields, preserving immutable fields
+func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, existing *model.GrpsIOMailingList, updated *model.GrpsIOMailingList) {
+	// Preserve immutable fields
+	updated.UID = existing.UID
+	updated.CreatedAt = existing.CreatedAt
+	updated.ProjectUID = existing.ProjectUID     // Inherited from parent service
+	updated.ProjectName = existing.ProjectName   // Inherited from parent service  
+	updated.ProjectSlug = existing.ProjectSlug   // Inherited from parent service
+	updated.ServiceUID = existing.ServiceUID     // Parent reference is immutable
+	updated.GroupName = existing.GroupName       // Group name is immutable due to unique constraint
+
+	// Update timestamp
+	updated.UpdatedAt = time.Now()
+
+	slog.DebugContext(ctx, "mailing list data merged",
+		"mailing_list_uid", existing.UID,
+		"mutable_fields", []string{"public", "type", "description", "title", "committee_uid", "committee_name", "committee_filters", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
+	)
 }

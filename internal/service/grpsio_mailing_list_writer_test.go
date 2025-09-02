@@ -46,14 +46,14 @@ func (w *TestMockMailingListWriter) CreateGrpsIOMailingList(ctx context.Context,
 	return w.mock.CreateGrpsIOMailingList(ctx, mailingList)
 }
 
-func (w *TestMockMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
+func (w *TestMockMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
 	mockWriter := mock.NewMockGrpsIOWriter(w.mock)
-	return mockWriter.UpdateGrpsIOMailingList(ctx, mailingList)
+	return mockWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 }
 
-func (w *TestMockMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
+func (w *TestMockMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
 	mockWriter := mock.NewMockGrpsIOWriter(w.mock)
-	return mockWriter.DeleteGrpsIOMailingList(ctx, uid)
+	return mockWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision)
 }
 
 // UniqueMailingListGroupName reserves a unique group name within parent service
@@ -617,7 +617,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListIndexerMessage(t *testing.T) {
 			ctx := context.Background()
 
 			// Execute
-			result, err := orchestrator.buildMailingListIndexerMessage(ctx, tc.mailingList)
+			result, err := orchestrator.buildMailingListIndexerMessage(ctx, tc.mailingList, model.ActionCreated)
 
 			// Validate
 			if tc.expectedError {

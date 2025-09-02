@@ -248,7 +248,9 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 func MailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
 		dsl.Example("technical-steering-committee")
-		dsl.Pattern(`^[a-z][a-z0-9-]*[a-z0-9]$`)
+		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$`)
+		dsl.MinLength(3)
+		dsl.MaxLength(34)
 	})
 	dsl.Attribute("public", dsl.Boolean, "Whether the mailing list is publicly accessible", func() {
 		dsl.Default(false)
@@ -268,15 +270,19 @@ func MailingListBaseAttributes() {
 		})
 		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
 	})
-	dsl.Attribute("description", dsl.String, "Mailing list description (minimum 11 characters)", func() {
+	dsl.Attribute("description", dsl.String, "Mailing list description (11-500 characters)", func() {
 		dsl.MinLength(11)
+		dsl.MaxLength(500)
 		dsl.Example("Technical steering committee discussions")
 	})
 	dsl.Attribute("title", dsl.String, "Mailing list title", func() {
 		dsl.Example("Technical Steering Committee")
+		dsl.MinLength(5)
+		dsl.MaxLength(100)
 	})
 	dsl.Attribute("subject_tag", dsl.String, "Subject tag prefix", func() {
 		dsl.Example("[TSC]")
+		dsl.MaxLength(50)
 	})
 	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
 		dsl.Format(dsl.FormatUUID)
