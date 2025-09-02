@@ -4,8 +4,8 @@
 apiVersion: heimdall.dadrus.github.com/v1alpha4
 kind: RuleSet
 metadata:
-  name: {{ .Chart.Name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{.Chart.Name}}
+  namespace: {{.Release.Namespace}}
 spec:
   rules:
     # GroupsIO Services endpoints
@@ -18,10 +18,10 @@ spec:
       execute:
         - authenticator: oidc
         - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
+        {{- if .Values.app.use_oidc_contextualizer}}
         - contextualizer: oidc_contextualizer
-        {{- end }}
-        {{- if .Values.openfga.enabled }}
+        {{- end}}
+        {{- if .Values.openfga.enabled}}
         # TODO: update this authorizer check once we have a way to get the project_uid from the request body.
         # Check that user has writer permission on the project
         - authorizer: allow_all

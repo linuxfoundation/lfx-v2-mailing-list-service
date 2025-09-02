@@ -1,12 +1,12 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
-{{- if .Values.nats.groupsio_services_kv_bucket.creation -}}
 ---
+{{- if .Values.nats.groupsio_services_kv_bucket.creation}}
 apiVersion: jetstream.nats.io/v1beta2
 kind: KeyValue
 metadata:
-  name: {{ .Values.nats.groupsio_services_kv_bucket.name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{.Values.nats.groupsio_services_kv_bucket.name}}
+  namespace: {{.Release.Namespace}}
   {{- if .Values.nats.groupsio_services_kv_bucket.keep }}
   annotations:
     "helm.sh/resource-policy": keep

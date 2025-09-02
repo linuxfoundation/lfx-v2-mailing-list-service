@@ -127,7 +127,7 @@ For comprehensive integration testing using local Kubernetes cluster:
 3. **Test Individual Endpoints**:
    ```bash
    # Any Bearer token works with mock auth
-   curl -H "Authorization: Bearer mock-token" \
+   curl -H "Authorization: Bearer <your-token>" \
         http://lfx-v2-mailing-list-service.lfx.svc.cluster.local:8080/services
    ```
 
