@@ -178,109 +178,19 @@ func (ml *grpsIOWriterOrchestrator) reserveMailingListConstraints(ctx context.Co
 	return ml.grpsIOWriter.UniqueMailingListGroupName(ctx, mailingList)
 }
 
-// publishMailingListMessages publishes indexer and access control messages concurrently
+// publishMailingListMessages publishes indexer and access control messages for mailing list creation
 func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
-	slog.DebugContext(ctx, "publishing messages for mailing list",
-		"mailing_list_uid", mailingList.UID)
-
-	// Build indexer message
-	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList, model.ActionCreated)
-	if err != nil {
-		return fmt.Errorf("failed to build indexer message: %w", err)
-	}
-
-	// Build access control message
-	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
-
-	// Publish indexer message
-	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, indexerMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish indexer message", "error", err)
-		return fmt.Errorf("failed to publish indexer message: %w", err)
-	}
-
-	// Publish access control message
-	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish access control message", "error", err)
-		return fmt.Errorf("failed to publish access control message: %w", err)
-	}
-
-	slog.DebugContext(ctx, "messages published successfully",
-		"mailing_list_uid", mailingList.UID,
-		"indexer_published", true,
-		"access_control_published", true)
-
-	return nil
+	return ml.publishMailingListChange(ctx, mailingList, model.ActionCreated)
 }
 
 // publishMailingListUpdateMessages publishes update messages for indexer and access control
 func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
-	slog.DebugContext(ctx, "publishing update messages for mailing list",
-		"mailing_list_uid", mailingList.UID)
-
-	// Build indexer message
-	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList, model.ActionUpdated)
-	if err != nil {
-		return fmt.Errorf("failed to build update indexer message: %w", err)
-	}
-
-	// Build access control message
-	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
-
-	// Publish indexer message
-	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, indexerMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish update indexer message", "error", err)
-		return fmt.Errorf("failed to publish update indexer message: %w", err)
-	}
-
-	// Publish access control message
-	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish update access control message", "error", err)
-		return fmt.Errorf("failed to publish update access control message: %w", err)
-	}
-
-	slog.DebugContext(ctx, "update messages published successfully",
-		"mailing_list_uid", mailingList.UID,
-		"indexer_published", true,
-		"access_control_published", true)
-
-	return nil
+	return ml.publishMailingListChange(ctx, mailingList, model.ActionUpdated)
 }
 
 // publishMailingListDeleteMessages publishes delete messages for indexer and access control
 func (ml *grpsIOWriterOrchestrator) publishMailingListDeleteMessages(ctx context.Context, uid string) error {
-	slog.DebugContext(ctx, "publishing delete messages for mailing list",
-		"mailing_list_uid", uid)
-
-	// For delete messages, we just need the UID
-	indexerMessage := &model.IndexerMessage{
-		Action: model.ActionDeleted,
-		Tags:   []string{},
-	}
-
-	builtMessage, err := indexerMessage.Build(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to build mailing list delete indexer message", "error", err, "mailing_list_uid", uid)
-		return fmt.Errorf("failed to build mailing list delete indexer message: %w", err)
-	}
-
-	// Publish indexer message
-	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, builtMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish delete indexer message", "error", err)
-		return fmt.Errorf("failed to publish delete indexer message: %w", err)
-	}
-
-	// Publish access control delete message
-	if err := ml.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
-		slog.ErrorContext(ctx, "failed to publish delete access control message", "error", err)
-		return fmt.Errorf("failed to publish delete access control message: %w", err)
-	}
-
-	slog.DebugContext(ctx, "delete messages published successfully",
-		"mailing_list_uid", uid,
-		"indexer_published", true,
-		"access_control_published", true)
-
-	return nil
+	return ml.publishMailingListDeletion(ctx, uid)
 }
 
 // buildMailingListIndexerMessage builds an indexer message for search capabilities
@@ -389,6 +299,75 @@ func (ml *grpsIOWriterOrchestrator) createMailingListSecondaryIndices(ctx contex
 		"indices_created", createdKeys)
 
 	return createdKeys, nil
+}
+
+// publishIndexerMessage is a helper for indexer message publishing
+func (ml *grpsIOWriterOrchestrator) publishIndexerMessage(ctx context.Context, message any, action model.MessageAction) error {
+	if err := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, message); err != nil {
+		slog.ErrorContext(ctx, "failed to publish indexer message", "error", err, "action", action)
+		return fmt.Errorf("failed to publish %s indexer message: %w", action, err)
+	}
+	return nil
+}
+
+// publishMailingListChange publishes indexer and access control messages for create/update operations
+func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context, mailingList *model.GrpsIOMailingList, action model.MessageAction) error {
+	slog.DebugContext(ctx, "publishing messages for mailing list",
+		"action", action,
+		"mailing_list_uid", mailingList.UID)
+
+	// Build and publish indexer message
+	indexerMessage, err := ml.buildMailingListIndexerMessage(ctx, mailingList, action)
+	if err != nil {
+		return fmt.Errorf("failed to build %s indexer message: %w", action, err)
+	}
+	
+	if err := ml.publishIndexerMessage(ctx, indexerMessage, action); err != nil {
+		return err
+	}
+	
+	// Publish access control message
+	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
+	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
+		slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
+		return fmt.Errorf("failed to publish %s access control message: %w", action, err)
+	}
+
+	slog.DebugContext(ctx, "messages published successfully",
+		"action", action,
+		"mailing_list_uid", mailingList.UID)
+	return nil
+}
+
+// publishMailingListDeletion publishes indexer and access control messages for delete operations
+func (ml *grpsIOWriterOrchestrator) publishMailingListDeletion(ctx context.Context, uid string) error {
+	slog.DebugContext(ctx, "publishing delete messages for mailing list",
+		"mailing_list_uid", uid)
+
+	// Build deletion indexer message
+	deleteMessage := &model.IndexerMessage{
+		Action: model.ActionDeleted,
+		Tags:   []string{},
+	}
+	
+	indexerMessage, err := deleteMessage.Build(ctx, uid)
+	if err != nil {
+		return fmt.Errorf("failed to build delete indexer message: %w", err)
+	}
+	
+	if err := ml.publishIndexerMessage(ctx, indexerMessage, model.ActionDeleted); err != nil {
+		return err
+	}
+	
+	// Publish access control deletion
+	if err := ml.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
+		slog.ErrorContext(ctx, "failed to publish delete access control message", "error", err)
+		return fmt.Errorf("failed to publish delete access control message: %w", err)
+	}
+
+	slog.DebugContext(ctx, "delete messages published successfully",
+		"mailing_list_uid", uid)
+	return nil
 }
 
 // DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control

@@ -477,41 +477,59 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	}
 
 	var createdKeys []string
-
-	// Service index
-	serviceKey := fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID) + "/" + mailingList.UID
-	_, err := kv.Create(ctx, serviceKey, []byte(mailingList.UID))
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to create service index", "error", err, "key", serviceKey)
-		return createdKeys, errs.NewServiceUnavailable("failed to create service index")
+	
+	// Define indices to create
+	indices := []struct {
+		name   string
+		prefix string
+		id     string
+		skip   bool
+	}{
+		{"service", constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID, false},
+		{"project", constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID, false},
+		{"committee", constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID, mailingList.CommitteeUID == ""},
 	}
-	createdKeys = append(createdKeys, serviceKey)
-
-	// Project index
-	projectKey := fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID) + "/" + mailingList.UID
-	_, err = kv.Create(ctx, projectKey, []byte(mailingList.UID))
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to create project index", "error", err, "key", projectKey)
-		return createdKeys, errs.NewServiceUnavailable("failed to create project index")
-	}
-	createdKeys = append(createdKeys, projectKey)
-
-	// Committee index (only if committee-based)
-	if mailingList.CommitteeUID != "" {
-		committeeKey := fmt.Sprintf(constants.KVLookupMailingListCommitteePrefix, mailingList.CommitteeUID) + "/" + mailingList.UID
-		_, err = kv.Create(ctx, committeeKey, []byte(mailingList.UID))
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to create committee index", "error", err, "key", committeeKey)
-			return createdKeys, errs.NewServiceUnavailable("failed to create committee index")
+	
+	// Create each index
+	for _, idx := range indices {
+		if idx.skip {
+			continue
 		}
-		createdKeys = append(createdKeys, committeeKey)
+		
+		key := fmt.Sprintf(idx.prefix, idx.id) + "/" + mailingList.UID
+		created, err := s.createOrSkipIndex(ctx, kv, key, mailingList.UID, idx.name)
+		if err != nil {
+			return createdKeys, err
+		}
+		if created {
+			createdKeys = append(createdKeys, key)
+		}
 	}
-
+	
 	slog.DebugContext(ctx, "secondary indices created successfully",
 		"mailing_list_uid", mailingList.UID,
 		"indices_created", createdKeys)
-
+	
 	return createdKeys, nil
+}
+
+// createOrSkipIndex creates an index or skips if it already exists
+func (s *storage) createOrSkipIndex(ctx context.Context, kv jetstream.KeyValue, key, value, indexName string) (bool, error) {
+	_, err := kv.Create(ctx, key, []byte(value))
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyExists) {
+			slog.DebugContext(ctx, "index already exists, skipping", 
+				"index", indexName, 
+				"key", key)
+			return false, nil
+		}
+		slog.ErrorContext(ctx, "failed to create index", 
+			"index", indexName,
+			"error", err, 
+			"key", key)
+		return false, errs.NewServiceUnavailable(fmt.Sprintf("failed to create %s index", indexName))
+	}
+	return true, nil
 }
 
 // UpdateGrpsIOMailingList updates an existing mailing list with optimistic concurrency control

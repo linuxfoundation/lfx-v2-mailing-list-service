@@ -73,6 +73,16 @@ func ValidCommitteeFilters() []string {
 	}
 }
 
+// ValidMailingListTypes returns all valid mailing list type values
+func ValidMailingListTypes() []string {
+	return []string{
+		TypeAnnouncement,
+		TypeDiscussionModerated,
+		TypeDiscussionOpen,
+		TypeCustom,
+	}
+}
+
 // ValidateBasicFields validates the basic required fields and formats
 func (ml *GrpsIOMailingList) ValidateBasicFields() error {
 	// Group name validation
@@ -253,7 +263,7 @@ func isValidGroupName(groupName string) bool {
 // Removed isValidVisibility - now using Public bool field
 
 func isValidMailingListType(mlType string) bool {
-	return mlType == TypeAnnouncement || mlType == TypeDiscussionModerated || mlType == TypeDiscussionOpen || mlType == TypeCustom
+	return contains(ValidMailingListTypes(), mlType)
 }
 
 func contains(slice []string, item string) bool {
