@@ -11,7 +11,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// TestValidateDescriptionLength was removed - description length validation 
+// TestValidateDescriptionLength was removed - description length validation
 // is now handled by GOA design layer (MinLength/MaxLength attributes)
 
 func TestValidateMailingListUpdate(t *testing.T) {
@@ -52,9 +52,9 @@ func TestValidateMailingListUpdate(t *testing.T) {
 				ServiceUID: "svc-123",
 			},
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				UID:        stringPtr("ml-123"),
-				Public:     true,
-				ServiceUID: "svc-123",
+				UID:         stringPtr("ml-123"),
+				Public:      true,
+				ServiceUID:  "svc-123",
 				Description: "Valid description with enough characters",
 			},
 			wantErr: false,
@@ -67,9 +67,9 @@ func TestValidateMailingListUpdate(t *testing.T) {
 				ServiceUID: "svc-123",
 			},
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				UID:        stringPtr("ml-123"),
-				Public:     true,
-				ServiceUID: "svc-123",
+				UID:         stringPtr("ml-123"),
+				Public:      true,
+				ServiceUID:  "svc-123",
 				Description: "Valid description with enough characters",
 			},
 			wantErr: true,
@@ -83,9 +83,9 @@ func TestValidateMailingListUpdate(t *testing.T) {
 				ServiceUID: "svc-123",
 			},
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				UID:        stringPtr("ml-123"),
-				Public:     true,
-				ServiceUID: "svc-456",
+				UID:         stringPtr("ml-123"),
+				Public:      true,
+				ServiceUID:  "svc-456",
 				Description: "Valid description with enough characters",
 			},
 			wantErr: true,
@@ -100,11 +100,11 @@ func TestValidateMailingListUpdate(t *testing.T) {
 				ServiceUID: "svc-123",
 			},
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				UID:        stringPtr("ml-123"),
-				Public:     true,
-				ServiceUID: "svc-123",
+				UID:         stringPtr("ml-123"),
+				Public:      true,
+				ServiceUID:  "svc-123",
 				Description: "Valid description with enough characters",
-				SubjectTag: stringPtr("VALID-TAG"),
+				SubjectTag:  stringPtr("VALID-TAG"),
 			},
 			wantErr: false,
 		},
@@ -116,11 +116,11 @@ func TestValidateMailingListUpdate(t *testing.T) {
 				ServiceUID: "svc-123",
 			},
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				UID:        stringPtr("ml-123"),
-				Public:     true,
-				ServiceUID: "svc-123",
+				UID:         stringPtr("ml-123"),
+				Public:      true,
+				ServiceUID:  "svc-123",
 				Description: "Valid description with enough characters",
-				SubjectTag: stringPtr("[INVALID]"),
+				SubjectTag:  stringPtr("[INVALID]"),
 			},
 			wantErr: true,
 			errMsg:  "invalid subject tag format",
@@ -540,4 +540,3 @@ func TestIsValidSubjectTag(t *testing.T) {
 		})
 	}
 }
-

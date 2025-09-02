@@ -714,7 +714,7 @@ definitions:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
                 minLength: 3
                 maxLength: 34
             public:
@@ -931,7 +931,7 @@ definitions:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
                 minLength: 3
                 maxLength: 34
             last_reviewed_at:
@@ -1081,7 +1081,7 @@ definitions:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
                 minLength: 3
                 maxLength: 34
             public:
@@ -1298,7 +1298,7 @@ definitions:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
                 minLength: 3
                 maxLength: 34
             project_name:

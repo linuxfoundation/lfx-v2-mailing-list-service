@@ -248,7 +248,7 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 func MailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
 		dsl.Example("technical-steering-committee")
-		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$`)
+		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$`)
 		dsl.MinLength(3)
 		dsl.MaxLength(34)
 	})
@@ -257,6 +257,9 @@ func MailingListBaseAttributes() {
 		dsl.Example(false)
 	})
 	dsl.Attribute("type", dsl.String, "Mailing list type", func() {
+		// TODO: Future PR - Verify if Groups.io supports "custom" type and update enum accordingly
+		// If supported: Add "custom" to enum below and update validation in grpsio_mailing_list.go line 103
+		// If not supported: Remove TypeCustom from grpsio_mailing_list.go and ValidMailingListTypes()
 		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
 		dsl.Example("discussion_moderated")
 	})

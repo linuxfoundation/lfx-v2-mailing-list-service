@@ -174,7 +174,7 @@ func TestIndexerMessage_Build(t *testing.T) {
 			context: func() context.Context {
 				return context.Background()
 			},
-			input: make(chan int), // channels cannot be marshaled to JSON
+			input:       make(chan int), // channels cannot be marshaled to JSON
 			expectError: true,
 			validate: func(t *testing.T, result *IndexerMessage, err error) {
 				require.Error(t, err)

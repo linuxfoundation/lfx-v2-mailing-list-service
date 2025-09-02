@@ -218,7 +218,7 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	domainMailingList.UID = mailingListUID
 
 	// Execute use case
-	createdMailingList, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
+	createdMailingList, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list", "error", err, "group_name", payload.GroupName)
 		return nil, wrapError(ctx, err)
@@ -227,7 +227,7 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	// Convert domain model to GOA response
 	result = s.convertMailingListDomainToResponse(createdMailingList)
 
-	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID)
+	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID, "revision", revision)
 	return result, nil
 }
 
@@ -283,14 +283,18 @@ func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payloa
 
 	// Validate update constraints
 	if err := validateMailingListUpdate(ctx, existingMailingList, parentService, payload, s.grpsIOReaderOrchestrator); err != nil {
-		slog.WarnContext(ctx, "update validation failed", 
-			"error", err, 
+		slog.WarnContext(ctx, "update validation failed",
+			"error", err,
 			"mailing_list_uid", payload.UID)
 		return nil, wrapError(ctx, err)
 	}
-	
+
 	// Convert GOA payload to domain model
 	domainMailingList := s.convertUpdateMailingListPayloadToDomain(payload)
+	// Ensure persisted JSON UID matches the key
+	if payload.UID != nil {
+		domainMailingList.UID = *payload.UID
+	}
 
 	// Execute use case
 	updatedMailingList, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOMailingList(ctx, *payload.UID, domainMailingList, expectedRevision)
@@ -334,15 +338,15 @@ func (s *mailingListService) DeleteGrpsioMailingList(ctx context.Context, payloa
 
 	// Validate deletion protection rules
 	if err := validateMailingListDeleteProtection(existingMailingList, parentService); err != nil {
-		slog.WarnContext(ctx, "delete validation failed due to protection rules", 
-			"error", err, 
+		slog.WarnContext(ctx, "delete validation failed due to protection rules",
+			"error", err,
 			"mailing_list_uid", payload.UID,
 			"group_name", existingMailingList.GroupName)
 		return wrapError(ctx, err)
 	}
 
 	// Execute use case
-	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOMailingList(ctx, *payload.UID, expectedRevision)
+	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOMailingList(ctx, *payload.UID, expectedRevision, existingMailingList)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete mailing list", "error", err, "mailing_list_uid", payload.UID)
 		return wrapError(ctx, err)

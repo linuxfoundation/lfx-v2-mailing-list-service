@@ -240,7 +240,7 @@ func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingList(ctx context.Contex
 }
 
 // DeleteGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
+func (w *MockGrpsIOMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
 	return w.mock.DeleteGrpsIOMailingListWithRevision(ctx, uid, expectedRevision)
 }
 
@@ -309,8 +309,8 @@ func (w *MockGrpsIOWriter) UpdateGrpsIOMailingList(ctx context.Context, uid stri
 	return w.mailingListWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 }
 
-func (w *MockGrpsIOWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
-	return w.mailingListWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision)
+func (w *MockGrpsIOWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
+	return w.mailingListWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingList)
 }
 
 func (w *MockGrpsIOWriter) CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
@@ -772,7 +772,6 @@ func (m *MockRepository) GetGrpsIOMailingListRevision(ctx context.Context, uid s
 
 	return revision, nil
 }
-
 
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {

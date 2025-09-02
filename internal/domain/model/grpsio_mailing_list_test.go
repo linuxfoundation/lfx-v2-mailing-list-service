@@ -136,11 +136,11 @@ func TestGrpsIOMailingList_ValidateBasicFields(t *testing.T) {
 			name: "empty description",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					GroupName:  "dev-team",
-					Type:       TypeDiscussionOpen,
+					GroupName:   "dev-team",
+					Type:        TypeDiscussionOpen,
 					Description: "",
-					Title:      "Development Team",
-					ServiceUID: "service-123",
+					Title:       "Development Team",
+					ServiceUID:  "service-123",
 				}
 			},
 			expectError: true,

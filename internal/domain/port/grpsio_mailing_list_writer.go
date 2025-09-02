@@ -20,7 +20,7 @@ type GrpsIOMailingListWriter interface {
 	UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error)
 
 	// DeleteGrpsIOMailingList deletes a GroupsIO mailing list with optimistic concurrency control
-	DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error
+	DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error
 
 	// CreateSecondaryIndices creates secondary indices for a mailing list and returns the created keys
 	CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error)

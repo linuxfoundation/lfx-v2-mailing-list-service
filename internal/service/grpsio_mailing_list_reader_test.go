@@ -144,7 +144,6 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 	}
 }
 
-
 func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := mock.NewMockRepository()
@@ -228,12 +227,12 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 		assert.Equal(t, parentServiceUID, ml2.ServiceUID)
 		assert.Equal(t, projectUID, ml1.ProjectUID)
 		assert.Equal(t, projectUID, ml2.ProjectUID)
-		
+
 		// Validate committee-based mailing list
 		assert.Equal(t, committeeUID, ml1.CommitteeUID)
 		assert.Equal(t, "Integration Technical Committee", ml1.CommitteeName)
 		assert.Equal(t, []string{"Voting Rep", "Observer"}, ml1.CommitteeFilters)
-		
+
 		// Validate project details
 		assert.Equal(t, "Integration Test Project", ml1.ProjectName)
 		assert.Equal(t, "integration-test-project", ml1.ProjectSlug)

@@ -104,7 +104,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 	// Test same project but different service types
 	t.Run("same project different service types produce different keys", func(t *testing.T) {
 		projectUID := "project-123"
-		
+
 		primaryService := &GrpsIOService{
 			Type:       "primary",
 			ProjectUID: projectUID,
@@ -132,7 +132,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 	// Test formation services with different prefixes
 	t.Run("formation services with different prefixes produce different keys", func(t *testing.T) {
 		projectUID := "project-123"
-		
+
 		formationService1 := &GrpsIOService{
 			Type:       "formation",
 			ProjectUID: projectUID,
@@ -153,7 +153,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 	// Test shared services with different group IDs
 	t.Run("shared services with different group IDs produce different keys", func(t *testing.T) {
 		projectUID := "project-123"
-		
+
 		sharedService1 := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
@@ -255,11 +255,11 @@ func TestGrpsIOService_EdgeCases(t *testing.T) {
 
 	t.Run("empty service", func(t *testing.T) {
 		service := &GrpsIOService{}
-		
+
 		// BuildIndexKey should still work with empty fields
 		key := service.BuildIndexKey(ctx)
 		assert.Len(t, key, 64, "Should produce valid key even with empty fields")
-		
+
 		// Tags should return empty slice
 		tags := service.Tags()
 		assert.Nil(t, tags, "Should return nil for service with no fields")
@@ -276,7 +276,7 @@ func TestGrpsIOService_EdgeCases(t *testing.T) {
 		// BuildIndexKey should handle special characters
 		key := service.BuildIndexKey(ctx)
 		assert.Len(t, key, 64, "Should handle special characters in hash")
-		
+
 		// Tags should include special characters as-is
 		tags := service.Tags()
 		assert.Contains(t, tags, "project_slug:project-slug-with-unicode-🚀")
@@ -303,7 +303,7 @@ func TestGrpsIOService_EdgeCases(t *testing.T) {
 // Benchmark tests for performance-critical functions
 func BenchmarkGrpsIOService_BuildIndexKey(b *testing.B) {
 	ctx := context.Background()
-	
+
 	tests := []struct {
 		name    string
 		service *GrpsIOService
@@ -356,4 +356,3 @@ func BenchmarkGrpsIOService_Tags(b *testing.B) {
 		_ = service.Tags()
 	}
 }
-

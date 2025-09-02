@@ -58,4 +58,3 @@ func (mlr *grpsIOReaderOrchestrator) GetMailingListRevision(ctx context.Context,
 
 	return revision, nil
 }
-

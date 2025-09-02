@@ -1698,7 +1698,7 @@ func ValidateCreateGrpsioMailingListRequestBody(body *CreateGrpsioMailingListReq
 		err = goa.MergeErrors(err, goa.MissingFieldError("service_uid", "body"))
 	}
 	if body.GroupName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 	}
 	if body.GroupName != nil {
 		if utf8.RuneCountInString(*body.GroupName) < 3 {
@@ -1776,7 +1776,7 @@ func ValidateUpdateGrpsioMailingListRequestBody(body *UpdateGrpsioMailingListReq
 		err = goa.MergeErrors(err, goa.MissingFieldError("service_uid", "body"))
 	}
 	if body.GroupName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 	}
 	if body.GroupName != nil {
 		if utf8.RuneCountInString(*body.GroupName) < 3 {

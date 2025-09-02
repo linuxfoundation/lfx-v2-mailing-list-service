@@ -16,7 +16,7 @@ import (
 )
 
 // CreateGrpsIOMailingList creates a new mailing list with comprehensive validation and messaging
-func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
+func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "orchestrator: creating mailing list",
 		"group_name", request.GroupName,
 		"parent_uid", request.ServiceUID,
@@ -42,48 +42,48 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	// Step 2: Validate basic fields
 	if err := request.ValidateBasicFields(); err != nil {
 		slog.WarnContext(ctx, "basic field validation failed", "error", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Step 3: Validate committee fields
 	if err := request.ValidateCommitteeFields(); err != nil {
 		slog.WarnContext(ctx, "committee field validation failed", "error", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Step 4: Validate parent service and inherit metadata
 	parentService, err := ml.validateAndInheritFromParent(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Step 5: Validate committee and populate metadata (if specified)
 	if err := ml.validateAndPopulateCommittee(ctx, request, parentService.ProjectUID); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Step 6: Validate group name prefix for non-primary services
 	if err := request.ValidateGroupNamePrefix(parentService.Type, parentService.Prefix); err != nil {
 		slog.WarnContext(ctx, "group name prefix validation failed", "error", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Step 7: Reserve unique constraints (like service pattern)
 	constraintKey, err := ml.reserveMailingListConstraints(ctx, request)
 	if err != nil {
 		rollbackRequired = true
-		return nil, err
+		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
 	}
 
 	// Step 8: Create mailing list in storage
-	createdMailingList, _, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
+	createdMailingList, revision, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list in storage", "error", err)
 		rollbackRequired = true
-		return nil, err
+		return nil, 0, err
 	}
 	keys = append(keys, createdMailingList.UID)
 
@@ -92,7 +92,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list secondary indices", "error", err)
 		rollbackRequired = true
-		return nil, err
+		return nil, 0, err
 	}
 	// Add secondary keys to rollback list
 	keys = append(keys, secondaryKeys...)
@@ -110,7 +110,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"public", createdMailingList.Public,
 		"committee_based", createdMailingList.IsCommitteeBased())
 
-	return createdMailingList, nil
+	return createdMailingList, revision, nil
 }
 
 // validateAndInheritFromParent validates parent service exists and inherits metadata
@@ -254,11 +254,39 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 	// Step 3: Merge existing data with updated fields
 	ml.mergeMailingListData(ctx, existing, mailingList)
 
+	// Step 3.1: Re-validate fields after merge to ensure data integrity
+	if err := mailingList.ValidateBasicFields(); err != nil {
+		slog.WarnContext(ctx, "basic field validation failed during update", "error", err)
+		return nil, 0, err
+	}
+	if err := mailingList.ValidateCommitteeFields(); err != nil {
+		slog.WarnContext(ctx, "committee field validation failed during update", "error", err)
+		return nil, 0, err
+	}
+
+	// Step 3.2: Validate parent service constraints and refresh committee name if needed
+	parentSvc, _, err := ml.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+	if err != nil {
+		slog.WarnContext(ctx, "parent service not found during update", "error", err, "parent_uid", mailingList.ServiceUID)
+		return nil, 0, errors.NewNotFound("parent service not found")
+	}
+	if err := mailingList.ValidateGroupNamePrefix(parentSvc.Type, parentSvc.Prefix); err != nil {
+		slog.WarnContext(ctx, "group name prefix validation failed during update", "error", err)
+		return nil, 0, err
+	}
+
+	// Step 3.3: Refresh committee name if committee UID changed
+	if mailingList.CommitteeUID != "" && mailingList.CommitteeUID != existing.CommitteeUID {
+		if err := ml.validateAndPopulateCommittee(ctx, mailingList, parentSvc.ProjectUID); err != nil {
+			return nil, 0, err
+		}
+	}
+
 	// Step 4: Update in storage with revision check
 	updatedMailingList, newRevision, err := ml.grpsIOWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update mailing list in storage", 
-			"error", err, 
+		slog.ErrorContext(ctx, "failed to update mailing list in storage",
+			"error", err,
 			"mailing_list_uid", uid,
 			"expected_revision", expectedRevision)
 		return nil, 0, err
@@ -321,11 +349,11 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context
 	if err != nil {
 		return fmt.Errorf("failed to build %s indexer message: %w", action, err)
 	}
-	
+
 	if err := ml.publishIndexerMessage(ctx, indexerMessage, action); err != nil {
 		return err
 	}
-	
+
 	// Publish access control message
 	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
 	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
@@ -349,16 +377,16 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListDeletion(ctx context.Conte
 		Action: model.ActionDeleted,
 		Tags:   []string{},
 	}
-	
+
 	indexerMessage, err := deleteMessage.Build(ctx, uid)
 	if err != nil {
 		return fmt.Errorf("failed to build delete indexer message: %w", err)
 	}
-	
+
 	if err := ml.publishIndexerMessage(ctx, indexerMessage, model.ActionDeleted); err != nil {
 		return err
 	}
-	
+
 	// Publish access control deletion
 	if err := ml.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
 		slog.ErrorContext(ctx, "failed to publish delete access control message", "error", err)
@@ -371,23 +399,19 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListDeletion(ctx context.Conte
 }
 
 // DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control
-func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64) error {
+func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
 	slog.DebugContext(ctx, "orchestrator: deleting mailing list",
 		"mailing_list_uid", uid,
 		"expected_revision", expectedRevision)
 
-	// Step 1: Get the mailing list before deletion for validation and messaging
-	mailingListData, _, err := ml.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
-	if err != nil {
-		slog.WarnContext(ctx, "mailing list not found for deletion", "mailing_list_uid", uid, "error", err)
-		return err
-	}
-	
+	// Use the passed mailing list data - no need to fetch again
+	mailingListData := mailingList
+
 	// Step 2: Deletion validation
 	// Validates main group protection, announcement list protection, and committee associations
 	// TODO: Enhance with Groups.io API integration to validate:
 	//   - Active subscriber count thresholds
-	//   - Recent message activity 
+	//   - Recent message activity
 	//   - Pending moderation queue items
 	// TODO: Enhance with committee event handling to:
 	//   - Block deletion if active committee sync is running
@@ -397,8 +421,8 @@ func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context,
 		"group_name", mailingListData.GroupName,
 		"public", mailingListData.Public)
 
-	// Step 3: Delete from storage with revision check
-	err = ml.grpsIOWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision)
+	// Delete from storage with revision check
+	err := ml.grpsIOWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingListData)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete mailing list from storage", "error", err, "mailing_list_uid", uid)
 		return err
@@ -423,11 +447,16 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 	// Preserve immutable fields
 	updated.UID = existing.UID
 	updated.CreatedAt = existing.CreatedAt
-	updated.ProjectUID = existing.ProjectUID     // Inherited from parent service
-	updated.ProjectName = existing.ProjectName   // Inherited from parent service  
-	updated.ProjectSlug = existing.ProjectSlug   // Inherited from parent service
-	updated.ServiceUID = existing.ServiceUID     // Parent reference is immutable
-	updated.GroupName = existing.GroupName       // Group name is immutable due to unique constraint
+	updated.ProjectUID = existing.ProjectUID   // Inherited from parent service
+	updated.ProjectName = existing.ProjectName // Inherited from parent service
+	updated.ProjectSlug = existing.ProjectSlug // Inherited from parent service
+	updated.ServiceUID = existing.ServiceUID   // Parent reference is immutable
+	updated.GroupName = existing.GroupName     // Group name is immutable due to unique constraint
+
+	// Preserve committee name unless UID changes (refresh handled in update path)
+	if updated.CommitteeUID == "" || updated.CommitteeUID == existing.CommitteeUID {
+		updated.CommitteeName = existing.CommitteeName
+	}
 
 	// Update timestamp
 	updated.UpdatedAt = time.Now()

@@ -18,7 +18,6 @@ type GrpsIOMailingListReader interface {
 	// GetMailingListRevision retrieves only the revision for a given UID
 	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
 
-
 	// CheckMailingListExists checks if a mailing list with the given name exists in parent service
 	CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error)
 }

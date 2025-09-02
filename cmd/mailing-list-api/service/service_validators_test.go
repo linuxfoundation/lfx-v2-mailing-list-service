@@ -363,13 +363,13 @@ func TestValidateSharedRules(t *testing.T) {
 
 func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 	existing := &model.GrpsIOService{
-		Type:        "primary",
-		ProjectUID:  "project-123",
-		Prefix:      "",
-		Domain:      "example.groups.io",
-		GroupID:     12345,
-		URL:         "https://example.groups.io/g/test",
-		GroupName:   "test-group",
+		Type:       "primary",
+		ProjectUID: "project-123",
+		Prefix:     "",
+		Domain:     "example.groups.io",
+		GroupID:    12345,
+		URL:        "https://example.groups.io/g/test",
+		GroupName:  "test-group",
 	}
 
 	tests := []struct {
@@ -606,7 +606,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				Type:        "discussion_open",
 				Description: "This is a test mailing list description",
 				Title:       "Test List",
-				ServiceUID:   "parent-123",
+				ServiceUID:  "parent-123",
 			},
 			expectErr: false,
 		},
@@ -619,7 +619,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				CommitteeFilters: []string{"Voting Rep", "Observer"},
 				Description:      "Committee-based mailing list",
 				Title:            "Committee List",
-				ServiceUID:        "parent-456",
+				ServiceUID:       "parent-456",
 			},
 			expectErr: false,
 		},
@@ -637,7 +637,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				CommitteeFilters: []string{"Voting Rep"},
 				Description:      "Invalid committee setup",
 				Title:            "Invalid List",
-				ServiceUID:        "parent-123",
+				ServiceUID:       "parent-123",
 			},
 			expectErr: true,
 		},
@@ -651,7 +651,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				Type:        "announcement",
 				Description: "Test description that meets minimum length",
 				Title:       "Test Title",
-				ServiceUID:   "parent-123",
+				ServiceUID:  "parent-123",
 			},
 			expectErr: true,
 		},
@@ -734,7 +734,7 @@ func (m *MockServiceReader) GetRevision(ctx context.Context, uid string) (uint64
 
 func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 	ctx := context.Background()
-	
+
 	existingMailingList := &model.GrpsIOMailingList{
 		UID:         "mailing-list-123",
 		GroupName:   "sub-list", // Different from parent service to avoid main group rules
@@ -763,7 +763,7 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "valid update without parent service change",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list", // unchanged
+				GroupName:   "sub-list",    // unchanged
 				ServiceUID:  "service-123", // unchanged
 				Description: "Updated description that is long enough",
 				Type:        "discussion_moderated",

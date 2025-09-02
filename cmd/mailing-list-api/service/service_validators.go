@@ -68,7 +68,7 @@ func validateGroupName(groupName, fieldName string) error {
 
 // validateServiceCreationRules validates type-specific business rules for service creation
 // TODO: Future PR - Service limits per project when NATS List/Watch available:
-// - Max 1 primary per project (unique constraint already enforced)  
+// - Max 1 primary per project (unique constraint already enforced)
 // - Max 5 formation per project
 // - Max 10 shared per project
 func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
@@ -191,6 +191,12 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	}
 
 	// Validate global_owners email addresses if being updated
+	// Primary services MUST always have at least one owner - critical business rule
+	if existing.Type == "primary" {
+		if len(payload.GlobalOwners) == 0 {
+			return errors.NewValidation("global_owners must contain at least one email address for primary service type")
+		}
+	}
 	if len(payload.GlobalOwners) > 10 {
 		return errors.NewValidation("global_owners must not exceed 10 email addresses")
 	}
@@ -267,7 +273,7 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 	if payload.GroupName != existing.GroupName {
 		return errors.NewValidation("field 'group_name' is immutable")
 	}
-	
+
 	// Validate main group restrictions (critical business rule from Groups.io)
 	if parentService != nil && isMainGroup(existing, parentService) {
 		// Main groups must remain public announcement lists
@@ -278,44 +284,44 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 			return errors.NewValidation("main group must remain public")
 		}
 	}
-	
+
 	// Cannot set type to "custom" unless already "custom" (Groups.io business rule)
 	if payload.Type == "custom" && existing.Type != "custom" {
 		return errors.NewValidation("cannot set type to \"custom\"")
 	}
-	
+
 	// Cannot change visibility from private to public
-	// TODO: Future PR - Consider migrating from boolean 'public' field to string 'visibility' field 
+	// TODO: Future PR - Consider migrating from boolean 'public' field to string 'visibility' field
 	// for full Groups.io API compatibility (supporting "public", "private", "custom" values)
 	if !existing.Public && payload.Public {
 		return errors.NewValidation("cannot change visibility from private to public")
 	}
-	
+
 	// Parent service change validation (allow within same project only)
 	if payload.ServiceUID != existing.ServiceUID {
 		// Check if service reader is available for validation
 		if serviceReader == nil {
 			// Fallback to old restrictive behavior if no service reader provided
-			slog.WarnContext(ctx, "service reader not available for parent service validation - blocking change", 
+			slog.WarnContext(ctx, "service reader not available for parent service validation - blocking change",
 				"mailing_list_uid", existing.UID,
 				"old_service_uid", existing.ServiceUID,
 				"new_service_uid", payload.ServiceUID)
 			return errors.NewValidation("cannot change parent service")
 		}
-		
+
 		// Fetch the new parent service to validate the project ownership
 		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, payload.ServiceUID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to retrieve new parent service for validation", 
-				"error", err, 
+			slog.ErrorContext(ctx, "failed to retrieve new parent service for validation",
+				"error", err,
 				"new_service_uid", payload.ServiceUID,
 				"mailing_list_uid", existing.UID)
 			return errors.NewValidation("new parent service not found")
 		}
-		
+
 		// Allow parent service changes only within the same project
 		if newParentService.ProjectUID != existing.ProjectUID {
-			slog.WarnContext(ctx, "blocked cross-project parent service change", 
+			slog.WarnContext(ctx, "blocked cross-project parent service change",
 				"mailing_list_uid", existing.UID,
 				"current_project_uid", existing.ProjectUID,
 				"new_project_uid", newParentService.ProjectUID,
@@ -323,31 +329,31 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 				"new_service_uid", payload.ServiceUID)
 			return errors.NewValidation("cannot move mailing list to service in different project")
 		}
-		
-		slog.InfoContext(ctx, "allowing parent service change within same project", 
+
+		slog.InfoContext(ctx, "allowing parent service change within same project",
 			"mailing_list_uid", existing.UID,
 			"project_uid", existing.ProjectUID,
 			"old_service_uid", existing.ServiceUID,
 			"new_service_uid", payload.ServiceUID)
 	}
-	
+
 	// Cannot change committee without special handling
 	if payload.CommitteeUID != nil && *payload.CommitteeUID != existing.CommitteeUID {
 		// TODO: Future - trigger committee member sync
 		slog.Debug("committee change detected - member sync required", "mailing_list_uid", existing.UID)
 	}
-	
+
 	// Description and title length validations now handled by GOA
-	
+
 	// Validate subject tag format if provided
 	if payload.SubjectTag != nil && *payload.SubjectTag != "" {
 		if !isValidSubjectTag(*payload.SubjectTag) {
 			return errors.NewValidation("invalid subject tag format")
 		}
 	}
-	
+
 	// Committee filter enum validations now handled by GOA
-	
+
 	return nil
 }
 
@@ -356,7 +362,7 @@ func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, p
 	// Check if it's a main group (any service type)
 	if parentService != nil {
 		isMainGroup := false
-		
+
 		switch parentService.Type {
 		case "primary":
 			isMainGroup = mailingList.GroupName == parentService.GroupName
@@ -364,40 +370,40 @@ func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, p
 			// Formation and shared services use prefix as main group identifier
 			isMainGroup = mailingList.GroupName == parentService.Prefix
 		}
-		
+
 		if isMainGroup {
 			return errors.NewValidation(fmt.Sprintf("cannot delete the main group of a %s service", parentService.Type))
 		}
 	}
-	
+
 	// Protect announcement lists (typically used for critical communications)
 	if mailingList.Type == "announcement" {
 		return errors.NewValidation("announcement lists require special handling for deletion")
 	}
-	
+
 	// Check for active committee associations
 	if mailingList.CommitteeUID != "" {
 		// TODO: When committee sync is implemented, validate:
 		// - Check if committee sync is active
 		// - Verify no pending sync operations
 		// - Ensure committee members are notified
-		slog.Debug("committee-based list deletion - cleanup may be required", 
-			"mailing_list_uid", mailingList.UID, 
+		slog.Debug("committee-based list deletion - cleanup may be required",
+			"mailing_list_uid", mailingList.UID,
 			"committee_uid", mailingList.CommitteeUID)
 	}
-	
+
 	// TODO: Future PR - Groups.io API integration for:
 	// - Actual group/subgroup creation and validation
 	// - Validate subscriber count (block if >50 active subscribers)
 	// - Check for recent activity (block if activity within 7 days)
 	// - Verify no pending messages in moderation queue
 	// - DNS delegation checks for primary services
-	
+
 	// TODO: Future PR - Committee service integration for:
 	// - Member synchronization when committee changes
 	// - Committee association event handling
 	// - Automatic member updates based on committee filters
-	
+
 	return nil
 }
 
@@ -408,7 +414,7 @@ func isValidSubjectTag(tag string) bool {
 	if len(trimmed) == 0 {
 		return false
 	}
-	
+
 	// Check for characters that would break email subject formatting
 	invalidChars := []string{"\n", "\r", "\t", "[", "]"}
 	for _, char := range invalidChars {
@@ -416,7 +422,7 @@ func isValidSubjectTag(tag string) bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
