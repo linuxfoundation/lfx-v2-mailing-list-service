@@ -180,6 +180,11 @@ func (ml *grpsIOWriterOrchestrator) reserveMailingListConstraints(ctx context.Co
 
 // publishMailingListMessages publishes indexer and access control messages for mailing list creation
 func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
+	if ml.publisher == nil {
+		slog.DebugContext(ctx, "publisher not configured, skipping message publishing",
+			"mailing_list_uid", mailingList.UID)
+		return nil
+	}
 	return ml.publishMailingListChange(ctx, mailingList, model.ActionCreated)
 }
 
