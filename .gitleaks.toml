@@ -13,4 +13,4 @@ useDefault = true
         # Exclude test files as they often contain dummy/fake data
         '''.*_test\.go$''',
         '''(go.mod|go.sum)$'''
-    ] 
+    ]

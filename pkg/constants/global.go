@@ -19,9 +19,9 @@ const (
 // NATS messaging subjects
 const (
 	// ProjectGetSlugSubject is the NATS subject for getting project slug
-	ProjectGetSlugSubject = "project.get.slug"
+	ProjectGetSlugSubject = "lfx.projects-api.get_slug"
 	// ProjectGetNameSubject is the NATS subject for getting project name
-	ProjectGetNameSubject = "project.get.name"
+	ProjectGetNameSubject = "lfx.projects-api.get_name"
 
 	// CommitteeGetNameSubject is the NATS subject for getting committee name
 	CommitteeGetNameSubject = "lfx.committee-api.get_name"
