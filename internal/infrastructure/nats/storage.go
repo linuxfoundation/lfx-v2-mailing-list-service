@@ -135,6 +135,12 @@ func (s *storage) UpdateGrpsIOService(ctx context.Context, uid string, service *
 			slog.WarnContext(ctx, "service not found on update", "service_uid", uid)
 			return nil, 0, errs.NewNotFound("service not found")
 		}
+		// Check for revision mismatch (CAS failure)
+		var jsErr jetstream.JetStreamError
+		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+			slog.WarnContext(ctx, "revision mismatch on update", "service_uid", uid, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
 		slog.ErrorContext(ctx, "failed to update service", "error", err, "service_uid", uid)
 		return nil, 0, errs.NewServiceUnavailable("failed to update service")
 	}
@@ -157,6 +163,12 @@ func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedR
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			slog.WarnContext(ctx, "service not found on delete", "service_uid", uid)
 			return errs.NewNotFound("service not found")
+		}
+		// Check for revision mismatch (CAS failure)
+		var jsErr jetstream.JetStreamError
+		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+			slog.WarnContext(ctx, "revision mismatch on delete", "service_uid", uid, "expected_revision", expectedRevision)
+			return errs.NewConflict("revision mismatch")
 		}
 		slog.ErrorContext(ctx, "failed to delete service", "error", err, "service_uid", uid)
 		return errs.NewServiceUnavailable("failed to delete service")
@@ -547,6 +559,12 @@ func (s *storage) UpdateGrpsIOMailingList(ctx context.Context, uid string, maili
 			slog.WarnContext(ctx, "mailing list not found on update", "mailing_list_uid", uid)
 			return nil, 0, errs.NewNotFound("mailing list not found")
 		}
+		// Check for revision mismatch (CAS failure)
+		var jsErr jetstream.JetStreamError
+		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+			slog.WarnContext(ctx, "revision mismatch on update", "mailing_list_uid", uid, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
 		slog.ErrorContext(ctx, "failed to update mailing list", "error", err, "mailing_list_uid", uid)
 		return nil, 0, errs.NewServiceUnavailable("failed to update mailing list")
 	}
@@ -572,6 +590,12 @@ func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expec
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			slog.WarnContext(ctx, "mailing list not found on delete", "mailing_list_uid", uid)
 			return errs.NewNotFound("mailing list not found")
+		}
+		// Check for revision mismatch (CAS failure)
+		var jsErr jetstream.JetStreamError
+		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+			slog.WarnContext(ctx, "revision mismatch on delete", "mailing_list_uid", uid, "expected_revision", expectedRevision)
+			return errs.NewConflict("revision mismatch")
 		}
 		slog.ErrorContext(ctx, "failed to delete mailing list", "error", err, "mailing_list_uid", uid)
 		return errs.NewServiceUnavailable("failed to delete mailing list")

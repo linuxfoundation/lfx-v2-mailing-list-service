@@ -391,5 +391,262 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService(t *testing.T) {
 	}
 }
 
+func TestGrpsIOWriterOrchestrator_UpdateGrpsIOService_ConflictHandling(t *testing.T) {
+	testCases := []struct {
+		name             string
+		setupMock        func(*mock.MockRepository) (*model.GrpsIOService, uint64)
+		uid              string
+		expectedRevision uint64
+		actualRevision   uint64
+		expectedError    error
+		validate         func(t *testing.T, mockRepo *mock.MockRepository)
+	}{
+		{
+			name: "revision mismatch returns conflict error",
+			setupMock: func(mockRepo *mock.MockRepository) (*model.GrpsIOService, uint64) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+
+				service := &model.GrpsIOService{
+					UID:          "service-1",
+					Type:         "primary",
+					Domain:       "lists.test.org",
+					ProjectUID:   "project-1",
+					ProjectName:  "Test Project",
+					ProjectSlug:  "test-project",
+					GroupName:    "test-project",
+					GlobalOwners: []string{"admin@test.org"},
+					Public:       true,
+					Status:       "created",
+				}
+
+				// Create service and simulate revision mismatch
+				// First add the service normally (revision 1)
+				mockRepo.AddService(service)
+				// Then create another copy and update it to increment revision
+				serviceCopy := *service
+				serviceCopy.Status = "updated to increment revision"
+				tempWriter := mock.NewMockGrpsIOServiceWriter(mockRepo)
+				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1)
+				// Now the service has revision 2, but client will try with revision 1
+
+				return service, 2
+			},
+			uid:              "service-1",
+			expectedRevision: 1, // Client thinks revision is 1
+			actualRevision:   2, // But actual revision is 2
+			expectedError:    errs.Conflict{},
+			validate: func(t *testing.T, mockRepo *mock.MockRepository) {
+				// Service should still exist with revision 2
+				_, rev, err := mockRepo.GetGrpsIOService(context.Background(), "service-1")
+				assert.NoError(t, err)
+				assert.Equal(t, uint64(2), rev, "Revision should remain unchanged after conflict")
+			},
+		},
+		{
+			name: "service not found during update",
+			setupMock: func(mockRepo *mock.MockRepository) (*model.GrpsIOService, uint64) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+				return nil, 0
+			},
+			uid:              "non-existent-service",
+			expectedRevision: 1,
+			actualRevision:   0,
+			expectedError:    errs.NotFound{},
+			validate: func(t *testing.T, mockRepo *mock.MockRepository) {
+				assert.Equal(t, 0, mockRepo.GetServiceCount(), "No services should exist")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			setupService, _ := tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+			publisher := mock.NewMockMessagePublisher()
+
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+				WithPublisher(publisher),
+			)
+
+			// Prepare update data
+			var updateService *model.GrpsIOService
+			if setupService != nil {
+				updateService = &model.GrpsIOService{
+					UID:          tc.uid,
+					Type:         setupService.Type,
+					Domain:       setupService.Domain,
+					ProjectUID:   setupService.ProjectUID,
+					ProjectName:  setupService.ProjectName,
+					ProjectSlug:  setupService.ProjectSlug,
+					GroupName:    setupService.GroupName,
+					GlobalOwners: []string{"updated@test.org"}, // Changed field
+					Public:       setupService.Public,
+					Status:       setupService.Status,
+				}
+			} else {
+				updateService = &model.GrpsIOService{
+					UID:          tc.uid,
+					Type:         "primary",
+					ProjectUID:   "project-1", // Add required fields to avoid validation errors
+					GlobalOwners: []string{"admin@test.org"},
+				}
+			}
+
+			// Execute
+			ctx := context.Background()
+			result, revision, err := orchestrator.UpdateGrpsIOService(ctx, tc.uid, updateService, tc.expectedRevision)
+
+			// Validate error type
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+
+				switch tc.expectedError.(type) {
+				case errs.Conflict:
+					var conflictErr errs.Conflict
+					assert.True(t, errors.As(err, &conflictErr), "Expected Conflict error, got %T", err)
+				case errs.NotFound:
+					var notFoundErr errs.NotFound
+					assert.True(t, errors.As(err, &notFoundErr), "Expected NotFound error, got %T", err)
+				}
+				assert.Nil(t, result)
+				assert.Equal(t, uint64(0), revision)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Greater(t, revision, uint64(0))
+			}
+
+			// Run additional validation
+			if tc.validate != nil {
+				tc.validate(t, mockRepo)
+			}
+		})
+	}
+}
+
+func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testing.T) {
+	testCases := []struct {
+		name             string
+		setupMock        func(*mock.MockRepository) (*model.GrpsIOService, uint64)
+		uid              string
+		expectedRevision uint64
+		expectedError    error
+		validate         func(t *testing.T, mockRepo *mock.MockRepository)
+	}{
+		{
+			name: "revision mismatch on delete returns conflict error",
+			setupMock: func(mockRepo *mock.MockRepository) (*model.GrpsIOService, uint64) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+
+				service := &model.GrpsIOService{
+					UID:          "service-1",
+					Type:         "formation", // Non-primary service can be deleted
+					Domain:       "lists.test.org",
+					ProjectUID:   "project-1",
+					ProjectName:  "Test Project",
+					ProjectSlug:  "test-project",
+					GroupName:    "form-test",
+					Prefix:       "form-",
+					GlobalOwners: []string{"admin@test.org"},
+					Public:       true,
+					Status:       "created",
+				}
+
+				// Create service and simulate revision mismatch
+				// First add the service normally (revision 1)
+				mockRepo.AddService(service)
+				// Then update it twice to get revision 3
+				serviceCopy := *service
+				serviceCopy.Status = "updated to increment revision"
+				tempWriter := mock.NewMockGrpsIOServiceWriter(mockRepo)
+				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1)
+				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 2)
+				// Now the service has revision 3, but client will try with revision 1
+
+				return service, 3
+			},
+			uid:              "service-1",
+			expectedRevision: 1, // Client thinks revision is 1
+			expectedError:    errs.Conflict{},
+			validate: func(t *testing.T, mockRepo *mock.MockRepository) {
+				// Service should still exist after failed delete
+				_, rev, err := mockRepo.GetGrpsIOService(context.Background(), "service-1")
+				assert.NoError(t, err)
+				assert.Equal(t, uint64(3), rev, "Service should still exist with original revision")
+				assert.Equal(t, 1, mockRepo.GetServiceCount(), "Service should not be deleted")
+			},
+		},
+		{
+			name: "delete non-existent service returns not found",
+			setupMock: func(mockRepo *mock.MockRepository) (*model.GrpsIOService, uint64) {
+				mockRepo.ClearAll()
+				return nil, 0
+			},
+			uid:              "non-existent-service",
+			expectedRevision: 1,
+			expectedError:    errs.NotFound{},
+			validate: func(t *testing.T, mockRepo *mock.MockRepository) {
+				assert.Equal(t, 0, mockRepo.GetServiceCount(), "No services should exist")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+			publisher := mock.NewMockMessagePublisher()
+
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+				WithPublisher(publisher),
+			)
+
+			// Execute
+			ctx := context.Background()
+			err := orchestrator.DeleteGrpsIOService(ctx, tc.uid, tc.expectedRevision)
+
+			// Validate error type
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+
+				switch tc.expectedError.(type) {
+				case errs.Conflict:
+					var conflictErr errs.Conflict
+					assert.True(t, errors.As(err, &conflictErr), "Expected Conflict error, got %T", err)
+				case errs.NotFound:
+					var notFoundErr errs.NotFound
+					assert.True(t, errors.As(err, &notFoundErr), "Expected NotFound error, got %T", err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Run additional validation
+			if tc.validate != nil {
+				tc.validate(t, mockRepo)
+			}
+		})
+	}
+}
+
 // Note: buildServiceIndexerMessage and buildServiceAccessControlMessage methods are private
 // and are tested indirectly through the Create/Update/Delete operations above
