@@ -90,7 +90,7 @@ heimdall:
   enabled: true
   url: http://heimdall.lfx.svc.cluster.local:4456
   # jwksUrl is the URL to the JSON Web Key Set endpoint for JWT validation
-  jwksUrl: http://heimdall.lfx.svc.cluster.local:4457/.well-known/jwks
+  jwksUrl: http://lfx-platform-heimdall.lfx.svc.cluster.local:4457/.well-known/jwks
 
 # authelia is the configuration for the Authelia server
 authelia:
@@ -108,6 +108,8 @@ app:
   authSource: jwt
   # jwtAuthDisabledMockLocalPrincipal is used for local development to bypass JWT validation
   jwtAuthDisabledMockLocalPrincipal: ""
+  # use_oidc_contextualizer is a boolean to determine if the OIDC contextualizer should be used
+  use_oidc_contextualizer: true
   # jwt is the configuration for JWT authentication
   # audience is the intended audience for the JWT token
   audience: lfx-v2-mailing-list-service
