@@ -849,7 +849,7 @@ func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
 			},
 		},
 		{
-			name: "preserve_committee_name_when_uid_empty",
+			name: "clear_committee_name_when_uid_removed",
 			existing: &model.GrpsIOMailingList{
 				UID:           "list-2",
 				GroupName:     "general-discuss",
@@ -866,12 +866,13 @@ func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
 				Public:       true,
 			},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
-				assert.Equal(t, "Technical Steering Committee", result.CommitteeName)
+				assert.Equal(t, "", result.CommitteeName, "Committee name should be cleared when UID is removed")
 				assert.Equal(t, "", result.CommitteeUID)
+				assert.Equal(t, true, result.Public)
 			},
 		},
 		{
-			name: "allow_committee_name_change_when_uid_changes",
+			name: "use_new_committee_name_when_uid_changes",
 			existing: &model.GrpsIOMailingList{
 				UID:           "list-3",
 				GroupName:     "committee-discuss",
@@ -884,14 +885,15 @@ func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
 				ProjectSlug:   "test-project",
 			},
 			updated: &model.GrpsIOMailingList{
-				CommitteeUID:  "committee-2",       // Different committee
-				CommitteeName: "Should be ignored", // This should not be preserved since UID changed
+				CommitteeUID:  "committee-2",          // Different committee
+				CommitteeName: "Governance Committee", // New committee name
 				Public:        true,
 			},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
-				// When CommitteeUID changes, CommitteeName should NOT be preserved
-				assert.Equal(t, "Should be ignored", result.CommitteeName)
+				// When CommitteeUID changes, new CommitteeName should be used as provided
+				assert.Equal(t, "Governance Committee", result.CommitteeName)
 				assert.Equal(t, "committee-2", result.CommitteeUID)
+				assert.Equal(t, true, result.Public)
 			},
 		},
 	}

@@ -98,6 +98,17 @@ func (s *storage) get(ctx context.Context, bucket, uid string, model any, onlyRe
 	return data.Revision(), nil
 }
 
+// isRevisionMismatch checks if an error indicates a revision mismatch (CAS failure)
+// This handles API error codes that JetStream returns for wrong last sequence
+func (s *storage) isRevisionMismatch(err error) bool {
+	var jsErr jetstream.JetStreamError
+	if errors.As(err, &jsErr) && jsErr.APIError() != nil && 
+		jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+		return true
+	}
+	return false
+}
+
 // GetServiceRevision retrieves only the revision number for a given UID without unmarshaling the data
 // This method will be used in future for conditional requests and caching scenarios
 func (s *storage) GetServiceRevision(ctx context.Context, bucket, uid string) (uint64, error) {
@@ -135,9 +146,7 @@ func (s *storage) UpdateGrpsIOService(ctx context.Context, uid string, service *
 			slog.WarnContext(ctx, "service not found on update", "service_uid", uid)
 			return nil, 0, errs.NewNotFound("service not found")
 		}
-		// Check for revision mismatch (CAS failure)
-		var jsErr jetstream.JetStreamError
-		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+		if s.isRevisionMismatch(err) {
 			slog.WarnContext(ctx, "revision mismatch on update", "service_uid", uid, "expected_revision", expectedRevision)
 			return nil, 0, errs.NewConflict("revision mismatch")
 		}
@@ -164,9 +173,7 @@ func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedR
 			slog.WarnContext(ctx, "service not found on delete", "service_uid", uid)
 			return errs.NewNotFound("service not found")
 		}
-		// Check for revision mismatch (CAS failure)
-		var jsErr jetstream.JetStreamError
-		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+		if s.isRevisionMismatch(err) {
 			slog.WarnContext(ctx, "revision mismatch on delete", "service_uid", uid, "expected_revision", expectedRevision)
 			return errs.NewConflict("revision mismatch")
 		}
@@ -559,9 +566,7 @@ func (s *storage) UpdateGrpsIOMailingList(ctx context.Context, uid string, maili
 			slog.WarnContext(ctx, "mailing list not found on update", "mailing_list_uid", uid)
 			return nil, 0, errs.NewNotFound("mailing list not found")
 		}
-		// Check for revision mismatch (CAS failure)
-		var jsErr jetstream.JetStreamError
-		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+		if s.isRevisionMismatch(err) {
 			slog.WarnContext(ctx, "revision mismatch on update", "mailing_list_uid", uid, "expected_revision", expectedRevision)
 			return nil, 0, errs.NewConflict("revision mismatch")
 		}
@@ -591,9 +596,7 @@ func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expec
 			slog.WarnContext(ctx, "mailing list not found on delete", "mailing_list_uid", uid)
 			return errs.NewNotFound("mailing list not found")
 		}
-		// Check for revision mismatch (CAS failure)
-		var jsErr jetstream.JetStreamError
-		if errors.As(err, &jsErr) && jsErr.APIError() != nil && jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+		if s.isRevisionMismatch(err) {
 			slog.WarnContext(ctx, "revision mismatch on delete", "mailing_list_uid", uid, "expected_revision", expectedRevision)
 			return errs.NewConflict("revision mismatch")
 		}
@@ -604,15 +607,16 @@ func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expec
 	// Clean up secondary indices (best effort - don't fail if they don't exist)
 	s.deleteMailingListSecondaryIndices(ctx, mailingList)
 
-	// Clean up unique constraint
+	// Clean up unique constraint (verify it belongs to this list)
 	constraintKey := fmt.Sprintf(constants.KVLookupMailingListConstraintPrefix, mailingList.ServiceUID, mailingList.GroupName)
 	kv, exists := s.client.kvStore[constants.KVBucketNameGrpsIOMailingLists]
 	if exists && kv != nil {
-		err = kv.Delete(ctx, constraintKey)
-		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
-			slog.WarnContext(ctx, "failed to delete mailing list constraint", "error", err, "constraint_key", constraintKey)
-			// Don't fail the operation for constraint cleanup
+		entry, err := kv.Get(ctx, constraintKey)
+		if err == nil && string(entry.Value()) == mailingList.UID {
+			// Only delete if it still points to our UID
+			kv.Delete(ctx, constraintKey, jetstream.LastRevision(entry.Revision()))
 		}
+		// Silently skip if not found or points to different UID (best effort cleanup)
 	}
 
 	slog.DebugContext(ctx, "nats storage: mailing list deleted", "mailing_list_uid", uid)

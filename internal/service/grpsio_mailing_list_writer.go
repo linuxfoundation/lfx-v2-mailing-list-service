@@ -404,6 +404,8 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListDeletion(ctx context.Conte
 }
 
 // DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control
+// Note: mailingList parameter contains server-fetched data from the service layer,
+// not client-supplied data. Used for cleanup of secondary indices and constraints.
 func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
 	slog.DebugContext(ctx, "orchestrator: deleting mailing list",
 		"mailing_list_uid", uid,
@@ -458,10 +460,13 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 	updated.ServiceUID = existing.ServiceUID   // Parent reference is immutable
 	updated.GroupName = existing.GroupName     // Group name is immutable due to unique constraint
 
-	// Preserve committee name unless UID changes (refresh handled in update path)
-	if updated.CommitteeUID == "" || updated.CommitteeUID == existing.CommitteeUID {
+	// Committee name handling: preserve if UID unchanged, clear if UID removed, use provided if changed
+	if updated.CommitteeUID == existing.CommitteeUID {
 		updated.CommitteeName = existing.CommitteeName
+	} else if updated.CommitteeUID == "" {
+		updated.CommitteeName = "" // Clear name when committee association removed
 	}
+	// If UID changed to different committee, keep client-provided name
 
 	// Update timestamp
 	updated.UpdatedAt = time.Now()
