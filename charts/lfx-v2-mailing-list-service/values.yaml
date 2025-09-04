@@ -104,6 +104,10 @@ app:
   logLevel: debug
   # logAddSource is a boolean to determine if the log source should be added
   logAddSource: true
+  # authSource is the authentication source (jwt or mock)
+  authSource: jwt
+  # jwtAuthDisabledMockLocalPrincipal is used for local development to bypass JWT validation
+  jwtAuthDisabledMockLocalPrincipal: ""
   # use_oidc_contextualizer is a boolean to determine if the OIDC contextualizer should be used
   use_oidc_contextualizer: true
   # jwt is the configuration for JWT authentication

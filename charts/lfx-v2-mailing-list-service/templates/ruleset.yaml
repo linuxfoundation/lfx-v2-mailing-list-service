@@ -4,8 +4,8 @@
 apiVersion: heimdall.dadrus.github.com/v1alpha4
 kind: RuleSet
 metadata:
-  name: {{ .Chart.Name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{.Chart.Name}}
+  namespace: {{.Release.Namespace}}
 spec:
   rules:
     # GroupsIO Services endpoints
@@ -18,11 +18,12 @@ spec:
       execute:
         - authenticator: oidc
         - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
+        {{- if .Values.app.use_oidc_contextualizer}}
         - contextualizer: oidc_contextualizer
         {{- end }}
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
+
         - authorizer: openfga_check
           config:
             values:
@@ -31,34 +32,6 @@ spec:
         {{- else }}
         # When OpenFGA is disabled, allow all requests
         # (Only meant for *local development* because OpenFGA should be enabled when deployed)
-        - authorizer: allow_all
-        {{- end }}
-        - finalizer: create_jwt
-          config:
-            values:
-              aud: {{ .Values.app.audience }}
-
-    # GroupsIO Mailing List endpoints
-    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:create"
-      match:
-        methods:
-          - POST
-        routes:
-          - path: /groupsio/mailing-lists
-      execute:
-        - authenticator: oidc
-        - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer }}
-        - contextualizer: oidc_contextualizer
-        {{- end }}
-        {{- if .Values.openfga.enabled }}
-        - authorizer: json_content_type
-        - authorizer: openfga_check
-          config:
-            values:
-              relation: writer
-              object: "groupsio_service:{{ "{{- .Request.Body.service_uid -}}" }}"
-        {{- else }}
         - authorizer: allow_all
         {{- end }}
         - finalizer: create_jwt
@@ -139,6 +112,113 @@ spec:
         {{- else }}
         # When OpenFGA is disabled, allow all requests
         # (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+      # GroupsIO Mailing List endpoints
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:create"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /groupsio/mailing-lists
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: json_content_type
+        
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_service:{{ "{{- .Request.Body.service_uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:get"
+      match:
+        methods:
+          - GET
+        routes:
+          - path: /groupsio/mailing-lists/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: viewer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:update"
+      match:
+        methods:
+          - PUT
+        routes:
+          - path: /groupsio/mailing-lists/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list:delete"
+      match:
+        methods:
+          - DELETE
+        routes:
+          - path: /groupsio/mailing-lists/:uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: owner
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
         - authorizer: allow_all
         {{- end }}
         - finalizer: create_jwt

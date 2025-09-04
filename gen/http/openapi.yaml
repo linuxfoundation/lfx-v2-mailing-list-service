@@ -84,6 +84,217 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{uid}:
+        get:
+            tags:
+                - mailing-list
+            summary: get-grpsio-mailing-list mailing-list
+            description: Get GroupsIO mailing list details by UID
+            operationId: mailing-list#get-grpsio-mailing-list
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/MailingListGetGrpsioMailingListResponseBody'
+                    headers:
+                        ETag:
+                            description: ETag header value
+                            type: string
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-grpsio-mailing-list mailing-list
+            description: Update GroupsIO mailing list
+            operationId: mailing-list#update-grpsio-mailing-list
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+                - name: Update-Grpsio-Mailing-ListRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioMailingListRequestBody'
+                    required:
+                        - group_name
+                        - public
+                        - type
+                        - description
+                        - title
+                        - service_uid
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/MailingListWithReadonlyAttributes'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-mailing-list mailing-list
+            description: Delete GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services:
         post:
             tags:
@@ -477,16 +688,17 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: emeritus
+                    example: Observer
                     enum:
-                        - voting_rep
-                        - alt_voting_rep
-                        - observer
-                        - emeritus
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
                 description: Committee member filters
                 example:
-                    - voting_rep
-                    - alt_voting_rep
+                    - Voting Rep
+                    - Alternate Voting Rep
             committee_uid:
                 type: string
                 description: Committee UUID for committee-based mailing lists
@@ -494,14 +706,17 @@ definitions:
                 format: uuid
             description:
                 type: string
-                description: Mailing list description (minimum 11 characters)
+                description: Mailing list description (11-500 characters)
                 example: Technical steering committee discussions
                 minLength: 11
+                maxLength: 500
             group_name:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                minLength: 3
+                maxLength: 34
             public:
                 type: boolean
                 description: Whether the mailing list is publicly accessible
@@ -516,10 +731,13 @@ definitions:
                 type: string
                 description: Subject tag prefix
                 example: '[TSC]'
+                maxLength: 50
             title:
                 type: string
                 description: Mailing list title
                 example: Technical Steering Committee
+                minLength: 5
+                maxLength: 100
             type:
                 type: string
                 description: Mailing list type
@@ -542,8 +760,8 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committee_filters:
-                - voting_rep
-                - alt_voting_rep
+                - Voting Rep
+                - Alternate Voting Rep
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -682,16 +900,17 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: emeritus
+                    example: Voting Rep
                     enum:
-                        - voting_rep
-                        - alt_voting_rep
-                        - observer
-                        - emeritus
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
                 description: Committee member filters
                 example:
-                    - voting_rep
-                    - alt_voting_rep
+                    - Voting Rep
+                    - Alternate Voting Rep
             committee_uid:
                 type: string
                 description: Committee UUID for committee-based mailing lists
@@ -704,14 +923,17 @@ definitions:
                 format: date-time
             description:
                 type: string
-                description: Mailing list description (minimum 11 characters)
+                description: Mailing list description (11-500 characters)
                 example: Technical steering committee discussions
                 minLength: 11
+                maxLength: 500
             group_name:
                 type: string
                 description: Mailing list group name
                 example: technical-steering-committee
-                pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                minLength: 3
+                maxLength: 34
             last_reviewed_at:
                 type: string
                 description: The timestamp when the service was last reviewed in RFC3339 format
@@ -750,10 +972,13 @@ definitions:
                 type: string
                 description: Subject tag prefix
                 example: '[TSC]'
+                maxLength: 50
             title:
                 type: string
                 description: Mailing list title
                 example: Technical Steering Committee
+                minLength: 5
+                maxLength: 100
             type:
                 type: string
                 description: Mailing list type
@@ -786,8 +1011,8 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committee_filters:
-                - voting_rep
-                - alt_voting_rep
+                - Voting Rep
+                - Alternate Voting Rep
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
@@ -807,9 +1032,121 @@ definitions:
             writers:
                 - manager_user_id1
                 - manager_user_id2
+    MailingListGetGrpsioMailingListResponseBody:
+        title: MailingListGetGrpsioMailingListResponseBody
+        $ref: '#/definitions/MailingListWithReadonlyAttributes'
     MailingListGetGrpsioServiceResponseBody:
         title: MailingListGetGrpsioServiceResponseBody
         $ref: '#/definitions/ServiceWithReadonlyAttributes'
+    MailingListUpdateGrpsioMailingListRequestBody:
+        title: MailingListUpdateGrpsioMailingListRequestBody
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    type: string
+                    example: Occaecati dignissimos facere doloremque.
+                description: Auditor user IDs who can audit this service
+                example:
+                    - auditor_user_id1
+                    - auditor_user_id2
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: Alternate Voting Rep
+                    enum:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
+                description: Committee member filters
+                example:
+                    - Voting Rep
+                    - Alternate Voting Rep
+            committee_uid:
+                type: string
+                description: Committee UUID for committee-based mailing lists
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            description:
+                type: string
+                description: Mailing list description (11-500 characters)
+                example: Technical steering committee discussions
+                minLength: 11
+                maxLength: 500
+            group_name:
+                type: string
+                description: Mailing list group name
+                example: technical-steering-committee
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                minLength: 3
+                maxLength: 34
+            public:
+                type: boolean
+                description: Whether the mailing list is publicly accessible
+                default: false
+                example: false
+            service_uid:
+                type: string
+                description: Service UUID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            subject_tag:
+                type: string
+                description: Subject tag prefix
+                example: '[TSC]'
+                maxLength: 50
+            title:
+                type: string
+                description: Mailing list title
+                example: Technical Steering Committee
+                minLength: 5
+                maxLength: 100
+            type:
+                type: string
+                description: Mailing list type
+                example: discussion_moderated
+                enum:
+                    - announcement
+                    - discussion_moderated
+                    - discussion_open
+            writers:
+                type: array
+                items:
+                    type: string
+                    example: Numquam deserunt.
+                description: Manager user IDs who can edit/modify this service
+                example:
+                    - manager_user_id1
+                    - manager_user_id2
+        example:
+            auditors:
+                - auditor_user_id1
+                - auditor_user_id2
+            committee_filters:
+                - Voting Rep
+                - Alternate Voting Rep
+            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            description: Technical steering committee discussions
+            group_name: technical-steering-committee
+            public: false
+            service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            subject_tag: '[TSC]'
+            title: Technical Steering Committee
+            type: discussion_moderated
+            writers:
+                - manager_user_id1
+                - manager_user_id2
+        required:
+            - group_name
+            - public
+            - type
+            - description
+            - title
+            - service_uid
     MailingListUpdateGrpsioServiceRequestBody:
         title: MailingListUpdateGrpsioServiceRequestBody
         type: object
@@ -913,6 +1250,145 @@ definitions:
         required:
             - type
             - project_uid
+    MailingListWithReadonlyAttributes:
+        title: MailingListWithReadonlyAttributes
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    type: string
+                    example: Eos sed nihil provident illum omnis.
+                description: Auditor user IDs who can audit this service
+                example:
+                    - auditor_user_id1
+                    - auditor_user_id2
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: Voting Rep
+                    enum:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
+                description: Committee member filters
+                example:
+                    - Voting Rep
+                    - Alternate Voting Rep
+            committee_uid:
+                type: string
+                description: Committee UUID for committee-based mailing lists
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            created_at:
+                type: string
+                description: The timestamp when the service was created (read-only)
+                example: "2023-01-15T10:30:00Z"
+                format: date-time
+            description:
+                type: string
+                description: Mailing list description (11-500 characters)
+                example: Technical steering committee discussions
+                minLength: 11
+                maxLength: 500
+            group_name:
+                type: string
+                description: Mailing list group name
+                example: technical-steering-committee
+                pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                minLength: 3
+                maxLength: 34
+            project_name:
+                type: string
+                description: Project name (read-only)
+                example: Cloud Native Computing Foundation
+            project_slug:
+                type: string
+                description: Project slug identifier (read-only)
+                example: cncf
+                format: regexp
+                pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+            project_uid:
+                type: string
+                description: LFXv2 Project UID (inherited from parent service)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            public:
+                type: boolean
+                description: Whether the mailing list is publicly accessible
+                default: false
+                example: false
+            service_uid:
+                type: string
+                description: Service UUID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            subject_tag:
+                type: string
+                description: Subject tag prefix
+                example: '[TSC]'
+                maxLength: 50
+            title:
+                type: string
+                description: Mailing list title
+                example: Technical Steering Committee
+                minLength: 5
+                maxLength: 100
+            type:
+                type: string
+                description: Mailing list type
+                example: discussion_moderated
+                enum:
+                    - announcement
+                    - discussion_moderated
+                    - discussion_open
+            uid:
+                type: string
+                description: Mailing list UID -- unique identifier for the mailing list
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            updated_at:
+                type: string
+                description: The timestamp when the service was last updated (read-only)
+                example: "2023-06-20T14:45:30Z"
+                format: date-time
+            writers:
+                type: array
+                items:
+                    type: string
+                    example: Rem aperiam.
+                description: Manager user IDs who can edit/modify this service
+                example:
+                    - manager_user_id1
+                    - manager_user_id2
+        description: A representation of GroupsIO mailing lists with readonly attributes.
+        example:
+            auditors:
+                - auditor_user_id1
+                - auditor_user_id2
+            committee_filters:
+                - Voting Rep
+                - Alternate Voting Rep
+            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            created_at: "2023-01-15T10:30:00Z"
+            description: Technical steering committee discussions
+            group_name: technical-steering-committee
+            project_name: Cloud Native Computing Foundation
+            project_slug: cncf
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            public: false
+            service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            subject_tag: '[TSC]'
+            title: Technical Steering Committee
+            type: discussion_moderated
+            uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            updated_at: "2023-06-20T14:45:30Z"
+            writers:
+                - manager_user_id1
+                - manager_user_id2
     NotFoundError:
         title: NotFoundError
         type: object

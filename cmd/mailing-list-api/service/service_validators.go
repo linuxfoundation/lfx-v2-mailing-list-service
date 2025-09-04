@@ -4,6 +4,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/mail"
@@ -12,6 +13,7 @@ import (
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
@@ -42,7 +44,33 @@ func etagValidator(etag *string) (uint64, error) {
 	return parsedRevision, nil
 }
 
+// Reserved words that cannot be used for group names
+var reservedWords = []string{
+	"admin", "api", "www", "mail", "support", "noreply", "postmaster",
+	"no-reply", "webmaster", "root", "administrator", "moderator",
+}
+
+// Group name pattern validation is now handled by GOA design layer
+
+// validateGroupName validates business rules for group names (reserved words only)
+// Format and length validations are now handled by GOA design layer
+func validateGroupName(groupName, fieldName string) error {
+	// Reserved words validation (business logic that cannot be in GOA)
+	lowerName := strings.ToLower(groupName)
+	for _, reserved := range reservedWords {
+		if lowerName == reserved {
+			return errors.NewValidation(fmt.Sprintf("%s cannot use reserved word '%s'", fieldName, reserved))
+		}
+	}
+
+	return nil
+}
+
 // validateServiceCreationRules validates type-specific business rules for service creation
+// TODO: Future PR - Service limits per project when NATS List/Watch available:
+// - Max 1 primary per project (unique constraint already enforced)
+// - Max 5 formation per project
+// - Max 10 shared per project
 func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
 	serviceType := payload.Type
 
@@ -69,9 +97,12 @@ func validatePrimaryRules(payload *mailinglistservice.CreateGrpsioServicePayload
 		return errors.NewValidation("prefix must not be provided for primary service type")
 	}
 
-	// global_owners is required for primary services
+	// global_owners is required for primary services and must be 1-10 emails
 	if len(payload.GlobalOwners) == 0 {
 		return errors.NewValidation("global_owners is required and must contain at least one email address for primary service type")
+	}
+	if len(payload.GlobalOwners) > 10 {
+		return errors.NewValidation("global_owners must not exceed 10 email addresses for primary service type")
 	}
 
 	// Validate global_owners email addresses
@@ -160,6 +191,15 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	}
 
 	// Validate global_owners email addresses if being updated
+	// Primary services MUST always have at least one owner - critical business rule
+	if existing.Type == "primary" {
+		if len(payload.GlobalOwners) == 0 {
+			return errors.NewValidation("global_owners must contain at least one email address for primary service type")
+		}
+	}
+	if len(payload.GlobalOwners) > 10 {
+		return errors.NewValidation("global_owners must not exceed 10 email addresses")
+	}
 	if err := validateEmailAddresses(payload.GlobalOwners, "global_owners"); err != nil {
 		return err
 	}
@@ -210,25 +250,180 @@ func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailing
 		return errors.NewValidation("payload is required")
 	}
 
-	// Group name length validation (like old ITX service - max 34 chars)
-	if len(payload.GroupName) > 34 {
-		return errors.NewValidation("group name is too long (maximum 34 characters)")
+	// Group name validation: length, pattern, and reserved words
+	if err := validateGroupName(payload.GroupName, "group_name"); err != nil {
+		return err
 	}
 
-	// Committee filters validation
+	// Title, description, and committee filter format validations now handled by GOA
+
+	// Committee filters business logic validation
 	if len(payload.CommitteeFilters) > 0 && (payload.CommitteeUID == nil || *payload.CommitteeUID == "") {
 		return errors.NewValidation("committee must not be empty if committee_filters is non-empty")
 	}
 
-	// Validate committee filter values
-	validFilters := []string{"voting_rep", "alt_voting_rep", "observer", "emeritus"}
-	for _, filter := range payload.CommitteeFilters {
-		if !contains(validFilters, filter) {
-			return errors.NewValidation(fmt.Sprintf("invalid committee_filter: %s. Valid values: %v", filter, validFilters))
+	return nil
+}
+
+// Description length validation is now handled by GOA design layer
+
+// validateMailingListUpdate validates update constraints for mailing lists
+func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailingList, parentService *model.GrpsIOService, payload *mailinglistservice.UpdateGrpsioMailingListPayload, serviceReader port.GrpsIOServiceReader) error {
+	// Validate group_name immutability (critical business rule)
+	if payload.GroupName != existing.GroupName {
+		return errors.NewValidation("field 'group_name' is immutable")
+	}
+
+	// Validate main group restrictions (critical business rule from Groups.io)
+	if parentService != nil && isMainGroup(existing, parentService) {
+		// Main groups must remain public announcement lists
+		if payload.Type != "announcement" {
+			return errors.NewValidation("main group must be an announcement list")
+		}
+		if !payload.Public {
+			return errors.NewValidation("main group must remain public")
 		}
 	}
 
+	// Cannot set type to "custom" unless already "custom" (Groups.io business rule)
+	if payload.Type == "custom" && existing.Type != "custom" {
+		return errors.NewValidation("cannot set type to \"custom\"")
+	}
+
+	// Cannot change visibility from private to public
+	// TODO: Future PR - Consider migrating from boolean 'public' field to string 'visibility' field
+	// for full Groups.io API compatibility (supporting "public", "private", "custom" values)
+	if !existing.Public && payload.Public {
+		return errors.NewValidation("cannot change visibility from private to public")
+	}
+
+	// Parent service change validation (allow within same project only)
+	if payload.ServiceUID != existing.ServiceUID {
+		// Check if service reader is available for validation
+		if serviceReader == nil {
+			// Fallback to old restrictive behavior if no service reader provided
+			slog.WarnContext(ctx, "service reader not available for parent service validation - blocking change",
+				"mailing_list_uid", existing.UID,
+				"old_service_uid", existing.ServiceUID,
+				"new_service_uid", payload.ServiceUID)
+			return errors.NewValidation("cannot change parent service")
+		}
+
+		// Fetch the new parent service to validate the project ownership
+		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, payload.ServiceUID)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to retrieve new parent service for validation",
+				"error", err,
+				"new_service_uid", payload.ServiceUID,
+				"mailing_list_uid", existing.UID)
+			return errors.NewValidation("new parent service not found")
+		}
+
+		// Allow parent service changes only within the same project
+		if newParentService.ProjectUID != existing.ProjectUID {
+			slog.WarnContext(ctx, "blocked cross-project parent service change",
+				"mailing_list_uid", existing.UID,
+				"current_project_uid", existing.ProjectUID,
+				"new_project_uid", newParentService.ProjectUID,
+				"current_service_uid", existing.ServiceUID,
+				"new_service_uid", payload.ServiceUID)
+			return errors.NewValidation("cannot move mailing list to service in different project")
+		}
+
+		slog.InfoContext(ctx, "allowing parent service change within same project",
+			"mailing_list_uid", existing.UID,
+			"project_uid", existing.ProjectUID,
+			"old_service_uid", existing.ServiceUID,
+			"new_service_uid", payload.ServiceUID)
+	}
+
+	// Cannot change committee without special handling
+	if payload.CommitteeUID != nil && *payload.CommitteeUID != existing.CommitteeUID {
+		// TODO: Future - trigger committee member sync
+		slog.Debug("committee change detected - member sync required", "mailing_list_uid", existing.UID)
+	}
+
+	// Description and title length validations now handled by GOA
+
+	// Validate subject tag format if provided
+	if payload.SubjectTag != nil && *payload.SubjectTag != "" {
+		if !isValidSubjectTag(*payload.SubjectTag) {
+			return errors.NewValidation("invalid subject tag format")
+		}
+	}
+
+	// Committee filter enum validations now handled by GOA
+
 	return nil
+}
+
+// validateMailingListDeleteProtection validates deletion protection rules
+func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) error {
+	// Check if it's a main group (any service type)
+	if parentService != nil {
+		isMainGroup := false
+
+		switch parentService.Type {
+		case "primary":
+			isMainGroup = mailingList.GroupName == parentService.GroupName
+		case "formation", "shared":
+			// Formation and shared services use prefix as main group identifier
+			isMainGroup = mailingList.GroupName == parentService.Prefix
+		}
+
+		if isMainGroup {
+			return errors.NewValidation(fmt.Sprintf("cannot delete the main group of a %s service", parentService.Type))
+		}
+	}
+
+	// Protect announcement lists (typically used for critical communications)
+	if mailingList.Type == "announcement" {
+		return errors.NewValidation("announcement lists require special handling for deletion")
+	}
+
+	// Check for active committee associations
+	if mailingList.CommitteeUID != "" {
+		// TODO: When committee sync is implemented, validate:
+		// - Check if committee sync is active
+		// - Verify no pending sync operations
+		// - Ensure committee members are notified
+		slog.Debug("committee-based list deletion - cleanup may be required",
+			"mailing_list_uid", mailingList.UID,
+			"committee_uid", mailingList.CommitteeUID)
+	}
+
+	// TODO: Future PR - Groups.io API integration for:
+	// - Actual group/subgroup creation and validation
+	// - Validate subscriber count (block if >50 active subscribers)
+	// - Check for recent activity (block if activity within 7 days)
+	// - Verify no pending messages in moderation queue
+	// - DNS delegation checks for primary services
+
+	// TODO: Future PR - Committee service integration for:
+	// - Member synchronization when committee changes
+	// - Committee association event handling
+	// - Automatic member updates based on committee filters
+
+	return nil
+}
+
+// isValidSubjectTag validates subject tag format (business logic only)
+// Length validation is now handled by GOA design layer
+func isValidSubjectTag(tag string) bool {
+	trimmed := strings.TrimSpace(tag)
+	if len(trimmed) == 0 {
+		return false
+	}
+
+	// Check for characters that would break email subject formatting
+	invalidChars := []string{"\n", "\r", "\t", "[", "]"}
+	for _, char := range invalidChars {
+		if strings.Contains(trimmed, char) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // contains checks if a string slice contains a specific string
@@ -239,4 +434,10 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// isMainGroup determines if a mailing list is the main group for a service
+// Main groups have the same group_name as their parent service's group_name
+func isMainGroup(mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) bool {
+	return mailingList.GroupName == parentService.GroupName
 }

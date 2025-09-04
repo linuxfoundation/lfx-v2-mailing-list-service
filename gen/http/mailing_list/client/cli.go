@@ -304,9 +304,15 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"voting_rep\",\n         \"alt_voting_rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-z][a-z0-9-]*[a-z0-9]$"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
+		if utf8.RuneCountInString(body.GroupName) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 3, true))
+		}
+		if utf8.RuneCountInString(body.GroupName) > 34 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 34, false))
+		}
 		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
@@ -314,12 +320,26 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 		}
 		for _, e := range body.CommitteeFilters {
-			if !(e == "voting_rep" || e == "alt_voting_rep" || e == "observer" || e == "emeritus") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"voting_rep", "alt_voting_rep", "observer", "emeritus"}))
+			if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
 			}
 		}
 		if utf8.RuneCountInString(body.Description) < 11 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", body.Description, utf8.RuneCountInString(body.Description), 11, true))
+		}
+		if utf8.RuneCountInString(body.Description) > 500 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", body.Description, utf8.RuneCountInString(body.Description), 500, false))
+		}
+		if utf8.RuneCountInString(body.Title) < 5 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", body.Title, utf8.RuneCountInString(body.Title), 5, true))
+		}
+		if utf8.RuneCountInString(body.Title) > 100 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", body.Title, utf8.RuneCountInString(body.Title), 100, false))
+		}
+		if body.SubjectTag != nil {
+			if utf8.RuneCountInString(*body.SubjectTag) > 50 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.subject_tag", *body.SubjectTag, utf8.RuneCountInString(*body.SubjectTag), 50, false))
+			}
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
 		if err != nil {
@@ -374,6 +394,207 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 	}
 	v.Version = version
 	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildGetGrpsioMailingListPayload builds the payload for the mailing-list
+// get-grpsio-mailing-list endpoint from CLI flags.
+func BuildGetGrpsioMailingListPayload(mailingListGetGrpsioMailingListUID string, mailingListGetGrpsioMailingListVersion string, mailingListGetGrpsioMailingListBearerToken string) (*mailinglist.GetGrpsioMailingListPayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListGetGrpsioMailingListUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListGetGrpsioMailingListVersion != "" {
+			version = &mailingListGetGrpsioMailingListVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGrpsioMailingListBearerToken != "" {
+			bearerToken = &mailingListGetGrpsioMailingListBearerToken
+		}
+	}
+	v := &mailinglist.GetGrpsioMailingListPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildUpdateGrpsioMailingListPayload builds the payload for the mailing-list
+// update-grpsio-mailing-list endpoint from CLI flags.
+func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody string, mailingListUpdateGrpsioMailingListUID string, mailingListUpdateGrpsioMailingListVersion string, mailingListUpdateGrpsioMailingListBearerToken string, mailingListUpdateGrpsioMailingListIfMatch string) (*mailinglist.UpdateGrpsioMailingListPayload, error) {
+	var err error
+	var body UpdateGrpsioMailingListRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
+		if utf8.RuneCountInString(body.GroupName) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 3, true))
+		}
+		if utf8.RuneCountInString(body.GroupName) > 34 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 34, false))
+		}
+		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
+		}
+		if body.CommitteeUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+		}
+		for _, e := range body.CommitteeFilters {
+			if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+			}
+		}
+		if utf8.RuneCountInString(body.Description) < 11 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", body.Description, utf8.RuneCountInString(body.Description), 11, true))
+		}
+		if utf8.RuneCountInString(body.Description) > 500 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.description", body.Description, utf8.RuneCountInString(body.Description), 500, false))
+		}
+		if utf8.RuneCountInString(body.Title) < 5 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", body.Title, utf8.RuneCountInString(body.Title), 5, true))
+		}
+		if utf8.RuneCountInString(body.Title) > 100 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.title", body.Title, utf8.RuneCountInString(body.Title), 100, false))
+		}
+		if body.SubjectTag != nil {
+			if utf8.RuneCountInString(*body.SubjectTag) > 50 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.subject_tag", *body.SubjectTag, utf8.RuneCountInString(*body.SubjectTag), 50, false))
+			}
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var uid string
+	{
+		uid = mailingListUpdateGrpsioMailingListUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListUpdateGrpsioMailingListVersion != "" {
+			version = &mailingListUpdateGrpsioMailingListVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListUpdateGrpsioMailingListBearerToken != "" {
+			bearerToken = &mailingListUpdateGrpsioMailingListBearerToken
+		}
+	}
+	var ifMatch *string
+	{
+		if mailingListUpdateGrpsioMailingListIfMatch != "" {
+			ifMatch = &mailingListUpdateGrpsioMailingListIfMatch
+		}
+	}
+	v := &mailinglist.UpdateGrpsioMailingListPayload{
+		GroupName:    body.GroupName,
+		Public:       body.Public,
+		Type:         body.Type,
+		CommitteeUID: body.CommitteeUID,
+		Description:  body.Description,
+		Title:        body.Title,
+		SubjectTag:   body.SubjectTag,
+		ServiceUID:   body.ServiceUID,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
+// BuildDeleteGrpsioMailingListPayload builds the payload for the mailing-list
+// delete-grpsio-mailing-list endpoint from CLI flags.
+func BuildDeleteGrpsioMailingListPayload(mailingListDeleteGrpsioMailingListUID string, mailingListDeleteGrpsioMailingListVersion string, mailingListDeleteGrpsioMailingListBearerToken string, mailingListDeleteGrpsioMailingListIfMatch string) (*mailinglist.DeleteGrpsioMailingListPayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListDeleteGrpsioMailingListUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListDeleteGrpsioMailingListVersion != "" {
+			version = &mailingListDeleteGrpsioMailingListVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListDeleteGrpsioMailingListBearerToken != "" {
+			bearerToken = &mailingListDeleteGrpsioMailingListBearerToken
+		}
+	}
+	var ifMatch *string
+	{
+		if mailingListDeleteGrpsioMailingListIfMatch != "" {
+			ifMatch = &mailingListDeleteGrpsioMailingListIfMatch
+		}
+	}
+	v := &mailinglist.DeleteGrpsioMailingListPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
 
 	return v, nil
 }

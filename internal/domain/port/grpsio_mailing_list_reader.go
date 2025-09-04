@@ -12,17 +12,11 @@ import (
 
 // GrpsIOMailingListReader defines the interface for reading mailing list data
 type GrpsIOMailingListReader interface {
-	// GetGrpsIOMailingList retrieves a mailing list by UID
-	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error)
+	// GetGrpsIOMailingList retrieves a mailing list by UID with revision
+	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error)
 
-	// GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID
-	GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error)
-
-	// GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID
-	GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error)
-
-	// GetGrpsIOMailingListsByProject retrieves mailing lists by project ID
-	GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error)
+	// GetMailingListRevision retrieves only the revision for a given UID
+	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
 
 	// CheckMailingListExists checks if a mailing list with the given name exists in parent service
 	CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error)

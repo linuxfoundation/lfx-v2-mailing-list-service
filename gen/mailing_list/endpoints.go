@@ -24,6 +24,9 @@ type Endpoints struct {
 	UpdateGrpsioService     goa.Endpoint
 	DeleteGrpsioService     goa.Endpoint
 	CreateGrpsioMailingList goa.Endpoint
+	GetGrpsioMailingList    goa.Endpoint
+	UpdateGrpsioMailingList goa.Endpoint
+	DeleteGrpsioMailingList goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -38,6 +41,9 @@ func NewEndpoints(s Service) *Endpoints {
 		UpdateGrpsioService:     NewUpdateGrpsioServiceEndpoint(s, a.JWTAuth),
 		DeleteGrpsioService:     NewDeleteGrpsioServiceEndpoint(s, a.JWTAuth),
 		CreateGrpsioMailingList: NewCreateGrpsioMailingListEndpoint(s, a.JWTAuth),
+		GetGrpsioMailingList:    NewGetGrpsioMailingListEndpoint(s, a.JWTAuth),
+		UpdateGrpsioMailingList: NewUpdateGrpsioMailingListEndpoint(s, a.JWTAuth),
+		DeleteGrpsioMailingList: NewDeleteGrpsioMailingListEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -50,6 +56,9 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateGrpsioService = m(e.UpdateGrpsioService)
 	e.DeleteGrpsioService = m(e.DeleteGrpsioService)
 	e.CreateGrpsioMailingList = m(e.CreateGrpsioMailingList)
+	e.GetGrpsioMailingList = m(e.GetGrpsioMailingList)
+	e.UpdateGrpsioMailingList = m(e.UpdateGrpsioMailingList)
+	e.DeleteGrpsioMailingList = m(e.DeleteGrpsioMailingList)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -180,5 +189,74 @@ func NewCreateGrpsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFun
 			return nil, err
 		}
 		return s.CreateGrpsioMailingList(ctx, p)
+	}
+}
+
+// NewGetGrpsioMailingListEndpoint returns an endpoint function that calls the
+// method "get-grpsio-mailing-list" of service "mailing-list".
+func NewGetGrpsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGrpsioMailingListPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGrpsioMailingList(ctx, p)
+	}
+}
+
+// NewUpdateGrpsioMailingListEndpoint returns an endpoint function that calls
+// the method "update-grpsio-mailing-list" of service "mailing-list".
+func NewUpdateGrpsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*UpdateGrpsioMailingListPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.UpdateGrpsioMailingList(ctx, p)
+	}
+}
+
+// NewDeleteGrpsioMailingListEndpoint returns an endpoint function that calls
+// the method "delete-grpsio-mailing-list" of service "mailing-list".
+func NewDeleteGrpsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*DeleteGrpsioMailingListPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return nil, s.DeleteGrpsioMailingList(ctx, p)
 	}
 }

@@ -46,14 +46,14 @@ func (w *TestMockMailingListWriter) CreateGrpsIOMailingList(ctx context.Context,
 	return w.mock.CreateGrpsIOMailingList(ctx, mailingList)
 }
 
-func (w *TestMockMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
+func (w *TestMockMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
 	mockWriter := mock.NewMockGrpsIOWriter(w.mock)
-	return mockWriter.UpdateGrpsIOMailingList(ctx, mailingList)
+	return mockWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 }
 
-func (w *TestMockMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
+func (w *TestMockMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
 	mockWriter := mock.NewMockGrpsIOWriter(w.mock)
-	return mockWriter.DeleteGrpsIOMailingList(ctx, uid)
+	return mockWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingList)
 }
 
 // UniqueMailingListGroupName reserves a unique group name within parent service
@@ -455,7 +455,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList)
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -464,6 +464,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, result)
+				require.Greater(t, revision, uint64(0), "revision should be greater than 0")
 			}
 
 			tc.validate(t, result, mockRepo)
@@ -567,13 +568,14 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList_PublishingErrors(t *te
 
 			// Execute
 			ctx := context.Background()
-			result, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList)
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList)
 
 			// Validate
 			if tc.expectComplete {
 				assert.NoError(t, err)
 				assert.NotNil(t, result)
 				assert.NotEmpty(t, result.UID)
+				assert.Greater(t, revision, uint64(0), "revision should be greater than 0")
 				assert.Equal(t, 1, mockRepo.GetMailingListCount())
 			} else {
 				assert.Error(t, err)
@@ -617,7 +619,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListIndexerMessage(t *testing.T) {
 			ctx := context.Background()
 
 			// Execute
-			result, err := orchestrator.buildMailingListIndexerMessage(ctx, tc.mailingList)
+			result, err := orchestrator.buildMailingListIndexerMessage(ctx, tc.mailingList, model.ActionCreated)
 
 			// Validate
 			if tc.expectedError {
@@ -657,7 +659,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Public:     true,
 				Relations:  map[string][]string{},
 				References: map[string]string{
-					"project": "project-1",
+					"project":                 "project-1",
 					constants.RelationService: "service-1",
 				},
 			},
@@ -677,9 +679,9 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Public:     false,
 				Relations:  map[string][]string{},
 				References: map[string]string{
-					"project":   "project-2",
-					"committee": "committee-1",
-					constants.RelationService:   "service-2",
+					"project":                 "project-2",
+					"committee":               "committee-1",
+					constants.RelationService: "service-2",
 				},
 			},
 		},
@@ -695,6 +697,230 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 
 			// Validate
 			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+// TestGrpsIOWriterOrchestrator_UpdateGrpsIOMailingList tests the update functionality
+func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMailingList(t *testing.T) {
+	testCases := []struct {
+		name               string
+		setupMock          func(*mock.MockRepository)
+		existingUID        string
+		updatedMailingList *model.GrpsIOMailingList
+		expectedRevision   uint64
+		expectedError      error
+		validate           func(*testing.T, *model.GrpsIOMailingList, *mock.MockRepository)
+	}{
+		{
+			name: "successful_update_without_committee_change_preserves_name",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+
+				// Add parent service
+				service := &model.GrpsIOService{
+					UID:         "service-1",
+					Type:        "primary",
+					ProjectUID:  "project-1",
+					ProjectName: "Test Project",
+					ProjectSlug: "test-project",
+					Domain:      "lists.test.org",
+					GroupName:   "test-project",
+					Public:      true,
+					Status:      "created",
+				}
+				mockRepo.AddService(service)
+
+				// Add committee
+				mockRepo.AddCommittee("committee-1", "Technical Steering Committee")
+
+				// Create existing mailing list
+				existing := &model.GrpsIOMailingList{
+					UID:           "list-1",
+					GroupName:     "tsc-discuss",
+					Public:        false,
+					Type:          "discussion_moderated",
+					CommitteeUID:  "committee-1",
+					CommitteeName: "Technical Steering Committee",
+					Description:   "Technical steering committee discussions",
+					Title:         "TSC Discussion List",
+					ServiceUID:    "service-1",
+					ProjectUID:    "project-1",
+					ProjectName:   "Test Project",
+					ProjectSlug:   "test-project",
+					CreatedAt:     time.Now().Add(-time.Hour),
+					UpdatedAt:     time.Now().Add(-time.Hour),
+				}
+				mockRepo.AddMailingList(existing)
+			},
+			existingUID: "list-1",
+			updatedMailingList: &model.GrpsIOMailingList{
+				GroupName:    "tsc-discuss",
+				Public:       true, // Changed
+				Type:         "discussion_moderated",
+				CommitteeUID: "committee-1",                                      // Same committee
+				Description:  "Updated technical steering committee discussions", // Changed
+				Title:        "TSC Discussion List",
+				ServiceUID:   "service-1",
+			},
+			expectedRevision: 1,
+			expectedError:    nil,
+			validate: func(t *testing.T, result *model.GrpsIOMailingList, mockRepo *mock.MockRepository) {
+				assert.Equal(t, "committee-1", result.CommitteeUID)
+				assert.Equal(t, "Technical Steering Committee", result.CommitteeName)                   // Should be preserved
+				assert.Equal(t, true, result.Public)                                                    // Should be updated
+				assert.Equal(t, "Updated technical steering committee discussions", result.Description) // Should be updated
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+			publisher := mock.NewMockMessagePublisher()
+
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+				WithPublisher(publisher),
+			)
+
+			// Execute
+			ctx := context.Background()
+			result, revision, err := orchestrator.UpdateGrpsIOMailingList(ctx, tc.existingUID, tc.updatedMailingList, tc.expectedRevision)
+
+			// Validate
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				assert.IsType(t, tc.expectedError, err)
+				assert.Nil(t, result)
+				assert.Equal(t, uint64(0), revision)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				assert.Greater(t, revision, uint64(0))
+
+				// Validate immutable fields are preserved
+				assert.Equal(t, tc.existingUID, result.UID)
+				assert.Equal(t, tc.updatedMailingList.ServiceUID, result.ServiceUID)
+			}
+
+			tc.validate(t, result, mockRepo)
+		})
+	}
+}
+
+// TestGrpsIOWriterOrchestrator_mergeMailingListData tests the merge logic in isolation
+func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
+	testCases := []struct {
+		name     string
+		existing *model.GrpsIOMailingList
+		updated  *model.GrpsIOMailingList
+		validate func(*testing.T, *model.GrpsIOMailingList)
+	}{
+		{
+			name: "preserve_committee_name_when_uid_unchanged",
+			existing: &model.GrpsIOMailingList{
+				UID:           "list-1",
+				GroupName:     "tsc-discuss",
+				CommitteeUID:  "committee-1",
+				CommitteeName: "Technical Steering Committee",
+				CreatedAt:     time.Now().Add(-time.Hour),
+				ServiceUID:    "service-1",
+				ProjectUID:    "project-1",
+				ProjectName:   "Test Project",
+				ProjectSlug:   "test-project",
+			},
+			updated: &model.GrpsIOMailingList{
+				CommitteeUID: "committee-1", // Same committee
+				Public:       true,          // Changed field
+			},
+			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
+				assert.Equal(t, "Technical Steering Committee", result.CommitteeName)
+				assert.Equal(t, "committee-1", result.CommitteeUID)
+				assert.Equal(t, true, result.Public)
+			},
+		},
+		{
+			name: "clear_committee_name_when_uid_removed",
+			existing: &model.GrpsIOMailingList{
+				UID:           "list-2",
+				GroupName:     "general-discuss",
+				CommitteeUID:  "committee-1",
+				CommitteeName: "Technical Steering Committee",
+				CreatedAt:     time.Now().Add(-time.Hour),
+				ServiceUID:    "service-1",
+				ProjectUID:    "project-1",
+				ProjectName:   "Test Project",
+				ProjectSlug:   "test-project",
+			},
+			updated: &model.GrpsIOMailingList{
+				CommitteeUID: "", // Empty committee (removing committee)
+				Public:       true,
+			},
+			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
+				assert.Equal(t, "", result.CommitteeName, "Committee name should be cleared when UID is removed")
+				assert.Equal(t, "", result.CommitteeUID)
+				assert.Equal(t, true, result.Public)
+			},
+		},
+		{
+			name: "use_new_committee_name_when_uid_changes",
+			existing: &model.GrpsIOMailingList{
+				UID:           "list-3",
+				GroupName:     "committee-discuss",
+				CommitteeUID:  "committee-1",
+				CommitteeName: "Technical Steering Committee",
+				CreatedAt:     time.Now().Add(-time.Hour),
+				ServiceUID:    "service-1",
+				ProjectUID:    "project-1",
+				ProjectName:   "Test Project",
+				ProjectSlug:   "test-project",
+			},
+			updated: &model.GrpsIOMailingList{
+				CommitteeUID:  "committee-2",          // Different committee
+				CommitteeName: "Governance Committee", // New committee name
+				Public:        true,
+			},
+			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
+				// When CommitteeUID changes, new CommitteeName should be used as provided
+				assert.Equal(t, "Governance Committee", result.CommitteeName)
+				assert.Equal(t, "committee-2", result.CommitteeUID)
+				assert.Equal(t, true, result.Public)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			ctx := context.Background()
+			orchestrator := &grpsIOWriterOrchestrator{}
+
+			// Execute
+			orchestrator.mergeMailingListData(ctx, tc.existing, tc.updated)
+
+			// Validate immutable fields are always preserved
+			assert.Equal(t, tc.existing.UID, tc.updated.UID)
+			assert.Equal(t, tc.existing.CreatedAt, tc.updated.CreatedAt)
+			assert.Equal(t, tc.existing.ServiceUID, tc.updated.ServiceUID)
+			assert.Equal(t, tc.existing.GroupName, tc.updated.GroupName)
+			assert.Equal(t, tc.existing.ProjectUID, tc.updated.ProjectUID)
+			assert.Equal(t, tc.existing.ProjectName, tc.updated.ProjectName)
+			assert.Equal(t, tc.existing.ProjectSlug, tc.updated.ProjectSlug)
+
+			// UpdatedAt should be set to current time
+			assert.True(t, tc.updated.UpdatedAt.After(tc.existing.CreatedAt))
+
+			// Run custom validation
+			tc.validate(t, tc.updated)
 		})
 	}
 }

@@ -283,7 +283,7 @@ func GrpsIOReaderOrchestrator(ctx context.Context) service.GrpsIOReader {
 	)
 }
 
-// GrpsIOWriterOrchestrator initializes the service writer orchestrator  
+// GrpsIOWriterOrchestrator initializes the service writer orchestrator
 func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 	grpsIOWriter := GrpsIOWriter(ctx)
 	grpsIOReader := GrpsIOReader(ctx)

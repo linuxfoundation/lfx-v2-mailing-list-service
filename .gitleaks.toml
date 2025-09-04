@@ -12,5 +12,7 @@ useDefault = true
     paths = [
         # Exclude test files as they often contain dummy/fake data
         '''.*_test\.go$''',
-        '''(go.mod|go.sum)$'''
-    ]
+        '''(go.mod|go.sum)$''',
+        # Exclude documentation files with example tokens
+        '''CLAUDE\.md$'''
+    ] 

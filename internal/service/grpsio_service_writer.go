@@ -459,4 +459,3 @@ func (sw *grpsIOWriterOrchestrator) mergeServiceData(ctx context.Context, existi
 		"mutable_fields", []string{"global_owners", "status", "public"},
 	)
 }
-

@@ -26,14 +26,10 @@ type GrpsIOServiceReader interface {
 
 // GrpsIOMailingListReader defines the interface for mailing list read operations
 type GrpsIOMailingListReader interface {
-	// GetGrpsIOMailingList retrieves a single mailing list by UID
-	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID
-	GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID
-	GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error)
-	// GetGrpsIOMailingListsByProject retrieves mailing lists by project ID
-	GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error)
+	// GetGrpsIOMailingList retrieves a single mailing list by UID with revision
+	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error)
+	// GetMailingListRevision retrieves only the revision for a given UID
+	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
 }
 
 // grpsIOReaderOrchestratorOption defines a function type for setting options on the composite orchestrator

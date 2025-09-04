@@ -50,14 +50,16 @@ const (
 	TypeAnnouncement        = "announcement"
 	TypeDiscussionModerated = "discussion_moderated"
 	TypeDiscussionOpen      = "discussion_open"
+	TypeCustom              = "custom" // TODO: Verify if Groups.io actually supports custom type
 )
 
 // Valid committee filters
 const (
-	CommitteeFilterVotingRep    = "voting_rep"
-	CommitteeFilterAltVotingRep = "alt_voting_rep"
-	CommitteeFilterObserver     = "observer"
-	CommitteeFilterEmeritus     = "emeritus"
+	CommitteeFilterVotingRep    = "Voting Rep"
+	CommitteeFilterAltVotingRep = "Alternate Voting Rep"
+	CommitteeFilterObserver     = "Observer"
+	CommitteeFilterEmeritus     = "Emeritus"
+	CommitteeFilterNone         = "None"
 )
 
 // ValidCommitteeFilters returns all valid committee filter values
@@ -67,6 +69,17 @@ func ValidCommitteeFilters() []string {
 		CommitteeFilterAltVotingRep,
 		CommitteeFilterObserver,
 		CommitteeFilterEmeritus,
+		CommitteeFilterNone,
+	}
+}
+
+// ValidMailingListTypes returns all valid mailing list type values
+func ValidMailingListTypes() []string {
+	return []string{
+		TypeAnnouncement,
+		TypeDiscussionModerated,
+		TypeDiscussionOpen,
+		TypeCustom,
 	}
 }
 
@@ -250,7 +263,7 @@ func isValidGroupName(groupName string) bool {
 // Removed isValidVisibility - now using Public bool field
 
 func isValidMailingListType(mlType string) bool {
-	return mlType == TypeAnnouncement || mlType == TypeDiscussionModerated || mlType == TypeDiscussionOpen
+	return contains(ValidMailingListTypes(), mlType)
 }
 
 func contains(slice []string, item string) bool {

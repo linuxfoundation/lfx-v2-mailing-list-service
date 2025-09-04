@@ -248,13 +248,18 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 func MailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
 		dsl.Example("technical-steering-committee")
-		dsl.Pattern(`^[a-z][a-z0-9-]*[a-z0-9]$`)
+		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$`)
+		dsl.MinLength(3)
+		dsl.MaxLength(34)
 	})
 	dsl.Attribute("public", dsl.Boolean, "Whether the mailing list is publicly accessible", func() {
 		dsl.Default(false)
 		dsl.Example(false)
 	})
 	dsl.Attribute("type", dsl.String, "Mailing list type", func() {
+		// TODO: Future PR - Verify if Groups.io supports "custom" type and update enum accordingly
+		// If supported: Add "custom" to enum below and update validation in grpsio_mailing_list.go line 103
+		// If not supported: Remove TypeCustom from grpsio_mailing_list.go and ValidMailingListTypes()
 		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
 		dsl.Example("discussion_moderated")
 	})
@@ -264,19 +269,23 @@ func MailingListBaseAttributes() {
 	})
 	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
 		dsl.Elem(func() {
-			dsl.Enum("voting_rep", "alt_voting_rep", "observer", "emeritus")
+			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
 		})
-		dsl.Example([]string{"voting_rep", "alt_voting_rep"})
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
 	})
-	dsl.Attribute("description", dsl.String, "Mailing list description (minimum 11 characters)", func() {
+	dsl.Attribute("description", dsl.String, "Mailing list description (11-500 characters)", func() {
 		dsl.MinLength(11)
+		dsl.MaxLength(500)
 		dsl.Example("Technical steering committee discussions")
 	})
 	dsl.Attribute("title", dsl.String, "Mailing list title", func() {
 		dsl.Example("Technical Steering Committee")
+		dsl.MinLength(5)
+		dsl.MaxLength(100)
 	})
 	dsl.Attribute("subject_tag", dsl.String, "Subject tag prefix", func() {
 		dsl.Example("[TSC]")
+		dsl.MaxLength(50)
 	})
 	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
 		dsl.Format(dsl.FormatUUID)

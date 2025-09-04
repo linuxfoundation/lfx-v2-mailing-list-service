@@ -235,13 +235,13 @@ func (w *MockGrpsIOMailingListWriter) CreateGrpsIOMailingList(ctx context.Contex
 }
 
 // UpdateGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
-	return w.mock.UpdateGrpsIOMailingList(ctx, mailingList)
+func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
+	return w.mock.UpdateGrpsIOMailingListWithRevision(ctx, uid, mailingList, expectedRevision)
 }
 
 // DeleteGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
-	return w.mock.DeleteGrpsIOMailingList(ctx, uid)
+func (w *MockGrpsIOMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
+	return w.mock.DeleteGrpsIOMailingListWithRevision(ctx, uid, expectedRevision)
 }
 
 // CreateSecondaryIndices delegates to MockRepository
@@ -305,12 +305,12 @@ func (w *MockGrpsIOWriter) CreateGrpsIOMailingList(ctx context.Context, mailingL
 	return w.mailingListWriter.CreateGrpsIOMailingList(ctx, mailingList)
 }
 
-func (w *MockGrpsIOWriter) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
-	return w.mailingListWriter.UpdateGrpsIOMailingList(ctx, mailingList)
+func (w *MockGrpsIOWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
+	return w.mailingListWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 }
 
-func (w *MockGrpsIOWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
-	return w.mailingListWriter.DeleteGrpsIOMailingList(ctx, uid)
+func (w *MockGrpsIOWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
+	return w.mailingListWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingList)
 }
 
 func (w *MockGrpsIOWriter) CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
@@ -718,25 +718,13 @@ func (m *MockRepository) GetServiceCount() int {
 // ==================== MAILING LIST READER OPERATIONS ====================
 
 // GetGrpsIOMailingList retrieves a mailing list by UID (interface implementation)
-func (m *MockRepository) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, error) {
-	slog.DebugContext(ctx, "mock mailing list: getting mailing list", "mailing_list_uid", uid)
+func (m *MockRepository) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error) {
+	return m.GetGrpsIOMailingListWithRevision(ctx, uid)
+}
 
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	mailingList, exists := m.mailingLists[uid]
-	if !exists {
-		return nil, errors.NewNotFound("mailing list not found")
-	}
-
-	// Return a deep copy to avoid data races
-	mailingListCopy := *mailingList
-	mailingListCopy.CommitteeFilters = make([]string, len(mailingList.CommitteeFilters))
-	copy(mailingListCopy.CommitteeFilters, mailingList.CommitteeFilters)
-	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-	mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
-
-	return &mailingListCopy, nil
+// GetMailingListRevision retrieves only the revision for a given UID (interface implementation)
+func (m *MockRepository) GetMailingListRevision(ctx context.Context, uid string) (uint64, error) {
+	return m.GetGrpsIOMailingListRevision(ctx, uid)
 }
 
 // GetGrpsIOMailingListWithRevision retrieves a mailing list by UID with revision (internal helper)
@@ -783,75 +771,6 @@ func (m *MockRepository) GetGrpsIOMailingListRevision(ctx context.Context, uid s
 	}
 
 	return revision, nil
-}
-
-// GetGrpsIOMailingListsByParent retrieves mailing lists by parent service ID
-func (m *MockRepository) GetGrpsIOMailingListsByParent(ctx context.Context, parentID string) ([]*model.GrpsIOMailingList, error) {
-	slog.DebugContext(ctx, "mock mailing list: getting mailing lists by parent", "parent_id", parentID)
-
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	var result []*model.GrpsIOMailingList
-	for _, mailingList := range m.mailingLists {
-		if mailingList.ServiceUID == parentID {
-			// Create a deep copy
-			mailingListCopy := *mailingList
-			mailingListCopy.CommitteeFilters = make([]string, len(mailingList.CommitteeFilters))
-			copy(mailingListCopy.CommitteeFilters, mailingList.CommitteeFilters)
-			mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-			mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
-			result = append(result, &mailingListCopy)
-		}
-	}
-
-	return result, nil
-}
-
-// GetGrpsIOMailingListsByCommittee retrieves mailing lists by committee ID
-func (m *MockRepository) GetGrpsIOMailingListsByCommittee(ctx context.Context, committeeID string) ([]*model.GrpsIOMailingList, error) {
-	slog.DebugContext(ctx, "mock mailing list: getting mailing lists by committee", "committee_id", committeeID)
-
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	var result []*model.GrpsIOMailingList
-	for _, mailingList := range m.mailingLists {
-		if mailingList.CommitteeUID == committeeID {
-			// Create a deep copy
-			mailingListCopy := *mailingList
-			mailingListCopy.CommitteeFilters = make([]string, len(mailingList.CommitteeFilters))
-			copy(mailingListCopy.CommitteeFilters, mailingList.CommitteeFilters)
-			mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-			mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
-			result = append(result, &mailingListCopy)
-		}
-	}
-
-	return result, nil
-}
-
-// GetGrpsIOMailingListsByProject retrieves mailing lists by project ID
-func (m *MockRepository) GetGrpsIOMailingListsByProject(ctx context.Context, projectID string) ([]*model.GrpsIOMailingList, error) {
-	slog.DebugContext(ctx, "mock mailing list: getting mailing lists by project", "project_id", projectID)
-
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	var result []*model.GrpsIOMailingList
-	for _, mailingList := range m.mailingLists {
-		if mailingList.ProjectUID == projectID {
-			// Create a deep copy
-			mailingListCopy := *mailingList
-			mailingListCopy.CommitteeFilters = make([]string, len(mailingList.CommitteeFilters))
-			copy(mailingListCopy.CommitteeFilters, mailingList.CommitteeFilters)
-			mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-			mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
-			result = append(result, &mailingListCopy)
-		}
-	}
-
-	return result, nil
 }
 
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
@@ -1063,7 +982,7 @@ func (m *MockRepository) CreateSecondaryIndices(ctx context.Context, mailingList
 
 	// Mock implementation - return mock keys that would be created
 	createdKeys := []string{
-		fmt.Sprintf(constants.KVLookupMailingListParentPrefix, mailingList.ServiceUID),
+		fmt.Sprintf(constants.KVLookupMailingListServicePrefix, mailingList.ServiceUID),
 		fmt.Sprintf(constants.KVLookupMailingListProjectPrefix, mailingList.ProjectUID),
 	}
 
