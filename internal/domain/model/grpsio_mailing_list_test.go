@@ -523,7 +523,7 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 			},
 			expectedTags: []string{
 				"project_uid:project-456",
-				"groupsio_service_uid:service-789",
+				"service_uid:service-789",
 				"type:discussion_open",
 				"public:true",
 				"committee_uid:committee-123",

@@ -200,7 +200,7 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	if ml.ServiceUID != "" {
-		tag := fmt.Sprintf("groupsio_service_uid:%s", ml.ServiceUID)
+		tag := fmt.Sprintf("service_uid:%s", ml.ServiceUID)
 		tags = append(tags, tag)
 	}
 

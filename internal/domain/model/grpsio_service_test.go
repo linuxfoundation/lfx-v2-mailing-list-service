@@ -194,7 +194,7 @@ func TestGrpsIOService_Tags(t *testing.T) {
 			expectedTags: []string{
 				"project_uid:project-456",
 				"project_slug:test-project",
-				"groupsio_service_uid:service-123",
+				"service_uid:service-123",
 				"service_type:primary",
 			},
 		},
@@ -217,7 +217,7 @@ func TestGrpsIOService_Tags(t *testing.T) {
 			},
 			expectedTags: []string{
 				"project_uid:project-999",
-				"groupsio_service_uid:service-789",
+				"service_uid:service-789",
 				"service_type:formation",
 			},
 		},
@@ -280,7 +280,7 @@ func TestGrpsIOService_EdgeCases(t *testing.T) {
 		// Tags should include special characters as-is
 		tags := service.Tags()
 		assert.Contains(t, tags, "project_slug:project-slug-with-unicode-🚀")
-		assert.Contains(t, tags, "groupsio_service_uid:service-with-special-chars-@#$%")
+		assert.Contains(t, tags, "service_uid:service-with-special-chars-@#$%")
 	})
 
 	t.Run("service with very long fields", func(t *testing.T) {
