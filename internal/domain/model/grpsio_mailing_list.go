@@ -224,9 +224,7 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	if ml.UID != "" {
-		// Add both plain UID and prefixed version for consistency with other models
-		tags = append(tags, ml.UID)
-		tag := fmt.Sprintf("mailing_list_uid:%s", ml.UID)
+		tag := fmt.Sprintf("groupsio_mailing_list_uid:%s", ml.UID)
 		tags = append(tags, tag)
 	}
 

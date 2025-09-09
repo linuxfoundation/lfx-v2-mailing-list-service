@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // GetGrpsIOMember retrieves a member by UID
@@ -46,7 +47,7 @@ func (r *grpsIOReaderOrchestrator) CheckMemberExists(ctx context.Context, mailin
 
 	slog.DebugContext(ctx, "executing check member exists use case",
 		"mailing_list_uid", mailingListUID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 	)
 
 	// Check if member exists
@@ -55,14 +56,14 @@ func (r *grpsIOReaderOrchestrator) CheckMemberExists(ctx context.Context, mailin
 		slog.ErrorContext(ctx, "failed to check member existence",
 			"error", err,
 			"mailing_list_uid", mailingListUID,
-			"email", email,
+			"email", redaction.RedactEmail(email),
 		)
 		return false, err
 	}
 
 	slog.DebugContext(ctx, "member existence check completed",
 		"mailing_list_uid", mailingListUID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 		"exists", exists,
 	)
 

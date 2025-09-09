@@ -12,6 +12,8 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // GrpsIOMember represents a GroupsIO mailing list member
@@ -25,9 +27,9 @@ type GrpsIOMember struct {
 	GroupsIOGroupID  int64 `json:"groupsio_group_id"`  // From Groups.io
 
 	// Member Information
-	Username     string `json:"username"`     // Username
-	FirstName    string `json:"first_name"`   // Required, 1-255 chars
-	LastName     string `json:"last_name"`    // Required, 1-255 chars
+	Username     string `json:"username"` // Username
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
 	Email        string `json:"email"`        // Required, RFC 5322
 	Organization string `json:"organization"` // Optional
 	JobTitle     string `json:"job_title"`    // Optional
@@ -64,7 +66,7 @@ func (m *GrpsIOMember) BuildIndexKey(ctx context.Context) string {
 
 	slog.DebugContext(ctx, "member index key built",
 		"mailing_list_uid", m.MailingListUID,
-		"email", m.Email,
+		"email", redaction.RedactEmail(m.Email),
 		"key", key,
 	)
 
