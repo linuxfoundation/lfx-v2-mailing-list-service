@@ -3,8 +3,9 @@
 
 package port
 
-// GrpsIOReader combines all reader operations for services and mailing lists
+// GrpsIOReader combines all reader operations for services, mailing lists, and members
 type GrpsIOReader interface {
 	GrpsIOServiceReader
 	GrpsIOMailingListReader
+	GrpsIOMemberReader
 }

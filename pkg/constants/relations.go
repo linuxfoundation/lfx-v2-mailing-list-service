@@ -15,6 +15,9 @@ const (
 	// RelationService defines the parent service relation used for service-level authorization inheritance
 	RelationService = "groupsio_service"
 
+	// RelationMailingList defines the parent mailing list relation used for member-level authorization inheritance
+	RelationMailingList = "groupsio_mailing_list"
+
 	// RelationViewer defines the viewer permission level
 	RelationViewer = "viewer"
 

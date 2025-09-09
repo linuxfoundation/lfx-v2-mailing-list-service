@@ -56,6 +56,10 @@ type Client struct {
 	// delete-grpsio-mailing-list endpoint.
 	DeleteGrpsioMailingListDoer goahttp.Doer
 
+	// CreateGrpsioMailingListMember Doer is the HTTP client used to make requests
+	// to the create-grpsio-mailing-list-member endpoint.
+	CreateGrpsioMailingListMemberDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -76,21 +80,22 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:                   doer,
-		ReadyzDoer:                  doer,
-		CreateGrpsioServiceDoer:     doer,
-		GetGrpsioServiceDoer:        doer,
-		UpdateGrpsioServiceDoer:     doer,
-		DeleteGrpsioServiceDoer:     doer,
-		CreateGrpsioMailingListDoer: doer,
-		GetGrpsioMailingListDoer:    doer,
-		UpdateGrpsioMailingListDoer: doer,
-		DeleteGrpsioMailingListDoer: doer,
-		RestoreResponseBody:         restoreBody,
-		scheme:                      scheme,
-		host:                        host,
-		decoder:                     dec,
-		encoder:                     enc,
+		LivezDoer:                         doer,
+		ReadyzDoer:                        doer,
+		CreateGrpsioServiceDoer:           doer,
+		GetGrpsioServiceDoer:              doer,
+		UpdateGrpsioServiceDoer:           doer,
+		DeleteGrpsioServiceDoer:           doer,
+		CreateGrpsioMailingListDoer:       doer,
+		GetGrpsioMailingListDoer:          doer,
+		UpdateGrpsioMailingListDoer:       doer,
+		DeleteGrpsioMailingListDoer:       doer,
+		CreateGrpsioMailingListMemberDoer: doer,
+		RestoreResponseBody:               restoreBody,
+		scheme:                            scheme,
+		host:                              host,
+		decoder:                           dec,
+		encoder:                           enc,
 	}
 }
 
@@ -319,6 +324,30 @@ func (c *Client) DeleteGrpsioMailingList() goa.Endpoint {
 		resp, err := c.DeleteGrpsioMailingListDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// CreateGrpsioMailingListMember returns an endpoint that makes HTTP requests
+// to the mailing-list service create-grpsio-mailing-list-member server.
+func (c *Client) CreateGrpsioMailingListMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeCreateGrpsioMailingListMemberRequest(c.encoder)
+		decodeResponse = DecodeCreateGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildCreateGrpsioMailingListMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.CreateGrpsioMailingListMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-mailing-list-member", err)
 		}
 		return decodeResponse(resp)
 	}

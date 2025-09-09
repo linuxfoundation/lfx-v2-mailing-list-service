@@ -8,6 +8,7 @@ const (
 	// Indexing subjects for search and discovery
 	IndexGroupsIOServiceSubject     = "lfx.index.groupsio_service"
 	IndexGroupsIOMailingListSubject = "lfx.index.groupsio_mailing_list"
+	IndexGroupsIOMemberSubject      = "lfx.index.groupsio_member"
 
 	// Access control subjects for OpenFGA integration
 	UpdateAccessGroupsIOServiceSubject    = "lfx.update_access.groupsio_service"
@@ -15,4 +16,7 @@ const (
 
 	UpdateAccessGroupsIOMailingListSubject    = "lfx.update_access.groupsio_mailing_list"
 	DeleteAllAccessGroupsIOMailingListSubject = "lfx.delete_all_access.groupsio_mailing_list"
+
+	UpdateAccessGroupsIOMemberSubject    = "lfx.update_access.groupsio_member"
+	DeleteAllAccessGroupsIOMemberSubject = "lfx.delete_all_access.groupsio_member"
 )

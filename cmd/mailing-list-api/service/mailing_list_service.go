@@ -356,7 +356,142 @@ func (s *mailingListService) DeleteGrpsioMailingList(ctx context.Context, payloa
 	return nil
 }
 
+// CreateGrpsioMailingListMember creates a new member for a GroupsIO mailing list
+func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) (result *mailinglistservice.MemberFull, err error) {
+	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list-member",
+		"mailing_list_uid", payload.UID,
+		"email", payload.Email,
+	)
+
+	// Generate new UID for the member
+	memberUID := uuid.New().String()
+
+	// Convert GOA payload to domain model
+	domainMember := s.convertMemberPayloadToDomain(payload)
+	domainMember.UID = memberUID
+
+	// Execute use case
+	createdMember, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMember(ctx, domainMember)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create member",
+			"error", err,
+			"mailing_list_uid", payload.UID,
+			"email", payload.Email,
+		)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	result = s.convertMemberDomainToResponse(createdMember)
+
+	slog.InfoContext(ctx, "successfully created member",
+		"member_uid", createdMember.UID,
+		"mailing_list_uid", createdMember.MailingListUID,
+		"email", createdMember.Email,
+		"revision", revision,
+	)
+	return result, nil
+}
+
 // Helper functions
+
+// convertMemberPayloadToDomain converts GOA member payload to domain model
+func (s *mailingListService) convertMemberPayloadToDomain(payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) *model.GrpsIOMember {
+	member := &model.GrpsIOMember{
+		MailingListUID: payload.UID,
+		Email:          payload.Email,
+		MemberType:     payload.MemberType,
+		DeliveryMode:   payload.DeliveryMode,
+		ModStatus:      payload.ModStatus,
+	}
+
+	// Handle required fields that might be pointers
+	if payload.FirstName != nil {
+		member.FirstName = *payload.FirstName
+	}
+	if payload.LastName != nil {
+		member.LastName = *payload.LastName
+	}
+
+	// Handle optional fields
+	if payload.Username != nil {
+		member.Username = *payload.Username
+	}
+	if payload.Organization != nil {
+		member.Organization = *payload.Organization
+	}
+	if payload.JobTitle != nil {
+		member.JobTitle = *payload.JobTitle
+	}
+	if payload.LastReviewedAt != nil {
+		member.LastReviewedAt = payload.LastReviewedAt
+	}
+	if payload.LastReviewedBy != nil {
+		member.LastReviewedBy = payload.LastReviewedBy
+	}
+	if payload.Writers != nil {
+		member.Writers = payload.Writers
+	}
+	if payload.Auditors != nil {
+		member.Auditors = payload.Auditors
+	}
+
+	return member
+}
+
+// convertMemberDomainToResponse converts domain member to GOA response
+func (s *mailingListService) convertMemberDomainToResponse(member *model.GrpsIOMember) *mailinglistservice.MemberFull {
+	response := &mailinglistservice.MemberFull{
+		UID:            member.UID,
+		MailingListUID: member.MailingListUID,
+		FirstName:      member.FirstName,
+		LastName:       member.LastName,
+		Email:          member.Email,
+		MemberType:     member.MemberType,
+		DeliveryMode:   member.DeliveryMode,
+		ModStatus:      member.ModStatus,
+		Status:         member.Status,
+	}
+
+	// Handle optional fields
+	if member.Username != "" {
+		response.Username = &member.Username
+	}
+	if member.Organization != "" {
+		response.Organization = &member.Organization
+	}
+	if member.JobTitle != "" {
+		response.JobTitle = &member.JobTitle
+	}
+	if member.GroupsIOMemberID != 0 {
+		response.GroupsioMemberID = &member.GroupsIOMemberID
+	}
+	if member.GroupsIOGroupID != 0 {
+		response.GroupsioGroupID = &member.GroupsIOGroupID
+	}
+	if member.LastReviewedAt != nil {
+		response.LastReviewedAt = member.LastReviewedAt
+	}
+	if member.LastReviewedBy != nil {
+		response.LastReviewedBy = member.LastReviewedBy
+	}
+	if len(member.Writers) > 0 {
+		response.Writers = member.Writers
+	}
+	if len(member.Auditors) > 0 {
+		response.Auditors = member.Auditors
+	}
+
+	// Convert timestamps
+	if !member.CreatedAt.IsZero() {
+		response.CreatedAt = member.CreatedAt.Format(time.RFC3339)
+	}
+	if !member.UpdatedAt.IsZero() {
+		response.UpdatedAt = member.UpdatedAt.Format(time.RFC3339)
+	}
+
+	return response
+}
 
 // convertMailingListDomainToStandardResponse converts a domain mailing list to GOA standard response type
 func (s *mailingListService) convertMailingListDomainToStandardResponse(mailingList *model.GrpsIOMailingList) *mailinglistservice.MailingListWithReadonlyAttributes {

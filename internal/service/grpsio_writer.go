@@ -15,6 +15,7 @@ import (
 type GrpsIOWriter interface {
 	GrpsIOServiceWriter
 	GrpsIOMailingListWriter
+	port.GrpsIOMemberWriter
 }
 
 // GrpsIOServiceWriter defines the interface for service write operations
@@ -88,6 +89,23 @@ func NewGrpsIOWriterOrchestrator(opts ...grpsIOWriterOrchestratorOption) GrpsIOW
 	}
 
 	return uc
+}
+
+// BaseGrpsIOWriter methods - delegated to underlying writer
+
+// GetKeyRevision retrieves the revision for a given key (used for cleanup operations)
+func (o *grpsIOWriterOrchestrator) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
+	return o.grpsIOWriter.GetKeyRevision(ctx, key)
+}
+
+// Delete removes a key with the given revision (used for cleanup and rollback)
+func (o *grpsIOWriterOrchestrator) Delete(ctx context.Context, key string, revision uint64) error {
+	return o.grpsIOWriter.Delete(ctx, key, revision)
+}
+
+// UniqueMember validates member email is unique within mailing list
+func (o *grpsIOWriterOrchestrator) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
+	return o.grpsIOWriter.UniqueMember(ctx, member)
 }
 
 // Common methods implementation

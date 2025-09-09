@@ -30,8 +30,6 @@ DISABLE_ERRORS_LINTERS:
   - GO_REVIVE
   # Security vulnerabilities now addressed in Go 1.24.4
   - REPOSITORY_GRYPE
-  # yamllint fails on Helm template files with {{ }} syntax
-  - YAML_YAMLLINT
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
 REPOSITORY_KICS_ARGUMENTS: >-
   scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="gen/*"
@@ -48,7 +46,5 @@ API_SPECTRAL_FILTER_REGEX_EXCLUDE: "gen/"
 # Go linter configuration
 GO_REVIVE_FILTER_REGEX_EXCLUDE: "(that stutters; consider calling this|should not use dot imports)"
 FILTER_REGEX_EXCLUDE: '(templates/.*\.yml|templates/.*\.yaml|gen/.*)'
-# Specifically exclude template files from yamllint
-YAML_YAMLLINT_FILTER_REGEX_EXCLUDE: '(templates/.*\.yml|templates/.*\.yaml|gen/.*)'
 KUBERNETES_DIRECTORY: charts/lfx-v2-mailing-list-service/templates
 KUBERNETES_HELM_ARGUMENTS: charts/lfx-v2-mailing-list-service

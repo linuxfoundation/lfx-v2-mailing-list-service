@@ -243,7 +243,7 @@ func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid
 	var indicesToDelete []string
 
 	// Build constraint index key based on service type
-	constraintIndexKey := fmt.Sprintf(constants.KVLookupGrpsIOServicePrefix, existing.BuildIndexKey(ctx))
+	constraintIndexKey := fmt.Sprintf(constants.KVLookupGroupsIOServicePrefix, existing.BuildIndexKey(ctx))
 	indicesToDelete = append(indicesToDelete, constraintIndexKey)
 
 	slog.DebugContext(ctx, "secondary indices identified for deletion",
