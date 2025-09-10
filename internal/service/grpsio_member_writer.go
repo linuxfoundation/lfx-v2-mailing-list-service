@@ -179,6 +179,7 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 }
 
 // publishMemberDeleteMessages publishes member delete messages concurrently (for future use)
+//nolint:unused // Reserved for future member deletion functionality
 func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Context, uid string) error {
 	if o.publisher == nil {
 		slog.WarnContext(ctx, "publisher not available, skipping member delete message publishing")
@@ -202,9 +203,11 @@ func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Conte
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, builtMessage)
 		},
-		func() error {
-			return o.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMemberSubject, uid)
-		},
+		// TODO: Implement proper member removal from mailing list relations
+		// Currently commented out to avoid deleting entire mailing list from OpenFGA
+		// func() error {
+		//	return o.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMemberSubject, uid)
+		// },
 	}
 
 	// Execute all messages concurrently
@@ -234,15 +237,29 @@ func (o *grpsIOWriterOrchestrator) buildMemberIndexerMessage(ctx context.Context
 
 // buildMemberAccessControlMessage creates the access control message for OpenFGA
 func (o *grpsIOWriterOrchestrator) buildMemberAccessControlMessage(member *model.GrpsIOMember) *model.AccessMessage {
-	references := map[string]string{
-		constants.RelationMailingList: member.MailingListUID, // Required for mailing list-level permission inheritance
+	// Use username or fallback to email
+	userID := member.Username
+	if userID == "" {
+		userID = member.Email
+	}
+
+	// Add user as member and set role-based permissions
+	relations := map[string][]string{
+		constants.RelationMember: {userID},
+	}
+
+	switch member.ModStatus {
+	case constants.ModStatusOwner:
+		relations[constants.RelationOwner] = []string{userID}
+	case constants.ModStatusModerator:
+		relations[constants.RelationWriter] = []string{userID}
 	}
 
 	return &model.AccessMessage{
-		UID:        member.UID,
-		ObjectType: "groupsio_member",
-		Public:     false,                 // Members are typically not public
-		Relations:  map[string][]string{}, // Reserved for future use
-		References: references,
+		UID:        member.MailingListUID,   // The mailing list we're updating
+		ObjectType: constants.ObjectTypeGroupsIOMailingList, // Object type
+		Public:     false,                   // Member operations don't change public status
+		Relations:  relations,               // Add user to appropriate relations
+		References: map[string]string{},     // No references needed for member operations
 	}
 }

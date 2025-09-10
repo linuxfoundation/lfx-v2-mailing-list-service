@@ -12,8 +12,8 @@ const (
 	// RelationCommittee defines the committee relation used for committee-based authorization
 	RelationCommittee = "committee"
 
-	// RelationService defines the parent service relation used for service-level authorization inheritance
-	RelationService = "groupsio_service"
+	// RelationGroupsIOService defines the parent service relation used for service-level authorization inheritance
+	RelationGroupsIOService = "groupsio_service"
 
 	// RelationMailingList defines the parent mailing list relation used for member-level authorization inheritance
 	RelationMailingList = "groupsio_mailing_list"
@@ -26,4 +26,34 @@ const (
 
 	// RelationOwner defines the owner permission level
 	RelationOwner = "owner"
+
+	// RelationMember defines the member permission level
+	RelationMember = "member"
+
+	// RelationAuditor defines the auditor permission level
+	RelationAuditor = "auditor"
+)
+
+// OpenFGA object type constants
+const (
+	// ObjectTypeGroupsIOService defines the object type for GroupsIO services
+	ObjectTypeGroupsIOService = "groupsio_service"
+
+	// ObjectTypeGroupsIOMailingList defines the object type for GroupsIO mailing lists
+	ObjectTypeGroupsIOMailingList = "groupsio_mailing_list"
+
+	// ObjectTypeUser defines the object type for users
+	ObjectTypeUser = "user"
+)
+
+// Member moderation status constants
+const (
+	// ModStatusNone indicates a regular member with no special privileges
+	ModStatusNone = "none"
+
+	// ModStatusModerator indicates a member with moderation privileges (writer permissions)
+	ModStatusModerator = "moderator"
+
+	// ModStatusOwner indicates a member with owner privileges (owner permissions)
+	ModStatusOwner = "owner"
 )

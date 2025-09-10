@@ -619,7 +619,9 @@ func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expec
 		entry, err := kv.Get(ctx, constraintKey)
 		if err == nil && string(entry.Value()) == mailingList.UID {
 			// Only delete if it still points to our UID
-			kv.Delete(ctx, constraintKey, jetstream.LastRevision(entry.Revision()))
+			if delErr := kv.Delete(ctx, constraintKey, jetstream.LastRevision(entry.Revision())); delErr != nil {
+				slog.DebugContext(ctx, "failed to delete constraint key during cleanup", "error", delErr, "key", constraintKey)
+			}
 		}
 		// Silently skip if not found or points to different UID (best effort cleanup)
 	}

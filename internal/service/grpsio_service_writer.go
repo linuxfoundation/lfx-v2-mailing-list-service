@@ -357,11 +357,19 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 	}
 
 	// Build access control message
+	relations := map[string][]string{}
+	if len(service.GlobalOwners) > 0 {
+		relations[constants.RelationOwner] = service.GlobalOwners
+	}
+	if len(service.Writers) > 0 {
+		relations[constants.RelationWriter] = service.Writers
+	}
+
 	accessMessage := &model.AccessMessage{
 		UID:        service.UID,
-		ObjectType: "groupsio_service",
+		ObjectType: constants.ObjectTypeGroupsIOService,
 		Public:     service.Public,
-		Relations:  map[string][]string{},
+		Relations:  relations,
 		References: map[string]string{
 			constants.RelationProject: service.ProjectUID,
 		},
