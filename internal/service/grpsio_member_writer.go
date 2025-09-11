@@ -147,16 +147,13 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 		return fmt.Errorf("failed to build %s indexer message: %w", action, err)
 	}
 
-	// Build access control message
-	accessMessage := o.buildMemberAccessControlMessage(member)
+	// TODO: LFXV2-459 - Review and implement member access control logic for OpenFGA integration
+	// Access control message building and publishing will be implemented after research is complete
 
-	// Publish messages concurrently
+	// Publish messages concurrently (only indexer for now)
 	messages := []func() error{
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, indexerMessage)
-		},
-		func() error {
-			return o.publisher.Access(ctx, constants.UpdateAccessGroupsIOMemberSubject, accessMessage)
 		},
 	}
 
@@ -179,7 +176,7 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 }
 
 // publishMemberDeleteMessages publishes member delete messages concurrently (for future use)
-//nolint:unused // Reserved for future member deletion functionality
+// nolint:unused // Reserved for future member deletion functionality
 func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Context, uid string) error {
 	if o.publisher == nil {
 		slog.WarnContext(ctx, "publisher not available, skipping member delete message publishing")
@@ -233,33 +230,4 @@ func (o *grpsIOWriterOrchestrator) buildMemberIndexerMessage(ctx context.Context
 
 	// Build the message with proper context and authorization headers
 	return indexerMessage.Build(ctx, member)
-}
-
-// buildMemberAccessControlMessage creates the access control message for OpenFGA
-func (o *grpsIOWriterOrchestrator) buildMemberAccessControlMessage(member *model.GrpsIOMember) *model.AccessMessage {
-	// Use username or fallback to email
-	userID := member.Username
-	if userID == "" {
-		userID = member.Email
-	}
-
-	// Add user as member and set role-based permissions
-	relations := map[string][]string{
-		constants.RelationMember: {userID},
-	}
-
-	switch member.ModStatus {
-	case constants.ModStatusOwner:
-		relations[constants.RelationOwner] = []string{userID}
-	case constants.ModStatusModerator:
-		relations[constants.RelationWriter] = []string{userID}
-	}
-
-	return &model.AccessMessage{
-		UID:        member.MailingListUID,   // The mailing list we're updating
-		ObjectType: constants.ObjectTypeGroupsIOMailingList, // Object type
-		Public:     false,                   // Member operations don't change public status
-		Relations:  relations,               // Add user to appropriate relations
-		References: map[string]string{},     // No references needed for member operations
-	}
 }
