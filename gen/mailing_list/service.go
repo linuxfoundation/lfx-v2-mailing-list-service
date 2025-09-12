@@ -21,23 +21,29 @@ type Service interface {
 	// Check if the service is able to take inbound requests.
 	Readyz(context.Context) (res []byte, err error)
 	// Create GroupsIO service with type-specific validation rules
-	CreateGrpsioService(context.Context, *CreateGrpsioServicePayload) (res *ServiceFull, err error)
+	CreateGrpsioService(context.Context, *CreateGrpsioServicePayload) (res *GrpsIoServiceFull, err error)
 	// Get groupsIO service details by ID
 	GetGrpsioService(context.Context, *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error)
 	// Update GroupsIO service
-	UpdateGrpsioService(context.Context, *UpdateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error)
+	UpdateGrpsioService(context.Context, *UpdateGrpsioServicePayload) (res *GrpsIoServiceWithReadonlyAttributes, err error)
 	// Delete GroupsIO service
 	DeleteGrpsioService(context.Context, *DeleteGrpsioServicePayload) (err error)
 	// Create GroupsIO mailing list/subgroup with comprehensive validation
-	CreateGrpsioMailingList(context.Context, *CreateGrpsioMailingListPayload) (res *MailingListFull, err error)
+	CreateGrpsioMailingList(context.Context, *CreateGrpsioMailingListPayload) (res *GrpsIoMailingListFull, err error)
 	// Get GroupsIO mailing list details by UID
 	GetGrpsioMailingList(context.Context, *GetGrpsioMailingListPayload) (res *GetGrpsioMailingListResult, err error)
 	// Update GroupsIO mailing list
-	UpdateGrpsioMailingList(context.Context, *UpdateGrpsioMailingListPayload) (res *MailingListWithReadonlyAttributes, err error)
+	UpdateGrpsioMailingList(context.Context, *UpdateGrpsioMailingListPayload) (res *GrpsIoMailingListWithReadonlyAttributes, err error)
 	// Delete GroupsIO mailing list
 	DeleteGrpsioMailingList(context.Context, *DeleteGrpsioMailingListPayload) (err error)
 	// Create a new member for a GroupsIO mailing list
-	CreateGrpsioMailingListMember(context.Context, *CreateGrpsioMailingListMemberPayload) (res *MemberFull, err error)
+	CreateGrpsioMailingListMember(context.Context, *CreateGrpsioMailingListMemberPayload) (res *GrpsIoMemberFull, err error)
+	// Get a member of a GroupsIO mailing list by UID
+	GetGrpsioMailingListMember(context.Context, *GetGrpsioMailingListMemberPayload) (res *GetGrpsioMailingListMemberResult, err error)
+	// Update a member of a GroupsIO mailing list
+	UpdateGrpsioMailingListMember(context.Context, *UpdateGrpsioMailingListMemberPayload) (res *GrpsIoMemberWithReadonlyAttributes, err error)
+	// Delete a member from a GroupsIO mailing list
+	DeleteGrpsioMailingListMember(context.Context, *DeleteGrpsioMailingListMemberPayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -60,7 +66,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [11]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member"}
+var MethodNames = [14]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member"}
 
 // CreateGrpsioMailingListMemberPayload is the payload type of the mailing-list
 // service create-grpsio-mailing-list-member method.
@@ -93,10 +99,6 @@ type CreateGrpsioMailingListMemberPayload struct {
 	LastReviewedAt *string
 	// Last reviewed by user ID
 	LastReviewedBy *string
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
 }
 
 // CreateGrpsioMailingListPayload is the payload type of the mailing-list
@@ -166,6 +168,21 @@ type CreateGrpsioServicePayload struct {
 	Auditors []string
 }
 
+// DeleteGrpsioMailingListMemberPayload is the payload type of the mailing-list
+// service delete-grpsio-mailing-list-member method.
+type DeleteGrpsioMailingListMemberPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken string
+	// Version of the API
+	Version string
+	// If-Match header value for conditional requests
+	IfMatch string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID string
+	// Member UID -- unique identifier for the member
+	MemberUID string
+}
+
 // DeleteGrpsioMailingListPayload is the payload type of the mailing-list
 // service delete-grpsio-mailing-list method.
 type DeleteGrpsioMailingListPayload struct {
@@ -192,6 +209,27 @@ type DeleteGrpsioServicePayload struct {
 	UID *string
 }
 
+// GetGrpsioMailingListMemberPayload is the payload type of the mailing-list
+// service get-grpsio-mailing-list-member method.
+type GetGrpsioMailingListMemberPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken string
+	// Version of the API
+	Version string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID string
+	// Member UID -- unique identifier for the member
+	MemberUID string
+}
+
+// GetGrpsioMailingListMemberResult is the result type of the mailing-list
+// service get-grpsio-mailing-list-member method.
+type GetGrpsioMailingListMemberResult struct {
+	Member *GrpsIoMemberWithReadonlyAttributes
+	// ETag header value
+	Etag *string
+}
+
 // GetGrpsioMailingListPayload is the payload type of the mailing-list service
 // get-grpsio-mailing-list method.
 type GetGrpsioMailingListPayload struct {
@@ -206,7 +244,7 @@ type GetGrpsioMailingListPayload struct {
 // GetGrpsioMailingListResult is the result type of the mailing-list service
 // get-grpsio-mailing-list method.
 type GetGrpsioMailingListResult struct {
-	MailingList *MailingListWithReadonlyAttributes
+	MailingList *GrpsIoMailingListWithReadonlyAttributes
 	// ETag header value
 	Etag *string
 }
@@ -225,16 +263,16 @@ type GetGrpsioServicePayload struct {
 // GetGrpsioServiceResult is the result type of the mailing-list service
 // get-grpsio-service method.
 type GetGrpsioServiceResult struct {
-	Service *ServiceWithReadonlyAttributes
+	Service *GrpsIoServiceWithReadonlyAttributes
 	// ETag header value
 	Etag *string
 	// Version of the API
 	Version string
 }
 
-// MailingListFull is the result type of the mailing-list service
+// GrpsIoMailingListFull is the result type of the mailing-list service
 // create-grpsio-mailing-list method.
-type MailingListFull struct {
+type GrpsIoMailingListFull struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string
 	// Mailing list group name
@@ -275,9 +313,9 @@ type MailingListFull struct {
 	Auditors []string
 }
 
-// MailingListWithReadonlyAttributes is the result type of the mailing-list
-// service update-grpsio-mailing-list method.
-type MailingListWithReadonlyAttributes struct {
+// GrpsIoMailingListWithReadonlyAttributes is the result type of the
+// mailing-list service update-grpsio-mailing-list method.
+type GrpsIoMailingListWithReadonlyAttributes struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string
 	// Mailing list group name
@@ -314,9 +352,9 @@ type MailingListWithReadonlyAttributes struct {
 	Auditors []string
 }
 
-// MemberFull is the result type of the mailing-list service
+// GrpsIoMemberFull is the result type of the mailing-list service
 // create-grpsio-mailing-list-member method.
-type MemberFull struct {
+type GrpsIoMemberFull struct {
 	// Member UID
 	UID string
 	// Mailing list UID
@@ -359,9 +397,54 @@ type MemberFull struct {
 	Auditors []string
 }
 
-// ServiceFull is the result type of the mailing-list service
+// GrpsIoMemberWithReadonlyAttributes is the result type of the mailing-list
+// service update-grpsio-mailing-list-member method.
+type GrpsIoMemberWithReadonlyAttributes struct {
+	// Member UID
+	UID *string
+	// Mailing list UID
+	MailingListUID *string
+	// Member username
+	Username *string
+	// Member first name
+	FirstName *string
+	// Member last name
+	LastName *string
+	// Member email address
+	Email *string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
+	// Member type
+	MemberType string
+	// Email delivery mode
+	DeliveryMode string
+	// Moderation status
+	ModStatus string
+	// Last reviewed timestamp
+	LastReviewedAt *string
+	// Last reviewed by user ID
+	LastReviewedBy *string
+	// Member status
+	Status *string
+	// Groups.io member ID
+	GroupsioMemberID *int64
+	// Groups.io group ID
+	GroupsioGroupID *int64
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
+
+// GrpsIoServiceFull is the result type of the mailing-list service
 // create-grpsio-service method.
-type ServiceFull struct {
+type GrpsIoServiceFull struct {
 	// Service UID -- unique identifier for the service
 	UID *string
 	// Service type
@@ -407,9 +490,9 @@ type ServiceFull struct {
 	Auditors []string
 }
 
-// ServiceWithReadonlyAttributes is the result type of the mailing-list service
-// update-grpsio-service method.
-type ServiceWithReadonlyAttributes struct {
+// GrpsIoServiceWithReadonlyAttributes is the result type of the mailing-list
+// service update-grpsio-service method.
+type GrpsIoServiceWithReadonlyAttributes struct {
 	// Service UID -- unique identifier for the service
 	UID *string
 	// Service type
@@ -453,6 +536,35 @@ type ServiceWithReadonlyAttributes struct {
 	Writers []string
 	// Auditor user IDs who can audit this service
 	Auditors []string
+}
+
+// UpdateGrpsioMailingListMemberPayload is the payload type of the mailing-list
+// service update-grpsio-mailing-list-member method.
+type UpdateGrpsioMailingListMemberPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken string
+	// Version of the API
+	Version string
+	// If-Match header value for conditional requests
+	IfMatch string
+	// Mailing list UID -- unique identifier for the mailing list
+	UID string
+	// Member UID -- unique identifier for the member
+	MemberUID string
+	// Member username
+	Username *string
+	// Member first name
+	FirstName *string
+	// Member last name
+	LastName *string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
+	// Email delivery mode
+	DeliveryMode string
+	// Moderation status
+	ModStatus string
 }
 
 // UpdateGrpsioMailingListPayload is the payload type of the mailing-list

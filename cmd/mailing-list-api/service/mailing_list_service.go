@@ -8,13 +8,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"goa.design/goa/v3/security"
@@ -80,7 +79,7 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 	}
 
 	// Convert domain model to GOA response
-	goaService := s.convertDomainToStandardResponse(service)
+	goaService := s.convertGrpsIOServiceDomainToStandardResponse(service)
 
 	// Create result with ETag (using revision from NATS)
 	revisionStr := fmt.Sprintf("%d", revision)
@@ -94,7 +93,7 @@ func (s *mailingListService) GetGrpsioService(ctx context.Context, payload *mail
 }
 
 // CreateGrpsioService creates a new GroupsIO service with type-specific validation
-func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *mailinglistservice.CreateGrpsioServicePayload) (result *mailinglistservice.ServiceFull, err error) {
+func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *mailinglistservice.CreateGrpsioServicePayload) (result *mailinglistservice.GrpsIoServiceFull, err error) {
 	slog.DebugContext(ctx, "mailingListService.create-grpsio-service", "service_type", payload.Type)
 
 	// Validate type-specific requirements
@@ -107,7 +106,7 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	serviceUID := uuid.New().String()
 
 	// Convert GOA payload to domain model
-	domainService := s.convertCreatePayloadToDomain(payload)
+	domainService := s.convertGrpsIOServiceCreatePayloadToDomain(payload)
 	domainService.UID = serviceUID
 
 	// Execute use case
@@ -118,14 +117,14 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Convert domain model to GOA response
-	result = s.convertDomainToFullResponse(createdService)
+	result = s.convertGrpsIOServiceDomainToFullResponse(createdService)
 
 	slog.InfoContext(ctx, "successfully created service", "service_uid", createdService.UID, "revision", revision)
 	return result, nil
 }
 
 // UpdateGrpsioService updates an existing GroupsIO service
-func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *mailinglistservice.UpdateGrpsioServicePayload) (result *mailinglistservice.ServiceWithReadonlyAttributes, err error) {
+func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *mailinglistservice.UpdateGrpsioServicePayload) (result *mailinglistservice.GrpsIoServiceWithReadonlyAttributes, err error) {
 	slog.DebugContext(ctx, "mailingListService.update-grpsio-service", "service_uid", payload.UID)
 
 	// Parse expected revision from ETag
@@ -149,7 +148,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Convert GOA payload to domain model
-	domainService := s.convertUpdatePayloadToDomain(existingService, payload)
+	domainService := s.convertGrpsIOServiceUpdatePayloadToDomain(existingService, payload)
 
 	// Execute use case
 	updatedService, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOService(ctx, *payload.UID, domainService, expectedRevision)
@@ -159,7 +158,7 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Convert domain model to GOA response
-	result = s.convertDomainToStandardResponse(updatedService)
+	result = s.convertGrpsIOServiceDomainToStandardResponse(updatedService)
 
 	slog.InfoContext(ctx, "successfully updated service", "service_uid", payload.UID, "revision", revision)
 	return result, nil
@@ -201,7 +200,7 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 }
 
 // CreateGrpsioMailingList creates a new GroupsIO mailing list with comprehensive validation
-func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListPayload) (result *mailinglistservice.MailingListFull, err error) {
+func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListPayload) (result *mailinglistservice.GrpsIoMailingListFull, err error) {
 	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list", "group_name", payload.GroupName, "service_uid", payload.ServiceUID)
 
 	// Validate mailing list creation requirements
@@ -214,7 +213,7 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	mailingListUID := uuid.New().String()
 
 	// Convert GOA payload to domain model
-	domainMailingList := s.convertMailingListPayloadToDomain(payload)
+	domainMailingList := s.convertGrpsIOMailingListPayloadToDomain(payload)
 	domainMailingList.UID = mailingListUID
 
 	// Execute use case
@@ -225,7 +224,7 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	}
 
 	// Convert domain model to GOA response
-	result = s.convertMailingListDomainToResponse(createdMailingList)
+	result = s.convertGrpsIOMailingListDomainToResponse(createdMailingList)
 
 	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID, "revision", revision)
 	return result, nil
@@ -243,7 +242,7 @@ func (s *mailingListService) GetGrpsioMailingList(ctx context.Context, payload *
 	}
 
 	// Convert domain model to GOA response
-	goaMailingList := s.convertMailingListDomainToStandardResponse(mailingList)
+	goaMailingList := s.convertGrpsIOMailingListDomainToStandardResponse(mailingList)
 
 	// Create result with ETag (using revision from NATS)
 	revisionStr := fmt.Sprintf("%d", revision)
@@ -257,7 +256,7 @@ func (s *mailingListService) GetGrpsioMailingList(ctx context.Context, payload *
 }
 
 // UpdateGrpsioMailingList updates an existing GroupsIO mailing list
-func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.UpdateGrpsioMailingListPayload) (result *mailinglistservice.MailingListWithReadonlyAttributes, err error) {
+func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payload *mailinglistservice.UpdateGrpsioMailingListPayload) (result *mailinglistservice.GrpsIoMailingListWithReadonlyAttributes, err error) {
 	slog.DebugContext(ctx, "mailingListService.update-grpsio-mailing-list", "mailing_list_uid", payload.UID)
 
 	// Parse expected revision from ETag
@@ -290,7 +289,7 @@ func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payloa
 	}
 
 	// Convert GOA payload to domain model
-	domainMailingList := s.convertUpdateMailingListPayloadToDomain(payload)
+	domainMailingList := s.convertGrpsIOMailingListUpdatePayloadToDomain(payload)
 	// Ensure persisted JSON UID matches the key
 	if payload.UID != nil {
 		domainMailingList.UID = *payload.UID
@@ -304,7 +303,7 @@ func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payloa
 	}
 
 	// Convert domain model to GOA response
-	result = s.convertMailingListDomainToStandardResponse(updatedMailingList)
+	result = s.convertGrpsIOMailingListDomainToStandardResponse(updatedMailingList)
 
 	slog.InfoContext(ctx, "successfully updated mailing list", "mailing_list_uid", payload.UID, "revision", revision)
 	return result, nil
@@ -357,17 +356,23 @@ func (s *mailingListService) DeleteGrpsioMailingList(ctx context.Context, payloa
 }
 
 // CreateGrpsioMailingListMember creates a new member for a GroupsIO mailing list
-func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) (result *mailinglistservice.MemberFull, err error) {
+func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) (result *mailinglistservice.GrpsIoMemberFull, err error) {
 	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list-member",
 		"mailing_list_uid", payload.UID,
 		"email", payload.Email,
 	)
 
+	// Validate member creation requirements
+	if err := validateMemberCreation(ctx, payload, s.grpsIOReaderOrchestrator); err != nil {
+		slog.WarnContext(ctx, "member creation validation failed", "error", err, "email", payload.Email)
+		return nil, wrapError(ctx, err)
+	}
+
 	// Generate new UID for the member
 	memberUID := uuid.New().String()
 
 	// Convert GOA payload to domain model
-	domainMember := s.convertMemberPayloadToDomain(payload)
+	domainMember := s.convertGrpsIOMemberPayloadToDomain(payload)
 	domainMember.UID = memberUID
 
 	// Execute use case
@@ -381,8 +386,22 @@ func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, 
 		return nil, wrapError(ctx, err)
 	}
 
+	// TODO: Future PR - Add Groups.io API integration
+	// When Groups.io API integration is complete, add member to Groups.io
+	// Handle Groups.io error "user already exists" to detect member adoption scenarios
+
+	// TODO: Future PR - Add LFX member profile integration
+	// - Fetch member profile data from LFX APIs
+	// - Auto-populate firstName, lastName, organization, jobTitle from profile
+	// - Handle profile updates and sync member data
+
+	// TODO: Future PR - Add committee sync functionality
+	// - Sync committee members when committee_uid is provided
+	// - Handle committee member role changes (owner/moderator/member)
+	// - Auto-update member status based on committee membership changes
+
 	// Convert domain model to GOA response
-	result = s.convertMemberDomainToResponse(createdMember)
+	result = s.convertGrpsIOMemberDomainToResponse(createdMember)
 
 	slog.InfoContext(ctx, "successfully created member",
 		"member_uid", createdMember.UID,
@@ -393,175 +412,172 @@ func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, 
 	return result, nil
 }
 
+// GetGrpsioMailingListMember retrieves a member from a GroupsIO mailing list
+func (s *mailingListService) GetGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.GetGrpsioMailingListMemberPayload) (*mailinglistservice.GetGrpsioMailingListMemberResult, error) {
+	slog.DebugContext(ctx, "getting GroupsIO mailing list member",
+		"mailing_list_uid", payload.UID,
+		"member_uid", payload.MemberUID)
+
+	// Get member using reader orchestrator
+	member, revision, err := s.grpsIOReaderOrchestrator.GetGrpsIOMember(ctx, payload.MemberUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get member",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Verify member belongs to the requested mailing list
+	if member.MailingListUID != payload.UID {
+		slog.WarnContext(ctx, "member does not belong to requested mailing list",
+			"member_uid", payload.MemberUID,
+			"requested_mailing_list_uid", payload.UID,
+			"actual_mailing_list_uid", member.MailingListUID)
+		return nil, wrapError(ctx, errors.NewNotFound("member not found in mailing list"))
+	}
+
+	// Convert to response format
+	memberResponse := s.convertGrpsIOMemberToResponse(member)
+	etag := fmt.Sprintf("%d", revision)
+
+	slog.InfoContext(ctx, "successfully retrieved member",
+		"member_uid", payload.MemberUID,
+		"mailing_list_uid", payload.UID,
+		"etag", etag)
+
+	return &mailinglistservice.GetGrpsioMailingListMemberResult{
+		Member: memberResponse,
+		Etag:   &etag,
+	}, nil
+}
+
+// UpdateGrpsioMailingListMember updates a member in a GroupsIO mailing list
+func (s *mailingListService) UpdateGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.UpdateGrpsioMailingListMemberPayload) (*mailinglistservice.GrpsIoMemberWithReadonlyAttributes, error) {
+	slog.DebugContext(ctx, "updating GroupsIO mailing list member",
+		"mailing_list_uid", payload.UID,
+		"member_uid", payload.MemberUID)
+
+	// Parse ETag for revision checking
+	expectedRevision, err := etagValidator(&payload.IfMatch)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid ETag format", "error", err, "etag", payload.IfMatch)
+		return nil, wrapError(ctx, errors.NewValidation("invalid ETag format"))
+	}
+
+	// Get existing member for validation
+	existingMember, _, err := s.grpsIOReaderOrchestrator.GetGrpsIOMember(ctx, payload.MemberUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get existing member",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Verify member belongs to the requested mailing list
+	if existingMember.MailingListUID != payload.UID {
+		slog.WarnContext(ctx, "member does not belong to requested mailing list",
+			"member_uid", payload.MemberUID,
+			"requested_mailing_list_uid", payload.UID,
+			"actual_mailing_list_uid", existingMember.MailingListUID)
+		return nil, wrapError(ctx, errors.NewNotFound("member not found in mailing list"))
+	}
+
+	// Build updated member model from payload
+	updatedMember := s.convertGrpsIOMemberUpdatePayloadToDomain(payload, existingMember)
+
+	// Validate immutable fields
+	if err := validateMemberUpdate(existingMember, updatedMember); err != nil {
+		slog.ErrorContext(ctx, "member update validation failed",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Update member via writer orchestrator with revision check
+	updated, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOMember(ctx, payload.MemberUID, updatedMember, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update member",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// TODO: Future PR - Add Groups.io API sync for member updates
+	// When Groups.io API integration is complete, sync member changes to Groups.io
+	// Handle modStatus changes (owner/moderator/member role updates)
+
+	// TODO: Future PR - Add member notification for profile changes
+	// Notify member when profile information is updated by moderators
+	// Send email notification for role changes (promotion to owner/moderator)
+
+	// Convert to response format
+	memberResponse := s.convertGrpsIOMemberToResponse(updated)
+
+	slog.InfoContext(ctx, "successfully updated member",
+		"member_uid", payload.MemberUID,
+		"mailing_list_uid", payload.UID,
+		"revision", revision)
+
+	return memberResponse, nil
+}
+
+// DeleteGrpsioMailingListMember deletes a member from a GroupsIO mailing list
+func (s *mailingListService) DeleteGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.DeleteGrpsioMailingListMemberPayload) error {
+	slog.DebugContext(ctx, "deleting GroupsIO mailing list member",
+		"mailing_list_uid", payload.UID,
+		"member_uid", payload.MemberUID)
+
+	// Parse ETag for revision checking
+	expectedRevision, err := etagValidator(&payload.IfMatch)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid ETag format", "error", err, "etag", payload.IfMatch)
+		return wrapError(ctx, errors.NewValidation("invalid ETag format"))
+	}
+
+	// Get existing member for validation
+	existingMember, _, err := s.grpsIOReaderOrchestrator.GetGrpsIOMember(ctx, payload.MemberUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get existing member",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return wrapError(ctx, err)
+	}
+
+	// Verify member belongs to the requested mailing list
+	if existingMember.MailingListUID != payload.UID {
+		slog.WarnContext(ctx, "member does not belong to requested mailing list",
+			"member_uid", payload.MemberUID,
+			"requested_mailing_list_uid", payload.UID,
+			"actual_mailing_list_uid", existingMember.MailingListUID)
+		return wrapError(ctx, errors.NewNotFound("member not found in mailing list"))
+	}
+
+	// Validate member deletion protection rules
+	if err := validateMemberDeleteProtection(existingMember); err != nil {
+		slog.WarnContext(ctx, "member deletion protection failed", "error", err, "member_uid", payload.MemberUID)
+		return wrapError(ctx, err)
+	}
+
+	// TODO: Future PR - Check sole owner protection via Groups.io API
+	// Prevent deletion if this is the only owner/moderator of the mailing list
+
+	// Delete member via writer orchestrator with revision check
+	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOMember(ctx, payload.MemberUID, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to delete member",
+			"error", err,
+			"member_uid", payload.MemberUID)
+		return wrapError(ctx, err)
+	}
+
+	slog.InfoContext(ctx, "successfully deleted member",
+		"member_uid", payload.MemberUID,
+		"mailing_list_uid", payload.UID)
+
+	return nil
+}
+
 // Helper functions
-
-// convertMemberPayloadToDomain converts GOA member payload to domain model
-func (s *mailingListService) convertMemberPayloadToDomain(payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) *model.GrpsIOMember {
-	member := &model.GrpsIOMember{
-		MailingListUID: payload.UID,
-		Email:          payload.Email,
-		MemberType:     payload.MemberType,
-		DeliveryMode:   payload.DeliveryMode,
-		ModStatus:      payload.ModStatus,
-	}
-
-	// Handle required fields that might be pointers
-	if payload.FirstName != nil {
-		member.FirstName = *payload.FirstName
-	}
-	if payload.LastName != nil {
-		member.LastName = *payload.LastName
-	}
-
-	// Handle optional fields
-	if payload.Username != nil {
-		member.Username = *payload.Username
-	}
-	if payload.Organization != nil {
-		member.Organization = *payload.Organization
-	}
-	if payload.JobTitle != nil {
-		member.JobTitle = *payload.JobTitle
-	}
-	if payload.LastReviewedAt != nil {
-		member.LastReviewedAt = payload.LastReviewedAt
-	}
-	if payload.LastReviewedBy != nil {
-		member.LastReviewedBy = payload.LastReviewedBy
-	}
-	if payload.Writers != nil {
-		member.Writers = payload.Writers
-	}
-	if payload.Auditors != nil {
-		member.Auditors = payload.Auditors
-	}
-
-	return member
-}
-
-// convertMemberDomainToResponse converts domain member to GOA response
-func (s *mailingListService) convertMemberDomainToResponse(member *model.GrpsIOMember) *mailinglistservice.MemberFull {
-	response := &mailinglistservice.MemberFull{
-		UID:            member.UID,
-		MailingListUID: member.MailingListUID,
-		FirstName:      member.FirstName,
-		LastName:       member.LastName,
-		Email:          member.Email,
-		MemberType:     member.MemberType,
-		DeliveryMode:   member.DeliveryMode,
-		ModStatus:      member.ModStatus,
-		Status:         member.Status,
-	}
-
-	// Handle optional fields
-	if member.Username != "" {
-		response.Username = &member.Username
-	}
-	if member.Organization != "" {
-		response.Organization = &member.Organization
-	}
-	if member.JobTitle != "" {
-		response.JobTitle = &member.JobTitle
-	}
-	if member.GroupsIOMemberID != 0 {
-		response.GroupsioMemberID = &member.GroupsIOMemberID
-	}
-	if member.GroupsIOGroupID != 0 {
-		response.GroupsioGroupID = &member.GroupsIOGroupID
-	}
-	if member.LastReviewedAt != nil {
-		response.LastReviewedAt = member.LastReviewedAt
-	}
-	if member.LastReviewedBy != nil {
-		response.LastReviewedBy = member.LastReviewedBy
-	}
-	if len(member.Writers) > 0 {
-		response.Writers = member.Writers
-	}
-	if len(member.Auditors) > 0 {
-		response.Auditors = member.Auditors
-	}
-
-	// Convert timestamps
-	if !member.CreatedAt.IsZero() {
-		response.CreatedAt = member.CreatedAt.Format(time.RFC3339)
-	}
-	if !member.UpdatedAt.IsZero() {
-		response.UpdatedAt = member.UpdatedAt.Format(time.RFC3339)
-	}
-
-	return response
-}
-
-// convertMailingListDomainToStandardResponse converts a domain mailing list to GOA standard response type
-func (s *mailingListService) convertMailingListDomainToStandardResponse(mailingList *model.GrpsIOMailingList) *mailinglistservice.MailingListWithReadonlyAttributes {
-	response := &mailinglistservice.MailingListWithReadonlyAttributes{
-		UID:              &mailingList.UID,
-		GroupName:        &mailingList.GroupName,
-		Public:           mailingList.Public,
-		Type:             &mailingList.Type,
-		CommitteeUID:     maybeString(mailingList.CommitteeUID),
-		CommitteeFilters: maybeStringSlice(mailingList.CommitteeFilters),
-		Description:      &mailingList.Description,
-		Title:            &mailingList.Title,
-		SubjectTag:       maybeString(mailingList.SubjectTag),
-		ServiceUID:       &mailingList.ServiceUID,
-		ProjectUID:       maybeString(mailingList.ProjectUID),
-		ProjectName:      maybeString(mailingList.ProjectName),
-		ProjectSlug:      maybeString(mailingList.ProjectSlug),
-		Writers:          maybeStringSlice(mailingList.Writers),
-		Auditors:         maybeStringSlice(mailingList.Auditors),
-	}
-
-	// Convert timestamps
-	if !mailingList.CreatedAt.IsZero() {
-		createdAt := mailingList.CreatedAt.Format(time.RFC3339)
-		response.CreatedAt = &createdAt
-	}
-	if !mailingList.UpdatedAt.IsZero() {
-		updatedAt := mailingList.UpdatedAt.Format(time.RFC3339)
-		response.UpdatedAt = &updatedAt
-	}
-
-	// Note: LastReviewedAt/By fields are not in MailingListWithReadonlyAttributes
-	// They might be in a different response type or future enhancement
-
-	return response
-}
-
-// convertUpdateMailingListPayloadToDomain converts an update payload to domain model
-func (s *mailingListService) convertUpdateMailingListPayloadToDomain(payload *mailinglistservice.UpdateGrpsioMailingListPayload) *model.GrpsIOMailingList {
-	// Create a new mailing list from payload data
-	mailingList := &model.GrpsIOMailingList{
-		GroupName:   payload.GroupName,
-		Public:      payload.Public,
-		Type:        payload.Type,
-		Description: payload.Description,
-		Title:       payload.Title,
-		ServiceUID:  payload.ServiceUID,
-	}
-
-	// Handle pointer fields
-	if payload.CommitteeUID != nil {
-		mailingList.CommitteeUID = *payload.CommitteeUID
-	}
-	if payload.SubjectTag != nil {
-		mailingList.SubjectTag = *payload.SubjectTag
-	}
-
-	// Handle slice fields
-	if payload.CommitteeFilters != nil {
-		mailingList.CommitteeFilters = payload.CommitteeFilters
-	}
-	if payload.Writers != nil {
-		mailingList.Writers = payload.Writers
-	}
-	if payload.Auditors != nil {
-		mailingList.Auditors = payload.Auditors
-	}
-
-	return mailingList
-}
 
 // Helper function to convert string to pointer if non-empty
 func maybeString(s string) *string {

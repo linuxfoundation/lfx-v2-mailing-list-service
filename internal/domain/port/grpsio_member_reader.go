@@ -17,7 +17,4 @@ type GrpsIOMemberReader interface {
 
 	// GetMemberRevision retrieves only the revision for a given UID
 	GetMemberRevision(ctx context.Context, uid string) (uint64, error)
-
-	// CheckMemberExists checks if a member with given email exists in mailing list
-	CheckMemberExists(ctx context.Context, mailingListUID, email string) (bool, error)
 }

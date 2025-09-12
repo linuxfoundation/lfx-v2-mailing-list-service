@@ -239,21 +239,8 @@ func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid
 		"project_uid", existing.ProjectUID,
 	)
 
-	// Step 2: Build list of secondary indices to delete
-	var indicesToDelete []string
-
-	// Build constraint index key based on service type
-	constraintIndexKey := fmt.Sprintf(constants.KVLookupGroupsIOServicePrefix, existing.BuildIndexKey(ctx))
-	indicesToDelete = append(indicesToDelete, constraintIndexKey)
-
-	slog.DebugContext(ctx, "secondary indices identified for deletion",
-		"service_uid", uid,
-		"indices_count", len(indicesToDelete),
-		"indices", indicesToDelete,
-	)
-
-	// Step 3: Delete the main service record
-	err = sw.grpsIOWriter.DeleteGrpsIOService(ctx, uid, expectedRevision)
+	// Step 2: Delete the main service record (storage layer handles constraint cleanup)
+	err = sw.grpsIOWriter.DeleteGrpsIOService(ctx, uid, expectedRevision, existing)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete service",
 			"error", err,
@@ -263,17 +250,11 @@ func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid
 		return err
 	}
 
-	slog.DebugContext(ctx, "service main record deleted successfully",
+	slog.DebugContext(ctx, "service record deleted successfully",
 		"service_uid", uid,
 	)
 
-	// Step 4: Delete secondary indices
-	// We use the deleteKeys method which handles errors gracefully and logs them
-	// We don't abort here - secondary indices have a minor impact during deletion compared to the main record
-	// and access control, which must be executed successfully to avoid data inconsistency
-	sw.deleteKeys(ctx, indicesToDelete, false)
-
-	// Step 5: Publish delete messages
+	// Step 3: Publish delete messages
 	if sw.publisher != nil {
 		if err := sw.publishServiceDeleteMessages(ctx, uid); err != nil {
 			slog.ErrorContext(ctx, "failed to publish delete messages", "error", err)
@@ -282,7 +263,6 @@ func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid
 
 	slog.DebugContext(ctx, "service deletion completed successfully",
 		"service_uid", uid,
-		"indices_deleted", len(indicesToDelete),
 	)
 
 	return nil
@@ -363,6 +343,9 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 	}
 	if len(service.Writers) > 0 {
 		relations[constants.RelationWriter] = service.Writers
+	}
+	if len(service.Auditors) > 0 {
+		relations[constants.RelationAuditor] = service.Auditors
 	}
 
 	accessMessage := &model.AccessMessage{

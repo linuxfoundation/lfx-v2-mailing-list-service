@@ -84,7 +84,7 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertCreatePayloadToDomain(tt.payload)
+			result := svc.convertGrpsIOServiceCreatePayloadToDomain(tt.payload)
 
 			// Check all fields except timestamps
 			assert.Equal(t, tt.expected.Type, result.Type)
@@ -179,7 +179,7 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertMailingListPayloadToDomain(tt.payload)
+			result := svc.convertGrpsIOMailingListPayloadToDomain(tt.payload)
 
 			// Check all fields except timestamps
 			assert.Equal(t, tt.expected.GroupName, result.GroupName)
@@ -304,7 +304,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertUpdatePayloadToDomain(tt.existing, tt.payload)
+			result := svc.convertGrpsIOServiceUpdatePayloadToDomain(tt.existing, tt.payload)
 
 			// Check all fields except UpdatedAt timestamp
 			assert.Equal(t, tt.expected.Type, result.Type)

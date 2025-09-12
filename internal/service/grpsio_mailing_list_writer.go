@@ -224,6 +224,9 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailing
 	if len(mailingList.Writers) > 0 {
 		relations[constants.RelationWriter] = mailingList.Writers
 	}
+	if len(mailingList.Auditors) > 0 {
+		relations[constants.RelationAuditor] = mailingList.Auditors
+	}
 
 	return &model.AccessMessage{
 		UID:        mailingList.UID,

@@ -435,3 +435,96 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
+
+// validateMemberUpdate validates that immutable fields are not changed during updates
+func validateMemberUpdate(existing, updated *model.GrpsIOMember) error {
+	if existing == nil || updated == nil {
+		return errors.NewValidation("invalid member data for validation")
+	}
+
+	// Check immutable fields
+	if existing.Email != updated.Email {
+		return errors.NewValidation("email cannot be changed")
+	}
+
+	if existing.UID != updated.UID {
+		return errors.NewValidation("member UID cannot be changed")
+	}
+
+	if existing.MailingListUID != updated.MailingListUID {
+		return errors.NewValidation("mailing list UID cannot be changed")
+	}
+
+	// TODO: Future PR - Add validation for Groups.io sync requirements
+	// if existing.GroupsIOMemberID != updated.GroupsIOMemberID {
+	//     return errors.NewBadRequest("Groups.io member ID cannot be changed")
+	// }
+
+	return nil
+}
+
+// validateMemberCreation validates business logic for member creation beyond GOA's basic validations
+func validateMemberCreation(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListMemberPayload, reader port.GrpsIOServiceReader) error {
+	slog.DebugContext(ctx, "validating member creation payload")
+	if payload == nil {
+		return errors.NewValidation("payload is required")
+	}
+
+	// Validate mailing list exists - this will be checked by the orchestrator as well,
+	// but we validate early to provide better error messages
+	if payload.UID == "" {
+		return errors.NewValidation("mailing list UID is required")
+	}
+
+	// Check for valid email format - GOA already validates this, but we can add additional business rules here
+	if payload.Email == "" {
+		return errors.NewValidation("email is required")
+	}
+
+	// TODO: Future PR - Add business logic validations:
+	// - Check for duplicate member (same email in same mailing list)
+	// - Validate mailing list capacity limits
+	// - Check member permissions based on who's adding them
+	// - Validate against Groups.io API constraints
+	// - Auto-adopt members from Groups.io if they exist there but not in our database
+
+	return nil
+}
+
+// validateMemberDeleteProtection validates that a member can be safely deleted
+func validateMemberDeleteProtection(member *model.GrpsIOMember) error {
+	if member == nil {
+		return errors.NewValidation("member is required for deletion validation")
+	}
+
+	// Basic validation - member must be in a valid state for deletion
+	if member.UID == "" {
+		return errors.NewValidation("member UID is required")
+	}
+
+	// Check if member is an owner or moderator - log warning for now
+	if member.ModStatus == "owner" {
+		slog.Warn("Deleting an owner - ensure this is not the sole owner",
+			"member_uid", member.UID,
+			"email", redaction.RedactEmail(member.Email),
+			"mailing_list_uid", member.MailingListUID)
+	}
+
+	if member.ModStatus == "moderator" {
+		slog.Info("Deleting a moderator",
+			"member_uid", member.UID,
+			"email", redaction.RedactEmail(member.Email),
+			"mailing_list_uid", member.MailingListUID)
+	}
+
+	// TODO: Future PR - Add sole owner/moderator protection via Groups.io API
+	// This is already noted in the delete endpoint with a TODO comment
+	// When Groups.io API integration is added, we will:
+	// - Check if this member is the only owner/moderator of the mailing list
+	// - Prevent deletion if it would orphan the mailing list (return error if sole owner)
+	// - Validate member status allows deletion
+	// - Check cascading impacts of member deletion
+	// - Handle Groups.io API error "sole group owner" as seen in old implementation
+
+	return nil
+}

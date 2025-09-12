@@ -42,10 +42,8 @@ type GrpsIOMember struct {
 	// Status
 	Status string `json:"status"` // Groups.io status: normal, pending, etc.
 
-	LastReviewedAt *string  `json:"last_reviewed_at"` // Nullable timestamp
-	LastReviewedBy *string  `json:"last_reviewed_by"` // Nullable user ID
-	Writers        []string `json:"writers"`          // Manager user IDs who can edit
-	Auditors       []string `json:"auditors"`         // Auditor user IDs who can audit
+	LastReviewedAt *string `json:"last_reviewed_at"` // Nullable timestamp
+	LastReviewedBy *string `json:"last_reviewed_by"` // Nullable user ID
 
 	// Timestamps
 	CreatedAt time.Time `json:"created_at"`

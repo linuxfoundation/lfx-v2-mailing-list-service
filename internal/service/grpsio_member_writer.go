@@ -99,16 +99,72 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	return createdMember, revision, nil
 }
 
-// UpdateGrpsIOMember updates an existing member (stub for future implementation)
+// UpdateGrpsIOMember updates an existing member following the service pattern
 func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
-	// TODO: Implement in future PR following service pattern
-	return nil, 0, errs.NewUnexpected("UpdateGrpsIOMember not implemented")
+	slog.DebugContext(ctx, "executing update member use case",
+		"member_uid", uid,
+		"expected_revision", expectedRevision,
+	)
+
+	// Set update timestamp
+	member.UpdatedAt = time.Now()
+
+	// Update member in storage with optimistic concurrency control
+	updatedMember, revision, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update member",
+			"error", err,
+			"member_uid", uid,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "member updated successfully",
+		"member_uid", uid,
+		"revision", revision,
+	)
+
+	// Publish messages (indexer and access control)
+	if o.publisher != nil {
+		if err := o.publishMemberMessages(ctx, updatedMember, model.ActionUpdated); err != nil {
+			slog.ErrorContext(ctx, "failed to publish member update messages", "error", err)
+			// Don't fail the operation on message failure, update succeeded
+		}
+	}
+
+	return updatedMember, revision, nil
 }
 
-// DeleteGrpsIOMember deletes a member (stub for future implementation)
+// DeleteGrpsIOMember deletes a member following the service pattern
 func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error {
-	// TODO: Implement in future PR following service pattern
-	return errs.NewUnexpected("DeleteGrpsIOMember not implemented")
+	slog.DebugContext(ctx, "executing delete member use case",
+		"member_uid", uid,
+		"expected_revision", expectedRevision,
+	)
+
+	// Delete member from storage with optimistic concurrency control
+	err := o.grpsIOWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to delete member",
+			"error", err,
+			"member_uid", uid,
+		)
+		return err
+	}
+
+	slog.DebugContext(ctx, "member deleted successfully",
+		"member_uid", uid,
+	)
+
+	// Publish delete messages (indexer and access control)
+	if o.publisher != nil {
+		if err := o.publishMemberDeleteMessages(ctx, uid); err != nil {
+			slog.ErrorContext(ctx, "failed to publish member delete messages", "error", err)
+			// Don't fail the operation on message failure, delete succeeded
+		}
+	}
+
+	return nil
 }
 
 // validateAndPopulateMailingList validates mailing list exists and populates metadata
