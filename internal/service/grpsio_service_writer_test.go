@@ -427,7 +427,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOService_ConflictHandling(t *testin
 				serviceCopy := *service
 				serviceCopy.Status = "updated to increment revision"
 				tempWriter := mock.NewMockGrpsIOServiceWriter(mockRepo)
-				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1)
+				_, _, _ = tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1) //nolint:errcheck // Test setup
 				// Now the service has revision 2, but client will try with revision 1
 
 				return service, 2
@@ -570,8 +570,8 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testin
 				serviceCopy := *service
 				serviceCopy.Status = "updated to increment revision"
 				tempWriter := mock.NewMockGrpsIOServiceWriter(mockRepo)
-				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1)
-				tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 2)
+				_, _, _ = tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 1) //nolint:errcheck // Test setup
+				_, _, _ = tempWriter.UpdateGrpsIOService(context.Background(), service.UID, &serviceCopy, 2) //nolint:errcheck // Test setup
 				// Now the service has revision 3, but client will try with revision 1
 
 				return service, 3

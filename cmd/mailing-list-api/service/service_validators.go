@@ -275,7 +275,7 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 	}
 
 	// Validate main group restrictions (critical business rule from Groups.io)
-	if parentService != nil && isMainGroup(existing, parentService) {
+	if parentService != nil && existing.IsMainGroup(parentService) {
 		// Main groups must remain public announcement lists
 		if payload.Type != "announcement" {
 			return errors.NewValidation("main group must be an announcement list")
@@ -434,10 +434,4 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
-}
-
-// isMainGroup determines if a mailing list is the main group for a service
-// Main groups have the same group_name as their parent service's group_name
-func isMainGroup(mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) bool {
-	return mailingList.GroupName == parentService.GroupName
 }

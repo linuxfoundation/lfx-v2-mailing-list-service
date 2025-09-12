@@ -14,6 +14,7 @@ import (
 type GrpsIOReader interface {
 	GrpsIOServiceReader
 	GrpsIOMailingListReader
+	GrpsIOMemberReader
 }
 
 // GrpsIOServiceReader defines the interface for service read operations
@@ -30,6 +31,12 @@ type GrpsIOMailingListReader interface {
 	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error)
 	// GetMailingListRevision retrieves only the revision for a given UID
 	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
+}
+
+// GrpsIOMemberReader defines the interface for member read operations
+type GrpsIOMemberReader interface {
+	GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error)
+	CheckMemberExists(ctx context.Context, mailingListUID, email string) (bool, error)
 }
 
 // grpsIOReaderOrchestratorOption defines a function type for setting options on the composite orchestrator
@@ -58,6 +65,7 @@ func NewGrpsIOReaderOrchestrator(opts ...grpsIOReaderOrchestratorOption) GrpsIOR
 	if rc.grpsIOReader == nil {
 		panic("grpsIOReader dependency is required")
 	}
+	// Note: grpsIOReader provides all operations including member operations
 
 	return rc
 }

@@ -66,7 +66,7 @@ var _ = dsl.Service("mailing-list", func() {
 			AuditorsAttribute()
 
 			// Only common required fields - type-specific validation handled in service layer
-			dsl.Required("type", "project_uid")
+			dsl.Required("type", "project_uid", "version")
 		})
 		dsl.Result(ServiceFull)
 		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid type, missing required fields, or validation failures")
@@ -98,7 +98,8 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Result(func() {
 			dsl.Attribute("service", ServiceWithReadonlyAttributes)
 			ETagAttribute()
-			dsl.Required("service")
+			VersionAttribute()
+			dsl.Required("service", "version")
 		})
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
 		dsl.Error("NotFound", NotFoundError, "Resource not found")
@@ -134,7 +135,7 @@ var _ = dsl.Service("mailing-list", func() {
 			WritersAttribute()
 			AuditorsAttribute()
 
-			dsl.Required("type", "project_uid")
+			dsl.Required("type", "project_uid", "version")
 		})
 		dsl.Result(ServiceWithReadonlyAttributes)
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
@@ -200,7 +201,7 @@ var _ = dsl.Service("mailing-list", func() {
 			AuditorsAttribute()
 
 			// Required fields for mailing list creation
-			dsl.Required("group_name", "public", "type", "description", "title", "service_uid")
+			dsl.Required("group_name", "public", "type", "description", "title", "service_uid", "version")
 		})
 		dsl.Result(MailingListFull)
 		dsl.Error("BadRequest", BadRequestError, "Bad request - Invalid data, missing required fields, or validation failures")
@@ -228,6 +229,7 @@ var _ = dsl.Service("mailing-list", func() {
 			BearerTokenAttribute()
 			VersionAttribute()
 			MailingListUIDAttribute()
+			dsl.Required("bearer_token", "version")
 		})
 		dsl.Result(func() {
 			dsl.Attribute("mailing_list", MailingListWithReadonlyAttributes)
@@ -268,7 +270,7 @@ var _ = dsl.Service("mailing-list", func() {
 			WritersAttribute()
 			AuditorsAttribute()
 
-			dsl.Required("group_name", "public", "type", "description", "title", "service_uid")
+			dsl.Required("group_name", "public", "type", "description", "title", "service_uid", "version")
 		})
 		dsl.Result(MailingListWithReadonlyAttributes)
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
@@ -312,6 +314,47 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Header("bearer_token:Authorization")
 			dsl.Header("if_match:If-Match")
 			dsl.Response(dsl.StatusNoContent)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	// Member management endpoints
+	dsl.Method("create-grpsio-mailing-list-member", func() {
+		dsl.Description("Create a new member for a GroupsIO mailing list")
+		dsl.Security(JWTAuth)
+
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			dsl.Attribute("uid", dsl.String, "Mailing list UID", func() {
+				dsl.Example("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+			})
+
+			MemberBaseAttributes()
+			WritersAttribute()
+			AuditorsAttribute()
+
+			dsl.Required("version", "uid", "email")
+		})
+
+		dsl.Result(MemberFull)
+
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Mailing list not found")
+		dsl.Error("Conflict", ConflictError, "Member already exists")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+
+		dsl.HTTP(func() {
+			dsl.POST("/groupsio/mailing-lists/{uid}/members")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusCreated)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
 			dsl.Response("NotFound", dsl.StatusNotFound)
 			dsl.Response("Conflict", dsl.StatusConflict)

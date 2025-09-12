@@ -47,16 +47,14 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 			return nil, err
 		}
 	}
-	var version *string
+	var version string
 	{
-		if mailingListCreateGrpsioServiceVersion != "" {
-			version = &mailingListCreateGrpsioServiceVersion
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-			if err != nil {
-				return nil, err
-			}
+		version = mailingListCreateGrpsioServiceVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	var bearerToken *string
@@ -183,16 +181,14 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 			return nil, err
 		}
 	}
-	var version *string
+	var version string
 	{
-		if mailingListUpdateGrpsioServiceVersion != "" {
-			version = &mailingListUpdateGrpsioServiceVersion
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-			if err != nil {
-				return nil, err
-			}
+		version = mailingListUpdateGrpsioServiceVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	var bearerToken *string
@@ -346,16 +342,14 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 			return nil, err
 		}
 	}
-	var version *string
+	var version string
 	{
-		if mailingListCreateGrpsioMailingListVersion != "" {
-			version = &mailingListCreateGrpsioMailingListVersion
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-			if err != nil {
-				return nil, err
-			}
+		version = mailingListCreateGrpsioMailingListVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	var bearerToken *string
@@ -410,23 +404,19 @@ func BuildGetGrpsioMailingListPayload(mailingListGetGrpsioMailingListUID string,
 			return nil, err
 		}
 	}
-	var version *string
+	var version string
 	{
-		if mailingListGetGrpsioMailingListVersion != "" {
-			version = &mailingListGetGrpsioMailingListVersion
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-			if err != nil {
-				return nil, err
-			}
+		version = mailingListGetGrpsioMailingListVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
-	var bearerToken *string
+	var bearerToken string
 	{
-		if mailingListGetGrpsioMailingListBearerToken != "" {
-			bearerToken = &mailingListGetGrpsioMailingListBearerToken
-		}
+		bearerToken = mailingListGetGrpsioMailingListBearerToken
 	}
 	v := &mailinglist.GetGrpsioMailingListPayload{}
 	v.UID = &uid
@@ -494,16 +484,14 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 			return nil, err
 		}
 	}
-	var version *string
+	var version string
 	{
-		if mailingListUpdateGrpsioMailingListVersion != "" {
-			version = &mailingListUpdateGrpsioMailingListVersion
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-			if err != nil {
-				return nil, err
-			}
+		version = mailingListUpdateGrpsioMailingListVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	var bearerToken *string
@@ -595,6 +583,138 @@ func BuildDeleteGrpsioMailingListPayload(mailingListDeleteGrpsioMailingListUID s
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
+// BuildCreateGrpsioMailingListMemberPayload builds the payload for the
+// mailing-list create-grpsio-mailing-list-member endpoint from CLI flags.
+func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingListMemberBody string, mailingListCreateGrpsioMailingListMemberUID string, mailingListCreateGrpsioMailingListMemberVersion string, mailingListCreateGrpsioMailingListMemberBearerToken string) (*mailinglist.CreateGrpsioMailingListMemberPayload, error) {
+	var err error
+	var body CreateGrpsioMailingListMemberRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListMemberBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"delivery_mode\": \"none\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"committee\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+		}
+		if body.Username != nil {
+			if utf8.RuneCountInString(*body.Username) > 255 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", *body.Username, utf8.RuneCountInString(*body.Username), 255, false))
+			}
+		}
+		if body.FirstName != nil {
+			if utf8.RuneCountInString(*body.FirstName) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.first_name", *body.FirstName, utf8.RuneCountInString(*body.FirstName), 1, true))
+			}
+		}
+		if body.FirstName != nil {
+			if utf8.RuneCountInString(*body.FirstName) > 255 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.first_name", *body.FirstName, utf8.RuneCountInString(*body.FirstName), 255, false))
+			}
+		}
+		if body.LastName != nil {
+			if utf8.RuneCountInString(*body.LastName) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.last_name", *body.LastName, utf8.RuneCountInString(*body.LastName), 1, true))
+			}
+		}
+		if body.LastName != nil {
+			if utf8.RuneCountInString(*body.LastName) > 255 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.last_name", *body.LastName, utf8.RuneCountInString(*body.LastName), 255, false))
+			}
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
+		if body.Organization != nil {
+			if utf8.RuneCountInString(*body.Organization) > 255 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.organization", *body.Organization, utf8.RuneCountInString(*body.Organization), 255, false))
+			}
+		}
+		if body.JobTitle != nil {
+			if utf8.RuneCountInString(*body.JobTitle) > 255 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.job_title", *body.JobTitle, utf8.RuneCountInString(*body.JobTitle), 255, false))
+			}
+		}
+		if !(body.MemberType == "committee" || body.MemberType == "direct") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", body.MemberType, []any{"committee", "direct"}))
+		}
+		if !(body.DeliveryMode == "normal" || body.DeliveryMode == "digest" || body.DeliveryMode == "none") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.delivery_mode", body.DeliveryMode, []any{"normal", "digest", "none"}))
+		}
+		if !(body.ModStatus == "none" || body.ModStatus == "moderator" || body.ModStatus == "owner") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.mod_status", body.ModStatus, []any{"none", "moderator", "owner"}))
+		}
+		if body.LastReviewedAt != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.last_reviewed_at", *body.LastReviewedAt, goa.FormatDateTime))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var uid string
+	{
+		uid = mailingListCreateGrpsioMailingListMemberUID
+	}
+	var version string
+	{
+		version = mailingListCreateGrpsioMailingListMemberVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListCreateGrpsioMailingListMemberBearerToken != "" {
+			bearerToken = &mailingListCreateGrpsioMailingListMemberBearerToken
+		}
+	}
+	v := &mailinglist.CreateGrpsioMailingListMemberPayload{
+		Username:       body.Username,
+		FirstName:      body.FirstName,
+		LastName:       body.LastName,
+		Email:          body.Email,
+		Organization:   body.Organization,
+		JobTitle:       body.JobTitle,
+		MemberType:     body.MemberType,
+		DeliveryMode:   body.DeliveryMode,
+		ModStatus:      body.ModStatus,
+		LastReviewedAt: body.LastReviewedAt,
+		LastReviewedBy: body.LastReviewedBy,
+	}
+	{
+		var zero string
+		if v.MemberType == zero {
+			v.MemberType = "direct"
+		}
+	}
+	{
+		var zero string
+		if v.DeliveryMode == zero {
+			v.DeliveryMode = "normal"
+		}
+	}
+	{
+		var zero string
+		if v.ModStatus == zero {
+			v.ModStatus = "none"
+		}
+	}
+	if body.Writers != nil {
+		v.Writers = make([]string, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = val
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]string, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = val
+		}
+	}
+	v.UID = uid
+	v.Version = version
+	v.BearerToken = bearerToken
 
 	return v, nil
 }

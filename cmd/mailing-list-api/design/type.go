@@ -345,3 +345,102 @@ var MailingListWithReadonlyAttributes = dsl.Type("mailing-list-with-readonly-att
 	WritersAttribute()
 	AuditorsAttribute()
 })
+
+// MemberBaseAttributes defines common attributes for member requests and responses.
+func MemberBaseAttributes() {
+	dsl.Attribute("username", dsl.String, "Member username", func() {
+		dsl.MaxLength(255)
+		dsl.Example("jdoe")
+	})
+
+	dsl.Attribute("first_name", dsl.String, "Member first name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("John")
+	})
+
+	dsl.Attribute("last_name", dsl.String, "Member last name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("Doe")
+	})
+
+	dsl.Attribute("email", dsl.String, "Member email address", func() {
+		dsl.Format(dsl.FormatEmail)
+		dsl.Example("john.doe@example.com")
+	})
+
+	dsl.Attribute("organization", dsl.String, "Member organization", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Example Corp")
+	})
+
+	dsl.Attribute("job_title", dsl.String, "Member job title", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Software Engineer")
+	})
+
+	dsl.Attribute("member_type", dsl.String, "Member type", func() {
+		dsl.Enum("committee", "direct")
+		dsl.Default("direct")
+	})
+
+	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode", func() {
+		dsl.Enum("normal", "digest", "none")
+		dsl.Default("normal")
+	})
+
+	dsl.Attribute("mod_status", dsl.String, "Moderation status", func() {
+		dsl.Enum("none", "moderator", "owner")
+		dsl.Default("none")
+	})
+
+	dsl.Attribute("last_reviewed_at", dsl.String, "Last reviewed timestamp", func() {
+		dsl.Format(dsl.FormatDateTime)
+		dsl.Example("2023-01-15T14:30:00Z")
+	})
+
+	dsl.Attribute("last_reviewed_by", dsl.String, "Last reviewed by user ID", func() {
+		dsl.Example("admin@example.com")
+	})
+}
+
+// MemberFull is the DSL type for a complete member response.
+var MemberFull = dsl.Type("member-full", func() {
+	dsl.Description("A complete representation of a GroupsIO mailing list member with all attributes.")
+
+	dsl.Attribute("uid", dsl.String, "Member UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+	})
+
+	dsl.Attribute("mailing_list_uid", dsl.String, "Mailing list UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+
+	MemberBaseAttributes()
+
+	dsl.Attribute("status", dsl.String, "Member status", func() {
+		dsl.Example("pending")
+	})
+
+	dsl.Attribute("groupsio_member_id", dsl.Int64, "Groups.io member ID", func() {
+		dsl.Example(12345)
+	})
+
+	dsl.Attribute("groupsio_group_id", dsl.Int64, "Groups.io group ID", func() {
+		dsl.Example(67890)
+	})
+
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
+
+	dsl.Required(
+		"uid", "mailing_list_uid", "first_name", "last_name", "email",
+		"member_type", "delivery_mode", "mod_status", "status",
+		"created_at", "updated_at",
+	)
+})

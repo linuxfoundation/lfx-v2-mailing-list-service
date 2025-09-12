@@ -655,12 +655,11 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			},
 			expected: &model.AccessMessage{
 				UID:        "list-1",
-				ObjectType: "groupsio_mailing_list",
+				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     true,
 				Relations:  map[string][]string{},
 				References: map[string]string{
-					"project":                 "project-1",
-					constants.RelationService: "service-1",
+					constants.RelationGroupsIOService: "service-1",
 				},
 			},
 		},
@@ -675,13 +674,33 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			},
 			expected: &model.AccessMessage{
 				UID:        "list-2",
-				ObjectType: "groupsio_mailing_list",
+				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     false,
 				Relations:  map[string][]string{},
 				References: map[string]string{
-					"project":                 "project-2",
-					"committee":               "committee-1",
-					constants.RelationService: "service-2",
+					"committee":                       "committee-1",
+					constants.RelationGroupsIOService: "service-2",
+				},
+			},
+		},
+		{
+			name: "mailing list with writers",
+			mailingList: &model.GrpsIOMailingList{
+				UID:        "list-3",
+				ServiceUID: "service-3",
+				ProjectUID: "project-3",
+				Public:     true,
+				Writers:    []string{"user1", "user2"},
+			},
+			expected: &model.AccessMessage{
+				UID:        "list-3",
+				ObjectType: constants.ObjectTypeGroupsIOMailingList,
+				Public:     true,
+				Relations: map[string][]string{
+					constants.RelationWriter: {"user1", "user2"},
+				},
+				References: map[string]string{
+					constants.RelationGroupsIOService: "service-3",
 				},
 			},
 		},

@@ -112,17 +112,15 @@ func DecodeCreateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		}
 
 		var (
-			version     *string
+			version     string
 			bearerToken *string
 		)
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
 		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
@@ -389,7 +387,7 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 
 		var (
 			uid         string
-			version     *string
+			version     string
 			bearerToken *string
 			ifMatch     *string
 
@@ -397,14 +395,12 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		)
 		uid = params["uid"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
 		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
@@ -686,17 +682,15 @@ func DecodeCreateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 		}
 
 		var (
-			version     *string
+			version     string
 			bearerToken *string
 		)
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
 		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
@@ -820,37 +814,33 @@ func DecodeGetGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Req
 	return func(r *http.Request) (any, error) {
 		var (
 			uid         string
-			version     *string
-			bearerToken *string
+			version     string
+			bearerToken string
 			err         error
 
 			params = mux.Vars(r)
 		)
 		uid = params["uid"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
 		}
-		bearerTokenRaw := r.Header.Get("Authorization")
-		if bearerTokenRaw != "" {
-			bearerToken = &bearerTokenRaw
+		bearerToken = r.Header.Get("Authorization")
+		if bearerToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("bearer_token", "header"))
 		}
 		if err != nil {
 			return nil, err
 		}
 		payload := NewGetGrpsioMailingListPayload(uid, version, bearerToken)
-		if payload.BearerToken != nil {
-			if strings.Contains(*payload.BearerToken, " ") {
-				// Remove authorization scheme prefix (e.g. "Bearer")
-				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
-				payload.BearerToken = &cred
-			}
+		if strings.Contains(payload.BearerToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.BearerToken, " ", 2)[1]
+			payload.BearerToken = cred
 		}
 
 		return payload, nil
@@ -963,7 +953,7 @@ func DecodeUpdateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 
 		var (
 			uid         string
-			version     *string
+			version     string
 			bearerToken *string
 			ifMatch     *string
 
@@ -971,14 +961,12 @@ func DecodeUpdateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 		)
 		uid = params["uid"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
 		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
@@ -1213,6 +1201,158 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 				body = formatter(ctx, res)
 			} else {
 				body = NewDeleteGrpsioMailingListServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeCreateGrpsioMailingListMemberResponse returns an encoder for responses
+// returned by the mailing-list create-grpsio-mailing-list-member endpoint.
+func EncodeCreateGrpsioMailingListMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.MemberFull)
+		enc := encoder(ctx, w)
+		body := NewCreateGrpsioMailingListMemberResponseBody(res)
+		w.WriteHeader(http.StatusCreated)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeCreateGrpsioMailingListMemberRequest returns a decoder for requests
+// sent to the mailing-list create-grpsio-mailing-list-member endpoint.
+func DecodeCreateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body CreateGrpsioMailingListMemberRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateCreateGrpsioMailingListMemberRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			uid         string
+			version     string
+			bearerToken *string
+
+			params = mux.Vars(r)
+		)
+		uid = params["uid"]
+		version = r.URL.Query().Get("v")
+		if version == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		}
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewCreateGrpsioMailingListMemberPayload(&body, uid, version, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeCreateGrpsioMailingListMemberError returns an encoder for errors
+// returned by the create-grpsio-mailing-list-member mailing-list endpoint.
+func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateGrpsioMailingListMemberBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "Conflict":
+			var res *mailinglist.ConflictError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateGrpsioMailingListMemberConflictResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateGrpsioMailingListMemberInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateGrpsioMailingListMemberNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateGrpsioMailingListMemberServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)

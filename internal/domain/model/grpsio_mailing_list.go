@@ -200,7 +200,7 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	if ml.ServiceUID != "" {
-		tag := fmt.Sprintf("groupsio_service_uid:%s", ml.ServiceUID)
+		tag := fmt.Sprintf("service_uid:%s", ml.ServiceUID)
 		tags = append(tags, tag)
 	}
 
@@ -225,6 +225,11 @@ func (ml *GrpsIOMailingList) Tags() []string {
 
 	if ml.UID != "" {
 		tag := fmt.Sprintf("groupsio_mailing_list_uid:%s", ml.UID)
+		tags = append(tags, tag)
+	}
+
+	if ml.GroupName != "" {
+		tag := fmt.Sprintf("group_name:%s", ml.GroupName)
 		tags = append(tags, tag)
 	}
 
@@ -273,4 +278,10 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// IsMainGroup determines if a mailing list is the main group for a service
+// Main groups have the same group_name as their parent service's group_name
+func (ml *GrpsIOMailingList) IsMainGroup(parentService *GrpsIOService) bool {
+	return ml.GroupName == parentService.GroupName
 }

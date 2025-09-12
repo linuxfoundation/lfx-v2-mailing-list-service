@@ -16,8 +16,10 @@ type BaseGrpsIOWriter interface {
 	Delete(ctx context.Context, key string, revision uint64) error
 }
 
-// GrpsIOWriter combines all writer operations for services and mailing lists
+// GrpsIOWriter combines all writer operations for services, mailing lists, and members
 type GrpsIOWriter interface {
 	GrpsIOServiceWriter
 	GrpsIOMailingListWriter
+	GrpsIOMemberWriter
+	BaseGrpsIOWriter
 }

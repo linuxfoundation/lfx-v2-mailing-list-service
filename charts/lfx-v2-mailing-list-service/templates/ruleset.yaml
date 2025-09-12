@@ -225,3 +225,32 @@ spec:
           config:
             values:
               aud: {{ .Values.app.audience }}
+
+    # GroupsIO Mailing List Member endpoints
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list-member:create"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /groupsio/mailing-lists/:uid/members
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: json_content_type
+        
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}

@@ -16,31 +16,33 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint                   goa.Endpoint
-	ReadyzEndpoint                  goa.Endpoint
-	CreateGrpsioServiceEndpoint     goa.Endpoint
-	GetGrpsioServiceEndpoint        goa.Endpoint
-	UpdateGrpsioServiceEndpoint     goa.Endpoint
-	DeleteGrpsioServiceEndpoint     goa.Endpoint
-	CreateGrpsioMailingListEndpoint goa.Endpoint
-	GetGrpsioMailingListEndpoint    goa.Endpoint
-	UpdateGrpsioMailingListEndpoint goa.Endpoint
-	DeleteGrpsioMailingListEndpoint goa.Endpoint
+	LivezEndpoint                         goa.Endpoint
+	ReadyzEndpoint                        goa.Endpoint
+	CreateGrpsioServiceEndpoint           goa.Endpoint
+	GetGrpsioServiceEndpoint              goa.Endpoint
+	UpdateGrpsioServiceEndpoint           goa.Endpoint
+	DeleteGrpsioServiceEndpoint           goa.Endpoint
+	CreateGrpsioMailingListEndpoint       goa.Endpoint
+	GetGrpsioMailingListEndpoint          goa.Endpoint
+	UpdateGrpsioMailingListEndpoint       goa.Endpoint
+	DeleteGrpsioMailingListEndpoint       goa.Endpoint
+	CreateGrpsioMailingListMemberEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:                   livez,
-		ReadyzEndpoint:                  readyz,
-		CreateGrpsioServiceEndpoint:     createGrpsioService,
-		GetGrpsioServiceEndpoint:        getGrpsioService,
-		UpdateGrpsioServiceEndpoint:     updateGrpsioService,
-		DeleteGrpsioServiceEndpoint:     deleteGrpsioService,
-		CreateGrpsioMailingListEndpoint: createGrpsioMailingList,
-		GetGrpsioMailingListEndpoint:    getGrpsioMailingList,
-		UpdateGrpsioMailingListEndpoint: updateGrpsioMailingList,
-		DeleteGrpsioMailingListEndpoint: deleteGrpsioMailingList,
+		LivezEndpoint:                         livez,
+		ReadyzEndpoint:                        readyz,
+		CreateGrpsioServiceEndpoint:           createGrpsioService,
+		GetGrpsioServiceEndpoint:              getGrpsioService,
+		UpdateGrpsioServiceEndpoint:           updateGrpsioService,
+		DeleteGrpsioServiceEndpoint:           deleteGrpsioService,
+		CreateGrpsioMailingListEndpoint:       createGrpsioMailingList,
+		GetGrpsioMailingListEndpoint:          getGrpsioMailingList,
+		UpdateGrpsioMailingListEndpoint:       updateGrpsioMailingList,
+		DeleteGrpsioMailingListEndpoint:       deleteGrpsioMailingList,
+		CreateGrpsioMailingListMemberEndpoint: createGrpsioMailingListMember,
 	}
 }
 
@@ -199,4 +201,22 @@ func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMai
 func (c *Client) DeleteGrpsioMailingList(ctx context.Context, p *DeleteGrpsioMailingListPayload) (err error) {
 	_, err = c.DeleteGrpsioMailingListEndpoint(ctx, p)
 	return
+}
+
+// CreateGrpsioMailingListMember calls the "create-grpsio-mailing-list-member"
+// endpoint of the "mailing-list" service.
+// CreateGrpsioMailingListMember may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list not found
+//   - "Conflict" (type *ConflictError): Member already exists
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) CreateGrpsioMailingListMember(ctx context.Context, p *CreateGrpsioMailingListMemberPayload) (res *MemberFull, err error) {
+	var ires any
+	ires, err = c.CreateGrpsioMailingListMemberEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*MemberFull), nil
 }

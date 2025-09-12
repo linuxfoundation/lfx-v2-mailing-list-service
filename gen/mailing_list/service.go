@@ -36,6 +36,8 @@ type Service interface {
 	UpdateGrpsioMailingList(context.Context, *UpdateGrpsioMailingListPayload) (res *MailingListWithReadonlyAttributes, err error)
 	// Delete GroupsIO mailing list
 	DeleteGrpsioMailingList(context.Context, *DeleteGrpsioMailingListPayload) (err error)
+	// Create a new member for a GroupsIO mailing list
+	CreateGrpsioMailingListMember(context.Context, *CreateGrpsioMailingListMemberPayload) (res *MemberFull, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -58,7 +60,44 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [10]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list"}
+var MethodNames = [11]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member"}
+
+// CreateGrpsioMailingListMemberPayload is the payload type of the mailing-list
+// service create-grpsio-mailing-list-member method.
+type CreateGrpsioMailingListMemberPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version string
+	// Mailing list UID
+	UID string
+	// Member username
+	Username *string
+	// Member first name
+	FirstName *string
+	// Member last name
+	LastName *string
+	// Member email address
+	Email string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
+	// Member type
+	MemberType string
+	// Email delivery mode
+	DeliveryMode string
+	// Moderation status
+	ModStatus string
+	// Last reviewed timestamp
+	LastReviewedAt *string
+	// Last reviewed by user ID
+	LastReviewedBy *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
 
 // CreateGrpsioMailingListPayload is the payload type of the mailing-list
 // service create-grpsio-mailing-list method.
@@ -66,7 +105,7 @@ type CreateGrpsioMailingListPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Version of the API
-	Version *string
+	Version string
 	// Mailing list group name
 	GroupName string
 	// Whether the mailing list is publicly accessible
@@ -97,7 +136,7 @@ type CreateGrpsioServicePayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Version of the API
-	Version *string
+	Version string
 	// Service type
 	Type string
 	// Service domain
@@ -157,9 +196,9 @@ type DeleteGrpsioServicePayload struct {
 // get-grpsio-mailing-list method.
 type GetGrpsioMailingListPayload struct {
 	// JWT token issued by Heimdall
-	BearerToken *string
+	BearerToken string
 	// Version of the API
-	Version *string
+	Version string
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string
 }
@@ -189,6 +228,8 @@ type GetGrpsioServiceResult struct {
 	Service *ServiceWithReadonlyAttributes
 	// ETag header value
 	Etag *string
+	// Version of the API
+	Version string
 }
 
 // MailingListFull is the result type of the mailing-list service
@@ -267,6 +308,51 @@ type MailingListWithReadonlyAttributes struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
+	// Manager user IDs who can edit/modify this service
+	Writers []string
+	// Auditor user IDs who can audit this service
+	Auditors []string
+}
+
+// MemberFull is the result type of the mailing-list service
+// create-grpsio-mailing-list-member method.
+type MemberFull struct {
+	// Member UID
+	UID string
+	// Mailing list UID
+	MailingListUID string
+	// Member username
+	Username *string
+	// Member first name
+	FirstName string
+	// Member last name
+	LastName string
+	// Member email address
+	Email string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
+	// Member type
+	MemberType string
+	// Email delivery mode
+	DeliveryMode string
+	// Moderation status
+	ModStatus string
+	// Last reviewed timestamp
+	LastReviewedAt *string
+	// Last reviewed by user ID
+	LastReviewedBy *string
+	// Member status
+	Status string
+	// Groups.io member ID
+	GroupsioMemberID *int64
+	// Groups.io group ID
+	GroupsioGroupID *int64
+	// The timestamp when the service was created (read-only)
+	CreatedAt string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt string
 	// Manager user IDs who can edit/modify this service
 	Writers []string
 	// Auditor user IDs who can audit this service
@@ -375,7 +461,7 @@ type UpdateGrpsioMailingListPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Version of the API
-	Version *string
+	Version string
 	// If-Match header value for conditional requests
 	IfMatch *string
 	// Mailing list UID -- unique identifier for the mailing list
@@ -410,7 +496,7 @@ type UpdateGrpsioServicePayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Version of the API
-	Version *string
+	Version string
 	// If-Match header value for conditional requests
 	IfMatch *string
 	// Service UID -- unique identifier for the service
