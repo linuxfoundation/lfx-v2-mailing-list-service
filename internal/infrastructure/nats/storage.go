@@ -805,6 +805,10 @@ func (s *storage) UpdateGrpsIOMember(ctx context.Context, uid string, member *mo
 
 // DeleteGrpsIOMember deletes a member with optimistic concurrency control
 func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
+	if member == nil {
+		return errs.NewValidation("member is required for deletion")
+	}
+
 	slog.DebugContext(ctx, "nats storage: deleting member",
 		"member_uid", uid,
 		"expected_revision", expectedRevision)

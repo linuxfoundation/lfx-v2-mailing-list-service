@@ -275,7 +275,7 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 	}
 
 	// Validate main group restrictions (critical business rule from Groups.io)
-	if parentService != nil && existing.IsMainGroup(parentService) {
+	if parentService != nil && isMainGroupForService(existing, parentService) {
 		// Main groups must remain public announcement lists
 		if payload.Type != nil && *payload.Type != "announcement" {
 			return errors.NewValidation("main group must be an announcement list")
@@ -360,20 +360,8 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 // validateMailingListDeleteProtection validates deletion protection rules
 func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) error {
 	// Check if it's a main group (any service type)
-	if parentService != nil {
-		isMainGroup := false
-
-		switch parentService.Type {
-		case "primary":
-			isMainGroup = mailingList.GroupName == parentService.GroupName
-		case "formation", "shared":
-			// Formation and shared services use prefix as main group identifier
-			isMainGroup = mailingList.GroupName == parentService.Prefix
-		}
-
-		if isMainGroup {
-			return errors.NewValidation(fmt.Sprintf("cannot delete the main group of a %s service", parentService.Type))
-		}
+	if parentService != nil && isMainGroupForService(mailingList, parentService) {
+		return errors.NewValidation(fmt.Sprintf("cannot delete the main group of a %s service", parentService.Type))
 	}
 
 	// Protect announcement lists (typically used for critical communications)
@@ -434,6 +422,18 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// isMainGroupForService determines if a list is the "main" group for its parent.
+func isMainGroupForService(ml *model.GrpsIOMailingList, svc *model.GrpsIOService) bool {
+	switch svc.Type {
+	case "primary":
+		return ml.GroupName == svc.GroupName
+	case "formation", "shared":
+		return ml.GroupName == svc.Prefix
+	default:
+		return false
+	}
 }
 
 // validateMemberUpdate validates that immutable fields are not changed during updates

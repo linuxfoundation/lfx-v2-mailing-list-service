@@ -137,6 +137,10 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 
 // convertGrpsIOMailingListDomainToStandardResponse converts a domain mailing list to GOA standard response type
 func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(mailingList *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListWithReadonlyAttributes {
+	if mailingList == nil {
+		return &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{}
+	}
+
 	response := &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{
 		UID:              &mailingList.UID,
 		GroupName:        &mailingList.GroupName,

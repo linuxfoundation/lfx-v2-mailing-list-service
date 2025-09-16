@@ -18,7 +18,7 @@ func ValidateRFC3339(timestamp string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf(constants.ErrEmptyTimestamp)
 	}
 
-	t, err := time.Parse(constants.TimestampFormat, timestamp)
+	t, err := time.Parse(time.RFC3339Nano, timestamp)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("%s: %w", constants.ErrInvalidTimestampFormat, err)
 	}
