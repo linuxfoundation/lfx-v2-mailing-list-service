@@ -562,9 +562,9 @@ type UpdateGrpsioMailingListMemberPayload struct {
 	// Member job title
 	JobTitle *string
 	// Email delivery mode
-	DeliveryMode string
+	DeliveryMode *string
 	// Moderation status
-	ModStatus string
+	ModStatus *string
 }
 
 // UpdateGrpsioMailingListPayload is the payload type of the mailing-list
@@ -579,23 +579,23 @@ type UpdateGrpsioMailingListPayload struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string
 	// Mailing list group name
-	GroupName string
+	GroupName *string
 	// Whether the mailing list is publicly accessible
-	Public bool
+	Public *bool
 	// Mailing list type
-	Type string
+	Type *string
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string
 	// Committee member filters
 	CommitteeFilters []string
 	// Mailing list description (11-500 characters)
-	Description string
+	Description *string
 	// Mailing list title
-	Title string
+	Title *string
 	// Subject tag prefix
 	SubjectTag *string
 	// Service UUID
-	ServiceUID string
+	ServiceUID *string
 	// Manager user IDs who can edit/modify this service
 	Writers []string
 	// Auditor user IDs who can audit this service
@@ -614,7 +614,7 @@ type UpdateGrpsioServicePayload struct {
 	// Service UID -- unique identifier for the service
 	UID *string
 	// Service type
-	Type string
+	Type *string
 	// Service domain
 	Domain *string
 	// GroupsIO group ID
@@ -629,13 +629,13 @@ type UpdateGrpsioServicePayload struct {
 	// Project slug identifier
 	ProjectSlug *string
 	// LFXv2 Project UID
-	ProjectUID string
+	ProjectUID *string
 	// Service URL
 	URL *string
 	// GroupsIO group name
 	GroupName *string
 	// Whether the service is publicly accessible
-	Public bool
+	Public *bool
 	// Manager user IDs who can edit/modify this service
 	Writers []string
 	// Auditor user IDs who can audit this service

@@ -380,35 +380,35 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "valid update with mutable fields only",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:         "primary",
-				ProjectUID:   "project-123",
+				Type:         stringPtr("primary"),
+				ProjectUID:   stringPtr("project-123"),
 				Status:       stringPtr("active"),
 				GlobalOwners: []string{"newowner@example.com"},
-				Public:       true,
+				Public:       boolPtr(true),
 			},
 			expectErr: false,
 		},
 		{
 			name: "attempt to change type should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "formation",
-				ProjectUID: "project-123",
+				Type:       stringPtr("formation"),
+				ProjectUID: stringPtr("project-123"),
 			},
 			expectErr: true,
 		},
 		{
 			name: "attempt to change project_uid should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "different-project",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("different-project"),
 			},
 			expectErr: true,
 		},
 		{
 			name: "attempt to change prefix should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "project-123",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("project-123"),
 				Prefix:     stringPtr("new-prefix"),
 			},
 			expectErr: true,
@@ -416,8 +416,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "attempt to change domain should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "project-123",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("project-123"),
 				Domain:     stringPtr("different.groups.io"),
 			},
 			expectErr: true,
@@ -425,8 +425,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "attempt to change group_id should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "project-123",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("project-123"),
 				GroupID:    int64Ptr(99999),
 			},
 			expectErr: true,
@@ -434,8 +434,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "attempt to change url should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "project-123",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("project-123"),
 				URL:        stringPtr("https://different.groups.io/g/test"),
 			},
 			expectErr: true,
@@ -443,8 +443,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "attempt to change group_name should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:       "primary",
-				ProjectUID: "project-123",
+				Type:       stringPtr("primary"),
+				ProjectUID: stringPtr("project-123"),
 				GroupName:  stringPtr("different-group"),
 			},
 			expectErr: true,
@@ -452,8 +452,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "update with invalid email should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:         "primary",
-				ProjectUID:   "project-123",
+				Type:         stringPtr("primary"),
+				ProjectUID:   stringPtr("project-123"),
 				GlobalOwners: []string{"invalid-email"},
 			},
 			expectErr: true,
@@ -461,8 +461,8 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		{
 			name: "update with too many global owners should fail",
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
-				Type:         "primary",
-				ProjectUID:   "project-123",
+				Type:         stringPtr("primary"),
+				ProjectUID:   stringPtr("project-123"),
 				GlobalOwners: []string{"owner1@example.com", "owner2@example.com", "owner3@example.com", "owner4@example.com", "owner5@example.com", "owner6@example.com", "owner7@example.com", "owner8@example.com", "owner9@example.com", "owner10@example.com", "owner11@example.com"},
 			},
 			expectErr: true,
@@ -763,11 +763,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "valid update without parent service change",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list",    // unchanged
-				ServiceUID:  "service-123", // unchanged
-				Description: "Updated description that is long enough",
-				Type:        "discussion_moderated",
-				Public:      false,
+				GroupName:   stringPtr("sub-list"),    // unchanged
+				ServiceUID:  stringPtr("service-123"), // unchanged
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_moderated"),
+				Public:      boolPtr(false),
 			},
 			setupMock: func(m *MockServiceReader) {
 				// No mock calls expected since ServiceUID hasn't changed
@@ -777,11 +777,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "valid parent service change within same project",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list",
-				ServiceUID:  "service-456", // different service
-				Description: "Updated description that is long enough",
-				Type:        "discussion_open",
-				Public:      false,
+				GroupName:   stringPtr("sub-list"),
+				ServiceUID:  stringPtr("service-456"), // different service
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_open"),
+				Public:      boolPtr(false),
 			},
 			setupMock: func(m *MockServiceReader) {
 				newService := &model.GrpsIOService{
@@ -797,11 +797,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "blocked cross-project parent service change",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list",
-				ServiceUID:  "service-different-project", // different project
-				Description: "Updated description that is long enough",
-				Type:        "discussion_open",
-				Public:      false,
+				GroupName:   stringPtr("sub-list"),
+				ServiceUID:  stringPtr("service-different-project"), // different project
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_open"),
+				Public:      boolPtr(false),
 			},
 			setupMock: func(m *MockServiceReader) {
 				differentProjectService := &model.GrpsIOService{
@@ -817,11 +817,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "parent service change with non-existent service",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list",
-				ServiceUID:  "non-existent-service",
-				Description: "Updated description that is long enough",
-				Type:        "discussion_open",
-				Public:      false,
+				GroupName:   stringPtr("sub-list"),
+				ServiceUID:  stringPtr("non-existent-service"),
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_open"),
+				Public:      boolPtr(false),
 			},
 			setupMock: func(m *MockServiceReader) {
 				m.On("GetGrpsIOService", ctx, "non-existent-service").Return(nil, uint64(0), errors.NewServiceUnavailable("service not found"))
@@ -832,11 +832,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "immutable group_name change should fail",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "different-list-name", // changed
-				ServiceUID:  "service-123",
-				Description: "Updated description that is long enough",
-				Type:        "discussion_open",
-				Public:      false,
+				GroupName:   stringPtr("different-list-name"), // changed
+				ServiceUID:  stringPtr("service-123"),
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_open"),
+				Public:      boolPtr(false),
 			},
 			setupMock: func(m *MockServiceReader) {
 				// No mock calls expected since validation should fail before that
@@ -847,11 +847,11 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		{
 			name: "private to public visibility change should fail",
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   "sub-list",
-				ServiceUID:  "service-123",
-				Description: "Updated description that is long enough",
-				Type:        "discussion_open",
-				Public:      true, // changing from private to public
+				GroupName:   stringPtr("sub-list"),
+				ServiceUID:  stringPtr("service-123"),
+				Description: stringPtr("Updated description that is long enough"),
+				Type:        stringPtr("discussion_open"),
+				Public:      boolPtr(true), // changing from private to public
 			},
 			setupMock: func(m *MockServiceReader) {
 				// No mock calls expected since validation should fail before that

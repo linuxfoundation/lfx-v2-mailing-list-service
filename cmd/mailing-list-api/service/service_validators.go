@@ -91,7 +91,7 @@ func validatePrimaryRules(payload *mailinglistservice.CreateGrpsioServicePayload
 	// primary rules:
 	// - prefix must NOT be provided (will return 400 error)
 	// - global_owners must be provided and contain at least one valid email
-	// - No existing non-formation service for the project (TODO: implement project validation)
+	// - Unique constraint validation handled by storage layer (UniqueProjectType)
 
 	if payload.Prefix != nil && *payload.Prefix != "" {
 		return errors.NewValidation("prefix must not be provided for primary service type")
@@ -157,12 +157,12 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	// Immutable Fields: type, project_uid, prefix, domain, group_id, url, group_name
 	// Mutable Fields: global_owners, status, public only
 
-	if payload.Type != existing.Type {
-		return errors.NewValidation(fmt.Sprintf("field 'type' is immutable. Cannot change from '%s' to '%s'", existing.Type, payload.Type))
+	if payload.Type != nil && *payload.Type != existing.Type {
+		return errors.NewValidation(fmt.Sprintf("field 'type' is immutable. Cannot change from '%s' to '%s'", existing.Type, *payload.Type))
 	}
 
-	if payload.ProjectUID != existing.ProjectUID {
-		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, payload.ProjectUID))
+	if payload.ProjectUID != nil && *payload.ProjectUID != existing.ProjectUID {
+		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, *payload.ProjectUID))
 	}
 
 	// Check prefix immutability
@@ -270,35 +270,35 @@ func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailing
 // validateMailingListUpdate validates update constraints for mailing lists
 func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailingList, parentService *model.GrpsIOService, payload *mailinglistservice.UpdateGrpsioMailingListPayload, serviceReader port.GrpsIOServiceReader) error {
 	// Validate group_name immutability (critical business rule)
-	if payload.GroupName != existing.GroupName {
+	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
 		return errors.NewValidation("field 'group_name' is immutable")
 	}
 
 	// Validate main group restrictions (critical business rule from Groups.io)
 	if parentService != nil && existing.IsMainGroup(parentService) {
 		// Main groups must remain public announcement lists
-		if payload.Type != "announcement" {
+		if payload.Type != nil && *payload.Type != "announcement" {
 			return errors.NewValidation("main group must be an announcement list")
 		}
-		if !payload.Public {
+		if payload.Public != nil && !*payload.Public {
 			return errors.NewValidation("main group must remain public")
 		}
 	}
 
 	// Cannot set type to "custom" unless already "custom" (Groups.io business rule)
-	if payload.Type == "custom" && existing.Type != "custom" {
+	if payload.Type != nil && *payload.Type == "custom" && existing.Type != "custom" {
 		return errors.NewValidation("cannot set type to \"custom\"")
 	}
 
 	// Cannot change visibility from private to public
-	// TODO: Future PR - Consider migrating from boolean 'public' field to string 'visibility' field
+	// TODO: LFXV2-479 - Migrate from boolean 'public' field to string 'visibility' field
 	// for full Groups.io API compatibility (supporting "public", "private", "custom" values)
-	if !existing.Public && payload.Public {
+	if payload.Public != nil && !existing.Public && *payload.Public {
 		return errors.NewValidation("cannot change visibility from private to public")
 	}
 
 	// Parent service change validation (allow within same project only)
-	if payload.ServiceUID != existing.ServiceUID {
+	if payload.ServiceUID != nil && *payload.ServiceUID != existing.ServiceUID {
 		// Check if service reader is available for validation
 		if serviceReader == nil {
 			// Fallback to old restrictive behavior if no service reader provided
@@ -310,11 +310,11 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 		}
 
 		// Fetch the new parent service to validate the project ownership
-		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, payload.ServiceUID)
+		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, *payload.ServiceUID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to retrieve new parent service for validation",
 				"error", err,
-				"new_service_uid", payload.ServiceUID,
+				"new_service_uid", *payload.ServiceUID,
 				"mailing_list_uid", existing.UID)
 			return errors.NewValidation("new parent service not found")
 		}
@@ -326,7 +326,7 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 				"current_project_uid", existing.ProjectUID,
 				"new_project_uid", newParentService.ProjectUID,
 				"current_service_uid", existing.ServiceUID,
-				"new_service_uid", payload.ServiceUID)
+				"new_service_uid", *payload.ServiceUID)
 			return errors.NewValidation("cannot move mailing list to service in different project")
 		}
 
@@ -334,12 +334,12 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 			"mailing_list_uid", existing.UID,
 			"project_uid", existing.ProjectUID,
 			"old_service_uid", existing.ServiceUID,
-			"new_service_uid", payload.ServiceUID)
+			"new_service_uid", *payload.ServiceUID)
 	}
 
 	// Cannot change committee without special handling
 	if payload.CommitteeUID != nil && *payload.CommitteeUID != existing.CommitteeUID {
-		// TODO: Future - trigger committee member sync
+		// TODO: LFXV2-478 - Trigger committee member sync
 		slog.Debug("committee change detected - member sync required", "mailing_list_uid", existing.UID)
 	}
 
@@ -383,7 +383,7 @@ func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, p
 
 	// Check for active committee associations
 	if mailingList.CommitteeUID != "" {
-		// TODO: When committee sync is implemented, validate:
+		// TODO: LFXV2-478 - When committee sync is implemented, validate:
 		// - Check if committee sync is active
 		// - Verify no pending sync operations
 		// - Ensure committee members are notified
@@ -392,14 +392,14 @@ func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, p
 			"committee_uid", mailingList.CommitteeUID)
 	}
 
-	// TODO: Future PR - Groups.io API integration for:
+	// TODO: LFXV2-353 - Groups.io API integration for:
 	// - Actual group/subgroup creation and validation
 	// - Validate subscriber count (block if >50 active subscribers)
 	// - Check for recent activity (block if activity within 7 days)
 	// - Verify no pending messages in moderation queue
 	// - DNS delegation checks for primary services
 
-	// TODO: Future PR - Committee service integration for:
+	// TODO: LFXV2-478 - Committee service integration for:
 	// - Member synchronization when committee changes
 	// - Committee association event handling
 	// - Automatic member updates based on committee filters
@@ -455,7 +455,7 @@ func validateMemberUpdate(existing, updated *model.GrpsIOMember) error {
 		return errors.NewValidation("mailing list UID cannot be changed")
 	}
 
-	// TODO: Future PR - Add validation for Groups.io sync requirements
+	// TODO: LFXV2-353 - Add validation for Groups.io sync requirements
 	// if existing.GroupsIOMemberID != updated.GroupsIOMemberID {
 	//     return errors.NewBadRequest("Groups.io member ID cannot be changed")
 	// }
@@ -481,10 +481,11 @@ func validateMemberCreation(ctx context.Context, payload *mailinglistservice.Cre
 		return errors.NewValidation("email is required")
 	}
 
-	// TODO: Future PR - Add business logic validations:
-	// - Check for duplicate member (same email in same mailing list)
+	// TODO: LFXV2-480 - Add business logic validations:
 	// - Validate mailing list capacity limits
 	// - Check member permissions based on who's adding them
+
+	// TODO: LFXV2-353 - Groups.io API integration:
 	// - Validate against Groups.io API constraints
 	// - Auto-adopt members from Groups.io if they exist there but not in our database
 
@@ -517,7 +518,7 @@ func validateMemberDeleteProtection(member *model.GrpsIOMember) error {
 			"mailing_list_uid", member.MailingListUID)
 	}
 
-	// TODO: Future PR - Add sole owner/moderator protection via Groups.io API
+	// TODO: LFXV2-353 - Add sole owner/moderator protection via Groups.io API
 	// This is already noted in the delete endpoint with a TODO comment
 	// When Groups.io API integration is added, we will:
 	// - Check if this member is the only owner/moderator of the mailing list

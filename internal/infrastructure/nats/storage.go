@@ -193,7 +193,9 @@ func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedR
 		return errs.NewServiceUnavailable("failed to delete service")
 	}
 
-	// Clean up unique constraint (verify it belongs to this service)
+	// Clean up unique constraint.
+	// Verification is necessary here to prevent deleting a constraint that might have been reused
+	// by another service with the same parameters. Only delete if the constraint still points to this service's UID.
 	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOServicePrefix, service.BuildIndexKey(ctx))
 	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOServices]
 	if exists && kv != nil {
@@ -802,23 +804,14 @@ func (s *storage) UpdateGrpsIOMember(ctx context.Context, uid string, member *mo
 }
 
 // DeleteGrpsIOMember deletes a member with optimistic concurrency control
-func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error {
+func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
 	slog.DebugContext(ctx, "nats storage: deleting member",
 		"member_uid", uid,
 		"expected_revision", expectedRevision)
 
-	// Get member details before deletion for lookup key cleanup
-	member, _, err := s.GetGrpsIOMember(ctx, uid)
-	if err != nil {
-		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			slog.WarnContext(ctx, "member not found on delete", "member_uid", uid)
-			return errs.NewNotFound("member not found")
-		}
-		slog.ErrorContext(ctx, "failed to get member for deletion", "error", err, "member_uid", uid)
-		return errs.NewServiceUnavailable("failed to retrieve member for deletion")
-	}
+	// Use the passed member data - no need to fetch again
 
-	err = s.delete(ctx, constants.KVBucketNameGroupsIOMembers, uid, expectedRevision)
+	err := s.delete(ctx, constants.KVBucketNameGroupsIOMembers, uid, expectedRevision)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			slog.WarnContext(ctx, "member not found on delete", "member_uid", uid)

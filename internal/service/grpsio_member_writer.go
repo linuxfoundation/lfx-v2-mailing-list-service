@@ -14,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // CreateGrpsIOMember creates a new member with transactional operations and rollback following service pattern
@@ -23,11 +24,18 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		"mailing_list_uid", member.MailingListUID,
 	)
 
-	// Step 1: Generate UID and set timestamps (like mailing list pattern)
-	now := time.Now()
-	if member.UID == "" {
-		member.UID = uuid.New().String()
+	// Step 1: Validate timestamps
+	if err := member.ValidateLastReviewedAt(); err != nil {
+		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
+			"error", err,
+			"last_reviewed_at", member.LastReviewedAt,
+		)
+		return nil, 0, errs.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
 	}
+
+	// Step 2: Generate UID and set timestamps (server-side generation for security)
+	now := time.Now()
+	member.UID = uuid.New().String() // Always generate server-side, never trust client
 	member.CreatedAt = now
 	member.UpdatedAt = now
 
@@ -42,7 +50,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		}
 	}()
 
-	// Step 2: Validate mailing list exists and populate metadata
+	// Step 3: Validate mailing list exists and populate metadata
 	if err := o.validateAndPopulateMailingList(ctx, member); err != nil {
 		slog.ErrorContext(ctx, "mailing list validation failed",
 			"error", err,
@@ -99,17 +107,55 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	return createdMember, revision, nil
 }
 
-// UpdateGrpsIOMember updates an existing member following the service pattern
+// UpdateGrpsIOMember updates an existing member following the service pattern with pre-fetch and validation
 func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "executing update member use case",
 		"member_uid", uid,
 		"expected_revision", expectedRevision,
 	)
 
-	// Set update timestamp
-	member.UpdatedAt = time.Now()
+	// Step 1: Validate timestamps in input
+	if err := member.ValidateLastReviewedAt(); err != nil {
+		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
+			"error", err,
+			"last_reviewed_at", member.LastReviewedAt,
+			"member_uid", uid,
+		)
+		return nil, 0, errs.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
+	}
 
-	// Update member in storage with optimistic concurrency control
+	// Step 2: Retrieve existing member to validate and merge data
+	existing, existingRevision, err := o.grpsIOReader.GetGrpsIOMember(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to retrieve existing member",
+			"error", err,
+			"member_uid", uid,
+		)
+		return nil, 0, err
+	}
+
+	// Step 3: Verify revision matches to ensure optimistic locking
+	if existingRevision != expectedRevision {
+		slog.WarnContext(ctx, "revision mismatch during member update",
+			"expected_revision", expectedRevision,
+			"current_revision", existingRevision,
+			"member_uid", uid,
+		)
+		return nil, 0, errs.NewConflict("member has been modified by another process")
+	}
+
+	// Step 4: Protect immutable fields
+	if member.MailingListUID != "" && member.MailingListUID != existing.MailingListUID {
+		return nil, 0, errs.NewValidation("field 'mailing_list_uid' is immutable")
+	}
+	if member.Email != "" && member.Email != existing.Email {
+		return nil, 0, errs.NewValidation("field 'email' is immutable")
+	}
+
+	// Step 5: Merge existing data with updated fields
+	o.mergeMemberData(ctx, existing, member)
+
+	// Step 6: Update member in storage with optimistic concurrency control
 	updatedMember, revision, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update member",
@@ -124,7 +170,7 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 		"revision", revision,
 	)
 
-	// Publish messages (indexer and access control)
+	// Step 7: Publish messages (indexer and access control)
 	if o.publisher != nil {
 		if err := o.publishMemberMessages(ctx, updatedMember, model.ActionUpdated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish member update messages", "error", err)
@@ -136,14 +182,24 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 }
 
 // DeleteGrpsIOMember deletes a member following the service pattern
-func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error {
+func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
 	slog.DebugContext(ctx, "executing delete member use case",
 		"member_uid", uid,
 		"expected_revision", expectedRevision,
 	)
 
+	if member != nil {
+		slog.DebugContext(ctx, "member data provided for deletion",
+			"member_uid", member.UID,
+			"email", redaction.RedactEmail(member.Email),
+			"mailing_list_uid", member.MailingListUID,
+		)
+	} else {
+		slog.DebugContext(ctx, "no member data provided for deletion - will rely on storage layer for validation")
+	}
+
 	// Delete member from storage with optimistic concurrency control
-	err := o.grpsIOWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision)
+	err := o.grpsIOWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete member",
 			"error", err,
@@ -256,7 +312,7 @@ func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Conte
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, builtMessage)
 		},
-		// TODO: Implement proper member removal from mailing list relations
+		// TODO: LFXV2-459 Implement proper member removal from mailing list relations
 		// Currently commented out to avoid deleting entire mailing list from OpenFGA
 		// func() error {
 		//	return o.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMemberSubject, uid)
@@ -286,4 +342,21 @@ func (o *grpsIOWriterOrchestrator) buildMemberIndexerMessage(ctx context.Context
 
 	// Build the message with proper context and authorization headers
 	return indexerMessage.Build(ctx, member)
+}
+
+// mergeMemberData merges existing member data with updated fields, preserving immutable fields
+func (o *grpsIOWriterOrchestrator) mergeMemberData(ctx context.Context, existing *model.GrpsIOMember, updated *model.GrpsIOMember) {
+	// Preserve immutable fields
+	updated.UID = existing.UID
+	updated.CreatedAt = existing.CreatedAt
+	updated.MailingListUID = existing.MailingListUID // Parent reference is immutable
+	updated.Email = existing.Email                   // Email is immutable due to unique constraint
+
+	// Update timestamp
+	updated.UpdatedAt = time.Now()
+
+	slog.DebugContext(ctx, "member data merged",
+		"member_uid", existing.UID,
+		"mutable_fields", []string{"status", "display_name"},
+	)
 }

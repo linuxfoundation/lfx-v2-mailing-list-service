@@ -311,7 +311,7 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-        put:
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list mailing-list
@@ -354,7 +354,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
+                            $ref: '#/components/schemas/UpdateGrpsioMailingListRequestBody'
                         example:
                             auditors:
                                 - auditor_user_id1
@@ -775,7 +775,7 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-        put:
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list-member mailing-list
@@ -835,7 +835,7 @@ paths:
                             first_name: John
                             job_title: Software Engineer
                             last_name: Doe
-                            mod_status: moderator
+                            mod_status: owner
                             organization: Example Corp
                             username: jdoe
             responses:
@@ -1220,7 +1220,7 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-        put:
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-service mailing-list
@@ -1263,7 +1263,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CreateGrpsioServiceRequestBody'
+                            $ref: '#/components/schemas/UpdateGrpsioServiceRequestBody'
                         example:
                             auditors:
                                 - auditor_user_id1
@@ -1481,7 +1481,7 @@ components:
                     type: string
                     description: Member type
                     default: direct
-                    example: committee
+                    example: direct
                     enum:
                         - committee
                         - direct
@@ -1489,7 +1489,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: owner
+                    example: moderator
                     enum:
                         - none
                         - moderator
@@ -1505,14 +1505,14 @@ components:
                     example: jdoe
                     maxLength: 255
             example:
-                delivery_mode: normal
+                delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
                 job_title: Software Engineer
                 last_name: Doe
                 last_reviewed_at: "2023-01-15T14:30:00Z"
                 last_reviewed_by: admin@example.com
-                member_type: direct
+                member_type: committee
                 mod_status: none
                 organization: Example Corp
                 username: jdoe
@@ -1525,7 +1525,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Explicabo deserunt sit vitae in dolorem.
+                        example: Vel enim optio similique dolores deleniti.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1534,7 +1534,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Emeritus
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1596,7 +1596,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Totam enim natus explicabo libero.
+                        example: Voluptatem omnis deleniti.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2658,7 +2658,6 @@ components:
                 delivery_mode:
                     type: string
                     description: Email delivery mode
-                    default: normal
                     example: none
                     enum:
                         - normal
@@ -2684,13 +2683,11 @@ components:
                 mod_status:
                     type: string
                     description: Moderation status
-                    default: none
-                    example: member
+                    example: owner
                     enum:
                         - none
                         - moderator
                         - owner
-                        - member
                 organization:
                     type: string
                     description: Member organization
@@ -2702,13 +2699,211 @@ components:
                     example: jdoe
                     maxLength: 255
             example:
-                delivery_mode: normal
+                delivery_mode: none
                 first_name: John
                 job_title: Software Engineer
                 last_name: Doe
-                mod_status: member
+                mod_status: owner
                 organization: Example Corp
                 username: jdoe
+        UpdateGrpsioMailingListRequestBody:
+            type: object
+            properties:
+                auditors:
+                    type: array
+                    items:
+                        type: string
+                        example: Aut amet.
+                    description: Auditor user IDs who can audit this service
+                    example:
+                        - auditor_user_id1
+                        - auditor_user_id2
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: None
+                        enum:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                            - Observer
+                            - Emeritus
+                            - None
+                    description: Committee member filters
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_uid:
+                    type: string
+                    description: Committee UUID for committee-based mailing lists
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                description:
+                    type: string
+                    description: Mailing list description (11-500 characters)
+                    example: Technical steering committee discussions
+                    minLength: 11
+                    maxLength: 500
+                group_name:
+                    type: string
+                    description: Mailing list group name
+                    example: technical-steering-committee
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                    minLength: 3
+                    maxLength: 34
+                public:
+                    type: boolean
+                    description: Whether the mailing list is publicly accessible
+                    example: false
+                service_uid:
+                    type: string
+                    description: Service UUID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                subject_tag:
+                    type: string
+                    description: Subject tag prefix
+                    example: '[TSC]'
+                    maxLength: 50
+                title:
+                    type: string
+                    description: Mailing list title
+                    example: Technical Steering Committee
+                    minLength: 5
+                    maxLength: 100
+                type:
+                    type: string
+                    description: Mailing list type
+                    example: discussion_moderated
+                    enum:
+                        - announcement
+                        - discussion_moderated
+                        - discussion_open
+                writers:
+                    type: array
+                    items:
+                        type: string
+                        example: Amet sunt libero quod placeat et possimus.
+                    description: Manager user IDs who can edit/modify this service
+                    example:
+                        - manager_user_id1
+                        - manager_user_id2
+            example:
+                auditors:
+                    - auditor_user_id1
+                    - auditor_user_id2
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                description: Technical steering committee discussions
+                group_name: technical-steering-committee
+                public: false
+                service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                subject_tag: '[TSC]'
+                title: Technical Steering Committee
+                type: discussion_moderated
+                writers:
+                    - manager_user_id1
+                    - manager_user_id2
+        UpdateGrpsioServiceRequestBody:
+            type: object
+            properties:
+                auditors:
+                    type: array
+                    items:
+                        type: string
+                        example: Et quas doloremque modi.
+                    description: Auditor user IDs who can audit this service
+                    example:
+                        - auditor_user_id1
+                        - auditor_user_id2
+                domain:
+                    type: string
+                    description: Service domain
+                    example: lists.project.org
+                global_owners:
+                    type: array
+                    items:
+                        type: string
+                        example: anthony_berge@stark.name
+                        format: email
+                    description: List of global owner email addresses (required for primary, forbidden for shared)
+                    example:
+                        - admin@example.com
+                group_id:
+                    type: integer
+                    description: GroupsIO group ID
+                    example: 12345
+                    format: int64
+                group_name:
+                    type: string
+                    description: GroupsIO group name
+                    example: project-name
+                prefix:
+                    type: string
+                    description: Email prefix (required for formation and shared, forbidden for primary)
+                    example: formation
+                project_slug:
+                    type: string
+                    description: Project slug identifier
+                    example: cncf
+                    format: regexp
+                    pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+                project_uid:
+                    type: string
+                    description: LFXv2 Project UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                public:
+                    type: boolean
+                    description: Whether the service is publicly accessible
+                    example: true
+                status:
+                    type: string
+                    description: Service status
+                    example: created
+                type:
+                    type: string
+                    description: Service type
+                    example: primary
+                    enum:
+                        - primary
+                        - formation
+                        - shared
+                url:
+                    type: string
+                    description: Service URL
+                    example: https://lists.project.org
+                    format: uri
+                writers:
+                    type: array
+                    items:
+                        type: string
+                        example: Molestias omnis aliquid aspernatur rerum consequatur.
+                    description: Manager user IDs who can edit/modify this service
+                    example:
+                        - manager_user_id1
+                        - manager_user_id2
+            example:
+                auditors:
+                    - auditor_user_id1
+                    - auditor_user_id2
+                domain: lists.project.org
+                global_owners:
+                    - admin@example.com
+                group_id: 12345
+                group_name: project-name
+                prefix: formation
+                project_slug: cncf
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                public: true
+                status: created
+                type: primary
+                url: https://lists.project.org
+                writers:
+                    - manager_user_id1
+                    - manager_user_id2
     securitySchemes:
         jwt_header_Authorization:
             type: http

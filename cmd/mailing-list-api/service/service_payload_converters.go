@@ -77,9 +77,8 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 	}
 
 	now := time.Now()
-	return &model.GrpsIOService{
+	updated := &model.GrpsIOService{
 		// Preserve immutable fields from existing service
-		Type:           existing.Type,
 		UID:            *p.UID,
 		Domain:         existing.Domain,
 		GroupID:        existing.GroupID,
@@ -92,59 +91,153 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 		CreatedAt:      existing.CreatedAt,
 		LastReviewedAt: existing.LastReviewedAt,
 		LastReviewedBy: existing.LastReviewedBy,
-
-		// Update only mutable fields
-		Status:       payloadStringValue(p.Status),
-		GlobalOwners: p.GlobalOwners,
-		Public:       p.Public,
-		Writers:      p.Writers,
-		Auditors:     p.Auditors,
-		UpdatedAt:    now,
+		UpdatedAt:      now,
 	}
+
+	// Handle conditionally updateable fields - preserve existing if not provided
+	if p.Type != nil {
+		updated.Type = *p.Type
+	} else {
+		updated.Type = existing.Type
+	}
+
+	if p.Status != nil {
+		updated.Status = *p.Status
+	} else {
+		updated.Status = existing.Status
+	}
+
+	if p.Public != nil {
+		updated.Public = *p.Public
+	} else {
+		updated.Public = existing.Public
+	}
+
+	if p.ProjectUID != nil {
+		updated.ProjectUID = *p.ProjectUID
+	} else {
+		updated.ProjectUID = existing.ProjectUID
+	}
+
+	// Handle slice fields
+	if p.GlobalOwners != nil {
+		updated.GlobalOwners = p.GlobalOwners
+	} else {
+		updated.GlobalOwners = existing.GlobalOwners
+	}
+
+	if p.Writers != nil {
+		updated.Writers = p.Writers
+	} else {
+		updated.Writers = existing.Writers
+	}
+
+	if p.Auditors != nil {
+		updated.Auditors = p.Auditors
+	} else {
+		updated.Auditors = existing.Auditors
+	}
+
+	return updated
 }
 
 // convertGrpsIOMailingListUpdatePayloadToDomain converts an update payload to domain model
-func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(payload *mailinglistservice.UpdateGrpsioMailingListPayload) *model.GrpsIOMailingList {
-	// Create a new mailing list from payload data
-	mailingList := &model.GrpsIOMailingList{
-		GroupName:   payload.GroupName,
-		Public:      payload.Public,
-		Type:        payload.Type,
-		Description: payload.Description,
-		Title:       payload.Title,
-		ServiceUID:  payload.ServiceUID,
+func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(existing *model.GrpsIOMailingList, payload *mailinglistservice.UpdateGrpsioMailingListPayload) *model.GrpsIOMailingList {
+	// Start from existing to preserve immutable/readonly fields
+	updated := &model.GrpsIOMailingList{
+		UID:            existing.UID,
+		ProjectUID:     existing.ProjectUID,
+		ProjectName:    existing.ProjectName,
+		ProjectSlug:    existing.ProjectSlug,
+		CreatedAt:      existing.CreatedAt,
+		UpdatedAt:      time.Now().UTC(),
+		LastReviewedAt: existing.LastReviewedAt,
+		LastReviewedBy: existing.LastReviewedBy,
 	}
 
-	// Handle pointer fields
-	if payload.CommitteeUID != nil {
-		mailingList.CommitteeUID = *payload.CommitteeUID
+	// Handle conditionally updateable fields - preserve existing if not provided
+	if payload.GroupName != nil {
+		updated.GroupName = *payload.GroupName
+	} else {
+		updated.GroupName = existing.GroupName
 	}
+
+	if payload.Public != nil {
+		updated.Public = *payload.Public
+	} else {
+		updated.Public = existing.Public
+	}
+
+	if payload.Type != nil {
+		updated.Type = *payload.Type
+	} else {
+		updated.Type = existing.Type
+	}
+
+	if payload.Description != nil {
+		updated.Description = *payload.Description
+	} else {
+		updated.Description = existing.Description
+	}
+
+	if payload.Title != nil {
+		updated.Title = *payload.Title
+	} else {
+		updated.Title = existing.Title
+	}
+
+	if payload.ServiceUID != nil {
+		updated.ServiceUID = *payload.ServiceUID
+	} else {
+		updated.ServiceUID = existing.ServiceUID
+	}
+
+	if payload.CommitteeUID != nil {
+		updated.CommitteeUID = *payload.CommitteeUID
+	} else {
+		updated.CommitteeUID = existing.CommitteeUID
+	}
+
 	if payload.SubjectTag != nil {
-		mailingList.SubjectTag = *payload.SubjectTag
+		updated.SubjectTag = *payload.SubjectTag
+	} else {
+		updated.SubjectTag = existing.SubjectTag
 	}
 
 	// Handle slice fields
 	if payload.CommitteeFilters != nil {
-		mailingList.CommitteeFilters = payload.CommitteeFilters
-	}
-	if payload.Writers != nil {
-		mailingList.Writers = payload.Writers
-	}
-	if payload.Auditors != nil {
-		mailingList.Auditors = payload.Auditors
+		updated.CommitteeFilters = payload.CommitteeFilters
+	} else {
+		updated.CommitteeFilters = existing.CommitteeFilters
 	}
 
-	return mailingList
+	if payload.Writers != nil {
+		updated.Writers = payload.Writers
+	} else {
+		updated.Writers = existing.Writers
+	}
+
+	if payload.Auditors != nil {
+		updated.Auditors = payload.Auditors
+	} else {
+		updated.Auditors = existing.Auditors
+	}
+
+	return updated
 }
 
 // convertGrpsIOMemberPayloadToDomain converts GOA member payload to domain model
 func (s *mailingListService) convertGrpsIOMemberPayloadToDomain(payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) *model.GrpsIOMember {
+	now := time.Now().UTC()
 	member := &model.GrpsIOMember{
 		MailingListUID: payload.UID,
 		Email:          payload.Email,
 		MemberType:     payload.MemberType,
 		DeliveryMode:   payload.DeliveryMode,
 		ModStatus:      payload.ModStatus,
+		Status:         "normal",
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
 	// Handle required fields that might be pointers
@@ -220,15 +313,15 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 		updated.JobTitle = existing.JobTitle
 	}
 
-	// DeliveryMode and ModStatus are strings in the payload, not pointers
-	if payload.DeliveryMode != "" {
-		updated.DeliveryMode = payload.DeliveryMode
+	// DeliveryMode and ModStatus are now pointers - apply only when provided
+	if payload.DeliveryMode != nil {
+		updated.DeliveryMode = *payload.DeliveryMode
 	} else {
 		updated.DeliveryMode = existing.DeliveryMode
 	}
 
-	if payload.ModStatus != "" {
-		updated.ModStatus = payload.ModStatus
+	if payload.ModStatus != nil {
+		updated.ModStatus = *payload.ModStatus
 	} else {
 		updated.ModStatus = existing.ModStatus
 	}

@@ -24,11 +24,9 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"project_uid", service.ProjectUID,
 	)
 
-	// Set service identifiers and timestamps
+	// Set service identifiers and timestamps (server-side generation for security)
 	now := time.Now()
-	if service.UID == "" {
-		service.UID = uuid.New().String()
-	}
+	service.UID = uuid.New().String() // Always generate server-side, never trust client
 	service.CreatedAt = now
 	service.UpdatedAt = now
 
@@ -207,40 +205,24 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 }
 
 // DeleteGrpsIOService deletes a service with message publishing
-func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error {
+func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error {
 	slog.DebugContext(ctx, "executing delete service use case",
 		"service_uid", uid,
 		"expected_revision", expectedRevision,
 	)
 
-	// Step 1: Retrieve existing service data to get all the information needed for cleanup
-	existing, existingRevision, err := sw.grpsIOReader.GetGrpsIOService(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to retrieve existing service for deletion",
-			"error", err,
-			"service_uid", uid,
+	if service != nil {
+		slog.DebugContext(ctx, "service data provided for deletion",
+			"service_uid", service.UID,
+			"service_type", service.Type,
+			"project_uid", service.ProjectUID,
 		)
-		return err
+	} else {
+		slog.DebugContext(ctx, "no service data provided for deletion - will rely on storage layer for validation")
 	}
 
-	// Verify revision matches to ensure optimistic locking
-	if existingRevision != expectedRevision {
-		slog.WarnContext(ctx, "revision mismatch during deletion",
-			"expected_revision", expectedRevision,
-			"current_revision", existingRevision,
-			"service_uid", uid,
-		)
-		return errors.NewConflict("service has been modified by another process")
-	}
-
-	slog.DebugContext(ctx, "existing service retrieved for deletion",
-		"service_uid", existing.UID,
-		"service_type", existing.Type,
-		"project_uid", existing.ProjectUID,
-	)
-
-	// Step 2: Delete the main service record (storage layer handles constraint cleanup)
-	err = sw.grpsIOWriter.DeleteGrpsIOService(ctx, uid, expectedRevision, existing)
+	// Step 1: Delete the main service record (storage layer handles constraint cleanup)
+	err := sw.grpsIOWriter.DeleteGrpsIOService(ctx, uid, expectedRevision, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete service",
 			"error", err,
@@ -254,7 +236,7 @@ func (sw *grpsIOWriterOrchestrator) DeleteGrpsIOService(ctx context.Context, uid
 		"service_uid", uid,
 	)
 
-	// Step 3: Publish delete messages
+	// Step 2: Publish delete messages
 	if sw.publisher != nil {
 		if err := sw.publishServiceDeleteMessages(ctx, uid); err != nil {
 			slog.ErrorContext(ctx, "failed to publish delete messages", "error", err)

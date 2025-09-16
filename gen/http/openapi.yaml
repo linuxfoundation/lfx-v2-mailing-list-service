@@ -147,17 +147,17 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        put:
+        delete:
             tags:
                 - mailing-list
-            summary: update-grpsio-mailing-list mailing-list
-            description: Update GroupsIO mailing list
-            operationId: mailing-list#update-grpsio-mailing-list
+            summary: delete-grpsio-mailing-list mailing-list
+            description: Delete GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list
             parameters:
                 - name: v
                   in: query
                   description: Version of the API
-                  required: true
+                  required: false
                   type: string
                   enum:
                     - "1"
@@ -177,23 +177,9 @@ paths:
                   description: If-Match header value for conditional requests
                   required: false
                   type: string
-                - name: Update-Grpsio-Mailing-ListRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListUpdateGrpsioMailingListRequestBody'
-                    required:
-                        - group_name
-                        - public
-                        - type
-                        - description
-                        - title
-                        - service_uid
             responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GrpsIoMailingListWithReadonlyAttributes'
+                "204":
+                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -228,17 +214,17 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        delete:
+        patch:
             tags:
                 - mailing-list
-            summary: delete-grpsio-mailing-list mailing-list
-            description: Delete GroupsIO mailing list
-            operationId: mailing-list#delete-grpsio-mailing-list
+            summary: update-grpsio-mailing-list mailing-list
+            description: Update GroupsIO mailing list
+            operationId: mailing-list#update-grpsio-mailing-list
             parameters:
                 - name: v
                   in: query
                   description: Version of the API
-                  required: false
+                  required: true
                   type: string
                   enum:
                     - "1"
@@ -258,9 +244,16 @@ paths:
                   description: If-Match header value for conditional requests
                   required: false
                   type: string
+                - name: Update-Grpsio-Mailing-ListRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioMailingListRequestBody'
             responses:
-                "204":
-                    description: No Content response.
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GrpsIoMailingListWithReadonlyAttributes'
                 "400":
                     description: Bad Request response.
                     schema:
@@ -447,7 +440,80 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        put:
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-mailing-list-member mailing-list
+            description: Delete a member from a GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list-member
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: true
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: member_uid
+                  in: path
+                  description: Member UID -- unique identifier for the member
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: true
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: true
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list-member mailing-list
@@ -493,79 +559,6 @@ paths:
                     description: OK response.
                     schema:
                         $ref: '#/definitions/GrpsIoMemberWithReadonlyAttributes'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-grpsio-mailing-list-member mailing-list
-            description: Delete a member from a GroupsIO mailing list
-            operationId: mailing-list#delete-grpsio-mailing-list-member
-            parameters:
-                - name: v
-                  in: query
-                  description: Version of the API
-                  required: true
-                  type: string
-                  enum:
-                    - "1"
-                - name: uid
-                  in: path
-                  description: Mailing list UID -- unique identifier for the mailing list
-                  required: true
-                  type: string
-                  format: uuid
-                - name: member_uid
-                  in: path
-                  description: Member UID -- unique identifier for the member
-                  required: true
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: true
-                  type: string
-                - name: If-Match
-                  in: header
-                  description: If-Match header value for conditional requests
-                  required: true
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -736,17 +729,17 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        put:
+        delete:
             tags:
                 - mailing-list
-            summary: update-grpsio-service mailing-list
-            description: Update GroupsIO service
-            operationId: mailing-list#update-grpsio-service
+            summary: delete-grpsio-service mailing-list
+            description: Delete GroupsIO service
+            operationId: mailing-list#delete-grpsio-service
             parameters:
                 - name: v
                   in: query
                   description: Version of the API
-                  required: true
+                  required: false
                   type: string
                   enum:
                     - "1"
@@ -766,22 +759,9 @@ paths:
                   description: If-Match header value for conditional requests
                   required: false
                   type: string
-                - name: Update-Grpsio-ServiceRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListUpdateGrpsioServiceRequestBody'
-                    required:
-                        - type
-                        - project_uid
             responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GrpsIoServiceWithReadonlyAttributes'
-                        required:
-                            - type
-                            - project_uid
+                "204":
+                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -816,17 +796,17 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        delete:
+        patch:
             tags:
                 - mailing-list
-            summary: delete-grpsio-service mailing-list
-            description: Delete GroupsIO service
-            operationId: mailing-list#delete-grpsio-service
+            summary: update-grpsio-service mailing-list
+            description: Update GroupsIO service
+            operationId: mailing-list#update-grpsio-service
             parameters:
                 - name: v
                   in: query
                   description: Version of the API
-                  required: false
+                  required: true
                   type: string
                   enum:
                     - "1"
@@ -846,9 +826,19 @@ paths:
                   description: If-Match header value for conditional requests
                   required: false
                   type: string
+                - name: Update-Grpsio-ServiceRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioServiceRequestBody'
             responses:
-                "204":
-                    description: No Content response.
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GrpsIoServiceWithReadonlyAttributes'
+                        required:
+                            - type
+                            - project_uid
                 "400":
                     description: Bad Request response.
                     schema:
@@ -2183,7 +2173,6 @@ definitions:
             delivery_mode:
                 type: string
                 description: Email delivery mode
-                default: normal
                 example: digest
                 enum:
                     - normal
@@ -2209,13 +2198,11 @@ definitions:
             mod_status:
                 type: string
                 description: Moderation status
-                default: none
-                example: owner
+                example: moderator
                 enum:
                     - none
                     - moderator
                     - owner
-                    - member
             organization:
                 type: string
                 description: Member organization
@@ -2231,7 +2218,7 @@ definitions:
             first_name: John
             job_title: Software Engineer
             last_name: Doe
-            mod_status: none
+            mod_status: moderator
             organization: Example Corp
             username: jdoe
     MailingListUpdateGrpsioMailingListRequestBody:
@@ -2283,7 +2270,6 @@ definitions:
             public:
                 type: boolean
                 description: Whether the mailing list is publicly accessible
-                default: false
                 example: false
             service_uid:
                 type: string
@@ -2336,13 +2322,6 @@ definitions:
             writers:
                 - manager_user_id1
                 - manager_user_id2
-        required:
-            - group_name
-            - public
-            - type
-            - description
-            - title
-            - service_uid
     MailingListUpdateGrpsioServiceRequestBody:
         title: MailingListUpdateGrpsioServiceRequestBody
         type: object
@@ -2396,7 +2375,6 @@ definitions:
             public:
                 type: boolean
                 description: Whether the service is publicly accessible
-                default: false
                 example: true
             status:
                 type: string
@@ -2443,9 +2421,6 @@ definitions:
             writers:
                 - manager_user_id1
                 - manager_user_id2
-        required:
-            - type
-            - project_uid
     NotFoundError:
         title: NotFoundError
         type: object

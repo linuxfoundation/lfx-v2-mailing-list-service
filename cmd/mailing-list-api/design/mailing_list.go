@@ -130,12 +130,13 @@ var _ = dsl.Service("mailing-list", func() {
 			IfMatchAttribute()
 
 			GrpsIOServiceUIDAttribute()
-			GrpsIOServiceBaseAttributes()
+			GrpsIOServiceUpdateAttributesNoDefaults()
 
 			WritersAttribute()
 			AuditorsAttribute()
 
-			dsl.Required("type", "project_uid", "version")
+			// Only require essential fields for updates - most fields are now optional
+			dsl.Required("version")
 		})
 		dsl.Result(GrpsIOServiceWithReadonlyAttributes)
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
@@ -144,7 +145,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.PUT("/groupsio/services/{uid}")
+			dsl.PATCH("/groupsio/services/{uid}")
 			dsl.Param("version:v")
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
@@ -265,12 +266,13 @@ var _ = dsl.Service("mailing-list", func() {
 			IfMatchAttribute()
 
 			GrpsIOMailingListUIDAttribute()
-			GrpsIOMailingListBaseAttributes()
+			GrpsIOMailingListUpdateAttributesNoDefaults()
 
 			WritersAttribute()
 			AuditorsAttribute()
 
-			dsl.Required("group_name", "public", "type", "description", "title", "service_uid", "version")
+			// Only require essential fields for updates - most fields are now optional for partial updates
+			dsl.Required("version")
 		})
 		dsl.Result(GrpsIOMailingListWithReadonlyAttributes)
 		dsl.Error("BadRequest", BadRequestError, "Bad request")
@@ -279,7 +281,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.PUT("/groupsio/mailing-lists/{uid}")
+			dsl.PATCH("/groupsio/mailing-lists/{uid}")
 			dsl.Param("version:v")
 			dsl.Param("uid")
 			dsl.Header("bearer_token:Authorization")
@@ -408,7 +410,7 @@ var _ = dsl.Service("mailing-list", func() {
 			GrpsIOMailingListUIDAttribute()
 			GrpsIOMemberUIDAttribute()
 
-			GrpsIOMemberUpdateAttributes()
+			GrpsIOMemberUpdateAttributesNoDefaults()
 
 			dsl.Required("bearer_token", "version", "uid", "member_uid", "if_match")
 		})
@@ -419,7 +421,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.PUT("/groupsio/mailing-lists/{uid}/members/{member_uid}")
+			dsl.PATCH("/groupsio/mailing-lists/{uid}/members/{member_uid}")
 			dsl.Param("version:v")
 			dsl.Param("uid")
 			dsl.Param("member_uid")

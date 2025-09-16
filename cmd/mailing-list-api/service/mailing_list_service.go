@@ -14,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 
 	"github.com/google/uuid"
 	"goa.design/goa/v3/security"
@@ -189,7 +190,7 @@ func (s *mailingListService) DeleteGrpsioService(ctx context.Context, payload *m
 	}
 
 	// Execute use case
-	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOService(ctx, *payload.UID, expectedRevision)
+	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOService(ctx, *payload.UID, expectedRevision, existingService)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete service", "error", err, "service_uid", payload.UID)
 		return wrapError(ctx, err)
@@ -289,7 +290,7 @@ func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payloa
 	}
 
 	// Convert GOA payload to domain model
-	domainMailingList := s.convertGrpsIOMailingListUpdatePayloadToDomain(payload)
+	domainMailingList := s.convertGrpsIOMailingListUpdatePayloadToDomain(existingMailingList, payload)
 	// Ensure persisted JSON UID matches the key
 	if payload.UID != nil {
 		domainMailingList.UID = *payload.UID
@@ -359,12 +360,12 @@ func (s *mailingListService) DeleteGrpsioMailingList(ctx context.Context, payloa
 func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, payload *mailinglistservice.CreateGrpsioMailingListMemberPayload) (result *mailinglistservice.GrpsIoMemberFull, err error) {
 	slog.DebugContext(ctx, "mailingListService.create-grpsio-mailing-list-member",
 		"mailing_list_uid", payload.UID,
-		"email", payload.Email,
+		"email", redaction.RedactEmail(payload.Email),
 	)
 
 	// Validate member creation requirements
 	if err := validateMemberCreation(ctx, payload, s.grpsIOReaderOrchestrator); err != nil {
-		slog.WarnContext(ctx, "member creation validation failed", "error", err, "email", payload.Email)
+		slog.WarnContext(ctx, "member creation validation failed", "error", err, "email", redaction.RedactEmail(payload.Email))
 		return nil, wrapError(ctx, err)
 	}
 
@@ -381,7 +382,7 @@ func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, 
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
 			"mailing_list_uid", payload.UID,
-			"email", payload.Email,
+			"email", redaction.RedactEmail(payload.Email),
 		)
 		return nil, wrapError(ctx, err)
 	}
@@ -390,12 +391,7 @@ func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, 
 	// When Groups.io API integration is complete, add member to Groups.io
 	// Handle Groups.io error "user already exists" to detect member adoption scenarios
 
-	// TODO: Future PR - Add LFX member profile integration
-	// - Fetch member profile data from LFX APIs
-	// - Auto-populate firstName, lastName, organization, jobTitle from profile
-	// - Handle profile updates and sync member data
-
-	// TODO: Future PR - Add committee sync functionality
+	// TODO: LFXV2-478 - Add committee sync functionality
 	// - Sync committee members when committee_uid is provided
 	// - Handle committee member role changes (owner/moderator/member)
 	// - Auto-update member status based on committee membership changes
@@ -406,7 +402,7 @@ func (s *mailingListService) CreateGrpsioMailingListMember(ctx context.Context, 
 	slog.InfoContext(ctx, "successfully created member",
 		"member_uid", createdMember.UID,
 		"mailing_list_uid", createdMember.MailingListUID,
-		"email", createdMember.Email,
+		"email", redaction.RedactEmail(createdMember.Email),
 		"revision", revision,
 	)
 	return result, nil
@@ -461,7 +457,7 @@ func (s *mailingListService) UpdateGrpsioMailingListMember(ctx context.Context, 
 	expectedRevision, err := etagValidator(&payload.IfMatch)
 	if err != nil {
 		slog.ErrorContext(ctx, "invalid ETag format", "error", err, "etag", payload.IfMatch)
-		return nil, wrapError(ctx, errors.NewValidation("invalid ETag format"))
+		return nil, wrapError(ctx, errors.NewValidation("invalid ETag format", err))
 	}
 
 	// Get existing member for validation
@@ -502,11 +498,11 @@ func (s *mailingListService) UpdateGrpsioMailingListMember(ctx context.Context, 
 		return nil, wrapError(ctx, err)
 	}
 
-	// TODO: Future PR - Add Groups.io API sync for member updates
+	// TODO: LFXV2-353 - Add Groups.io API sync for member updates
 	// When Groups.io API integration is complete, sync member changes to Groups.io
 	// Handle modStatus changes (owner/moderator/member role updates)
 
-	// TODO: Future PR - Add member notification for profile changes
+	// TODO: LFXV2-481 - Add member notification for profile changes
 	// Notify member when profile information is updated by moderators
 	// Send email notification for role changes (promotion to owner/moderator)
 
@@ -562,7 +558,7 @@ func (s *mailingListService) DeleteGrpsioMailingListMember(ctx context.Context, 
 	// Prevent deletion if this is the only owner/moderator of the mailing list
 
 	// Delete member via writer orchestrator with revision check
-	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOMember(ctx, payload.MemberUID, expectedRevision)
+	err = s.grpsIOWriterOrchestrator.DeleteGrpsIOMember(ctx, payload.MemberUID, expectedRevision, existingMember)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to delete member",
 			"error", err,
@@ -579,21 +575,6 @@ func (s *mailingListService) DeleteGrpsioMailingListMember(ctx context.Context, 
 
 // Helper functions
 
-// Helper function to convert string to pointer if non-empty
-func maybeString(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
-// Helper function to convert string slice to pointer if non-empty
-func maybeStringSlice(slice []string) []string {
-	if len(slice) == 0 {
-		return nil
-	}
-	return slice
-}
 
 // payloadStringValue safely extracts string value from payload pointer
 func payloadStringValue(val *string) string {

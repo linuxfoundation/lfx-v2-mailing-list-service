@@ -589,7 +589,7 @@ Example:
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "moderator",
+      "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"

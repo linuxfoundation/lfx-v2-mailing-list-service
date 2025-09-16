@@ -414,7 +414,7 @@ func (w *MockGrpsIOWriter) UpdateGrpsIOMember(ctx context.Context, uid string, m
 	return &resultCopy, newRevision, nil
 }
 
-func (w *MockGrpsIOWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error {
+func (w *MockGrpsIOWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
 	slog.DebugContext(ctx, "mock member: deleting member", "member_uid", uid)
 
 	w.mock.mu.Lock()

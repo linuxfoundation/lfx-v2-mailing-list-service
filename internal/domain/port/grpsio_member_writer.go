@@ -20,7 +20,8 @@ type GrpsIOMemberWriter interface {
 	UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error)
 
 	// DeleteGrpsIOMember deletes a member with optimistic concurrency control
-	DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error
+	// The member parameter provides context for constraint cleanup and should contain the existing member data
+	DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error
 
 	// UniqueMember validates member email is unique within mailing list
 	UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error)

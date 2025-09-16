@@ -109,15 +109,15 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 		},
 		{
-			name: "member creation with predefined UID",
+			name: "member creation with server-generated UID",
 			setupMock: func(mockRepo *mock.MockRepository) {
 				mockRepo.ClearAll()
 				// Add a mailing list for the member to belong to
 				testMailingList := &model.GrpsIOMailingList{
 					UID:         "mailing-list-3",
 					ServiceUID:  "service-3",
-					Title:       "Test Predefined UID List",
-					Description: "Test mailing list with predefined UID member",
+					Title:       "Test Server Generated UID List",
+					Description: "Test mailing list with server-generated UID member",
 					Type:        "created",
 					CreatedAt:   time.Now().Add(-24 * time.Hour),
 					UpdatedAt:   time.Now(),
@@ -125,17 +125,18 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				mockRepo.AddMailingList(testMailingList)
 			},
 			inputMember: &model.GrpsIOMember{
-				UID:            "predefined-member-uid",
+				UID:            "client-provided-uid", // This should be ignored
 				MailingListUID: "mailing-list-3",
-				FirstName:      "Predefined",
-				LastName:       "Member",
-				Email:          "predefined@example.com",
+				FirstName:      "Server",
+				LastName:       "Generated",
+				Email:          "servergen@example.com",
 				MemberType:     "committee",
 				Status:         "normal",
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
-				assert.Equal(t, "predefined-member-uid", result.UID) // Should preserve predefined UID
+				assert.NotEqual(t, "client-provided-uid", result.UID) // Should NOT preserve client UID
+				assert.NotEmpty(t, result.UID) // Should have server-generated UID
 				assert.Equal(t, "mailing-list-3", result.MailingListUID)
 				assert.Equal(t, "normal", result.Status) // Should preserve provided status
 				assert.Equal(t, uint64(1), revision)
@@ -382,7 +383,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		)
 
 		// Execute delete
-		err := writer.DeleteGrpsIOMember(ctx, "test-member", 1)
+		err := writer.DeleteGrpsIOMember(ctx, "test-member", 1, existingMember)
 
 		// Validate
 		require.NoError(t, err)
@@ -407,7 +408,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		)
 
 		// Execute delete on non-existent member
-		err := writer.DeleteGrpsIOMember(ctx, "non-existent", 1)
+		err := writer.DeleteGrpsIOMember(ctx, "non-existent", 1, nil)
 
 		// Validate
 		require.Error(t, err)
@@ -439,7 +440,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		)
 
 		// Execute delete with wrong revision (mock expects revision 1, but we pass 999)
-		err := writer.DeleteGrpsIOMember(ctx, "test-member", 999)
+		err := writer.DeleteGrpsIOMember(ctx, "test-member", 999, existingMember)
 
 		// Validate - mock should return conflict error for revision mismatch
 		require.Error(t, err)
