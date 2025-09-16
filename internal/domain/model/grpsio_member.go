@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // GrpsIOMember represents a GroupsIO mailing list member
@@ -42,10 +43,8 @@ type GrpsIOMember struct {
 	// Status
 	Status string `json:"status"` // Groups.io status: normal, pending, etc.
 
-	LastReviewedAt *string  `json:"last_reviewed_at"` // Nullable timestamp
-	LastReviewedBy *string  `json:"last_reviewed_by"` // Nullable user ID
-	Writers        []string `json:"writers"`          // Manager user IDs who can edit
-	Auditors       []string `json:"auditors"`         // Auditor user IDs who can audit
+	LastReviewedAt *string `json:"last_reviewed_at"` // Nullable timestamp
+	LastReviewedBy *string `json:"last_reviewed_by"` // Nullable user ID
 
 	// Timestamps
 	CreatedAt time.Time `json:"created_at"`
@@ -108,4 +107,16 @@ func (m *GrpsIOMember) Tags() []string {
 	}
 
 	return tags
+}
+
+// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
+// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
+func (m *GrpsIOMember) ValidateLastReviewedAt() error {
+	return utils.ValidateRFC3339Ptr(m.LastReviewedAt)
+}
+
+// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
+// Returns nil if the field is nil or empty, or the parsed time if valid.
+func (m *GrpsIOMember) GetLastReviewedAtTime() (*time.Time, error) {
+	return utils.ParseTimestampPtr(m.LastReviewedAt)
 }

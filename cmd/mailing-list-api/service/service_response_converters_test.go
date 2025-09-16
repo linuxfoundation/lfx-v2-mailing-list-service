@@ -19,7 +19,7 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 	tests := []struct {
 		name     string
 		domain   *model.GrpsIOService
-		expected *mailinglistservice.ServiceFull
+		expected *mailinglistservice.GrpsIoServiceFull
 	}{
 		{
 			name: "complete domain to full response conversion",
@@ -44,7 +44,7 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 				Writers:        []string{"writer1", "writer2"},
 				Auditors:       []string{"auditor1", "auditor2"},
 			},
-			expected: &mailinglistservice.ServiceFull{
+			expected: &mailinglistservice.GrpsIoServiceFull{
 				UID:            stringPtr("service-123"),
 				Type:           "primary",
 				Domain:         stringPtr("example.groups.io"),
@@ -75,7 +75,7 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 				CreatedAt:  time.Time{}, // Zero timestamp
 				UpdatedAt:  time.Time{}, // Zero timestamp
 			},
-			expected: &mailinglistservice.ServiceFull{
+			expected: &mailinglistservice.GrpsIoServiceFull{
 				UID:          stringPtr(""),
 				Type:         "formation",
 				Domain:       stringPtr(""),
@@ -101,14 +101,14 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 		{
 			name:     "nil domain",
 			domain:   nil,
-			expected: &mailinglistservice.ServiceFull{},
+			expected: &mailinglistservice.GrpsIoServiceFull{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertDomainToFullResponse(tt.domain)
+			result := svc.convertGrpsIOServiceDomainToFullResponse(tt.domain)
 
 			assert.Equal(t, tt.expected, result)
 		})
@@ -122,7 +122,7 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 	tests := []struct {
 		name     string
 		domain   *model.GrpsIOService
-		expected *mailinglistservice.ServiceWithReadonlyAttributes
+		expected *mailinglistservice.GrpsIoServiceWithReadonlyAttributes
 	}{
 		{
 			name: "complete domain to standard response conversion",
@@ -147,7 +147,7 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 				Writers:        []string{"writer3", "writer4"},
 				Auditors:       []string{"auditor3"},
 			},
-			expected: &mailinglistservice.ServiceWithReadonlyAttributes{
+			expected: &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{
 				UID:            stringPtr("service-123"),
 				Type:           "shared",
 				Domain:         stringPtr("shared.groups.io"),
@@ -179,7 +179,7 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 				CreatedAt:  time.Time{}, // Zero timestamp
 				UpdatedAt:  time.Time{}, // Zero timestamp
 			},
-			expected: &mailinglistservice.ServiceWithReadonlyAttributes{
+			expected: &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{
 				UID:          stringPtr("service-456"),
 				Type:         "formation",
 				Domain:       stringPtr(""),
@@ -205,14 +205,14 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 		{
 			name:     "nil domain",
 			domain:   nil,
-			expected: &mailinglistservice.ServiceWithReadonlyAttributes{},
+			expected: &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertDomainToStandardResponse(tt.domain)
+			result := svc.convertGrpsIOServiceDomainToStandardResponse(tt.domain)
 
 			assert.Equal(t, tt.expected, result)
 		})
@@ -226,7 +226,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 	tests := []struct {
 		name     string
 		domain   *model.GrpsIOMailingList
-		expected *mailinglistservice.MailingListFull
+		expected *mailinglistservice.GrpsIoMailingListFull
 	}{
 		{
 			name: "complete mailing list domain to response conversion",
@@ -252,7 +252,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				CreatedAt:        createdAt,
 				UpdatedAt:        updatedAt,
 			},
-			expected: &mailinglistservice.MailingListFull{
+			expected: &mailinglistservice.GrpsIoMailingListFull{
 				UID:              stringPtr("ml-123"),
 				GroupName:        stringPtr("test-mailing-list"),
 				Public:           true,
@@ -287,7 +287,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				CreatedAt:   time.Time{}, // Zero timestamp
 				UpdatedAt:   time.Time{}, // Zero timestamp
 			},
-			expected: &mailinglistservice.MailingListFull{
+			expected: &mailinglistservice.GrpsIoMailingListFull{
 				UID:              stringPtr("ml-456"),
 				GroupName:        stringPtr("minimal-list"),
 				Public:           false,
@@ -313,14 +313,14 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 		{
 			name:     "nil mailing list domain",
 			domain:   nil,
-			expected: &mailinglistservice.MailingListFull{},
+			expected: &mailinglistservice.GrpsIoMailingListFull{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertMailingListDomainToResponse(tt.domain)
+			result := svc.convertGrpsIOMailingListDomainToResponse(tt.domain)
 
 			assert.Equal(t, tt.expected, result)
 		})

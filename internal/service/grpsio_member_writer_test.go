@@ -54,8 +54,6 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				DeliveryMode:     "individual",
 				ModStatus:        "none",
 				Status:           "normal",
-				Writers:          []string{"writer1", "writer2"},
-				Auditors:         []string{"auditor1"},
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -111,15 +109,15 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 		},
 		{
-			name: "member creation with predefined UID",
+			name: "member creation with server-generated UID",
 			setupMock: func(mockRepo *mock.MockRepository) {
 				mockRepo.ClearAll()
 				// Add a mailing list for the member to belong to
 				testMailingList := &model.GrpsIOMailingList{
 					UID:         "mailing-list-3",
 					ServiceUID:  "service-3",
-					Title:       "Test Predefined UID List",
-					Description: "Test mailing list with predefined UID member",
+					Title:       "Test Server Generated UID List",
+					Description: "Test mailing list with server-generated UID member",
 					Type:        "created",
 					CreatedAt:   time.Now().Add(-24 * time.Hour),
 					UpdatedAt:   time.Now(),
@@ -127,17 +125,18 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				mockRepo.AddMailingList(testMailingList)
 			},
 			inputMember: &model.GrpsIOMember{
-				UID:            "predefined-member-uid",
+				UID:            "client-provided-uid", // This should be ignored
 				MailingListUID: "mailing-list-3",
-				FirstName:      "Predefined",
-				LastName:       "Member",
-				Email:          "predefined@example.com",
+				FirstName:      "Server",
+				LastName:       "Generated",
+				Email:          "servergen@example.com",
 				MemberType:     "committee",
 				Status:         "normal",
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
-				assert.Equal(t, "predefined-member-uid", result.UID) // Should preserve predefined UID
+				assert.NotEqual(t, "client-provided-uid", result.UID) // Should NOT preserve client UID
+				assert.NotEmpty(t, result.UID) // Should have server-generated UID
 				assert.Equal(t, "mailing-list-3", result.MailingListUID)
 				assert.Equal(t, "normal", result.Status) // Should preserve provided status
 				assert.Equal(t, uint64(1), revision)
@@ -215,8 +214,6 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				Status:           "normal",
 				LastReviewedAt:   writerStringPtr("2024-01-01T00:00:00Z"),
 				LastReviewedBy:   writerStringPtr("reviewer-uid"),
-				Writers:          []string{"audit-writer1", "audit-writer2", "audit-writer3"},
-				Auditors:         []string{"audit-auditor1", "audit-auditor2"},
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -238,8 +235,6 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				assert.Equal(t, "2024-01-01T00:00:00Z", *result.LastReviewedAt)
 				assert.NotNil(t, result.LastReviewedBy)
 				assert.Equal(t, "reviewer-uid", *result.LastReviewedBy)
-				assert.Equal(t, []string{"audit-writer1", "audit-writer2", "audit-writer3"}, result.Writers)
-				assert.Equal(t, []string{"audit-auditor1", "audit-auditor2"}, result.Auditors)
 				assert.Equal(t, uint64(1), revision)
 				assert.Equal(t, 1, mockRepo.GetMemberCount())
 			},
@@ -280,7 +275,56 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := mock.NewMockRepository()
 
-	t.Run("not implemented error", func(t *testing.T) {
+	t.Run("successful member update", func(t *testing.T) {
+		mockRepo.ClearAll()
+
+		// Add existing member
+		existingMember := &model.GrpsIOMember{
+			UID:            "test-member",
+			MailingListUID: "test-list",
+			FirstName:      "Original",
+			LastName:       "Member",
+			Email:          "original@example.com",
+			MemberType:     "committee",
+			Status:         "normal",
+			CreatedAt:      time.Now().Add(-24 * time.Hour),
+			UpdatedAt:      time.Now().Add(-1 * time.Hour),
+		}
+		mockRepo.AddMember(existingMember)
+
+		// Create writer orchestrator
+		writer := NewGrpsIOWriterOrchestrator(
+			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
+			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithPublisher(mock.NewMockMessagePublisher()),
+		)
+
+		// Execute update
+		updatedMember := &model.GrpsIOMember{
+			UID:            "test-member",
+			MailingListUID: "test-list",
+			FirstName:      "Updated",
+			LastName:       "Member",
+			Email:          "original@example.com", // Email should remain the same (immutable)
+			MemberType:     "committee",
+			Status:         "normal",
+			CreatedAt:      existingMember.CreatedAt, // Preserve created time
+			UpdatedAt:      time.Now(), // This will be set by the orchestrator
+		}
+
+		result, revision, err := writer.UpdateGrpsIOMember(ctx, "test-member", updatedMember, 1)
+
+		// Validate
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, uint64(2), revision) // Mock increments revision
+		assert.Equal(t, "Updated", result.FirstName)
+		assert.Equal(t, "Member", result.LastName)
+		assert.Equal(t, "original@example.com", result.Email)
+		assert.False(t, result.UpdatedAt.IsZero())
+	})
+
+	t.Run("update non-existent member", func(t *testing.T) {
 		mockRepo.ClearAll()
 
 		// Create writer orchestrator
@@ -290,9 +334,9 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
-		// Execute update (should fail as not implemented)
+		// Execute update on non-existent member
 		member := &model.GrpsIOMember{
-			UID:            "test-member",
+			UID:            "non-existent",
 			MailingListUID: "test-list",
 			FirstName:      "Updated",
 			LastName:       "Member",
@@ -300,11 +344,11 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			MemberType:     "committee",
 		}
 
-		result, revision, err := writer.UpdateGrpsIOMember(ctx, "test-member", member, 1)
+		result, revision, err := writer.UpdateGrpsIOMember(ctx, "non-existent", member, 1)
 
 		// Validate
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "UpdateGrpsIOMember not implemented")
+		assert.IsType(t, errs.NotFound{}, err)
 		assert.Nil(t, result)
 		assert.Equal(t, uint64(0), revision)
 	})
@@ -314,7 +358,46 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := mock.NewMockRepository()
 
-	t.Run("not implemented error", func(t *testing.T) {
+	t.Run("successful member deletion", func(t *testing.T) {
+		mockRepo.ClearAll()
+
+		// Add existing member
+		existingMember := &model.GrpsIOMember{
+			UID:            "test-member",
+			MailingListUID: "test-list",
+			FirstName:      "Test",
+			LastName:       "Member",
+			Email:          "test@example.com",
+			MemberType:     "committee",
+			Status:         "normal",
+			CreatedAt:      time.Now().Add(-24 * time.Hour),
+			UpdatedAt:      time.Now().Add(-1 * time.Hour),
+		}
+		mockRepo.AddMember(existingMember)
+
+		// Create writer orchestrator
+		writer := NewGrpsIOWriterOrchestrator(
+			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
+			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithPublisher(mock.NewMockMessagePublisher()),
+		)
+
+		// Execute delete
+		err := writer.DeleteGrpsIOMember(ctx, "test-member", 1, existingMember)
+
+		// Validate
+		require.NoError(t, err)
+
+		// Verify member is deleted (should not be found) using reader orchestrator
+		reader := NewGrpsIOReaderOrchestrator(
+			WithGrpsIOReader(mock.NewMockGrpsIOReader(mockRepo)),
+		)
+		_, _, err = reader.GetGrpsIOMember(ctx, "test-member")
+		require.Error(t, err)
+		assert.IsType(t, errs.NotFound{}, err)
+	})
+
+	t.Run("delete non-existent member", func(t *testing.T) {
 		mockRepo.ClearAll()
 
 		// Create writer orchestrator
@@ -324,12 +407,44 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
-		// Execute delete (should fail as not implemented)
-		err := writer.DeleteGrpsIOMember(ctx, "test-member", 1)
+		// Execute delete on non-existent member
+		err := writer.DeleteGrpsIOMember(ctx, "non-existent", 1, nil)
 
 		// Validate
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "DeleteGrpsIOMember not implemented")
+		assert.IsType(t, errs.NotFound{}, err)
+	})
+
+	t.Run("delete with wrong revision", func(t *testing.T) {
+		mockRepo.ClearAll()
+
+		// Add existing member
+		existingMember := &model.GrpsIOMember{
+			UID:            "test-member",
+			MailingListUID: "test-list",
+			FirstName:      "Test",
+			LastName:       "Member",
+			Email:          "test@example.com",
+			MemberType:     "committee",
+			Status:         "normal",
+			CreatedAt:      time.Now().Add(-24 * time.Hour),
+			UpdatedAt:      time.Now().Add(-1 * time.Hour),
+		}
+		mockRepo.AddMember(existingMember)
+
+		// Create writer orchestrator
+		writer := NewGrpsIOWriterOrchestrator(
+			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
+			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithPublisher(mock.NewMockMessagePublisher()),
+		)
+
+		// Execute delete with wrong revision (mock expects revision 1, but we pass 999)
+		err := writer.DeleteGrpsIOMember(ctx, "test-member", 999, existingMember)
+
+		// Validate - mock should return conflict error for revision mismatch
+		require.Error(t, err)
+		assert.IsType(t, errs.Conflict{}, err)
 	})
 }
 

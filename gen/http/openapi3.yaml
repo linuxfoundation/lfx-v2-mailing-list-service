@@ -57,7 +57,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/MailingListFull'
+                                $ref: '#/components/schemas/GrpsIoMailingListFull'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -252,7 +252,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/MailingListWithReadonlyAttributes'
+                                $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -311,7 +311,7 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-        put:
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list mailing-list
@@ -354,7 +354,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
+                            $ref: '#/components/schemas/UpdateGrpsioMailingListRequestBody'
                         example:
                             auditors:
                                 - auditor_user_id1
@@ -379,7 +379,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/MailingListWithReadonlyAttributes'
+                                $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -482,10 +482,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListMemberRequestBody'
                         example:
-                            auditors:
-                                - auditor_user_id1
-                                - auditor_user_id2
-                            delivery_mode: none
+                            delivery_mode: normal
                             email: john.doe@example.com
                             first_name: John
                             job_title: Software Engineer
@@ -493,25 +490,238 @@ paths:
                             last_reviewed_at: "2023-01-15T14:30:00Z"
                             last_reviewed_by: admin@example.com
                             member_type: committee
-                            mod_status: moderator
+                            mod_status: owner
                             organization: Example Corp
                             username: jdoe
-                            writers:
-                                - manager_user_id1
-                                - manager_user_id2
             responses:
                 "201":
                     description: Created response.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/MemberFull'
+                                $ref: '#/components/schemas/GrpsIoMemberFull'
                             example:
                                 auditors:
                                     - auditor_user_id1
                                     - auditor_user_id2
                                 created_at: "2023-01-15T10:30:00Z"
                                 delivery_mode: normal
+                                email: john.doe@example.com
+                                first_name: John
+                                groupsio_group_id: 67890
+                                groupsio_member_id: 12345
+                                job_title: Software Engineer
+                                last_name: Doe
+                                last_reviewed_at: "2023-01-15T14:30:00Z"
+                                last_reviewed_by: admin@example.com
+                                mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                member_type: direct
+                                mod_status: moderator
+                                organization: Example Corp
+                                status: pending
+                                uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                                updated_at: "2023-06-20T14:45:30Z"
+                                username: jdoe
+                                writers:
+                                    - manager_user_id1
+                                    - manager_user_id2
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Mailing list not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Member already exists'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{uid}/members/{member_uid}:
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-mailing-list-member mailing-list
+            description: Delete a member from a GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list-member
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  schema:
+                    type: string
+                    description: Mailing list UID -- unique identifier for the mailing list
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - name: member_uid
+                  in: path
+                  description: Member UID -- unique identifier for the member
+                  required: true
+                  schema:
+                    type: string
+                    description: Member UID -- unique identifier for the member
+                    example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    format: uuid
+                  example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: If-Match header value for conditional requests
+                    example: "123"
+                  example: "123"
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request - Cannot remove sole owner'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Member not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Conflict - ETag mismatch'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        get:
+            tags:
+                - mailing-list
+            summary: get-grpsio-mailing-list-member mailing-list
+            description: Get a member of a GroupsIO mailing list by UID
+            operationId: mailing-list#get-grpsio-mailing-list-member
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  schema:
+                    type: string
+                    description: Mailing list UID -- unique identifier for the mailing list
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - name: member_uid
+                  in: path
+                  description: Member UID -- unique identifier for the member
+                  required: true
+                  schema:
+                    type: string
+                    description: Member UID -- unique identifier for the member
+                    example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    format: uuid
+                  example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+            responses:
+                "200":
+                    description: OK response.
+                    headers:
+                        ETag:
+                            description: ETag header value
+                            schema:
+                                type: string
+                                description: ETag header value
+                                example: "123"
+                            example: "123"
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GrpsIoMemberWithReadonlyAttributes'
+                            example:
+                                auditors:
+                                    - auditor_user_id1
+                                    - auditor_user_id2
+                                created_at: "2023-01-15T10:30:00Z"
+                                delivery_mode: none
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -540,7 +750,136 @@ paths:
                             example:
                                 message: The request was invalid.
                 "404":
-                    description: 'NotFound: Mailing list not found'
+                    description: 'NotFound: Member not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        patch:
+            tags:
+                - mailing-list
+            summary: update-grpsio-mailing-list-member mailing-list
+            description: Update a member of a GroupsIO mailing list
+            operationId: mailing-list#update-grpsio-mailing-list-member
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: Version of the API
+                    example: "1"
+                    enum:
+                        - "1"
+                  example: "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  schema:
+                    type: string
+                    description: Mailing list UID -- unique identifier for the mailing list
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                  example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - name: member_uid
+                  in: path
+                  description: Member UID -- unique identifier for the member
+                  required: true
+                  schema:
+                    type: string
+                    description: Member UID -- unique identifier for the member
+                    example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    format: uuid
+                  example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: If-Match header value for conditional requests
+                    example: "123"
+                  example: "123"
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateGrpsioMailingListMemberRequestBody'
+                        example:
+                            delivery_mode: normal
+                            first_name: John
+                            job_title: Software Engineer
+                            last_name: Doe
+                            mod_status: owner
+                            organization: Example Corp
+                            username: jdoe
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GrpsIoMemberWithReadonlyAttributes'
+                            example:
+                                auditors:
+                                    - auditor_user_id1
+                                    - auditor_user_id2
+                                created_at: "2023-01-15T10:30:00Z"
+                                delivery_mode: digest
+                                email: john.doe@example.com
+                                first_name: John
+                                groupsio_group_id: 67890
+                                groupsio_member_id: 12345
+                                job_title: Software Engineer
+                                last_name: Doe
+                                last_reviewed_at: "2023-01-15T14:30:00Z"
+                                last_reviewed_by: admin@example.com
+                                mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                member_type: direct
+                                mod_status: owner
+                                organization: Example Corp
+                                status: pending
+                                uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                                updated_at: "2023-06-20T14:45:30Z"
+                                username: jdoe
+                                writers:
+                                    - manager_user_id1
+                                    - manager_user_id2
+                "400":
+                    description: 'BadRequest: Bad request - Invalid data or immutable field modification'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Member not found'
                     content:
                         application/json:
                             schema:
@@ -548,7 +887,7 @@ paths:
                             example:
                                 message: The resource was not found.
                 "409":
-                    description: 'Conflict: Member already exists'
+                    description: 'Conflict: Conflict - ETag mismatch or validation failure'
                     content:
                         application/json:
                             schema:
@@ -624,7 +963,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceFull'
+                                $ref: '#/components/schemas/GrpsIoServiceFull'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -819,7 +1158,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceWithReadonlyAttributes'
+                                $ref: '#/components/schemas/GrpsIoServiceWithReadonlyAttributes'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -881,7 +1220,7 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-        put:
+        patch:
             tags:
                 - mailing-list
             summary: update-grpsio-service mailing-list
@@ -924,7 +1263,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CreateGrpsioServiceRequestBody'
+                            $ref: '#/components/schemas/UpdateGrpsioServiceRequestBody'
                         example:
                             auditors:
                                 - auditor_user_id1
@@ -950,7 +1289,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ServiceWithReadonlyAttributes'
+                                $ref: '#/components/schemas/GrpsIoServiceWithReadonlyAttributes'
                             example:
                                 auditors:
                                     - auditor_user_id1
@@ -1098,15 +1437,6 @@ components:
         CreateGrpsioMailingListMemberRequestBody:
             type: object
             properties:
-                auditors:
-                    type: array
-                    items:
-                        type: string
-                        example: Omnis labore minima qui ipsam rem.
-                    description: Auditor user IDs who can audit this service
-                    example:
-                        - auditor_user_id1
-                        - auditor_user_id2
                 delivery_mode:
                     type: string
                     description: Email delivery mode
@@ -1151,7 +1481,7 @@ components:
                     type: string
                     description: Member type
                     default: direct
-                    example: committee
+                    example: direct
                     enum:
                         - committee
                         - direct
@@ -1174,19 +1504,7 @@ components:
                     description: Member username
                     example: jdoe
                     maxLength: 255
-                writers:
-                    type: array
-                    items:
-                        type: string
-                        example: Minus voluptate nam.
-                    description: Manager user IDs who can edit/modify this service
-                    example:
-                        - manager_user_id1
-                        - manager_user_id2
             example:
-                auditors:
-                    - auditor_user_id1
-                    - auditor_user_id2
                 delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
@@ -1198,9 +1516,6 @@ components:
                 mod_status: none
                 organization: Example Corp
                 username: jdoe
-                writers:
-                    - manager_user_id1
-                    - manager_user_id2
             required:
                 - email
         CreateGrpsioMailingListRequestBody:
@@ -1210,7 +1525,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Ut ipsum sapiente perspiciatis perferendis consequatur.
+                        example: Vel enim optio similique dolores deleniti.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1219,7 +1534,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Voting Rep
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1281,7 +1596,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Et tenetur possimus magnam ad.
+                        example: Voluptatem omnis deleniti.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1318,7 +1633,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Nemo dicta odit voluptate qui maiores.
+                        example: Laborum autem est sint neque.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1331,7 +1646,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: gay@larkin.org
+                        example: ernestine@bartell.info
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -1386,7 +1701,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Iste itaque occaecati dolores sit dolore et.
+                        example: Qui ipsam.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1413,25 +1728,14 @@ components:
             required:
                 - type
                 - project_uid
-        InternalServerError:
-            type: object
-            properties:
-                message:
-                    type: string
-                    description: Error message
-                    example: An internal server error occurred.
-            example:
-                message: An internal server error occurred.
-            required:
-                - message
-        MailingListFull:
+        GrpsIoMailingListFull:
             type: object
             properties:
                 auditors:
                     type: array
                     items:
                         type: string
-                        example: Necessitatibus sint.
+                        example: Tenetur sequi molestiae ut corrupti magnam.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1440,7 +1744,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: None
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1541,7 +1845,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Ut totam cumque totam.
+                        example: Nisi dolorum et.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1573,14 +1877,14 @@ components:
                 writers:
                     - manager_user_id1
                     - manager_user_id2
-        MailingListWithReadonlyAttributes:
+        GrpsIoMailingListWithReadonlyAttributes:
             type: object
             properties:
                 auditors:
                     type: array
                     items:
                         type: string
-                        example: Nostrum sed quo.
+                        example: Animi eaque cupiditate exercitationem.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1589,7 +1893,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: None
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1681,7 +1985,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Consequatur ut explicabo saepe nesciunt.
+                        example: Optio vero aspernatur.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1711,14 +2015,174 @@ components:
                 writers:
                     - manager_user_id1
                     - manager_user_id2
-        MemberFull:
+        GrpsIoMemberFull:
             type: object
             properties:
                 auditors:
                     type: array
                     items:
                         type: string
-                        example: Corrupti magnam et harum optio.
+                        example: Quidem impedit voluptas quia rem.
+                    description: Auditor user IDs who can audit this service
+                    example:
+                        - auditor_user_id1
+                        - auditor_user_id2
+                created_at:
+                    type: string
+                    description: The timestamp when the service was created (read-only)
+                    example: "2023-01-15T10:30:00Z"
+                    format: date-time
+                delivery_mode:
+                    type: string
+                    description: Email delivery mode
+                    default: normal
+                    example: digest
+                    enum:
+                        - normal
+                        - digest
+                        - none
+                email:
+                    type: string
+                    description: Member email address
+                    example: john.doe@example.com
+                    format: email
+                first_name:
+                    type: string
+                    description: Member first name
+                    example: John
+                    minLength: 1
+                    maxLength: 255
+                groupsio_group_id:
+                    type: integer
+                    description: Groups.io group ID
+                    example: 67890
+                    format: int64
+                groupsio_member_id:
+                    type: integer
+                    description: Groups.io member ID
+                    example: 12345
+                    format: int64
+                job_title:
+                    type: string
+                    description: Member job title
+                    example: Software Engineer
+                    maxLength: 255
+                last_name:
+                    type: string
+                    description: Member last name
+                    example: Doe
+                    minLength: 1
+                    maxLength: 255
+                last_reviewed_at:
+                    type: string
+                    description: Last reviewed timestamp
+                    example: "2023-01-15T14:30:00Z"
+                    format: date-time
+                last_reviewed_by:
+                    type: string
+                    description: Last reviewed by user ID
+                    example: admin@example.com
+                mailing_list_uid:
+                    type: string
+                    description: Mailing list UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                member_type:
+                    type: string
+                    description: Member type
+                    default: direct
+                    example: committee
+                    enum:
+                        - committee
+                        - direct
+                mod_status:
+                    type: string
+                    description: Moderation status
+                    default: none
+                    example: moderator
+                    enum:
+                        - none
+                        - moderator
+                        - owner
+                organization:
+                    type: string
+                    description: Member organization
+                    example: Example Corp
+                    maxLength: 255
+                status:
+                    type: string
+                    description: Member status
+                    example: pending
+                uid:
+                    type: string
+                    description: Member UID
+                    example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                    format: uuid
+                updated_at:
+                    type: string
+                    description: The timestamp when the service was last updated (read-only)
+                    example: "2023-06-20T14:45:30Z"
+                    format: date-time
+                username:
+                    type: string
+                    description: Member username
+                    example: jdoe
+                    maxLength: 255
+                writers:
+                    type: array
+                    items:
+                        type: string
+                        example: Rem aut aut est facere laborum enim.
+                    description: Manager user IDs who can edit/modify this service
+                    example:
+                        - manager_user_id1
+                        - manager_user_id2
+            description: A complete representation of a GroupsIO mailing list member with all attributes.
+            example:
+                auditors:
+                    - auditor_user_id1
+                    - auditor_user_id2
+                created_at: "2023-01-15T10:30:00Z"
+                delivery_mode: digest
+                email: john.doe@example.com
+                first_name: John
+                groupsio_group_id: 67890
+                groupsio_member_id: 12345
+                job_title: Software Engineer
+                last_name: Doe
+                last_reviewed_at: "2023-01-15T14:30:00Z"
+                last_reviewed_by: admin@example.com
+                mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                member_type: committee
+                mod_status: none
+                organization: Example Corp
+                status: pending
+                uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
+                updated_at: "2023-06-20T14:45:30Z"
+                username: jdoe
+                writers:
+                    - manager_user_id1
+                    - manager_user_id2
+            required:
+                - uid
+                - mailing_list_uid
+                - first_name
+                - last_name
+                - email
+                - member_type
+                - delivery_mode
+                - mod_status
+                - status
+                - created_at
+                - updated_at
+        GrpsIoMemberWithReadonlyAttributes:
+            type: object
+            properties:
+                auditors:
+                    type: array
+                    items:
+                        type: string
+                        example: Magni fugit similique.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1795,7 +2259,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: owner
+                    example: none
                     enum:
                         - none
                         - moderator
@@ -1828,18 +2292,18 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Dolorum et pariatur tenetur sequi molestiae.
+                        example: Qui minus sapiente neque ad.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
                         - manager_user_id2
-            description: A complete representation of a GroupsIO mailing list member with all attributes.
+            description: A representation of GroupsIO mailing list members with readonly attributes.
             example:
                 auditors:
                     - auditor_user_id1
                     - auditor_user_id2
                 created_at: "2023-01-15T10:30:00Z"
-                delivery_mode: none
+                delivery_mode: normal
                 email: john.doe@example.com
                 first_name: John
                 groupsio_group_id: 67890
@@ -1850,7 +2314,7 @@ components:
                 last_reviewed_by: admin@example.com
                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 member_type: committee
-                mod_status: none
+                mod_status: owner
                 organization: Example Corp
                 status: pending
                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1859,37 +2323,14 @@ components:
                 writers:
                     - manager_user_id1
                     - manager_user_id2
-            required:
-                - uid
-                - mailing_list_uid
-                - first_name
-                - last_name
-                - email
-                - member_type
-                - delivery_mode
-                - mod_status
-                - status
-                - created_at
-                - updated_at
-        NotFoundError:
-            type: object
-            properties:
-                message:
-                    type: string
-                    description: Error message
-                    example: The resource was not found.
-            example:
-                message: The resource was not found.
-            required:
-                - message
-        ServiceFull:
+        GrpsIoServiceFull:
             type: object
             properties:
                 auditors:
                     type: array
                     items:
                         type: string
-                        example: Molestias ullam porro aut consequatur nihil repellat.
+                        example: Doloremque nostrum sed quo ullam.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1907,7 +2348,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: winona_bechtelar@stoltenbergromaguera.org
+                        example: jason@bechtelargerhold.net
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -1994,7 +2435,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Sit nesciunt sint praesentium doloribus.
+                        example: Ut explicabo saepe.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2030,25 +2471,14 @@ components:
             required:
                 - type
                 - project_uid
-        ServiceUnavailableError:
-            type: object
-            properties:
-                message:
-                    type: string
-                    description: Error message
-                    example: The service is unavailable.
-            example:
-                message: The service is unavailable.
-            required:
-                - message
-        ServiceWithReadonlyAttributes:
+        GrpsIoServiceWithReadonlyAttributes:
             type: object
             properties:
                 auditors:
                     type: array
                     items:
                         type: string
-                        example: Sequi nemo quia facilis sapiente incidunt perferendis.
+                        example: Corrupti quis aut voluptatem aut.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -2066,7 +2496,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: jovani@larkin.net
+                        example: kaya@pollichabshire.biz
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -2153,7 +2583,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Delectus aliquam.
+                        example: Voluptatem voluptate vitae saepe mollitia.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2189,6 +2619,291 @@ components:
             required:
                 - type
                 - project_uid
+        InternalServerError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: An internal server error occurred.
+            example:
+                message: An internal server error occurred.
+            required:
+                - message
+        NotFoundError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: The resource was not found.
+            example:
+                message: The resource was not found.
+            required:
+                - message
+        ServiceUnavailableError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: The service is unavailable.
+            example:
+                message: The service is unavailable.
+            required:
+                - message
+        UpdateGrpsioMailingListMemberRequestBody:
+            type: object
+            properties:
+                delivery_mode:
+                    type: string
+                    description: Email delivery mode
+                    example: none
+                    enum:
+                        - normal
+                        - digest
+                        - none
+                first_name:
+                    type: string
+                    description: Member first name
+                    example: John
+                    minLength: 1
+                    maxLength: 255
+                job_title:
+                    type: string
+                    description: Member job title
+                    example: Software Engineer
+                    maxLength: 255
+                last_name:
+                    type: string
+                    description: Member last name
+                    example: Doe
+                    minLength: 1
+                    maxLength: 255
+                mod_status:
+                    type: string
+                    description: Moderation status
+                    example: owner
+                    enum:
+                        - none
+                        - moderator
+                        - owner
+                organization:
+                    type: string
+                    description: Member organization
+                    example: Example Corp
+                    maxLength: 255
+                username:
+                    type: string
+                    description: Member username
+                    example: jdoe
+                    maxLength: 255
+            example:
+                delivery_mode: none
+                first_name: John
+                job_title: Software Engineer
+                last_name: Doe
+                mod_status: owner
+                organization: Example Corp
+                username: jdoe
+        UpdateGrpsioMailingListRequestBody:
+            type: object
+            properties:
+                auditors:
+                    type: array
+                    items:
+                        type: string
+                        example: Aut amet.
+                    description: Auditor user IDs who can audit this service
+                    example:
+                        - auditor_user_id1
+                        - auditor_user_id2
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: None
+                        enum:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                            - Observer
+                            - Emeritus
+                            - None
+                    description: Committee member filters
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_uid:
+                    type: string
+                    description: Committee UUID for committee-based mailing lists
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                description:
+                    type: string
+                    description: Mailing list description (11-500 characters)
+                    example: Technical steering committee discussions
+                    minLength: 11
+                    maxLength: 500
+                group_name:
+                    type: string
+                    description: Mailing list group name
+                    example: technical-steering-committee
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
+                    minLength: 3
+                    maxLength: 34
+                public:
+                    type: boolean
+                    description: Whether the mailing list is publicly accessible
+                    example: false
+                service_uid:
+                    type: string
+                    description: Service UUID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                subject_tag:
+                    type: string
+                    description: Subject tag prefix
+                    example: '[TSC]'
+                    maxLength: 50
+                title:
+                    type: string
+                    description: Mailing list title
+                    example: Technical Steering Committee
+                    minLength: 5
+                    maxLength: 100
+                type:
+                    type: string
+                    description: Mailing list type
+                    example: discussion_moderated
+                    enum:
+                        - announcement
+                        - discussion_moderated
+                        - discussion_open
+                writers:
+                    type: array
+                    items:
+                        type: string
+                        example: Amet sunt libero quod placeat et possimus.
+                    description: Manager user IDs who can edit/modify this service
+                    example:
+                        - manager_user_id1
+                        - manager_user_id2
+            example:
+                auditors:
+                    - auditor_user_id1
+                    - auditor_user_id2
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                description: Technical steering committee discussions
+                group_name: technical-steering-committee
+                public: false
+                service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                subject_tag: '[TSC]'
+                title: Technical Steering Committee
+                type: discussion_moderated
+                writers:
+                    - manager_user_id1
+                    - manager_user_id2
+        UpdateGrpsioServiceRequestBody:
+            type: object
+            properties:
+                auditors:
+                    type: array
+                    items:
+                        type: string
+                        example: Et quas doloremque modi.
+                    description: Auditor user IDs who can audit this service
+                    example:
+                        - auditor_user_id1
+                        - auditor_user_id2
+                domain:
+                    type: string
+                    description: Service domain
+                    example: lists.project.org
+                global_owners:
+                    type: array
+                    items:
+                        type: string
+                        example: anthony_berge@stark.name
+                        format: email
+                    description: List of global owner email addresses (required for primary, forbidden for shared)
+                    example:
+                        - admin@example.com
+                group_id:
+                    type: integer
+                    description: GroupsIO group ID
+                    example: 12345
+                    format: int64
+                group_name:
+                    type: string
+                    description: GroupsIO group name
+                    example: project-name
+                prefix:
+                    type: string
+                    description: Email prefix (required for formation and shared, forbidden for primary)
+                    example: formation
+                project_slug:
+                    type: string
+                    description: Project slug identifier
+                    example: cncf
+                    format: regexp
+                    pattern: ^[a-z][a-z0-9_\-]*[a-z0-9]$
+                project_uid:
+                    type: string
+                    description: LFXv2 Project UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                public:
+                    type: boolean
+                    description: Whether the service is publicly accessible
+                    example: true
+                status:
+                    type: string
+                    description: Service status
+                    example: created
+                type:
+                    type: string
+                    description: Service type
+                    example: primary
+                    enum:
+                        - primary
+                        - formation
+                        - shared
+                url:
+                    type: string
+                    description: Service URL
+                    example: https://lists.project.org
+                    format: uri
+                writers:
+                    type: array
+                    items:
+                        type: string
+                        example: Molestias omnis aliquid aspernatur rerum consequatur.
+                    description: Manager user IDs who can edit/modify this service
+                    example:
+                        - manager_user_id1
+                        - manager_user_id2
+            example:
+                auditors:
+                    - auditor_user_id1
+                    - auditor_user_id2
+                domain: lists.project.org
+                global_owners:
+                    - admin@example.com
+                group_id: 12345
+                group_name: project-name
+                prefix: formation
+                project_slug: cncf
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                public: true
+                status: created
+                type: primary
+                url: https://lists.project.org
+                writers:
+                    - manager_user_id1
+                    - manager_user_id2
     securitySchemes:
         jwt_header_Authorization:
             type: http

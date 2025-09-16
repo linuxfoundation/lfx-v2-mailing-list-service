@@ -60,6 +60,18 @@ type Client struct {
 	// to the create-grpsio-mailing-list-member endpoint.
 	CreateGrpsioMailingListMemberDoer goahttp.Doer
 
+	// GetGrpsioMailingListMember Doer is the HTTP client used to make requests to
+	// the get-grpsio-mailing-list-member endpoint.
+	GetGrpsioMailingListMemberDoer goahttp.Doer
+
+	// UpdateGrpsioMailingListMember Doer is the HTTP client used to make requests
+	// to the update-grpsio-mailing-list-member endpoint.
+	UpdateGrpsioMailingListMemberDoer goahttp.Doer
+
+	// DeleteGrpsioMailingListMember Doer is the HTTP client used to make requests
+	// to the delete-grpsio-mailing-list-member endpoint.
+	DeleteGrpsioMailingListMemberDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -91,6 +103,9 @@ func NewClient(
 		UpdateGrpsioMailingListDoer:       doer,
 		DeleteGrpsioMailingListDoer:       doer,
 		CreateGrpsioMailingListMemberDoer: doer,
+		GetGrpsioMailingListMemberDoer:    doer,
+		UpdateGrpsioMailingListMemberDoer: doer,
+		DeleteGrpsioMailingListMemberDoer: doer,
 		RestoreResponseBody:               restoreBody,
 		scheme:                            scheme,
 		host:                              host,
@@ -348,6 +363,78 @@ func (c *Client) CreateGrpsioMailingListMember() goa.Endpoint {
 		resp, err := c.CreateGrpsioMailingListMemberDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-mailing-list-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGrpsioMailingListMember returns an endpoint that makes HTTP requests to
+// the mailing-list service get-grpsio-mailing-list-member server.
+func (c *Client) GetGrpsioMailingListMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGrpsioMailingListMemberRequest(c.encoder)
+		decodeResponse = DecodeGetGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGrpsioMailingListMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGrpsioMailingListMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-mailing-list-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateGrpsioMailingListMember returns an endpoint that makes HTTP requests
+// to the mailing-list service update-grpsio-mailing-list-member server.
+func (c *Client) UpdateGrpsioMailingListMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateGrpsioMailingListMemberRequest(c.encoder)
+		decodeResponse = DecodeUpdateGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateGrpsioMailingListMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateGrpsioMailingListMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-mailing-list-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// DeleteGrpsioMailingListMember returns an endpoint that makes HTTP requests
+// to the mailing-list service delete-grpsio-mailing-list-member server.
+func (c *Client) DeleteGrpsioMailingListMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeDeleteGrpsioMailingListMemberRequest(c.encoder)
+		decodeResponse = DecodeDeleteGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildDeleteGrpsioMailingListMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.DeleteGrpsioMailingListMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list-member", err)
 		}
 		return decodeResponse(resp)
 	}

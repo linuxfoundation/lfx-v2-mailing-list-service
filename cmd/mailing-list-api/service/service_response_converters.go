@@ -10,14 +10,14 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// convertDomainToFullResponse converts domain model to full response (for CREATE operations)
-// Following convertDomainToFullResponse
-func (s *mailingListService) convertDomainToFullResponse(service *model.GrpsIOService) *mailinglistservice.ServiceFull {
+// convertGrpsIOServiceDomainToFullResponse converts domain model to full response (for CREATE operations)
+// Following convertGrpsIOServiceDomainToFullResponse
+func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *model.GrpsIOService) *mailinglistservice.GrpsIoServiceFull {
 	if service == nil {
-		return &mailinglistservice.ServiceFull{}
+		return &mailinglistservice.GrpsIoServiceFull{}
 	}
 
-	result := &mailinglistservice.ServiceFull{
+	result := &mailinglistservice.GrpsIoServiceFull{
 		UID:          &service.UID,
 		Type:         service.Type,
 		Domain:       &service.Domain,
@@ -52,14 +52,14 @@ func (s *mailingListService) convertDomainToFullResponse(service *model.GrpsIOSe
 	return result
 }
 
-// convertDomainToStandardResponse converts domain model to standard response (for GET/UPDATE operations)
+// convertGrpsIOServiceDomainToStandardResponse converts domain model to standard response (for GET/UPDATE operations)
 // convertBaseToResponse
-func (s *mailingListService) convertDomainToStandardResponse(service *model.GrpsIOService) *mailinglistservice.ServiceWithReadonlyAttributes {
+func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(service *model.GrpsIOService) *mailinglistservice.GrpsIoServiceWithReadonlyAttributes {
 	if service == nil {
-		return &mailinglistservice.ServiceWithReadonlyAttributes{}
+		return &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{}
 	}
 
-	result := &mailinglistservice.ServiceWithReadonlyAttributes{
+	result := &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{
 		UID:          &service.UID,
 		Type:         service.Type,
 		Domain:       &service.Domain,
@@ -94,13 +94,13 @@ func (s *mailingListService) convertDomainToStandardResponse(service *model.Grps
 	return result
 }
 
-// convertMailingListDomainToResponse converts domain mailing list to full response (for CREATE operations)
-func (s *mailingListService) convertMailingListDomainToResponse(ml *model.GrpsIOMailingList) *mailinglistservice.MailingListFull {
+// convertGrpsIOMailingListDomainToResponse converts domain mailing list to full response (for CREATE operations)
+func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListFull {
 	if ml == nil {
-		return &mailinglistservice.MailingListFull{}
+		return &mailinglistservice.GrpsIoMailingListFull{}
 	}
 
-	result := &mailinglistservice.MailingListFull{
+	result := &mailinglistservice.GrpsIoMailingListFull{
 		UID:              &ml.UID,
 		GroupName:        &ml.GroupName,
 		Public:           ml.Public,
@@ -133,6 +133,145 @@ func (s *mailingListService) convertMailingListDomainToResponse(ml *model.GrpsIO
 	result.LastReviewedBy = ml.LastReviewedBy
 
 	return result
+}
+
+// convertGrpsIOMailingListDomainToStandardResponse converts a domain mailing list to GOA standard response type
+func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(mailingList *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListWithReadonlyAttributes {
+	if mailingList == nil {
+		return &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{}
+	}
+
+	response := &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{
+		UID:              &mailingList.UID,
+		GroupName:        &mailingList.GroupName,
+		Public:           mailingList.Public,
+		Type:             &mailingList.Type,
+		CommitteeUID:     stringToPointer(mailingList.CommitteeUID),
+		CommitteeFilters: mailingList.CommitteeFilters,
+		Description:      &mailingList.Description,
+		Title:            &mailingList.Title,
+		SubjectTag:       stringToPointer(mailingList.SubjectTag),
+		ServiceUID:       &mailingList.ServiceUID,
+		ProjectUID:       stringToPointer(mailingList.ProjectUID),
+		ProjectName:      stringToPointer(mailingList.ProjectName),
+		ProjectSlug:      stringToPointer(mailingList.ProjectSlug),
+		Writers:          mailingList.Writers,
+		Auditors:         mailingList.Auditors,
+	}
+
+	// Convert timestamps
+	if !mailingList.CreatedAt.IsZero() {
+		createdAt := mailingList.CreatedAt.Format(time.RFC3339)
+		response.CreatedAt = &createdAt
+	}
+	if !mailingList.UpdatedAt.IsZero() {
+		updatedAt := mailingList.UpdatedAt.Format(time.RFC3339)
+		response.UpdatedAt = &updatedAt
+	}
+
+	// Note: LastReviewedAt/By fields are not in MailingListWithReadonlyAttributes
+	// They might be in a different response type or future enhancement
+
+	return response
+}
+
+// convertGrpsIOMemberToResponse converts domain member model to API response
+func (s *mailingListService) convertGrpsIOMemberToResponse(member *model.GrpsIOMember) *mailinglistservice.GrpsIoMemberWithReadonlyAttributes {
+	if member == nil {
+		return &mailinglistservice.GrpsIoMemberWithReadonlyAttributes{}
+	}
+
+	result := &mailinglistservice.GrpsIoMemberWithReadonlyAttributes{
+		UID:            &member.UID,
+		MailingListUID: &member.MailingListUID,
+		Username:       &member.Username,
+		FirstName:      &member.FirstName,
+		LastName:       &member.LastName,
+		Email:          &member.Email,
+		Organization:   &member.Organization,
+		JobTitle:       &member.JobTitle,
+		MemberType:     member.MemberType,
+		DeliveryMode:   member.DeliveryMode,
+		ModStatus:      member.ModStatus,
+		Status:         &member.Status,
+	}
+
+	// Handle optional GroupsIO fields
+	if member.GroupsIOMemberID > 0 {
+		result.GroupsioMemberID = &member.GroupsIOMemberID
+	}
+	if member.GroupsIOGroupID > 0 {
+		result.GroupsioGroupID = &member.GroupsIOGroupID
+	}
+
+	// Handle timestamps
+	if !member.CreatedAt.IsZero() {
+		createdAt := member.CreatedAt.Format(time.RFC3339)
+		result.CreatedAt = &createdAt
+	}
+	if !member.UpdatedAt.IsZero() {
+		updatedAt := member.UpdatedAt.Format(time.RFC3339)
+		result.UpdatedAt = &updatedAt
+	}
+
+	// Handle optional string fields (nullable in domain model)
+	if member.LastReviewedAt != nil && *member.LastReviewedAt != "" {
+		result.LastReviewedAt = member.LastReviewedAt
+	}
+	if member.LastReviewedBy != nil && *member.LastReviewedBy != "" {
+		result.LastReviewedBy = member.LastReviewedBy
+	}
+
+	return result
+}
+
+// convertGrpsIOMemberDomainToResponse converts domain member to GOA response
+func (s *mailingListService) convertGrpsIOMemberDomainToResponse(member *model.GrpsIOMember) *mailinglistservice.GrpsIoMemberFull {
+	response := &mailinglistservice.GrpsIoMemberFull{
+		UID:            member.UID,
+		MailingListUID: member.MailingListUID,
+		FirstName:      member.FirstName,
+		LastName:       member.LastName,
+		Email:          member.Email,
+		MemberType:     member.MemberType,
+		DeliveryMode:   member.DeliveryMode,
+		ModStatus:      member.ModStatus,
+		Status:         member.Status,
+	}
+
+	// Handle optional fields
+	if member.Username != "" {
+		response.Username = &member.Username
+	}
+	if member.Organization != "" {
+		response.Organization = &member.Organization
+	}
+	if member.JobTitle != "" {
+		response.JobTitle = &member.JobTitle
+	}
+	if member.GroupsIOMemberID != 0 {
+		response.GroupsioMemberID = &member.GroupsIOMemberID
+	}
+	if member.GroupsIOGroupID != 0 {
+		response.GroupsioGroupID = &member.GroupsIOGroupID
+	}
+	if member.LastReviewedAt != nil {
+		response.LastReviewedAt = member.LastReviewedAt
+	}
+	if member.LastReviewedBy != nil {
+		response.LastReviewedBy = member.LastReviewedBy
+	}
+	// Note: Access control is managed at the mailing list level
+
+	// Convert timestamps
+	if !member.CreatedAt.IsZero() {
+		response.CreatedAt = member.CreatedAt.Format(time.RFC3339)
+	}
+	if !member.UpdatedAt.IsZero() {
+		response.UpdatedAt = member.UpdatedAt.Format(time.RFC3339)
+	}
+
+	return response
 }
 
 // stringToPointer converts empty string to nil pointer, non-empty string to pointer

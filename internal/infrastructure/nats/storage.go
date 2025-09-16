@@ -173,11 +173,12 @@ func (s *storage) UpdateGrpsIOService(ctx context.Context, uid string, service *
 }
 
 // DeleteGrpsIOService deletes a service from NATS KV store with revision checking
-func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error {
+func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error {
 	slog.DebugContext(ctx, "nats storage: deleting service",
 		"service_uid", uid,
 		"expected_revision", expectedRevision)
 
+	// Delete the main service record
 	err := s.delete(ctx, constants.KVBucketNameGroupsIOServices, uid, expectedRevision)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
@@ -190,6 +191,24 @@ func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedR
 		}
 		slog.ErrorContext(ctx, "failed to delete service", "error", err, "service_uid", uid)
 		return errs.NewServiceUnavailable("failed to delete service")
+	}
+
+	// Clean up unique constraint.
+	// Verification is necessary here to prevent deleting a constraint that might have been reused
+	// by another service with the same parameters. Only delete if the constraint still points to this service's UID.
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOServicePrefix, service.BuildIndexKey(ctx))
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOServices]
+	if exists && kv != nil {
+		entry, err := kv.Get(ctx, constraintKey)
+		if err == nil && string(entry.Value()) == service.UID {
+			// Only delete if it still points to our UID
+			if delErr := kv.Delete(ctx, constraintKey, jetstream.LastRevision(entry.Revision())); delErr != nil {
+				slog.DebugContext(ctx, "failed to delete constraint key during cleanup", "error", delErr, "key", constraintKey)
+			} else {
+				slog.DebugContext(ctx, "service constraint cleaned up successfully", "constraint_key", constraintKey)
+			}
+		}
+		// Silently skip if not found or points to different UID (best effort cleanup)
 	}
 
 	slog.DebugContext(ctx, "nats storage: service deleted",
@@ -308,7 +327,7 @@ func (s *storage) UniqueProjectGroupID(ctx context.Context, service *model.GrpsI
 
 // UniqueMailingListGroupName validates that group name is unique within parent service
 func (s *storage) UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
-	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, mailingList.ServiceUID, mailingList.GroupName)
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, mailingList.BuildIndexKey(ctx))
 
 	slog.DebugContext(ctx, "validating unique mailing list group name constraint",
 		"parent_uid", mailingList.ServiceUID,
@@ -613,7 +632,7 @@ func (s *storage) DeleteGrpsIOMailingList(ctx context.Context, uid string, expec
 	s.deleteMailingListSecondaryIndices(ctx, mailingList)
 
 	// Clean up unique constraint (verify it belongs to this list)
-	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, mailingList.ServiceUID, mailingList.GroupName)
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, mailingList.BuildIndexKey(ctx))
 	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMailingLists]
 	if exists && kv != nil {
 		entry, err := kv.Get(ctx, constraintKey)
@@ -669,7 +688,12 @@ func (s *storage) CreateSecondaryIndices(ctx context.Context, mailingList *model
 
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (s *storage) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {
-	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, parentID, groupName)
+	// Create temporary mailing list to generate consistent constraint key
+	tempMailingList := &model.GrpsIOMailingList{
+		ServiceUID: parentID,
+		GroupName:  groupName,
+	}
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListConstraintPrefix, tempMailingList.BuildIndexKey(ctx))
 
 	slog.DebugContext(ctx, "nats storage: checking mailing list existence",
 		"parent_id", parentID,
@@ -696,15 +720,14 @@ func (s *storage) CheckMailingListExists(ctx context.Context, parentID, groupNam
 
 // UniqueMember creates a unique constraint for member email within mailing list
 func (s *storage) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
-	uniqueKey := fmt.Sprintf(constants.KVLookupGroupsIOMemberPrefix, member.BuildIndexKey(ctx))
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMemberConstraintPrefix, member.BuildIndexKey(ctx))
 
 	slog.DebugContext(ctx, "validating unique member constraint",
 		"mailing_list_uid", member.MailingListUID,
-		"email", member.Email,
-		"constraint_key", uniqueKey,
-	)
+		"email", redaction.RedactEmail(member.Email),
+		"constraint_key", constraintKey)
 
-	return s.createUniqueConstraintInBucket(ctx, constants.KVBucketNameGroupsIOMembers, uniqueKey, member.UID)
+	return s.createUniqueConstraintInBucket(ctx, constants.KVBucketNameGroupsIOMembers, constraintKey, member.UID)
 }
 
 // CreateGrpsIOMember stores a new member in NATS KV (following mailing list pattern)
@@ -729,36 +752,106 @@ func (s *storage) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMe
 
 // GetGrpsIOMember retrieves a member by UID
 func (s *storage) GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting member",
+		"member_uid", uid)
+
 	member := &model.GrpsIOMember{}
 	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOMembers, uid, member, false)
 	if err != nil {
-		return nil, 0, err
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "member not found", "member_uid", uid, "error", err)
+			return nil, 0, errs.NewNotFound("member not found")
+		}
+		slog.ErrorContext(ctx, "failed to get member", "error", err, "member_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to get member")
 	}
+
+	slog.DebugContext(ctx, "nats storage: member retrieved",
+		"member_uid", uid,
+		"email", redaction.RedactEmail(member.Email),
+		"revision", rev)
+
 	return member, rev, nil
 }
 
 // UpdateGrpsIOMember updates an existing member with optimistic concurrency control
 func (s *storage) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
-	// TODO: Implement in future PR
-	return nil, 0, errs.NewUnexpected("UpdateGrpsIOMember not implemented")
+	slog.DebugContext(ctx, "nats storage: updating member",
+		"member_uid", uid,
+		"email", redaction.RedactEmail(member.Email),
+		"expected_revision", expectedRevision)
+
+	rev, err := s.putWithRevision(ctx, constants.KVBucketNameGroupsIOMembers, uid, member, expectedRevision)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "member not found on update", "member_uid", uid)
+			return nil, 0, errs.NewNotFound("member not found")
+		}
+		if s.isRevisionMismatch(err) {
+			slog.WarnContext(ctx, "revision mismatch on update", "member_uid", uid, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
+		slog.ErrorContext(ctx, "failed to update member", "error", err, "member_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to update member")
+	}
+
+	slog.DebugContext(ctx, "nats storage: member updated",
+		"member_uid", uid,
+		"email", redaction.RedactEmail(member.Email),
+		"revision", rev)
+
+	return member, rev, nil
 }
 
 // DeleteGrpsIOMember deletes a member with optimistic concurrency control
-func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64) error {
-	// TODO: Implement in future PR
-	return errs.NewUnexpected("DeleteGrpsIOMember not implemented")
+func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
+	if member == nil {
+		return errs.NewValidation("member is required for deletion")
+	}
+
+	slog.DebugContext(ctx, "nats storage: deleting member",
+		"member_uid", uid,
+		"expected_revision", expectedRevision)
+
+	// Use the passed member data - no need to fetch again
+
+	err := s.delete(ctx, constants.KVBucketNameGroupsIOMembers, uid, expectedRevision)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "member not found on delete", "member_uid", uid)
+			return errs.NewNotFound("member not found")
+		}
+		if s.isRevisionMismatch(err) {
+			slog.WarnContext(ctx, "revision mismatch on delete", "member_uid", uid, "expected_revision", expectedRevision)
+			return errs.NewConflict("revision mismatch")
+		}
+		slog.ErrorContext(ctx, "failed to delete member", "error", err, "member_uid", uid)
+		return errs.NewServiceUnavailable("failed to delete member")
+	}
+
+	// Clean up unique constraint (verify it belongs to this member)
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMemberConstraintPrefix, member.BuildIndexKey(ctx))
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMembers]
+	if exists && kv != nil {
+		entry, err := kv.Get(ctx, constraintKey)
+		if err == nil && string(entry.Value()) == member.UID {
+			// Only delete if it still points to our UID
+			if delErr := kv.Delete(ctx, constraintKey, jetstream.LastRevision(entry.Revision())); delErr != nil {
+				slog.DebugContext(ctx, "failed to delete constraint key during cleanup", "error", delErr, "key", constraintKey)
+			}
+		}
+		// Silently skip if not found or points to different UID (best effort cleanup)
+	}
+
+	slog.DebugContext(ctx, "nats storage: member deleted",
+		"member_uid", uid)
+
+	return nil
 }
 
 // GetMemberRevision retrieves only the revision for a given UID
 func (s *storage) GetMemberRevision(ctx context.Context, uid string) (uint64, error) {
-	// TODO: Implement in future PR
-	return 0, errs.NewUnexpected("GetMemberRevision not implemented")
-}
-
-// CheckMemberExists checks if a member with given email exists in mailing list
-func (s *storage) CheckMemberExists(ctx context.Context, mailingListUID, email string) (bool, error) {
-	// TODO: Implement in future PR
-	return false, nil
+	return s.get(ctx, constants.KVBucketNameGroupsIOMembers, uid, &model.GrpsIOMember{}, true)
 }
 
 func NewStorage(client *NATSClient) port.GrpsIOReaderWriter {

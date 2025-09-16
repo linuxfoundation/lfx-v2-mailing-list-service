@@ -16,7 +16,4 @@ const (
 
 	UpdateAccessGroupsIOMailingListSubject    = "lfx.update_access.groupsio_mailing_list"
 	DeleteAllAccessGroupsIOMailingListSubject = "lfx.delete_all_access.groupsio_mailing_list"
-
-	UpdateAccessGroupsIOMemberSubject    = "lfx.update_access.groupsio_member"
-	DeleteAllAccessGroupsIOMemberSubject = "lfx.delete_all_access.groupsio_member"
 )

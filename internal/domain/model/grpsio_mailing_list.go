@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
@@ -234,6 +235,18 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	return tags
+}
+
+// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
+// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
+func (ml *GrpsIOMailingList) ValidateLastReviewedAt() error {
+	return utils.ValidateRFC3339Ptr(ml.LastReviewedAt)
+}
+
+// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
+// Returns nil if the field is nil or empty, or the parsed time if valid.
+func (ml *GrpsIOMailingList) GetLastReviewedAtTime() (*time.Time, error) {
+	return utils.ParseTimestampPtr(ml.LastReviewedAt)
 }
 
 // Helper functions for validation

@@ -33,19 +33,28 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		}
 	}()
 
-	// Step 1: Generate UID and set timestamps
+	// Step 1: Validate timestamps
+	if err := request.ValidateLastReviewedAt(); err != nil {
+		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
+			"error", err,
+			"last_reviewed_at", request.LastReviewedAt,
+		)
+		return nil, 0, errors.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
+	}
+
+	// Step 2: Generate UID and set timestamps
 	request.UID = uuid.New().String()
 	now := time.Now()
 	request.CreatedAt = now
 	request.UpdatedAt = now
 
-	// Step 2: Validate basic fields
+	// Step 3: Validate basic fields
 	if err := request.ValidateBasicFields(); err != nil {
 		slog.WarnContext(ctx, "basic field validation failed", "error", err)
 		return nil, 0, err
 	}
 
-	// Step 3: Validate committee fields
+	// Step 4: Validate committee fields
 	if err := request.ValidateCommitteeFields(); err != nil {
 		slog.WarnContext(ctx, "committee field validation failed", "error", err)
 		return nil, 0, err
@@ -224,11 +233,14 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailing
 	if len(mailingList.Writers) > 0 {
 		relations[constants.RelationWriter] = mailingList.Writers
 	}
+	if len(mailingList.Auditors) > 0 {
+		relations[constants.RelationAuditor] = mailingList.Auditors
+	}
 
 	return &model.AccessMessage{
 		UID:        mailingList.UID,
 		ObjectType: constants.ObjectTypeGroupsIOMailingList,
-		Public:     mailingList.Public,    // Using Public bool instead of Visibility
+		Public:     mailingList.Public, // Using Public bool instead of Visibility
 		Relations:  relations,
 		References: references,
 	}
@@ -240,7 +252,17 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		"mailing_list_uid", uid,
 		"expected_revision", expectedRevision)
 
-	// Step 1: Retrieve existing mailing list to validate and merge data
+	// Step 1: Validate timestamps in input
+	if err := mailingList.ValidateLastReviewedAt(); err != nil {
+		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
+			"error", err,
+			"last_reviewed_at", mailingList.LastReviewedAt,
+			"mailing_list_uid", uid,
+		)
+		return nil, 0, errors.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
+	}
+
+	// Step 2: Retrieve existing mailing list to validate and merge data
 	existing, existingRevision, err := ml.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing mailing list",
@@ -250,7 +272,7 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 2: Verify revision matches to ensure optimistic locking
+	// Step 3: Verify revision matches to ensure optimistic locking
 	if existingRevision != expectedRevision {
 		slog.WarnContext(ctx, "revision mismatch during update",
 			"expected_revision", expectedRevision,
@@ -260,10 +282,10 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, errors.NewConflict("mailing list has been modified by another process")
 	}
 
-	// Step 3: Merge existing data with updated fields
+	// Step 4: Merge existing data with updated fields
 	ml.mergeMailingListData(ctx, existing, mailingList)
 
-	// Step 3.1: Re-validate fields after merge to ensure data integrity
+	// Step 4.1: Re-validate fields after merge to ensure data integrity
 	if err := mailingList.ValidateBasicFields(); err != nil {
 		slog.WarnContext(ctx, "basic field validation failed during update", "error", err)
 		return nil, 0, err
@@ -420,11 +442,11 @@ func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context,
 
 	// Step 2: Deletion validation
 	// Validates main group protection, announcement list protection, and committee associations
-	// TODO: Enhance with Groups.io API integration to validate:
+	// TODO: LFXV2-353 - Enhance with Groups.io API integration to validate:
 	//   - Active subscriber count thresholds
 	//   - Recent message activity
 	//   - Pending moderation queue items
-	// TODO: Enhance with committee event handling to:
+	// TODO: LFXV2-478 - Enhance with committee event handling to:
 	//   - Block deletion if active committee sync is running
 	//   - Trigger committee member cleanup
 	slog.DebugContext(ctx, "validating mailing list deletion",

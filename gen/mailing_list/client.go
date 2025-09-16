@@ -27,10 +27,13 @@ type Client struct {
 	UpdateGrpsioMailingListEndpoint       goa.Endpoint
 	DeleteGrpsioMailingListEndpoint       goa.Endpoint
 	CreateGrpsioMailingListMemberEndpoint goa.Endpoint
+	GetGrpsioMailingListMemberEndpoint    goa.Endpoint
+	UpdateGrpsioMailingListMemberEndpoint goa.Endpoint
+	DeleteGrpsioMailingListMemberEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                         livez,
 		ReadyzEndpoint:                        readyz,
@@ -43,6 +46,9 @@ func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsi
 		UpdateGrpsioMailingListEndpoint:       updateGrpsioMailingList,
 		DeleteGrpsioMailingListEndpoint:       deleteGrpsioMailingList,
 		CreateGrpsioMailingListMemberEndpoint: createGrpsioMailingListMember,
+		GetGrpsioMailingListMemberEndpoint:    getGrpsioMailingListMember,
+		UpdateGrpsioMailingListMemberEndpoint: updateGrpsioMailingListMember,
+		DeleteGrpsioMailingListMemberEndpoint: deleteGrpsioMailingListMember,
 	}
 }
 
@@ -78,13 +84,13 @@ func (c *Client) Readyz(ctx context.Context) (res []byte, err error) {
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *ServiceFull, err error) {
+func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *GrpsIoServiceFull, err error) {
 	var ires any
 	ires, err = c.CreateGrpsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*ServiceFull), nil
+	return ires.(*GrpsIoServiceFull), nil
 }
 
 // GetGrpsioService calls the "get-grpsio-service" endpoint of the
@@ -113,13 +119,13 @@ func (c *Client) GetGrpsioService(ctx context.Context, p *GetGrpsioServicePayloa
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioService(ctx context.Context, p *UpdateGrpsioServicePayload) (res *ServiceWithReadonlyAttributes, err error) {
+func (c *Client) UpdateGrpsioService(ctx context.Context, p *UpdateGrpsioServicePayload) (res *GrpsIoServiceWithReadonlyAttributes, err error) {
 	var ires any
 	ires, err = c.UpdateGrpsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*ServiceWithReadonlyAttributes), nil
+	return ires.(*GrpsIoServiceWithReadonlyAttributes), nil
 }
 
 // DeleteGrpsioService calls the "delete-grpsio-service" endpoint of the
@@ -145,13 +151,13 @@ func (c *Client) DeleteGrpsioService(ctx context.Context, p *DeleteGrpsioService
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioMailingList(ctx context.Context, p *CreateGrpsioMailingListPayload) (res *MailingListFull, err error) {
+func (c *Client) CreateGrpsioMailingList(ctx context.Context, p *CreateGrpsioMailingListPayload) (res *GrpsIoMailingListFull, err error) {
 	var ires any
 	ires, err = c.CreateGrpsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*MailingListFull), nil
+	return ires.(*GrpsIoMailingListFull), nil
 }
 
 // GetGrpsioMailingList calls the "get-grpsio-mailing-list" endpoint of the
@@ -180,13 +186,13 @@ func (c *Client) GetGrpsioMailingList(ctx context.Context, p *GetGrpsioMailingLi
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMailingListPayload) (res *MailingListWithReadonlyAttributes, err error) {
+func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMailingListPayload) (res *GrpsIoMailingListWithReadonlyAttributes, err error) {
 	var ires any
 	ires, err = c.UpdateGrpsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*MailingListWithReadonlyAttributes), nil
+	return ires.(*GrpsIoMailingListWithReadonlyAttributes), nil
 }
 
 // DeleteGrpsioMailingList calls the "delete-grpsio-mailing-list" endpoint of
@@ -212,11 +218,60 @@ func (c *Client) DeleteGrpsioMailingList(ctx context.Context, p *DeleteGrpsioMai
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioMailingListMember(ctx context.Context, p *CreateGrpsioMailingListMemberPayload) (res *MemberFull, err error) {
+func (c *Client) CreateGrpsioMailingListMember(ctx context.Context, p *CreateGrpsioMailingListMemberPayload) (res *GrpsIoMemberFull, err error) {
 	var ires any
 	ires, err = c.CreateGrpsioMailingListMemberEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*MemberFull), nil
+	return ires.(*GrpsIoMemberFull), nil
+}
+
+// GetGrpsioMailingListMember calls the "get-grpsio-mailing-list-member"
+// endpoint of the "mailing-list" service.
+// GetGrpsioMailingListMember may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Member not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGrpsioMailingListMember(ctx context.Context, p *GetGrpsioMailingListMemberPayload) (res *GetGrpsioMailingListMemberResult, err error) {
+	var ires any
+	ires, err = c.GetGrpsioMailingListMemberEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GetGrpsioMailingListMemberResult), nil
+}
+
+// UpdateGrpsioMailingListMember calls the "update-grpsio-mailing-list-member"
+// endpoint of the "mailing-list" service.
+// UpdateGrpsioMailingListMember may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request - Invalid data or immutable field modification
+//   - "NotFound" (type *NotFoundError): Member not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or validation failure
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateGrpsioMailingListMember(ctx context.Context, p *UpdateGrpsioMailingListMemberPayload) (res *GrpsIoMemberWithReadonlyAttributes, err error) {
+	var ires any
+	ires, err = c.UpdateGrpsioMailingListMemberEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GrpsIoMemberWithReadonlyAttributes), nil
+}
+
+// DeleteGrpsioMailingListMember calls the "delete-grpsio-mailing-list-member"
+// endpoint of the "mailing-list" service.
+// DeleteGrpsioMailingListMember may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request - Cannot remove sole owner
+//   - "NotFound" (type *NotFoundError): Member not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) DeleteGrpsioMailingListMember(ctx context.Context, p *DeleteGrpsioMailingListMemberPayload) (err error) {
+	_, err = c.DeleteGrpsioMailingListMemberEndpoint(ctx, p)
+	return
 }

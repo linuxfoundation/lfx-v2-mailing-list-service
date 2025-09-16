@@ -7,8 +7,8 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
-// ServiceBaseAttributes is the DSL attributes for a GroupsIO service base.
-func ServiceBaseAttributes() {
+// GrpsIOServiceBaseAttributes is the DSL attributes for a GroupsIO service base.
+func GrpsIOServiceBaseAttributes() {
 	dsl.Attribute("type", dsl.String, "Service type", func() {
 		dsl.Enum("primary", "formation", "shared")
 		dsl.Example("primary")
@@ -56,12 +56,60 @@ func ServiceBaseAttributes() {
 	dsl.Required("type", "project_uid")
 }
 
-// ServiceWithReadonlyAttributes is the DSL type for a GroupsIO service with readonly attributes.
-var ServiceWithReadonlyAttributes = dsl.Type("service-with-readonly-attributes", func() {
+// GrpsIOServiceUpdateAttributesNoDefaults defines service attributes for UPDATE operations WITHOUT defaults
+// This ensures omitted fields preserve existing values instead of being reset to defaults
+func GrpsIOServiceUpdateAttributesNoDefaults() {
+	dsl.Attribute("type", dsl.String, "Service type", func() {
+		dsl.Enum("primary", "formation", "shared")
+		dsl.Example("primary")
+	})
+	dsl.Attribute("domain", dsl.String, "Service domain", func() {
+		dsl.Example("lists.project.org")
+	})
+	dsl.Attribute("group_id", dsl.Int64, "GroupsIO group ID", func() {
+		dsl.Example(12345)
+	})
+	dsl.Attribute("status", dsl.String, "Service status", func() {
+		dsl.Example("created")
+	})
+	dsl.Attribute("global_owners", dsl.ArrayOf(dsl.String), "List of global owner email addresses (required for primary, forbidden for shared)", func() {
+		dsl.Elem(func() {
+			dsl.Format(dsl.FormatEmail)
+		})
+		dsl.Example([]string{"admin@example.com"})
+	})
+	dsl.Attribute("prefix", dsl.String, "Email prefix (required for formation and shared, forbidden for primary)", func() {
+		dsl.Example("formation")
+	})
+	dsl.Attribute("project_slug", dsl.String, "Project slug identifier", func() {
+		dsl.Format(dsl.FormatRegexp)
+		dsl.Pattern(`^[a-z][a-z0-9_\-]*[a-z0-9]$`)
+		dsl.Example("cncf")
+	})
+	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("url", dsl.String, "Service URL", func() {
+		dsl.Format(dsl.FormatURI)
+		dsl.Example("https://lists.project.org")
+	})
+	dsl.Attribute("group_name", dsl.String, "GroupsIO group name", func() {
+		dsl.Example("project-name")
+	})
+	// CRITICAL: No default for update operations - omitted field preserves existing value
+	dsl.Attribute("public", dsl.Boolean, "Whether the service is publicly accessible", func() {
+		dsl.Example(true)
+		// NO DEFAULT - this makes it a pointer in generated code
+	})
+}
+
+// GrpsIOServiceWithReadonlyAttributes is the DSL type for a GroupsIO service with readonly attributes.
+var GrpsIOServiceWithReadonlyAttributes = dsl.Type("grps-io-service-with-readonly-attributes", func() {
 	dsl.Description("A representation of GroupsIO services with readonly attributes.")
 
-	ServiceUIDAttribute()
-	ServiceBaseAttributes()
+	GrpsIOServiceUIDAttribute()
+	GrpsIOServiceBaseAttributes()
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
@@ -73,20 +121,20 @@ var ServiceWithReadonlyAttributes = dsl.Type("service-with-readonly-attributes",
 	AuditorsAttribute()
 })
 
-// ServiceUIDAttribute is the DSL attribute for service UID.
-func ServiceUIDAttribute() {
+// GrpsIOServiceUIDAttribute is the DSL attribute for service UID.
+func GrpsIOServiceUIDAttribute() {
 	dsl.Attribute("uid", dsl.String, "Service UID -- unique identifier for the service", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 		dsl.Format(dsl.FormatUUID)
 	})
 }
 
-// ServiceFull is the DSL type for a complete service representation with all attributes.
-var ServiceFull = dsl.Type("service-full", func() {
+// GrpsIOServiceFull is the DSL type for a complete service representation with all attributes.
+var GrpsIOServiceFull = dsl.Type("grps-io-service-full", func() {
 	dsl.Description("A complete representation of GroupsIO services with all attributes including access control and audit trail.")
 
-	ServiceUIDAttribute()
-	ServiceBaseAttributes()
+	GrpsIOServiceUIDAttribute()
+	GrpsIOServiceBaseAttributes()
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
@@ -244,8 +292,8 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 	dsl.Required("message")
 })
 
-// MailingListBaseAttributes defines attributes for mailing list requests (CREATE/UPDATE) - excludes project_uid.
-func MailingListBaseAttributes() {
+// GrpsIOMailingListBaseAttributes defines attributes for mailing list requests (CREATE/UPDATE) - excludes project_uid.
+func GrpsIOMailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
 		dsl.Example("technical-steering-committee")
 		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$`)
@@ -294,20 +342,68 @@ func MailingListBaseAttributes() {
 
 }
 
-// MailingListUIDAttribute is the DSL attribute for mailing list UID.
-func MailingListUIDAttribute() {
+// GrpsIOMailingListUpdateAttributesNoDefaults defines mailing list attributes for UPDATE operations WITHOUT defaults
+// This ensures omitted fields preserve existing values instead of being reset to defaults
+func GrpsIOMailingListUpdateAttributesNoDefaults() {
+	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
+		dsl.Example("technical-steering-committee")
+		dsl.Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$`)
+		dsl.MinLength(3)
+		dsl.MaxLength(34)
+	})
+	// CRITICAL: No default for update operations - omitted field preserves existing value
+	dsl.Attribute("public", dsl.Boolean, "Whether the mailing list is publicly accessible", func() {
+		dsl.Example(false)
+		// NO DEFAULT - this makes it a pointer in generated code
+	})
+	dsl.Attribute("type", dsl.String, "Mailing list type", func() {
+		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
+		dsl.Example("discussion_moderated")
+	})
+	dsl.Attribute("committee_uid", dsl.String, "Committee UUID for committee-based mailing lists", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
+		dsl.Elem(func() {
+			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
+		})
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
+	dsl.Attribute("description", dsl.String, "Mailing list description (11-500 characters)", func() {
+		dsl.MinLength(11)
+		dsl.MaxLength(500)
+		dsl.Example("Technical steering committee discussions")
+	})
+	dsl.Attribute("title", dsl.String, "Mailing list title", func() {
+		dsl.Example("Technical Steering Committee")
+		dsl.MinLength(5)
+		dsl.MaxLength(100)
+	})
+	dsl.Attribute("subject_tag", dsl.String, "Subject tag prefix", func() {
+		dsl.Example("[TSC]")
+		dsl.MaxLength(50)
+	})
+	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+}
+
+// GrpsIOMailingListUIDAttribute is the DSL attribute for mailing list UID.
+func GrpsIOMailingListUIDAttribute() {
 	dsl.Attribute("uid", dsl.String, "Mailing list UID -- unique identifier for the mailing list", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 		dsl.Format(dsl.FormatUUID)
 	})
 }
 
-// MailingListFull is the DSL type for a complete mailing list representation with all attributes.
-var MailingListFull = dsl.Type("mailing-list-full", func() {
+// GrpsIOMailingListFull is the DSL type for a complete mailing list representation with all attributes.
+var GrpsIOMailingListFull = dsl.Type("grps-io-mailing-list-full", func() {
 	dsl.Description("A complete representation of GroupsIO mailing lists with all attributes including access control and audit trail.")
 
-	MailingListUIDAttribute()
-	MailingListBaseAttributes()
+	GrpsIOMailingListUIDAttribute()
+	GrpsIOMailingListBaseAttributes()
 
 	// project_uid only appears in responses (inherited from parent service)
 	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
@@ -325,12 +421,12 @@ var MailingListFull = dsl.Type("mailing-list-full", func() {
 	AuditorsAttribute()
 })
 
-// MailingListWithReadonlyAttributes is the DSL type for a mailing list with readonly attributes.
-var MailingListWithReadonlyAttributes = dsl.Type("mailing-list-with-readonly-attributes", func() {
+// GrpsIOMailingListWithReadonlyAttributes is the DSL type for a mailing list with readonly attributes.
+var GrpsIOMailingListWithReadonlyAttributes = dsl.Type("grps-io-mailing-list-with-readonly-attributes", func() {
 	dsl.Description("A representation of GroupsIO mailing lists with readonly attributes.")
 
-	MailingListUIDAttribute()
-	MailingListBaseAttributes()
+	GrpsIOMailingListUIDAttribute()
+	GrpsIOMailingListBaseAttributes()
 
 	// project_uid only appears in responses (inherited from parent service)
 	dsl.Attribute("project_uid", dsl.String, "LFXv2 Project UID (inherited from parent service)", func() {
@@ -346,8 +442,8 @@ var MailingListWithReadonlyAttributes = dsl.Type("mailing-list-with-readonly-att
 	AuditorsAttribute()
 })
 
-// MemberBaseAttributes defines common attributes for member requests and responses.
-func MemberBaseAttributes() {
+// GrpsIOMemberBaseAttributes defines common attributes for member requests and responses.
+func GrpsIOMemberBaseAttributes() {
 	dsl.Attribute("username", dsl.String, "Member username", func() {
 		dsl.MaxLength(255)
 		dsl.Example("jdoe")
@@ -405,8 +501,50 @@ func MemberBaseAttributes() {
 	})
 }
 
-// MemberFull is the DSL type for a complete member response.
-var MemberFull = dsl.Type("member-full", func() {
+// GrpsIOMemberUIDAttribute is the DSL attribute for member UID.
+func GrpsIOMemberUIDAttribute() {
+	dsl.Attribute("member_uid", dsl.String, "Member UID -- unique identifier for the member", func() {
+		dsl.Example("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+		dsl.Format(dsl.FormatUUID)
+	})
+}
+
+// GrpsIOMemberWithReadonlyAttributes is the DSL type for a member with readonly attributes.
+var GrpsIOMemberWithReadonlyAttributes = dsl.Type("grps-io-member-with-readonly-attributes", func() {
+	dsl.Description("A representation of GroupsIO mailing list members with readonly attributes.")
+
+	dsl.Attribute("uid", dsl.String, "Member UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+	})
+
+	dsl.Attribute("mailing_list_uid", dsl.String, "Mailing list UID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+
+	GrpsIOMemberBaseAttributes()
+
+	dsl.Attribute("status", dsl.String, "Member status", func() {
+		dsl.Example("pending")
+	})
+
+	dsl.Attribute("groupsio_member_id", dsl.Int64, "Groups.io member ID", func() {
+		dsl.Example(12345)
+	})
+
+	dsl.Attribute("groupsio_group_id", dsl.Int64, "Groups.io group ID", func() {
+		dsl.Example(67890)
+	})
+
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
+})
+
+// GrpsIOMemberFull is the DSL type for a complete member response.
+var GrpsIOMemberFull = dsl.Type("grps-io-member-full", func() {
 	dsl.Description("A complete representation of a GroupsIO mailing list member with all attributes.")
 
 	dsl.Attribute("uid", dsl.String, "Member UID", func() {
@@ -419,7 +557,7 @@ var MemberFull = dsl.Type("member-full", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 
-	MemberBaseAttributes()
+	GrpsIOMemberBaseAttributes()
 
 	dsl.Attribute("status", dsl.String, "Member status", func() {
 		dsl.Example("pending")
@@ -444,3 +582,85 @@ var MemberFull = dsl.Type("member-full", func() {
 		"created_at", "updated_at",
 	)
 })
+
+// GrpsIOMemberUpdateAttributes defines mutable attributes for member updates (excludes immutable fields like email)
+func GrpsIOMemberUpdateAttributes() {
+	dsl.Attribute("username", dsl.String, "Member username", func() {
+		dsl.MaxLength(255)
+		dsl.Example("jdoe")
+	})
+
+	dsl.Attribute("first_name", dsl.String, "Member first name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("John")
+	})
+
+	dsl.Attribute("last_name", dsl.String, "Member last name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("Doe")
+	})
+
+	dsl.Attribute("organization", dsl.String, "Member organization", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Example Corp")
+	})
+
+	dsl.Attribute("job_title", dsl.String, "Member job title", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Software Engineer")
+	})
+
+	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode", func() {
+		dsl.Enum("normal", "digest", "none")
+		dsl.Default("normal")
+	})
+
+	dsl.Attribute("mod_status", dsl.String, "Moderation status", func() {
+		dsl.Enum("none", "moderator", "owner")
+		dsl.Default("none")
+	})
+}
+
+// GrpsIOMemberUpdateAttributesNoDefaults defines mutable attributes for member updates WITHOUT defaults
+// This is used for UPDATE operations where omitted fields should be preserved, not reset to defaults
+func GrpsIOMemberUpdateAttributesNoDefaults() {
+	dsl.Attribute("username", dsl.String, "Member username", func() {
+		dsl.MaxLength(255)
+		dsl.Example("jdoe")
+	})
+
+	dsl.Attribute("first_name", dsl.String, "Member first name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("John")
+	})
+
+	dsl.Attribute("last_name", dsl.String, "Member last name", func() {
+		dsl.MinLength(1)
+		dsl.MaxLength(255)
+		dsl.Example("Doe")
+	})
+
+	dsl.Attribute("organization", dsl.String, "Member organization", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Example Corp")
+	})
+
+	dsl.Attribute("job_title", dsl.String, "Member job title", func() {
+		dsl.MaxLength(255)
+		dsl.Example("Software Engineer")
+	})
+
+	// CRITICAL: No defaults for update operations - omitted fields preserve existing values
+	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode", func() {
+		dsl.Enum("normal", "digest", "none")
+		// NO DEFAULT - this makes it a pointer in generated code
+	})
+
+	dsl.Attribute("mod_status", dsl.String, "Moderation status", func() {
+		dsl.Enum("none", "moderator", "owner")
+		// NO DEFAULT - this makes it a pointer in generated code
+	})
+}

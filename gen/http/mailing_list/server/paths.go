@@ -66,3 +66,18 @@ func DeleteGrpsioMailingListMailingListPath(uid string) string {
 func CreateGrpsioMailingListMemberMailingListPath(uid string) string {
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/members", uid)
 }
+
+// GetGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service get-grpsio-mailing-list-member HTTP endpoint.
+func GetGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+}
+
+// UpdateGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service update-grpsio-mailing-list-member HTTP endpoint.
+func UpdateGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+}
+
+// DeleteGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service delete-grpsio-mailing-list-member HTTP endpoint.
+func DeleteGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+}

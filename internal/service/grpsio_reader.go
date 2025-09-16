@@ -36,7 +36,7 @@ type GrpsIOMailingListReader interface {
 // GrpsIOMemberReader defines the interface for member read operations
 type GrpsIOMemberReader interface {
 	GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error)
-	CheckMemberExists(ctx context.Context, mailingListUID, email string) (bool, error)
+	GetMemberRevision(ctx context.Context, uid string) (uint64, error)
 }
 
 // grpsIOReaderOrchestratorOption defines a function type for setting options on the composite orchestrator

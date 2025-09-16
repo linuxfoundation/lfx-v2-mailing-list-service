@@ -20,7 +20,8 @@ type GrpsIOServiceWriter interface {
 	UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error)
 
 	// DeleteGrpsIOService deletes a service by UID with expected revision
-	DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64) error
+	// service parameter contains the service data for constraint cleanup
+	DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error
 
 	// Unique constraint validation methods
 	// UniqueProjectType validates that only one primary service exists per project

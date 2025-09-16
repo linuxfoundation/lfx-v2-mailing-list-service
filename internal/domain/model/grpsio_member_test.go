@@ -252,7 +252,7 @@ func TestGrpsIOMember_Tags(t *testing.T) {
 				MailingListUID: "comprehensive-list",
 				Username:       "comprehensive-user",
 				Email:          "comprehensive@example.com",
-				Status:         "moderator",
+				Status:         "normal",
 			},
 			expectedTags: []string{
 				"comprehensive-member",
@@ -260,7 +260,7 @@ func TestGrpsIOMember_Tags(t *testing.T) {
 				"mailing_list_uid:comprehensive-list",
 				"username:comprehensive-user",
 				"email:comprehensive@example.com",
-				"status:moderator",
+				"status:normal",
 			},
 		},
 	}
@@ -364,8 +364,6 @@ func TestGrpsIOMember_ValidationScenarios(t *testing.T) {
 			Status:           "normal",
 			LastReviewedAt:   stringPtr("2024-01-01T00:00:00Z"),
 			LastReviewedBy:   stringPtr("reviewer-uid"),
-			Writers:          []string{"writer1", "writer2"},
-			Auditors:         []string{"auditor1"},
 			CreatedAt:        now.Add(-24 * time.Hour),
 			UpdatedAt:        now,
 		}
@@ -380,6 +378,7 @@ func TestGrpsIOMember_ValidationScenarios(t *testing.T) {
 		assert.Contains(t, tags, "member_uid:"+member.UID)
 		assert.Contains(t, tags, "email:committee.member@example.com")
 		assert.Contains(t, tags, "status:normal")
+		assert.Contains(t, tags, "username:committee-member")
 	})
 
 	t.Run("minimal direct member", func(t *testing.T) {

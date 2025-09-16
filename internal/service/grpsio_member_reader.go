@@ -8,7 +8,6 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // GetGrpsIOMember retrieves a member by UID
@@ -39,33 +38,21 @@ func (r *grpsIOReaderOrchestrator) GetGrpsIOMember(ctx context.Context, uid stri
 	return member, revision, nil
 }
 
-// CheckMemberExists checks if a member with given email exists in mailing list
-func (r *grpsIOReaderOrchestrator) CheckMemberExists(ctx context.Context, mailingListUID, email string) (bool, error) {
+// GetMemberRevision retrieves only the revision for a given member UID
+func (r *grpsIOReaderOrchestrator) GetMemberRevision(ctx context.Context, uid string) (uint64, error) {
 	if r.grpsIOReader == nil {
 		panic("grpsIOReader dependency is required but was not provided")
 	}
 
-	slog.DebugContext(ctx, "executing check member exists use case",
-		"mailing_list_uid", mailingListUID,
-		"email", redaction.RedactEmail(email),
-	)
+	slog.DebugContext(ctx, "executing get member revision use case", "member_uid", uid)
 
-	// Check if member exists
-	exists, err := r.grpsIOReader.CheckMemberExists(ctx, mailingListUID, email)
+	revision, err := r.grpsIOReader.GetMemberRevision(ctx, uid)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to check member existence",
-			"error", err,
-			"mailing_list_uid", mailingListUID,
-			"email", redaction.RedactEmail(email),
-		)
-		return false, err
+		slog.ErrorContext(ctx, "failed to get member revision", "error", err, "member_uid", uid)
+		return 0, err
 	}
 
-	slog.DebugContext(ctx, "member existence check completed",
-		"mailing_list_uid", mailingListUID,
-		"email", redaction.RedactEmail(email),
-		"exists", exists,
-	)
-
-	return exists, nil
+	slog.DebugContext(ctx, "member revision retrieved successfully", "member_uid", uid, "revision", revision)
+	return revision, nil
 }
+

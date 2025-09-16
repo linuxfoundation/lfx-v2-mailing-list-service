@@ -367,7 +367,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			err := orchestrator.DeleteGrpsIOService(ctx, tc.uid, tc.revision)
+			err := orchestrator.DeleteGrpsIOService(ctx, tc.uid, tc.revision, setupService)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -606,7 +606,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testin
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup
 			mockRepo := mock.NewMockRepository()
-			tc.setupMock(mockRepo)
+			setupService, _ := tc.setupMock(mockRepo)
 
 			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
 			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
@@ -622,7 +622,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testin
 
 			// Execute
 			ctx := context.Background()
-			err := orchestrator.DeleteGrpsIOService(ctx, tc.uid, tc.expectedRevision)
+			err := orchestrator.DeleteGrpsIOService(ctx, tc.uid, tc.expectedRevision, setupService)
 
 			// Validate error type
 			if tc.expectedError != nil {

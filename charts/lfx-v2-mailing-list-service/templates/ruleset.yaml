@@ -254,3 +254,81 @@ spec:
           config:
             values:
               aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list-member:get"
+      match:
+        methods:
+          - GET
+        routes:
+          - path: /groupsio/mailing-lists/:uid/members/:member_uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: viewer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list-member:update"
+      match:
+        methods:
+          - PUT
+        routes:
+          - path: /groupsio/mailing-lists/:uid/members/:member_uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-mailing-list-service:groupsio-mailing-list-member:delete"
+      match:
+        methods:
+          - DELETE
+        routes:
+          - path: /groupsio/mailing-lists/:uid/members/:member_uid
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+        {{- else }}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
