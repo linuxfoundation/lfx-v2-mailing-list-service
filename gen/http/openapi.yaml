@@ -147,74 +147,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-grpsio-mailing-list mailing-list
-            description: Delete GroupsIO mailing list
-            operationId: mailing-list#delete-grpsio-mailing-list
-            parameters:
-                - name: v
-                  in: query
-                  description: Version of the API
-                  required: false
-                  type: string
-                  enum:
-                    - "1"
-                - name: uid
-                  in: path
-                  description: Mailing list UID -- unique identifier for the mailing list
-                  required: true
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: If-Match
-                  in: header
-                  description: If-Match header value for conditional requests
-                  required: false
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        patch:
+        put:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list mailing-list
@@ -249,11 +182,85 @@ paths:
                   required: true
                   schema:
                     $ref: '#/definitions/MailingListUpdateGrpsioMailingListRequestBody'
+                    required:
+                        - group_name
+                        - public
+                        - type
+                        - description
+                        - title
+                        - service_uid
             responses:
                 "200":
                     description: OK response.
                     schema:
                         $ref: '#/definitions/GrpsIoMailingListWithReadonlyAttributes'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-mailing-list mailing-list
+            description: Delete GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -440,80 +447,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-grpsio-mailing-list-member mailing-list
-            description: Delete a member from a GroupsIO mailing list
-            operationId: mailing-list#delete-grpsio-mailing-list-member
-            parameters:
-                - name: v
-                  in: query
-                  description: Version of the API
-                  required: true
-                  type: string
-                  enum:
-                    - "1"
-                - name: uid
-                  in: path
-                  description: Mailing list UID -- unique identifier for the mailing list
-                  required: true
-                  type: string
-                  format: uuid
-                - name: member_uid
-                  in: path
-                  description: Member UID -- unique identifier for the member
-                  required: true
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: true
-                  type: string
-                - name: If-Match
-                  in: header
-                  description: If-Match header value for conditional requests
-                  required: true
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        patch:
+        put:
             tags:
                 - mailing-list
             summary: update-grpsio-mailing-list-member mailing-list
@@ -559,6 +493,79 @@ paths:
                     description: OK response.
                     schema:
                         $ref: '#/definitions/GrpsIoMemberWithReadonlyAttributes'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-mailing-list-member mailing-list
+            description: Delete a member from a GroupsIO mailing list
+            operationId: mailing-list#delete-grpsio-mailing-list-member
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: true
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: member_uid
+                  in: path
+                  description: Member UID -- unique identifier for the member
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: true
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: true
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -729,74 +736,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-grpsio-service mailing-list
-            description: Delete GroupsIO service
-            operationId: mailing-list#delete-grpsio-service
-            parameters:
-                - name: v
-                  in: query
-                  description: Version of the API
-                  required: false
-                  type: string
-                  enum:
-                    - "1"
-                - name: uid
-                  in: path
-                  description: Service UID -- unique identifier for the service
-                  required: true
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: If-Match
-                  in: header
-                  description: If-Match header value for conditional requests
-                  required: false
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        patch:
+        put:
             tags:
                 - mailing-list
             summary: update-grpsio-service mailing-list
@@ -831,6 +771,9 @@ paths:
                   required: true
                   schema:
                     $ref: '#/definitions/MailingListUpdateGrpsioServiceRequestBody'
+                    required:
+                        - type
+                        - project_uid
             responses:
                 "200":
                     description: OK response.
@@ -839,6 +782,73 @@ paths:
                         required:
                             - type
                             - project_uid
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-grpsio-service mailing-list
+            description: Delete GroupsIO service
+            operationId: mailing-list#delete-grpsio-service
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
                 "400":
                     description: Bad Request response.
                     schema:
@@ -2173,6 +2183,7 @@ definitions:
             delivery_mode:
                 type: string
                 description: Email delivery mode
+                default: normal
                 example: digest
                 enum:
                     - normal
@@ -2198,6 +2209,7 @@ definitions:
             mod_status:
                 type: string
                 description: Moderation status
+                default: none
                 example: moderator
                 enum:
                     - none
@@ -2270,6 +2282,7 @@ definitions:
             public:
                 type: boolean
                 description: Whether the mailing list is publicly accessible
+                default: false
                 example: false
             service_uid:
                 type: string
@@ -2322,6 +2335,13 @@ definitions:
             writers:
                 - manager_user_id1
                 - manager_user_id2
+        required:
+            - group_name
+            - public
+            - type
+            - description
+            - title
+            - service_uid
     MailingListUpdateGrpsioServiceRequestBody:
         title: MailingListUpdateGrpsioServiceRequestBody
         type: object
@@ -2375,6 +2395,7 @@ definitions:
             public:
                 type: boolean
                 description: Whether the service is publicly accessible
+                default: false
                 example: true
             status:
                 type: string
@@ -2421,6 +2442,9 @@ definitions:
             writers:
                 - manager_user_id1
                 - manager_user_id2
+        required:
+            - type
+            - project_uid
     NotFoundError:
         title: NotFoundError
         type: object

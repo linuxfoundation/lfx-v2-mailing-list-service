@@ -475,7 +475,7 @@ func (c *Client) BuildUpdateGrpsioServiceRequest(ctx context.Context, v any) (*h
 		}
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateGrpsioServiceMailingListPath(uid)}
-	req, err := http.NewRequest("PATCH", u.String(), nil)
+	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("mailing-list", "update-grpsio-service", u.String(), err)
 	}
@@ -1133,7 +1133,7 @@ func (c *Client) BuildUpdateGrpsioMailingListRequest(ctx context.Context, v any)
 		}
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateGrpsioMailingListMailingListPath(uid)}
-	req, err := http.NewRequest("PATCH", u.String(), nil)
+	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("mailing-list", "update-grpsio-mailing-list", u.String(), err)
 	}
@@ -1804,7 +1804,7 @@ func (c *Client) BuildUpdateGrpsioMailingListMemberRequest(ctx context.Context, 
 		memberUID = p.MemberUID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateGrpsioMailingListMemberMailingListPath(uid, memberUID)}
-	req, err := http.NewRequest("PATCH", u.String(), nil)
+	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("mailing-list", "update-grpsio-mailing-list-member", u.String(), err)
 	}

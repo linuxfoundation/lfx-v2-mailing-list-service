@@ -2139,22 +2139,27 @@ func NewGetGrpsioServicePayload(uid string, version *string, bearerToken *string
 // update-grpsio-service endpoint payload.
 func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid string, version string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioServicePayload {
 	v := &mailinglist.UpdateGrpsioServicePayload{
-		Type:        body.Type,
+		Type:        *body.Type,
 		Domain:      body.Domain,
 		GroupID:     body.GroupID,
 		Status:      body.Status,
 		Prefix:      body.Prefix,
 		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  body.ProjectUID,
+		ProjectUID:  *body.ProjectUID,
 		URL:         body.URL,
 		GroupName:   body.GroupName,
-		Public:      body.Public,
+	}
+	if body.Public != nil {
+		v.Public = *body.Public
 	}
 	if body.GlobalOwners != nil {
 		v.GlobalOwners = make([]string, len(body.GlobalOwners))
 		for i, val := range body.GlobalOwners {
 			v.GlobalOwners[i] = val
 		}
+	}
+	if body.Public == nil {
+		v.Public = false
 	}
 	if body.Writers != nil {
 		v.Writers = make([]string, len(body.Writers))
@@ -2240,14 +2245,14 @@ func NewGetGrpsioMailingListPayload(uid string, version string, bearerToken stri
 // update-grpsio-mailing-list endpoint payload.
 func NewUpdateGrpsioMailingListPayload(body *UpdateGrpsioMailingListRequestBody, uid string, version string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioMailingListPayload {
 	v := &mailinglist.UpdateGrpsioMailingListPayload{
-		GroupName:    body.GroupName,
-		Public:       body.Public,
-		Type:         body.Type,
+		GroupName:    *body.GroupName,
+		Public:       *body.Public,
+		Type:         *body.Type,
 		CommitteeUID: body.CommitteeUID,
-		Description:  body.Description,
-		Title:        body.Title,
+		Description:  *body.Description,
+		Title:        *body.Title,
 		SubjectTag:   body.SubjectTag,
-		ServiceUID:   body.ServiceUID,
+		ServiceUID:   *body.ServiceUID,
 	}
 	if body.CommitteeFilters != nil {
 		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
@@ -2346,8 +2351,18 @@ func NewUpdateGrpsioMailingListMemberPayload(body *UpdateGrpsioMailingListMember
 		LastName:     body.LastName,
 		Organization: body.Organization,
 		JobTitle:     body.JobTitle,
-		DeliveryMode: body.DeliveryMode,
-		ModStatus:    body.ModStatus,
+	}
+	if body.DeliveryMode != nil {
+		v.DeliveryMode = *body.DeliveryMode
+	}
+	if body.ModStatus != nil {
+		v.ModStatus = *body.ModStatus
+	}
+	if body.DeliveryMode == nil {
+		v.DeliveryMode = "normal"
+	}
+	if body.ModStatus == nil {
+		v.ModStatus = "none"
 	}
 	v.UID = uid
 	v.MemberUID = memberUID
@@ -2406,6 +2421,12 @@ func ValidateCreateGrpsioServiceRequestBody(body *CreateGrpsioServiceRequestBody
 // ValidateUpdateGrpsioServiceRequestBody runs the validations defined on
 // Update-Grpsio-ServiceRequestBody
 func ValidateUpdateGrpsioServiceRequestBody(body *UpdateGrpsioServiceRequestBody) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
+	}
 	if body.Type != nil {
 		if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
@@ -2510,6 +2531,24 @@ func ValidateCreateGrpsioMailingListRequestBody(body *CreateGrpsioMailingListReq
 // ValidateUpdateGrpsioMailingListRequestBody runs the validations defined on
 // Update-Grpsio-Mailing-ListRequestBody
 func ValidateUpdateGrpsioMailingListRequestBody(body *UpdateGrpsioMailingListRequestBody) (err error) {
+	if body.GroupName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("group_name", "body"))
+	}
+	if body.Public == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("public", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.Title == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("title", "body"))
+	}
+	if body.ServiceUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_uid", "body"))
+	}
 	if body.GroupName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", *body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 	}

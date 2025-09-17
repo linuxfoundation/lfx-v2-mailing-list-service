@@ -69,7 +69,6 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 }
 
 // convertGrpsIOServiceUpdatePayloadToDomain converts GOA update payload to domain model
-// convertPayloadToUpdateBase
 func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing *model.GrpsIOService, p *mailinglistservice.UpdateGrpsioServicePayload) *model.GrpsIOService {
 	// Check for nil payload or existing to avoid panic
 	if p == nil || p.UID == nil || existing == nil {
@@ -77,7 +76,7 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 	}
 
 	now := time.Now()
-	updated := &model.GrpsIOService{
+	return &model.GrpsIOService{
 		// Preserve immutable fields from existing service
 		UID:            *p.UID,
 		Domain:         existing.Domain,
@@ -85,145 +84,49 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 		Prefix:         existing.Prefix,
 		ProjectSlug:    existing.ProjectSlug,
 		ProjectName:    existing.ProjectName,
-		ProjectUID:     existing.ProjectUID,
-		URL:            existing.URL,
-		GroupName:      existing.GroupName,
 		CreatedAt:      existing.CreatedAt,
 		LastReviewedAt: existing.LastReviewedAt,
 		LastReviewedBy: existing.LastReviewedBy,
-		UpdatedAt:      now,
-	}
 
-	// Handle conditionally updateable fields - preserve existing if not provided
-	if p.Type != nil {
-		updated.Type = *p.Type
-	} else {
-		updated.Type = existing.Type
+		// Update mutable fields (PUT semantics - all fields provided)
+		Type:         p.Type,
+		Status:       payloadStringValue(p.Status),
+		ProjectUID:   p.ProjectUID,
+		Public:       p.Public,
+		GlobalOwners: p.GlobalOwners,
+		Writers:      p.Writers,
+		Auditors:     p.Auditors,
+		UpdatedAt:    now,
 	}
-
-	if p.Status != nil {
-		updated.Status = *p.Status
-	} else {
-		updated.Status = existing.Status
-	}
-
-	if p.Public != nil {
-		updated.Public = *p.Public
-	} else {
-		updated.Public = existing.Public
-	}
-
-	if p.ProjectUID != nil {
-		updated.ProjectUID = *p.ProjectUID
-	} else {
-		updated.ProjectUID = existing.ProjectUID
-	}
-
-	// Handle slice fields
-	if p.GlobalOwners != nil {
-		updated.GlobalOwners = p.GlobalOwners
-	} else {
-		updated.GlobalOwners = existing.GlobalOwners
-	}
-
-	if p.Writers != nil {
-		updated.Writers = p.Writers
-	} else {
-		updated.Writers = existing.Writers
-	}
-
-	if p.Auditors != nil {
-		updated.Auditors = p.Auditors
-	} else {
-		updated.Auditors = existing.Auditors
-	}
-
-	return updated
 }
 
 // convertGrpsIOMailingListUpdatePayloadToDomain converts an update payload to domain model
 func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(existing *model.GrpsIOMailingList, payload *mailinglistservice.UpdateGrpsioMailingListPayload) *model.GrpsIOMailingList {
-	// Start from existing to preserve immutable/readonly fields
-	updated := &model.GrpsIOMailingList{
+	// Create updated mailing list from payload data (PUT semantics)
+	return &model.GrpsIOMailingList{
+		// Preserve immutable/readonly fields
 		UID:            existing.UID,
 		ProjectUID:     existing.ProjectUID,
 		ProjectName:    existing.ProjectName,
 		ProjectSlug:    existing.ProjectSlug,
 		CreatedAt:      existing.CreatedAt,
-		UpdatedAt:      time.Now().UTC(),
 		LastReviewedAt: existing.LastReviewedAt,
 		LastReviewedBy: existing.LastReviewedBy,
-	}
 
-	// Handle conditionally updateable fields - preserve existing if not provided
-	if payload.GroupName != nil {
-		updated.GroupName = *payload.GroupName
-	} else {
-		updated.GroupName = existing.GroupName
+		// Update all mutable fields (PUT semantics - all fields provided)
+		GroupName:        payload.GroupName,
+		Public:           payload.Public,
+		Type:             payload.Type,
+		Description:      payload.Description,
+		Title:            payload.Title,
+		ServiceUID:       payload.ServiceUID,
+		CommitteeUID:     payloadStringValue(payload.CommitteeUID),
+		SubjectTag:       payloadStringValue(payload.SubjectTag),
+		CommitteeFilters: payload.CommitteeFilters,
+		Writers:          payload.Writers,
+		Auditors:         payload.Auditors,
+		UpdatedAt:        time.Now().UTC(),
 	}
-
-	if payload.Public != nil {
-		updated.Public = *payload.Public
-	} else {
-		updated.Public = existing.Public
-	}
-
-	if payload.Type != nil {
-		updated.Type = *payload.Type
-	} else {
-		updated.Type = existing.Type
-	}
-
-	if payload.Description != nil {
-		updated.Description = *payload.Description
-	} else {
-		updated.Description = existing.Description
-	}
-
-	if payload.Title != nil {
-		updated.Title = *payload.Title
-	} else {
-		updated.Title = existing.Title
-	}
-
-	if payload.ServiceUID != nil {
-		updated.ServiceUID = *payload.ServiceUID
-	} else {
-		updated.ServiceUID = existing.ServiceUID
-	}
-
-	if payload.CommitteeUID != nil {
-		updated.CommitteeUID = *payload.CommitteeUID
-	} else {
-		updated.CommitteeUID = existing.CommitteeUID
-	}
-
-	if payload.SubjectTag != nil {
-		updated.SubjectTag = *payload.SubjectTag
-	} else {
-		updated.SubjectTag = existing.SubjectTag
-	}
-
-	// Handle slice fields
-	if payload.CommitteeFilters != nil {
-		updated.CommitteeFilters = payload.CommitteeFilters
-	} else {
-		updated.CommitteeFilters = existing.CommitteeFilters
-	}
-
-	if payload.Writers != nil {
-		updated.Writers = payload.Writers
-	} else {
-		updated.Writers = existing.Writers
-	}
-
-	if payload.Auditors != nil {
-		updated.Auditors = payload.Auditors
-	} else {
-		updated.Auditors = existing.Auditors
-	}
-
-	return updated
 }
 
 // convertGrpsIOMemberPayloadToDomain converts GOA member payload to domain model
@@ -270,8 +173,9 @@ func (s *mailingListService) convertGrpsIOMemberPayloadToDomain(payload *mailing
 
 // convertGrpsIOMemberUpdatePayloadToDomain converts update payload to domain member model
 func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *mailinglistservice.UpdateGrpsioMailingListMemberPayload, existing *model.GrpsIOMember) *model.GrpsIOMember {
-	// Start with existing member to preserve immutable fields
-	updated := &model.GrpsIOMember{
+	// Create updated member from payload data (PUT semantics)
+	return &model.GrpsIOMember{
+		// Preserve immutable fields
 		UID:              existing.UID,
 		MailingListUID:   existing.MailingListUID,
 		Email:            existing.Email,      // Immutable
@@ -280,60 +184,17 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 		GroupsIOGroupID:  existing.GroupsIOGroupID,
 		CreatedAt:        existing.CreatedAt,
 		Status:           existing.Status,
+		LastReviewedAt:   existing.LastReviewedAt,
+		LastReviewedBy:   existing.LastReviewedBy,
+
+		// Update all mutable fields (PUT semantics - all fields provided)
+		Username:     payloadStringValue(payload.Username),
+		FirstName:    payloadStringValue(payload.FirstName),
+		LastName:     payloadStringValue(payload.LastName),
+		Organization: payloadStringValue(payload.Organization),
+		JobTitle:     payloadStringValue(payload.JobTitle),
+		DeliveryMode: payload.DeliveryMode,
+		ModStatus:    payload.ModStatus,
+		UpdatedAt:    time.Now().UTC(),
 	}
-
-	// Update mutable fields from payload
-	if payload.Username != nil {
-		updated.Username = *payload.Username
-	} else {
-		updated.Username = existing.Username
-	}
-
-	if payload.FirstName != nil {
-		updated.FirstName = *payload.FirstName
-	} else {
-		updated.FirstName = existing.FirstName
-	}
-
-	if payload.LastName != nil {
-		updated.LastName = *payload.LastName
-	} else {
-		updated.LastName = existing.LastName
-	}
-
-	if payload.Organization != nil {
-		updated.Organization = *payload.Organization
-	} else {
-		updated.Organization = existing.Organization
-	}
-
-	if payload.JobTitle != nil {
-		updated.JobTitle = *payload.JobTitle
-	} else {
-		updated.JobTitle = existing.JobTitle
-	}
-
-	// DeliveryMode and ModStatus are now pointers - apply only when provided
-	if payload.DeliveryMode != nil {
-		updated.DeliveryMode = *payload.DeliveryMode
-	} else {
-		updated.DeliveryMode = existing.DeliveryMode
-	}
-
-	if payload.ModStatus != nil {
-		updated.ModStatus = *payload.ModStatus
-	} else {
-		updated.ModStatus = existing.ModStatus
-	}
-
-	// Note: Access control is managed at the mailing list level
-
-	// Set update timestamp
-	updated.UpdatedAt = time.Now().UTC()
-
-	// Preserve other existing fields
-	updated.LastReviewedAt = existing.LastReviewedAt
-	updated.LastReviewedBy = existing.LastReviewedBy
-
-	return updated
 }

@@ -233,7 +233,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				UID:          stringPtr("service-123"),
 				Status:       stringPtr("inactive"),
 				GlobalOwners: []string{"newowner@example.com"},
-				Public:       boolPtr(true),
+				Public:       true,
 				Writers:      []string{"writer1", "writer2"},
 				Auditors:     []string{"auditor1"},
 			},
@@ -271,7 +271,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 			},
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:    stringPtr("service-456"),
-				Public: boolPtr(false),
+				Public: false,
 			},
 			expected: &model.GrpsIOService{
 				Type:        "formation",
@@ -387,7 +387,7 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 			name:     "partial update - only delivery mode",
 			existing: existingMember,
 			payload: &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
-				DeliveryMode: stringPtr("normal"),
+				DeliveryMode: "normal",
 				// All other fields nil - should preserve existing values
 			},
 			expected: &model.GrpsIOMember{
@@ -415,8 +415,8 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 				LastName:     stringPtr("Person"),
 				Organization: stringPtr("New Corp"),
 				JobTitle:     stringPtr("New Role"),
-				DeliveryMode: stringPtr("none"),
-				ModStatus:    stringPtr("owner"),
+				DeliveryMode: "none",
+				ModStatus:    "owner",
 			},
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
@@ -531,7 +531,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			existing: existingService,
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:    stringPtr("service-123"),
-				Public: boolPtr(false),
+				Public: false,
 				// All other fields nil - should preserve existing values
 			},
 			expected: &model.GrpsIOService{
@@ -551,11 +551,11 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			existing: existingService,
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:          stringPtr("service-123"),
-				Type:         stringPtr("formation"),
+				Type:         "formation",
 				Status:       stringPtr("disabled"),
-				Public:       boolPtr(false),
+				Public:       false,
 				GlobalOwners: []string{"new1@example.com", "new2@example.com"},
-				ProjectUID:   stringPtr("new-project-456"),
+				ProjectUID:   "new-project-456",
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
@@ -638,7 +638,7 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 			name:     "partial update - only title, preserve all other fields",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				Title: stringPtr("Updated Title"),
+				Title: "Updated Title",
 				// All other fields nil - should preserve existing values
 			},
 			expected: &model.GrpsIOMailingList{
@@ -657,7 +657,7 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 			name:     "partial update - only public field",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				Public: boolPtr(true),
+				Public: true,
 				// All other fields nil - should preserve existing values
 			},
 			expected: &model.GrpsIOMailingList{
@@ -676,12 +676,12 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 			name:     "complete update - all fields provided",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				GroupName:   stringPtr("new-group"),
-				Public:      boolPtr(true),
-				Type:        stringPtr("discussion_open"),
-				Description: stringPtr("New description that is long enough"),
-				Title:       stringPtr("New Title"),
-				ServiceUID:  stringPtr("new-service-456"),
+				GroupName:   "new-group",
+				Public:      true,
+				Type:        "discussion_open",
+				Description: "New description that is long enough",
+				Title:       "New Title",
+				ServiceUID:  "new-service-456",
 			},
 			expected: &model.GrpsIOMailingList{
 				UID:         "ml-123",            // PRESERVED (immutable)

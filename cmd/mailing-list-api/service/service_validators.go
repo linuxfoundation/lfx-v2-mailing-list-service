@@ -157,37 +157,42 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	// Immutable Fields: type, project_uid, prefix, domain, group_id, url, group_name
 	// Mutable Fields: global_owners, status, public only
 
-	if payload.Type != nil && *payload.Type != existing.Type {
-		return errors.NewValidation(fmt.Sprintf("field 'type' is immutable. Cannot change from '%s' to '%s'", existing.Type, *payload.Type))
+	if payload.Type != existing.Type {
+		return errors.NewValidation(fmt.Sprintf("field 'type' is immutable. Cannot change from '%s' to '%s'", existing.Type, payload.Type))
 	}
 
-	if payload.ProjectUID != nil && *payload.ProjectUID != existing.ProjectUID {
-		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, *payload.ProjectUID))
+	if payload.ProjectUID != existing.ProjectUID {
+		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, payload.ProjectUID))
 	}
 
-	// Check prefix immutability
-	if payload.Prefix != nil && *payload.Prefix != existing.Prefix {
-		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, *payload.Prefix))
+	// Check prefix immutability (handle optional field)
+	prefixValue := payloadStringValue(payload.Prefix)
+	if prefixValue != existing.Prefix {
+		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, prefixValue))
 	}
 
-	// Check domain immutability
-	if payload.Domain != nil && *payload.Domain != existing.Domain {
-		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, *payload.Domain))
+	// Check domain immutability (handle optional field)
+	domainValue := payloadStringValue(payload.Domain)
+	if domainValue != existing.Domain {
+		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, domainValue))
 	}
 
-	// Check group_id immutability
-	if payload.GroupID != nil && *payload.GroupID != existing.GroupID {
-		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, *payload.GroupID))
+	// Check group_id immutability (handle optional field)
+	groupIDValue := payloadInt64Value(payload.GroupID)
+	if groupIDValue != existing.GroupID {
+		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, groupIDValue))
 	}
 
-	// Check url immutability
-	if payload.URL != nil && *payload.URL != existing.URL {
-		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, *payload.URL))
+	// Check url immutability (handle optional field)
+	urlValue := payloadStringValue(payload.URL)
+	if urlValue != existing.URL {
+		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, urlValue))
 	}
 
-	// Check group_name immutability
-	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
-		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, *payload.GroupName))
+	// Check group_name immutability (handle optional field)
+	groupNameValue := payloadStringValue(payload.GroupName)
+	if groupNameValue != existing.GroupName {
+		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, groupNameValue))
 	}
 
 	// Validate global_owners email addresses if being updated
@@ -270,35 +275,35 @@ func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailing
 // validateMailingListUpdate validates update constraints for mailing lists
 func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailingList, parentService *model.GrpsIOService, payload *mailinglistservice.UpdateGrpsioMailingListPayload, serviceReader port.GrpsIOServiceReader) error {
 	// Validate group_name immutability (critical business rule)
-	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
+	if payload.GroupName != existing.GroupName {
 		return errors.NewValidation("field 'group_name' is immutable")
 	}
 
 	// Validate main group restrictions (critical business rule from Groups.io)
 	if parentService != nil && isMainGroupForService(existing, parentService) {
 		// Main groups must remain public announcement lists
-		if payload.Type != nil && *payload.Type != "announcement" {
+		if payload.Type != "announcement" {
 			return errors.NewValidation("main group must be an announcement list")
 		}
-		if payload.Public != nil && !*payload.Public {
+		if !payload.Public {
 			return errors.NewValidation("main group must remain public")
 		}
 	}
 
 	// Cannot set type to "custom" unless already "custom" (Groups.io business rule)
-	if payload.Type != nil && *payload.Type == "custom" && existing.Type != "custom" {
+	if payload.Type == "custom" && existing.Type != "custom" {
 		return errors.NewValidation("cannot set type to \"custom\"")
 	}
 
 	// Cannot change visibility from private to public
 	// TODO: LFXV2-479 - Migrate from boolean 'public' field to string 'visibility' field
 	// for full Groups.io API compatibility (supporting "public", "private", "custom" values)
-	if payload.Public != nil && !existing.Public && *payload.Public {
+	if !existing.Public && payload.Public {
 		return errors.NewValidation("cannot change visibility from private to public")
 	}
 
 	// Parent service change validation (allow within same project only)
-	if payload.ServiceUID != nil && *payload.ServiceUID != existing.ServiceUID {
+	if payload.ServiceUID != existing.ServiceUID {
 		// Check if service reader is available for validation
 		if serviceReader == nil {
 			// Fallback to old restrictive behavior if no service reader provided
@@ -310,11 +315,11 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 		}
 
 		// Fetch the new parent service to validate the project ownership
-		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, *payload.ServiceUID)
+		newParentService, _, err := serviceReader.GetGrpsIOService(ctx, payload.ServiceUID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to retrieve new parent service for validation",
 				"error", err,
-				"new_service_uid", *payload.ServiceUID,
+				"new_service_uid", payload.ServiceUID,
 				"mailing_list_uid", existing.UID)
 			return errors.NewValidation("new parent service not found")
 		}
@@ -326,7 +331,7 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 				"current_project_uid", existing.ProjectUID,
 				"new_project_uid", newParentService.ProjectUID,
 				"current_service_uid", existing.ServiceUID,
-				"new_service_uid", *payload.ServiceUID)
+				"new_service_uid", payload.ServiceUID)
 			return errors.NewValidation("cannot move mailing list to service in different project")
 		}
 
@@ -334,11 +339,12 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 			"mailing_list_uid", existing.UID,
 			"project_uid", existing.ProjectUID,
 			"old_service_uid", existing.ServiceUID,
-			"new_service_uid", *payload.ServiceUID)
+			"new_service_uid", payload.ServiceUID)
 	}
 
 	// Cannot change committee without special handling
-	if payload.CommitteeUID != nil && *payload.CommitteeUID != existing.CommitteeUID {
+	committeeValue := payloadStringValue(payload.CommitteeUID)
+	if committeeValue != existing.CommitteeUID {
 		// TODO: LFXV2-478 - Trigger committee member sync
 		slog.Debug("committee change detected - member sync required", "mailing_list_uid", existing.UID)
 	}
@@ -346,8 +352,9 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 	// Description and title length validations now handled by GOA
 
 	// Validate subject tag format if provided
-	if payload.SubjectTag != nil && *payload.SubjectTag != "" {
-		if !isValidSubjectTag(*payload.SubjectTag) {
+	subjectTagValue := payloadStringValue(payload.SubjectTag)
+	if subjectTagValue != "" {
+		if !isValidSubjectTag(subjectTagValue) {
 			return errors.NewValidation("invalid subject tag format")
 		}
 	}
