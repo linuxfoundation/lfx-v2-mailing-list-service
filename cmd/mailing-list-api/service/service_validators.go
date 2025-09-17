@@ -165,34 +165,29 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 		return errors.NewValidation(fmt.Sprintf("field 'project_uid' is immutable. Cannot change from '%s' to '%s'", existing.ProjectUID, payload.ProjectUID))
 	}
 
-	// Check prefix immutability (handle optional field)
-	prefixValue := payloadStringValue(payload.Prefix)
-	if prefixValue != existing.Prefix {
-		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, prefixValue))
+	// Check prefix immutability - only validate if explicitly provided
+	if payload.Prefix != nil && *payload.Prefix != existing.Prefix {
+		return errors.NewValidation(fmt.Sprintf("field 'prefix' is immutable. Cannot change from '%s' to '%s'", existing.Prefix, *payload.Prefix))
 	}
 
-	// Check domain immutability (handle optional field)
-	domainValue := payloadStringValue(payload.Domain)
-	if domainValue != existing.Domain {
-		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, domainValue))
+	// Check domain immutability - only validate if explicitly provided
+	if payload.Domain != nil && *payload.Domain != existing.Domain {
+		return errors.NewValidation(fmt.Sprintf("field 'domain' is immutable. Cannot change from '%s' to '%s'", existing.Domain, *payload.Domain))
 	}
 
-	// Check group_id immutability (handle optional field)
-	groupIDValue := payloadInt64Value(payload.GroupID)
-	if groupIDValue != existing.GroupID {
-		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, groupIDValue))
+	// Check group_id immutability - only validate if explicitly provided
+	if payload.GroupID != nil && *payload.GroupID != existing.GroupID {
+		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, *payload.GroupID))
 	}
 
-	// Check url immutability (handle optional field)
-	urlValue := payloadStringValue(payload.URL)
-	if urlValue != existing.URL {
-		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, urlValue))
+	// Check url immutability - only validate if explicitly provided
+	if payload.URL != nil && *payload.URL != existing.URL {
+		return errors.NewValidation(fmt.Sprintf("field 'url' is immutable. Cannot change from '%s' to '%s'", existing.URL, *payload.URL))
 	}
 
-	// Check group_name immutability (handle optional field)
-	groupNameValue := payloadStringValue(payload.GroupName)
-	if groupNameValue != existing.GroupName {
-		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, groupNameValue))
+	// Check group_name immutability - only validate if explicitly provided
+	if payload.GroupName != nil && *payload.GroupName != existing.GroupName {
+		return errors.NewValidation(fmt.Sprintf("field 'group_name' is immutable. Cannot change from '%s' to '%s'", existing.GroupName, *payload.GroupName))
 	}
 
 	// Validate global_owners email addresses if being updated
@@ -533,6 +528,27 @@ func validateMemberDeleteProtection(member *model.GrpsIOMember) error {
 	// - Validate member status allows deletion
 	// - Check cascading impacts of member deletion
 	// - Handle Groups.io API error "sole group owner" as seen in old implementation
+
+	return nil
+}
+
+// ==================================================================================
+// Enhanced Business Rule Validation (POST-PUT Conversion)
+// ==================================================================================
+// These functions validate business rules AFTER PUT payload conversion to prevent
+// violations of critical constraints while maintaining pure PUT semantics.
+
+// validateServiceBusinessRules validates business rules after PUT conversion
+// This prevents PUT semantics from violating mandatory business constraints
+func validateServiceBusinessRules(service *model.GrpsIOService) error {
+	// Primary services MUST have GlobalOwners (critical business rule)
+	// This prevents clearing GlobalOwners via PUT from making primary services invalid
+	if service.Type == "primary" && len(service.GlobalOwners) == 0 {
+		return errors.NewValidation("primary services must have at least one global owner")
+	}
+
+	// Additional service business rules can be added here
+	// Example: specific service types requiring certain fields
 
 	return nil
 }

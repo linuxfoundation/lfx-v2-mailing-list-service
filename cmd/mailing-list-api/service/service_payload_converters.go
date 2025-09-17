@@ -77,25 +77,27 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 
 	now := time.Now()
 	return &model.GrpsIOService{
-		// Preserve immutable fields from existing service
+		// Preserve ALL immutable fields from existing service
 		UID:            *p.UID,
+		Type:           existing.Type, // Fixed: preserve from existing, not payload
 		Domain:         existing.Domain,
 		GroupID:        existing.GroupID,
 		Prefix:         existing.Prefix,
 		ProjectSlug:    existing.ProjectSlug,
 		ProjectName:    existing.ProjectName,
+		URL:            existing.URL,       // Fixed: add missing field preservation
+		GroupName:      existing.GroupName, // Fixed: add missing field preservation
 		CreatedAt:      existing.CreatedAt,
 		LastReviewedAt: existing.LastReviewedAt,
 		LastReviewedBy: existing.LastReviewedBy,
 
-		// Update mutable fields (PUT semantics - all fields provided)
-		Type:         p.Type,
-		Status:       payloadStringValue(p.Status),
-		ProjectUID:   p.ProjectUID,
-		Public:       p.Public,
-		GlobalOwners: p.GlobalOwners,
-		Writers:      p.Writers,
-		Auditors:     p.Auditors,
+		// Update mutable fields (PUT semantics - complete replacement)
+		Status:       payloadStringValue(p.Status), // nil → ""
+		ProjectUID:   existing.ProjectUID,          // IMMUTABLE (keep as is)
+		Public:       p.Public,                     // Direct assignment
+		GlobalOwners: p.GlobalOwners,               // nil → nil
+		Writers:      p.Writers,                    // nil → nil
+		Auditors:     p.Auditors,                   // nil → nil
 		UpdatedAt:    now,
 	}
 }
@@ -106,6 +108,7 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 	return &model.GrpsIOMailingList{
 		// Preserve immutable/readonly fields
 		UID:            existing.UID,
+		GroupName:      existing.GroupName, // Fixed: GroupName is immutable, preserve from existing
 		ProjectUID:     existing.ProjectUID,
 		ProjectName:    existing.ProjectName,
 		ProjectSlug:    existing.ProjectSlug,
@@ -113,18 +116,17 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		LastReviewedAt: existing.LastReviewedAt,
 		LastReviewedBy: existing.LastReviewedBy,
 
-		// Update all mutable fields (PUT semantics - all fields provided)
-		GroupName:        payload.GroupName,
-		Public:           payload.Public,
-		Type:             payload.Type,
-		Description:      payload.Description,
-		Title:            payload.Title,
-		ServiceUID:       payload.ServiceUID,
-		CommitteeUID:     payloadStringValue(payload.CommitteeUID),
-		SubjectTag:       payloadStringValue(payload.SubjectTag),
-		CommitteeFilters: payload.CommitteeFilters,
-		Writers:          payload.Writers,
-		Auditors:         payload.Auditors,
+		// Update all mutable fields (PUT semantics - complete replacement)
+		Public:           payload.Public,                           // Direct assignment
+		Type:             payload.Type,                             // Direct assignment
+		Description:      payload.Description,                      // Direct assignment
+		Title:            payload.Title,                            // Direct assignment
+		ServiceUID:       payload.ServiceUID,                       // Direct assignment
+		CommitteeUID:     payloadStringValue(payload.CommitteeUID), // nil → ""
+		SubjectTag:       payloadStringValue(payload.SubjectTag),   // nil → ""
+		CommitteeFilters: payload.CommitteeFilters,                 // nil → nil
+		Writers:          payload.Writers,                          // nil → nil
+		Auditors:         payload.Auditors,                         // nil → nil
 		UpdatedAt:        time.Now().UTC(),
 	}
 }
@@ -187,14 +189,14 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 		LastReviewedAt:   existing.LastReviewedAt,
 		LastReviewedBy:   existing.LastReviewedBy,
 
-		// Update all mutable fields (PUT semantics - all fields provided)
-		Username:     payloadStringValue(payload.Username),
-		FirstName:    payloadStringValue(payload.FirstName),
-		LastName:     payloadStringValue(payload.LastName),
-		Organization: payloadStringValue(payload.Organization),
-		JobTitle:     payloadStringValue(payload.JobTitle),
-		DeliveryMode: payload.DeliveryMode,
-		ModStatus:    payload.ModStatus,
+		// Update all mutable fields (PUT semantics - complete replacement)
+		Username:     payloadStringValue(payload.Username),     // nil → ""
+		FirstName:    payloadStringValue(payload.FirstName),    // nil → ""
+		LastName:     payloadStringValue(payload.LastName),     // nil → ""
+		Organization: payloadStringValue(payload.Organization), // nil → ""
+		JobTitle:     payloadStringValue(payload.JobTitle),     // nil → ""
+		DeliveryMode: payload.DeliveryMode,                     // Direct (always has value)
+		ModStatus:    payload.ModStatus,                        // Direct (always has value)
 		UpdatedAt:    time.Now().UTC(),
 	}
 }

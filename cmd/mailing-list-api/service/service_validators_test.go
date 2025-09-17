@@ -882,3 +882,74 @@ func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 		})
 	}
 }
+
+// ==================================================================================
+// Enhanced Business Rule Validation Tests (POST-PUT Conversion)
+// ==================================================================================
+
+func TestValidateServiceBusinessRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		service   *model.GrpsIOService
+		expectErr bool
+		errMsg    string
+	}{
+		{
+			name: "primary service with GlobalOwners should pass",
+			service: &model.GrpsIOService{
+				Type:         "primary",
+				GlobalOwners: []string{"owner@example.com"},
+			},
+			expectErr: false,
+		},
+		{
+			name: "primary service without GlobalOwners should fail",
+			service: &model.GrpsIOService{
+				Type:         "primary",
+				GlobalOwners: []string{}, // Empty - should fail
+			},
+			expectErr: true,
+			errMsg:    "primary services must have at least one global owner",
+		},
+		{
+			name: "primary service with nil GlobalOwners should fail",
+			service: &model.GrpsIOService{
+				Type:         "primary",
+				GlobalOwners: nil, // Nil - should fail
+			},
+			expectErr: true,
+			errMsg:    "primary services must have at least one global owner",
+		},
+		{
+			name: "formation service without GlobalOwners should pass",
+			service: &model.GrpsIOService{
+				Type:         "formation",
+				GlobalOwners: []string{}, // Empty is OK for formation
+			},
+			expectErr: false,
+		},
+		{
+			name: "shared service without GlobalOwners should pass",
+			service: &model.GrpsIOService{
+				Type:         "shared",
+				GlobalOwners: nil, // Nil is OK for shared
+			},
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateServiceBusinessRules(tt.service)
+
+			if tt.expectErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

@@ -360,49 +360,49 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 		expected *model.GrpsIOMember
 	}{
 		{
-			name:     "partial update - only name fields, preserve delivery and mod status",
+			name:     "partial update - only name fields, clear other mutable fields (PUT semantics)",
 			existing: existingMember,
 			payload: &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
 				FirstName: stringPtr("Updated"),
 				LastName:  stringPtr("Name"),
-				// DeliveryMode and ModStatus are nil - should preserve existing values
+				// DeliveryMode and ModStatus are nil - PUT semantics clears them to ""
 			},
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "existinguser",
+				Username:       "",            // CLEARED (PUT semantics)
 				FirstName:      "Updated",     // Updated
-				LastName:       "Name",       // Updated
-				Organization:   "Existing Corp",
-				JobTitle:       "Existing Engineer",
-				DeliveryMode:   "digest",     // PRESERVED - this was the bug!
-				ModStatus:      "moderator",  // PRESERVED - this was the bug!
-				MemberType:     "direct",
-				Status:         "active",
+				LastName:       "Name",        // Updated
+				Organization:   "",            // CLEARED (PUT semantics)
+				JobTitle:       "",            // CLEARED (PUT semantics)
+				DeliveryMode:   "",            // CLEARED (PUT semantics)
+				ModStatus:      "",            // CLEARED (PUT semantics)
+				MemberType:     "direct",      // IMMUTABLE
+				Status:         "active",      // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
 		{
-			name:     "partial update - only delivery mode",
+			name:     "partial update - only delivery mode, clear other mutable fields (PUT semantics)",
 			existing: existingMember,
 			payload: &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
 				DeliveryMode: "normal",
-				// All other fields nil - should preserve existing values
+				// All other fields nil - PUT semantics clears them to ""
 			},
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "existinguser",       // PRESERVED
-				FirstName:      "Existing",           // PRESERVED
-				LastName:       "User",               // PRESERVED
-				Organization:   "Existing Corp",      // PRESERVED
-				JobTitle:       "Existing Engineer",  // PRESERVED
+				Username:       "",                   // CLEARED (PUT semantics)
+				FirstName:      "",                   // CLEARED (PUT semantics)
+				LastName:       "",                   // CLEARED (PUT semantics)
+				Organization:   "",                   // CLEARED (PUT semantics)
+				JobTitle:       "",                   // CLEARED (PUT semantics)
 				DeliveryMode:   "normal",             // Updated
-				ModStatus:      "moderator",          // PRESERVED
-				MemberType:     "direct",
-				Status:         "active",
+				ModStatus:      "",                   // CLEARED (PUT semantics)
+				MemberType:     "direct",             // IMMUTABLE
+				Status:         "active",             // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
@@ -435,24 +435,24 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 			},
 		},
 		{
-			name:     "empty update - no fields provided, all preserved",
+			name:     "empty update - no fields provided, all mutable fields cleared (PUT semantics)",
 			existing: existingMember,
 			payload: &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
-				// All fields nil
+				// All fields nil - PUT semantics clears all mutable fields
 			},
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "existinguser",
-				FirstName:      "Existing",
-				LastName:       "User",
-				Organization:   "Existing Corp",
-				JobTitle:       "Existing Engineer",
-				DeliveryMode:   "digest",     // PRESERVED
-				ModStatus:      "moderator",  // PRESERVED
-				MemberType:     "direct",
-				Status:         "active",
+				Username:       "",           // CLEARED (PUT semantics)
+				FirstName:      "",           // CLEARED (PUT semantics)
+				LastName:       "",           // CLEARED (PUT semantics)
+				Organization:   "",           // CLEARED (PUT semantics)
+				JobTitle:       "",           // CLEARED (PUT semantics)
+				DeliveryMode:   "",           // CLEARED (PUT semantics)
+				ModStatus:      "",           // CLEARED (PUT semantics)
+				MemberType:     "direct",     // IMMUTABLE
+				Status:         "active",     // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
@@ -472,8 +472,8 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.LastName, result.LastName)
 			assert.Equal(t, tt.expected.Organization, result.Organization)
 			assert.Equal(t, tt.expected.JobTitle, result.JobTitle)
-			assert.Equal(t, tt.expected.DeliveryMode, result.DeliveryMode, "DeliveryMode should be preserved when not provided")
-			assert.Equal(t, tt.expected.ModStatus, result.ModStatus, "ModStatus should be preserved when not provided")
+			assert.Equal(t, tt.expected.DeliveryMode, result.DeliveryMode, "DeliveryMode should follow PUT semantics (nil clears to empty)")
+			assert.Equal(t, tt.expected.ModStatus, result.ModStatus, "ModStatus should follow PUT semantics (nil clears to empty)")
 			assert.Equal(t, tt.expected.MemberType, result.MemberType)
 			assert.Equal(t, tt.expected.Status, result.Status)
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
@@ -507,43 +507,43 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 		expected *model.GrpsIOService
 	}{
 		{
-			name:     "partial update - only status, preserve public field",
+			name:     "partial update - only status, clear other mutable fields (PUT semantics)",
 			existing: existingService,
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:    stringPtr("service-123"),
 				Status: stringPtr("updated"),
-				// Public is nil - should preserve existing value (true)
+				// Public is nil - PUT semantics clears it to false
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // PRESERVED
-				Domain:       "existing.domain.com", // PRESERVED (immutable)
-				GroupID:      12345,              // PRESERVED (immutable)
+				Type:         "primary",          // IMMUTABLE
+				Domain:       "existing.domain.com", // IMMUTABLE
+				GroupID:      12345,              // IMMUTABLE
 				Status:       "updated",          // Updated
-				Public:       true,               // PRESERVED - this was the bug!
-				GlobalOwners: []string{"existing@example.com"}, // PRESERVED
-				ProjectUID:   "project-123",      // PRESERVED
-				CreatedAt:    existingService.CreatedAt,
+				Public:       false,              // CLEARED (PUT semantics)
+				GlobalOwners: nil,                // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",      // IMMUTABLE
+				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
 		{
-			name:     "partial update - only public field",
+			name:     "partial update - only public field, clear other mutable fields (PUT semantics)",
 			existing: existingService,
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:    stringPtr("service-123"),
 				Public: false,
-				// All other fields nil - should preserve existing values
+				// All other fields nil - PUT semantics clears mutable fields
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // PRESERVED
-				Domain:       "existing.domain.com", // PRESERVED
-				GroupID:      12345,              // PRESERVED
-				Status:       "active",           // PRESERVED
+				Type:         "primary",          // IMMUTABLE
+				Domain:       "existing.domain.com", // IMMUTABLE
+				GroupID:      12345,              // IMMUTABLE
+				Status:       "",                 // CLEARED (PUT semantics)
 				Public:       false,              // Updated
-				GlobalOwners: []string{"existing@example.com"}, // PRESERVED
-				ProjectUID:   "project-123",      // PRESERVED
-				CreatedAt:    existingService.CreatedAt,
+				GlobalOwners: nil,                // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",      // IMMUTABLE
+				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
 		{
@@ -559,33 +559,33 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "formation",        // Updated
-				Domain:       "existing.domain.com", // PRESERVED (immutable)
-				GroupID:      12345,              // PRESERVED (immutable)
+				Type:         "primary",          // IMMUTABLE (can't change service type)
+				Domain:       "existing.domain.com", // IMMUTABLE
+				GroupID:      12345,              // IMMUTABLE
 				Status:       "disabled",         // Updated
 				Public:       false,              // Updated
 				GlobalOwners: []string{"new1@example.com", "new2@example.com"}, // Updated
-				ProjectUID:   "new-project-456",  // Updated
-				CreatedAt:    existingService.CreatedAt, // PRESERVED (immutable)
+				ProjectUID:   "project-123",      // IMMUTABLE (can't change project)
+				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
 		{
-			name:     "empty update - no fields provided, all preserved",
+			name:     "empty update - no fields provided, all mutable fields cleared (PUT semantics)",
 			existing: existingService,
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID: stringPtr("service-123"),
-				// All fields nil
+				// All fields nil - PUT semantics clears all mutable fields
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // PRESERVED
-				Domain:       "existing.domain.com", // PRESERVED
-				GroupID:      12345,              // PRESERVED
-				Status:       "active",           // PRESERVED
-				Public:       true,               // PRESERVED
-				GlobalOwners: []string{"existing@example.com"}, // PRESERVED
-				ProjectUID:   "project-123",      // PRESERVED
-				CreatedAt:    existingService.CreatedAt,
+				Type:         "primary",          // IMMUTABLE
+				Domain:       "existing.domain.com", // IMMUTABLE
+				GroupID:      12345,              // IMMUTABLE
+				Status:       "",                 // CLEARED (PUT semantics)
+				Public:       false,              // CLEARED to default false (PUT semantics)
+				GlobalOwners: nil,                // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",      // IMMUTABLE
+				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
 	}
@@ -601,7 +601,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.Domain, result.Domain)
 			assert.Equal(t, tt.expected.GroupID, result.GroupID)
 			assert.Equal(t, tt.expected.Status, result.Status)
-			assert.Equal(t, tt.expected.Public, result.Public, "Public field should be preserved when not provided")
+			assert.Equal(t, tt.expected.Public, result.Public, "Public field should follow PUT semantics (nil clears to false)")
 			assert.Equal(t, tt.expected.GlobalOwners, result.GlobalOwners)
 			assert.Equal(t, tt.expected.ProjectUID, result.ProjectUID)
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
@@ -635,41 +635,41 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 		expected *model.GrpsIOMailingList
 	}{
 		{
-			name:     "partial update - only title, preserve all other fields",
+			name:     "partial update - only title, clear other mutable fields (PUT semantics)",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
 				Title: "Updated Title",
-				// All other fields nil - should preserve existing values
+				// All other fields nil - PUT semantics clears mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",
-				GroupName:   "existing-group",    // PRESERVED
-				Public:      false,               // PRESERVED - this was the bug!
-				Type:        "discussion_moderated", // PRESERVED
-				Description: "Existing description for the group", // PRESERVED
+				UID:         "ml-123",            // IMMUTABLE
+				GroupName:   "existing-group",    // IMMUTABLE
+				Public:      false,               // CLEARED to default false
+				Type:        "",                  // CLEARED (PUT semantics)
+				Description: "",                  // CLEARED (PUT semantics)
 				Title:       "Updated Title",     // Updated
-				ServiceUID:  "service-123",       // PRESERVED
-				ProjectUID:  "project-123",       // PRESERVED (immutable)
-				CreatedAt:   existingMailingList.CreatedAt, // PRESERVED (immutable)
+				ServiceUID:  "",                  // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",       // IMMUTABLE
+				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
 		{
-			name:     "partial update - only public field",
+			name:     "partial update - only public field, clear other mutable fields (PUT semantics)",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
 				Public: true,
-				// All other fields nil - should preserve existing values
+				// All other fields nil - PUT semantics clears mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",
-				GroupName:   "existing-group",    // PRESERVED
+				UID:         "ml-123",            // IMMUTABLE
+				GroupName:   "existing-group",    // IMMUTABLE
 				Public:      true,                // Updated
-				Type:        "discussion_moderated", // PRESERVED
-				Description: "Existing description for the group", // PRESERVED
-				Title:       "Existing Title",    // PRESERVED
-				ServiceUID:  "service-123",       // PRESERVED
-				ProjectUID:  "project-123",       // PRESERVED
-				CreatedAt:   existingMailingList.CreatedAt,
+				Type:        "",                  // CLEARED (PUT semantics)
+				Description: "",                  // CLEARED (PUT semantics)
+				Title:       "",                  // CLEARED (PUT semantics)
+				ServiceUID:  "",                  // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",       // IMMUTABLE
+				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
 		{
@@ -684,33 +684,33 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 				ServiceUID:  "new-service-456",
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",            // PRESERVED (immutable)
-				GroupName:   "new-group",         // Updated
+				UID:         "ml-123",            // IMMUTABLE
+				GroupName:   "existing-group",    // IMMUTABLE (can't change group name)
 				Public:      true,                // Updated
 				Type:        "discussion_open",   // Updated
 				Description: "New description that is long enough", // Updated
 				Title:       "New Title",         // Updated
 				ServiceUID:  "new-service-456",   // Updated
-				ProjectUID:  "project-123",       // PRESERVED (immutable)
+				ProjectUID:  "project-123",       // IMMUTABLE
 				CreatedAt:   existingMailingList.CreatedAt, // PRESERVED (immutable)
 			},
 		},
 		{
-			name:     "empty update - no fields provided, all preserved",
+			name:     "empty update - no fields provided, all mutable fields cleared (PUT semantics)",
 			existing: existingMailingList,
 			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
-				// All fields nil
+				// All fields nil - PUT semantics clears all mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",
-				GroupName:   "existing-group",    // PRESERVED
-				Public:      false,               // PRESERVED
-				Type:        "discussion_moderated", // PRESERVED
-				Description: "Existing description for the group", // PRESERVED
-				Title:       "Existing Title",    // PRESERVED
-				ServiceUID:  "service-123",       // PRESERVED
-				ProjectUID:  "project-123",       // PRESERVED
-				CreatedAt:   existingMailingList.CreatedAt,
+				UID:         "ml-123",            // IMMUTABLE
+				GroupName:   "existing-group",    // IMMUTABLE
+				Public:      false,               // CLEARED to default false
+				Type:        "",                  // CLEARED (PUT semantics)
+				Description: "",                  // CLEARED (PUT semantics)
+				Title:       "",                  // CLEARED (PUT semantics)
+				ServiceUID:  "",                  // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",       // IMMUTABLE
+				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
 	}
@@ -723,7 +723,7 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 			// Check all fields except UpdatedAt timestamp
 			assert.Equal(t, tt.expected.UID, result.UID)
 			assert.Equal(t, tt.expected.GroupName, result.GroupName)
-			assert.Equal(t, tt.expected.Public, result.Public, "Public field should be preserved when not provided")
+			assert.Equal(t, tt.expected.Public, result.Public, "Public field should follow PUT semantics (nil clears to false)")
 			assert.Equal(t, tt.expected.Type, result.Type)
 			assert.Equal(t, tt.expected.Description, result.Description)
 			assert.Equal(t, tt.expected.Title, result.Title)
