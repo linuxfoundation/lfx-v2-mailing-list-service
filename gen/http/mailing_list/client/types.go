@@ -51,7 +51,7 @@ type CreateGrpsioServiceRequestBody struct {
 // "update-grpsio-service" endpoint HTTP request body.
 type UpdateGrpsioServiceRequestBody struct {
 	// Service type
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type string `form:"type" json:"type" xml:"type"`
 	// Service domain
 	Domain *string `form:"domain,omitempty" json:"domain,omitempty" xml:"domain,omitempty"`
 	// GroupsIO group ID
@@ -66,13 +66,13 @@ type UpdateGrpsioServiceRequestBody struct {
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
-	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
 	// Service URL
 	URL *string `form:"url,omitempty" json:"url,omitempty" xml:"url,omitempty"`
 	// GroupsIO group name
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
-	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	Public bool `form:"public" json:"public" xml:"public"`
 	// Manager user IDs who can edit/modify this service
 	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
 	// Auditor user IDs who can audit this service
@@ -110,23 +110,23 @@ type CreateGrpsioMailingListRequestBody struct {
 // "update-grpsio-mailing-list" endpoint HTTP request body.
 type UpdateGrpsioMailingListRequestBody struct {
 	// Mailing list group name
-	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	GroupName string `form:"group_name" json:"group_name" xml:"group_name"`
 	// Whether the mailing list is publicly accessible
-	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
+	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type string `form:"type" json:"type" xml:"type"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
 	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Mailing list description (11-500 characters)
-	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	Description string `form:"description" json:"description" xml:"description"`
 	// Mailing list title
-	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
+	Title string `form:"title" json:"title" xml:"title"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
-	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
 	// Manager user IDs who can edit/modify this service
 	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
 	// Auditor user IDs who can audit this service
@@ -174,9 +174,9 @@ type UpdateGrpsioMailingListMemberRequestBody struct {
 	// Member job title
 	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
 	// Email delivery mode
-	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	DeliveryMode string `form:"delivery_mode" json:"delivery_mode" xml:"delivery_mode"`
 	// Moderation status
-	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
+	ModStatus string `form:"mod_status" json:"mod_status" xml:"mod_status"`
 }
 
 // CreateGrpsioServiceResponseBody is the type of the "mailing-list" service
@@ -1120,6 +1120,12 @@ func NewUpdateGrpsioServiceRequestBody(p *mailinglist.UpdateGrpsioServicePayload
 			body.GlobalOwners[i] = val
 		}
 	}
+	{
+		var zero bool
+		if body.Public == zero {
+			body.Public = false
+		}
+	}
 	if p.Writers != nil {
 		body.Writers = make([]string, len(p.Writers))
 		for i, val := range p.Writers {
@@ -1255,6 +1261,18 @@ func NewUpdateGrpsioMailingListMemberRequestBody(p *mailinglist.UpdateGrpsioMail
 		JobTitle:     p.JobTitle,
 		DeliveryMode: p.DeliveryMode,
 		ModStatus:    p.ModStatus,
+	}
+	{
+		var zero string
+		if body.DeliveryMode == zero {
+			body.DeliveryMode = "normal"
+		}
+	}
+	{
+		var zero string
+		if body.ModStatus == zero {
+			body.ModStatus = "none"
+		}
 	}
 	return body
 }

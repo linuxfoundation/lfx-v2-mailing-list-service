@@ -74,15 +74,15 @@ func New(
 			{"Readyz", "GET", "/readyz"},
 			{"CreateGrpsioService", "POST", "/groupsio/services"},
 			{"GetGrpsioService", "GET", "/groupsio/services/{uid}"},
-			{"UpdateGrpsioService", "PATCH", "/groupsio/services/{uid}"},
+			{"UpdateGrpsioService", "PUT", "/groupsio/services/{uid}"},
 			{"DeleteGrpsioService", "DELETE", "/groupsio/services/{uid}"},
 			{"CreateGrpsioMailingList", "POST", "/groupsio/mailing-lists"},
 			{"GetGrpsioMailingList", "GET", "/groupsio/mailing-lists/{uid}"},
-			{"UpdateGrpsioMailingList", "PATCH", "/groupsio/mailing-lists/{uid}"},
+			{"UpdateGrpsioMailingList", "PUT", "/groupsio/mailing-lists/{uid}"},
 			{"DeleteGrpsioMailingList", "DELETE", "/groupsio/mailing-lists/{uid}"},
 			{"CreateGrpsioMailingListMember", "POST", "/groupsio/mailing-lists/{uid}/members"},
 			{"GetGrpsioMailingListMember", "GET", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
-			{"UpdateGrpsioMailingListMember", "PATCH", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
+			{"UpdateGrpsioMailingListMember", "PUT", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
 			{"DeleteGrpsioMailingListMember", "DELETE", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
@@ -360,7 +360,7 @@ func MountUpdateGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PATCH", "/groupsio/services/{uid}", f)
+	mux.Handle("PUT", "/groupsio/services/{uid}", f)
 }
 
 // NewUpdateGrpsioServiceHandler creates a HTTP handler which loads the HTTP
@@ -576,7 +576,7 @@ func MountUpdateGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PATCH", "/groupsio/mailing-lists/{uid}", f)
+	mux.Handle("PUT", "/groupsio/mailing-lists/{uid}", f)
 }
 
 // NewUpdateGrpsioMailingListHandler creates a HTTP handler which loads the
@@ -792,7 +792,7 @@ func MountUpdateGrpsioMailingListMemberHandler(mux goahttp.Muxer, h http.Handler
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PATCH", "/groupsio/mailing-lists/{uid}/members/{member_uid}", f)
+	mux.Handle("PUT", "/groupsio/mailing-lists/{uid}/members/{member_uid}", f)
 }
 
 // NewUpdateGrpsioMailingListMemberHandler creates a HTTP handler which loads

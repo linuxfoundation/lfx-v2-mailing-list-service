@@ -151,6 +151,16 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	// Convert GOA payload to domain model
 	domainService := s.convertGrpsIOServiceUpdatePayloadToDomain(existingService, payload)
 
+	// Enhanced business rule validation (POST-PUT conversion)
+	// This prevents PUT semantics from violating mandatory business constraints
+	if err := validateServiceBusinessRules(domainService); err != nil {
+		slog.WarnContext(ctx, "business rule validation failed after payload conversion",
+			"error", err,
+			"service_uid", payload.UID,
+			"service_type", domainService.Type)
+		return nil, wrapError(ctx, err)
+	}
+
 	// Execute use case
 	updatedService, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOService(ctx, *payload.UID, domainService, expectedRevision)
 	if err != nil {
@@ -574,7 +584,6 @@ func (s *mailingListService) DeleteGrpsioMailingListMember(ctx context.Context, 
 }
 
 // Helper functions
-
 
 // payloadStringValue safely extracts string value from payload pointer
 func payloadStringValue(val *string) string {
