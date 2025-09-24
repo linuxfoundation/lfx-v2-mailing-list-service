@@ -176,8 +176,15 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 	}
 
 	// Check group_id immutability - only validate if explicitly provided
-	if payload.GroupID != nil && *payload.GroupID != existing.GroupID {
-		return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%d' to '%d'", existing.GroupID, *payload.GroupID))
+	if payload.GroupID != nil {
+		// Compare nullable pointers properly
+		if existing.GroupID == nil || *payload.GroupID != *existing.GroupID {
+			existingVal := "null"
+			if existing.GroupID != nil {
+				existingVal = fmt.Sprintf("%d", *existing.GroupID)
+			}
+			return errors.NewValidation(fmt.Sprintf("field 'group_id' is immutable. Cannot change from '%s' to '%d'", existingVal, *payload.GroupID))
+		}
 	}
 
 	// Check url immutability - only validate if explicitly provided

@@ -593,10 +593,11 @@ func payloadStringValue(val *string) string {
 	return *val
 }
 
-// payloadInt64Value safely extracts int64 value from payload pointer
-func payloadInt64Value(val *int64) int64 {
+
+// payloadInt64Ptr safely converts int64 pointer from payload to nullable pointer for domain model
+func payloadInt64Ptr(val *int64) *int64 {
 	if val == nil {
-		return 0
+		return nil
 	}
-	return *val
+	return val
 }

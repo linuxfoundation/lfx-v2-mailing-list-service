@@ -367,7 +367,7 @@ func TestValidateUpdateImmutabilityConstraints(t *testing.T) {
 		ProjectUID: "project-123",
 		Prefix:     "",
 		Domain:     "example.groups.io",
-		GroupID:    12345,
+		GroupID:    int64Ptr(12345),
 		URL:        "https://example.groups.io/g/test",
 		GroupName:  "test-group",
 	}

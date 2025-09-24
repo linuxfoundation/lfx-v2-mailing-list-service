@@ -20,8 +20,10 @@ import (
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
 type GrpsIOMailingList struct {
 	UID              string   `json:"uid"`
+	SubgroupID       *int64   `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
 	GroupName        string   `json:"group_name"`
 	Public           bool     `json:"public"`            // Whether the mailing list is publicly accessible
+	SyncStatus       string   `json:"sync_status,omitempty"` // "pending", "synced", "failed"
 	Type             string   `json:"type"`              // "announcement" | "discussion_moderated" | "discussion_open"
 	CommitteeUID     string   `json:"committee_uid"`     // Committee UUID (optional)
 	CommitteeName    string   `json:"committee_name"`    // Committee name (optional)

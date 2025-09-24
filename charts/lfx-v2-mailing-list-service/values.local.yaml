@@ -14,6 +14,14 @@ app:
   # Enable debug logging for local development
   logLevel: debug
 
+  # Enable GroupsIO integration in mock mode for local testing
+  groupsio:
+    enabled: true
+    source: mock
+    # Note: email/password not needed for mock mode but required for config validation
+    email: "test@example.com"
+    password: "mock-password"
+
 # Disable OpenFGA authorization for local testing
 openfga:
   enabled: false

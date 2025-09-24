@@ -134,3 +134,22 @@ app:
   # jwt is the configuration for JWT authentication
   # audience is the intended audience for the JWT token
   audience: lfx-v2-mailing-list-service
+
+  # GroupsIO integration configuration
+  groupsio:
+    # enabled controls whether GroupsIO integration is active
+    enabled: false
+    # source determines the GroupsIO implementation (groupsio or mock)
+    source: mock
+    # baseUrl is the Groups.io API base URL
+    baseUrl: "https://api.groups.io"
+    # email is the Groups.io account email for authentication
+    email: ""
+    # password is the Groups.io account password for authentication
+    password: ""
+    # timeout is the HTTP client timeout for Groups.io requests
+    timeout: "30s"
+    # maxRetries is the maximum number of retry attempts for failed requests
+    maxRetries: 3
+    # retryDelay is the delay between retry attempts
+    retryDelay: "1s"

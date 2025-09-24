@@ -33,7 +33,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "project-1",
@@ -63,7 +63,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "formation",
 				Domain:       "lists.formation.org",
-				GroupID:      23456,
+				GroupID:      writerServiceInt64Ptr(23456),
 				GlobalOwners: []string{"admin@formation.org"},
 				Prefix:       "form",
 				ProjectUID:   "project-2",
@@ -93,7 +93,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "shared",
 				Domain:       "lists.shared.org",
-				GroupID:      34567,
+				GroupID:      writerServiceInt64Ptr(34567),
 				GlobalOwners: []string{"admin@shared.org"},
 				Prefix:       "",
 				ProjectUID:   "project-3",
@@ -122,7 +122,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "nonexistent-project",
@@ -147,7 +147,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.audit.org",
-				GroupID:      45678,
+				GroupID:      writerServiceInt64Ptr(45678),
 				GlobalOwners: []string{"admin@audit.org"},
 				Writers:      []string{"writer1@audit.org", "writer2@audit.org"},
 				Auditors:     []string{"auditor1@audit.org"},
@@ -258,7 +258,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService_PublishingErrors(t *testin
 			service := &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "project-1",
@@ -646,6 +646,11 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testin
 			}
 		})
 	}
+}
+
+// Helper function to create int64 pointer
+func writerServiceInt64Ptr(i int64) *int64 {
+	return &i
 }
 
 // Note: buildServiceIndexerMessage and buildServiceAccessControlMessage methods are private

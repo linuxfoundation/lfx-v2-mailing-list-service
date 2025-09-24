@@ -9,6 +9,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 )
 
 // GrpsIOWriter defines the composite interface that combines writers
@@ -76,12 +77,20 @@ func WithPublisher(publisher port.MessagePublisher) grpsIOWriterOrchestratorOpti
 	}
 }
 
+// WithGroupsIOClient sets the GroupsIO client (may be nil for mock/disabled mode)
+func WithGroupsIOClient(client *groupsio.Client) grpsIOWriterOrchestratorOption {
+	return func(w *grpsIOWriterOrchestrator) {
+		w.groupsClient = client
+	}
+}
+
 // grpsIOWriterOrchestrator orchestrates the service writing process
 type grpsIOWriterOrchestrator struct {
 	grpsIOWriter port.GrpsIOWriter
 	grpsIOReader port.GrpsIOReader
 	entityReader port.EntityAttributeReader
 	publisher    port.MessagePublisher
+	groupsClient *groupsio.Client // May be nil for mock/disabled mode
 }
 
 // NewGrpsIOWriterOrchestrator creates a new composite writer orchestrator using the option pattern

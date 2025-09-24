@@ -21,7 +21,7 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 		UID:          &service.UID,
 		Type:         service.Type,
 		Domain:       &service.Domain,
-		GroupID:      &service.GroupID,
+		GroupID:      service.GroupID,
 		Status:       &service.Status,
 		GlobalOwners: service.GlobalOwners,
 		Prefix:       &service.Prefix,
@@ -63,7 +63,7 @@ func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(servic
 		UID:          &service.UID,
 		Type:         service.Type,
 		Domain:       &service.Domain,
-		GroupID:      &service.GroupID,
+		GroupID:      service.GroupID,
 		Status:       &service.Status,
 		GlobalOwners: service.GlobalOwners,
 		Prefix:       &service.Prefix,
@@ -197,11 +197,11 @@ func (s *mailingListService) convertGrpsIOMemberToResponse(member *model.GrpsIOM
 	}
 
 	// Handle optional GroupsIO fields
-	if member.GroupsIOMemberID > 0 {
-		result.GroupsioMemberID = &member.GroupsIOMemberID
+	if member.GroupsIOMemberID != nil && *member.GroupsIOMemberID > 0 {
+		result.GroupsioMemberID = member.GroupsIOMemberID
 	}
-	if member.GroupsIOGroupID > 0 {
-		result.GroupsioGroupID = &member.GroupsIOGroupID
+	if member.GroupsIOGroupID != nil && *member.GroupsIOGroupID > 0 {
+		result.GroupsioGroupID = member.GroupsIOGroupID
 	}
 
 	// Handle timestamps
@@ -249,11 +249,11 @@ func (s *mailingListService) convertGrpsIOMemberDomainToResponse(member *model.G
 	if member.JobTitle != "" {
 		response.JobTitle = &member.JobTitle
 	}
-	if member.GroupsIOMemberID != 0 {
-		response.GroupsioMemberID = &member.GroupsIOMemberID
+	if member.GroupsIOMemberID != nil && *member.GroupsIOMemberID != 0 {
+		response.GroupsioMemberID = member.GroupsIOMemberID
 	}
-	if member.GroupsIOGroupID != 0 {
-		response.GroupsioGroupID = &member.GroupsIOGroupID
+	if member.GroupsIOGroupID != nil && *member.GroupsIOGroupID != 0 {
+		response.GroupsioGroupID = member.GroupsIOGroupID
 	}
 	if member.LastReviewedAt != nil {
 		response.LastReviewedAt = member.LastReviewedAt

@@ -14,6 +14,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
@@ -23,8 +24,10 @@ var (
 	natsStorageClient   port.GrpsIOReaderWriter
 	natsMessagingClient port.EntityAttributeReader
 	natsPublisherClient port.MessagePublisher
+	groupsIOClient      *groupsio.Client
 
-	natsDoOnce sync.Once
+	natsDoOnce         sync.Once
+	groupsIOClientOnce sync.Once
 )
 
 func natsInit(ctx context.Context) {
@@ -274,6 +277,39 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	return publisher
 }
 
+// GroupsIOClient initializes the GroupsIO client with singleton pattern
+func GroupsIOClient(ctx context.Context) *groupsio.Client {
+	groupsIOClientOnce.Do(func() {
+		// Check if we should use mock
+		if os.Getenv("GROUPSIO_SOURCE") == "mock" {
+			slog.InfoContext(ctx, "using mock GroupsIO client")
+			// Mock returns nil, orchestrator handles nil gracefully
+			return
+		}
+
+		// Only initialize if explicitly enabled
+		if os.Getenv("GROUPSIO_ENABLED") != "true" {
+			slog.InfoContext(ctx, "GroupsIO integration disabled")
+			return
+		}
+
+		// Real client initialization
+		config := groupsio.NewConfigFromEnv()
+
+		client, err := groupsio.NewClient(config)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to initialize GroupsIO client", "error", err)
+			// Don't fatal - service can run without GroupsIO
+			return
+		}
+
+		groupsIOClient = client
+		slog.InfoContext(ctx, "GroupsIO client initialized successfully")
+	})
+
+	return groupsIOClient
+}
+
 // GrpsIOReaderOrchestrator initializes the service reader orchestrator
 func GrpsIOReaderOrchestrator(ctx context.Context) service.GrpsIOReader {
 	grpsIOReader := GrpsIOReader(ctx)
@@ -289,11 +325,13 @@ func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 	grpsIOReader := GrpsIOReader(ctx)
 	entityReader := EntityAttributeRetriever(ctx)
 	publisher := MessagePublisher(ctx)
+	groupsClient := GroupsIOClient(ctx) // May be nil for mock/disabled
 
 	return service.NewGrpsIOWriterOrchestrator(
 		service.WithGrpsIOWriter(grpsIOWriter),
 		service.WithGrpsIOWriterReader(grpsIOReader),
 		service.WithEntityAttributeReader(entityReader),
 		service.WithPublisher(publisher),
+		service.WithGroupsIOClient(groupsClient),
 	)
 }

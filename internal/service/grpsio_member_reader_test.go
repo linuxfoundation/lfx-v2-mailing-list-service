@@ -27,8 +27,8 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 	testMember := &model.GrpsIOMember{
 		UID:              testMemberUID,
 		MailingListUID:   testMailingListUID,
-		GroupsIOMemberID: 12345,
-		GroupsIOGroupID:  67890,
+		GroupsIOMemberID: memberInt64Ptr(12345),
+		GroupsIOGroupID:  memberInt64Ptr(67890),
 		Username:         "testuser",
 		FirstName:        "John",
 		LastName:         "Doe",
@@ -148,4 +148,9 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 // Helper function to create string pointer
 func memberStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func memberInt64Ptr(i int64) *int64 {
+	return &i
 }

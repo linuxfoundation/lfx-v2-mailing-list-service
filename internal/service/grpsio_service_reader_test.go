@@ -27,7 +27,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 		Type:           "primary",
 		UID:            testServiceUID,
 		Domain:         "lists.testproject.org",
-		GroupID:        12345,
+		GroupID:        serviceInt64Ptr(12345),
 		Status:         "created",
 		GlobalOwners:   []string{"admin@testproject.org"},
 		Prefix:         "",
@@ -155,7 +155,7 @@ func TestGrpsIOReaderOrchestratorGetRevision(t *testing.T) {
 		Type:        "primary",
 		UID:         testServiceUID,
 		Domain:      "lists.testproject.org",
-		GroupID:     12345,
+		GroupID:     serviceInt64Ptr(12345),
 		Status:      "created",
 		ProjectSlug: "test-project",
 		ProjectUID:  "test-project-uid",
@@ -296,7 +296,7 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		Type:           "formation",
 		UID:            testServiceUID,
 		Domain:         "lists.formation.testproject.org",
-		GroupID:        67890,
+		GroupID:        serviceInt64Ptr(67890),
 		Status:         "created",
 		GlobalOwners:   []string{"formation@testproject.org", "admin@testproject.org"},
 		Prefix:         "formation",
@@ -367,4 +367,9 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 // Helper function to create string pointer
 func serviceStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func serviceInt64Ptr(i int64) *int64 {
+	return &i
 }

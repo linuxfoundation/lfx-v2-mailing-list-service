@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
@@ -66,7 +67,51 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		keys = append(keys, constraintKey)
 	}
 
-	// Step 3: Create service in storage
+	// Step 3: Create in Groups.io FIRST (if client available)
+	var rollbackGroupID uint64
+	defer func() {
+		// Cleanup Groups.io group on error (if created)
+		if err := recover(); err != nil || rollbackRequired {
+			if rollbackGroupID > 0 && sw.groupsClient != nil {
+				if deleteErr := sw.groupsClient.DeleteGroup(ctx, service.Domain, rollbackGroupID); deleteErr != nil {
+					slog.ErrorContext(ctx, "failed to rollback Groups.io group",
+						"group_id", rollbackGroupID, "error", deleteErr)
+				}
+			}
+		}
+	}()
+
+	if sw.groupsClient != nil {
+		groupOptions := groupsio.GroupCreateOptions{
+			GroupName:   service.GroupName,
+			Description: fmt.Sprintf("Mailing lists for %s", service.ProjectName),
+			Public:      service.Public,
+		}
+
+		groupResult, err := sw.groupsClient.CreateGroup(ctx, service.Domain, groupOptions)
+		if err != nil {
+			slog.ErrorContext(ctx, "Groups.io group creation failed",
+				"error", err, "domain", service.Domain, "group_name", service.GroupName)
+			rollbackRequired = true
+			return nil, 0, fmt.Errorf("Groups.io creation failed: %w", err)
+		}
+
+		groupID := int64(groupResult.ID)
+		service.GroupID = &groupID  // Store as nullable pointer
+		service.SyncStatus = "synced"
+		service.Status = "active"
+		rollbackGroupID = groupResult.ID // Track for rollback if NATS fails
+
+		slog.InfoContext(ctx, "Groups.io group created successfully",
+			"group_id", groupResult.ID, "domain", service.Domain)
+	} else {
+		// Mock/disabled mode - set appropriate status
+		service.SyncStatus = "pending"
+		service.Status = "pending"
+		slog.InfoContext(ctx, "Groups.io integration disabled - service will be in pending state")
+	}
+
+	// Step 4: Create service in storage
 	createdService, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service",

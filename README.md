@@ -4,49 +4,51 @@ This repository contains the source code for the LFX v2 platform mailing list se
 
 ## Overview
 
-The LFX v2 Mailing List Service is designed to manage mailing lists within the LFX v2 platform. 
+The LFX v2 Mailing List Service is a RESTful API service that manages mailing lists and their members within the Linux Foundation's LFX platform. It provides endpoints for creating, reading, updating, and deleting GroupsIO services, mailing lists, and members with built-in authorization and validation capabilities. The service integrates directly with Groups.io for real mailing list management while supporting mock mode for development and testing. 
 
 ## File Structure
 
-```
-├── bin/                        # Compiled binaries
-├── charts/                     # Kubernetes Helm charts
-│   └── lfx-v2-mailing-list-service/
-│       └── templates/
-├── cmd/                        # Application entry points
-│   └── mailing-list-api/
-│       ├── design/             # GOA API design files
-│       ├── gen/                # Generated GOA code
-│       └── service/            # Service implementations
-├── gen/                        # Generated code (GOA)
-│   ├── http/
-│   └── mailing_list/
-├── internal/                   # Private application code
-│   ├── domain/
-│   │   ├── model/              # Domain models
-│   │   └── port/               # Interface definitions
-│   ├── infrastructure/
-│   │   ├── auth/               # JWT authentication
-│   │   ├── config/             # Configuration
-│   │   ├── mock/               # Mock implementations
-│   │   └── nats/               # NATS client and messaging
-│   ├── middleware/             # HTTP middleware
-│   └── service/                # Business logic layer
-├── pkg/                        # Public packages
-│   ├── constants/              # Application constants
-│   ├── errors/                 # Custom error types
-│   └── log/                    # Logging utilities
-└── Dockerfile                  # Container build configuration
+```bash
+├── .github/                        # GitHub files
+│   └── workflows/                  # GitHub Action workflow files
+├── charts/                         # Helm charts for running the service in kubernetes
+├── cmd/                            # Services (main packages)
+│   └── mailing-list-api/          # Mailing list service code
+│       ├── design/                 # API design specifications (Goa)
+│       ├── service/                # Service implementation
+│       ├── main.go                 # Application entry point
+│       └── http.go                 # HTTP server setup
+├── gen/                            # Generated code from Goa design
+├── internal/                       # Internal service packages
+│   ├── domain/                     # Domain logic layer (business logic)
+│   │   ├── model/                  # Domain models and entities
+│   │   └── port/                   # Repository and service interfaces
+│   ├── service/                    # Service logic layer (use cases)
+│   ├── infrastructure/             # Infrastructure layer
+│   │   ├── auth/                   # Authentication implementations
+│   │   ├── groupsio/               # GroupsIO API client implementation
+│   │   ├── nats/                   # NATS storage implementation
+│   │   └── mock/                   # Mock implementations for testing
+│   └── middleware/                 # HTTP middleware components
+└── pkg/                            # Shared packages
 ```
 
 ## Key Features
 
-- Health check endpoints for Kubernetes probes 
-- JWT authentication integration
-- NATS messaging and storage support
-- Structured logging with Go's slog package
-- Docker containerization
-- Kubernetes deployment ready
+- **RESTful API**: Full CRUD operations for GroupsIO services, mailing lists, and member management
+- **GroupsIO Integration**: Direct Groups.io API integration with authentication and error handling
+- **Service Management**: Support for different GroupsIO service types (primary, formation, shared)
+- **Member Management**: Comprehensive mailing list member operations including delivery modes and moderation status
+- **Project Integration**: Mailing lists associated with projects and services for organizational structure
+- **Clean Architecture**: Follows clean architecture principles with clear separation of domain, service, and infrastructure layers
+- **NATS Storage**: Uses NATS key-value buckets for persistent mailing list data storage
+- **Authorization**: JWT-based authentication with Heimdall middleware integration
+- **Mock Mode**: Complete testing capability without external GroupsIO API dependencies
+- **Health Checks**: Built-in `/livez` and `/readyz` endpoints for Kubernetes probes
+- **Request Tracking**: Automatic request ID generation and propagation
+- **Structured Logging**: JSON-formatted logs with contextual information using Go's slog package
+- **Validation**: Comprehensive input validation and business rules enforcement
+- **ETag Support**: Optimistic concurrency control for update operations
 
 ## Development
 

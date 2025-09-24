@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
 func TestGrpsIOMember_BuildIndexKey(t *testing.T) {
 	ctx := context.Background()
 
@@ -25,8 +26,8 @@ func TestGrpsIOMember_BuildIndexKey(t *testing.T) {
 			member: &GrpsIOMember{
 				UID:              uuid.New().String(),
 				MailingListUID:   "mailing-list-123",
-				GroupsIOMemberID: 12345,
-				GroupsIOGroupID:  67890,
+				GroupsIOMemberID: func() *int64 { id := int64(12345); return &id }(),
+				GroupsIOGroupID:  func() *int64 { id := int64(67890); return &id }(),
 				Username:         "testuser",
 				FirstName:        "John",
 				LastName:         "Doe",
@@ -350,8 +351,8 @@ func TestGrpsIOMember_ValidationScenarios(t *testing.T) {
 		member := &GrpsIOMember{
 			UID:              uuid.New().String(),
 			MailingListUID:   "committee-mailing-list",
-			GroupsIOMemberID: 12345,
-			GroupsIOGroupID:  67890,
+			GroupsIOMemberID: int64Ptr(12345),
+			GroupsIOGroupID:  int64Ptr(67890),
 			Username:         "committee-member",
 			FirstName:        "Committee",
 			LastName:         "Member",

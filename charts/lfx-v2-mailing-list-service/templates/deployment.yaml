@@ -37,6 +37,23 @@ spec:
               value: {{.Values.app.authSource}}
             - name: JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL
               value: {{.Values.app.jwtAuthDisabledMockLocalPrincipal}}
+            # GroupsIO configuration
+            - name: GROUPSIO_ENABLED
+              value: {{.Values.app.groupsio.enabled | quote}}
+            - name: GROUPSIO_SOURCE
+              value: {{.Values.app.groupsio.source}}
+            - name: GROUPSIO_BASE_URL
+              value: {{.Values.app.groupsio.baseUrl}}
+            - name: GROUPSIO_EMAIL
+              value: {{.Values.app.groupsio.email}}
+            - name: GROUPSIO_PASSWORD
+              value: {{.Values.app.groupsio.password}}
+            - name: GROUPSIO_TIMEOUT
+              value: {{.Values.app.groupsio.timeout}}
+            - name: GROUPSIO_MAX_RETRIES
+              value: {{.Values.app.groupsio.maxRetries | quote}}
+            - name: GROUPSIO_RETRY_DELAY
+              value: {{.Values.app.groupsio.retryDelay}}
           ports:
             - containerPort: {{.Values.service.port}}
               name: web

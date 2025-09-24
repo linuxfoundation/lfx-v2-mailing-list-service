@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
@@ -96,6 +97,75 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		"revision", revision,
 	)
 
+	// Step 5.1: Add member to Groups.io subgroup (if client available and mailing list has SubgroupID)
+	var rollbackMemberID uint64
+	defer func() {
+		// Cleanup Groups.io member on error (if created)
+		if err := recover(); err != nil || rollbackRequired {
+			if rollbackMemberID > 0 && o.groupsClient != nil {
+				// Get mailing list and parent service domain for rollback
+				mailingList, _, mailingListErr := o.grpsIOReader.GetGrpsIOMailingList(ctx, createdMember.MailingListUID)
+				if mailingListErr == nil {
+					parentService, _, serviceErr := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+					if serviceErr == nil {
+						if deleteErr := o.groupsClient.RemoveMember(ctx, parentService.Domain, rollbackMemberID); deleteErr != nil {
+							slog.ErrorContext(ctx, "failed to rollback Groups.io member",
+								"member_id", rollbackMemberID, "error", deleteErr)
+						}
+					}
+				}
+			}
+		}
+	}()
+
+	// Get mailing list data to check if it has SubgroupID
+	mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, createdMember.MailingListUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list for Groups.io sync", "error", err, "mailing_list_uid", createdMember.MailingListUID)
+		rollbackRequired = true
+		return nil, 0, err
+	}
+
+	if o.groupsClient != nil && mailingList.SubgroupID != nil {
+		// Get parent service domain
+		parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
+			rollbackRequired = true
+			return nil, 0, err
+		}
+
+		memberResult, err := o.groupsClient.AddMember(ctx, parentService.Domain, uint64(*mailingList.SubgroupID), createdMember.Email, fmt.Sprintf("%s %s", createdMember.FirstName, createdMember.LastName))
+		if err != nil {
+			slog.ErrorContext(ctx, "Groups.io member creation failed",
+				"error", err, "domain", parentService.Domain, "subgroup_id", *mailingList.SubgroupID, "email", createdMember.Email)
+			rollbackRequired = true
+			return nil, 0, fmt.Errorf("Groups.io member creation failed: %w", err)
+		}
+
+		memberID := int64(memberResult.ID)
+		createdMember.GroupsIOMemberID = &memberID // Store as nullable pointer
+		createdMember.GroupsIOGroupID = mailingList.SubgroupID // Copy from mailing list
+		createdMember.SyncStatus = "synced"
+		rollbackMemberID = memberResult.ID // Track for rollback
+
+		slog.InfoContext(ctx, "Groups.io member created successfully",
+			"member_id", memberResult.ID, "domain", parentService.Domain, "subgroup_id", *mailingList.SubgroupID)
+
+		// Update the member with GroupsIO IDs in storage
+		updatedMember, _, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, createdMember.UID, createdMember, revision)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to update member with GroupsIO IDs", "error", err)
+			rollbackRequired = true
+			return nil, 0, err
+		}
+		createdMember = updatedMember
+	} else {
+		// Mock/disabled mode or mailing list not synced - set appropriate status
+		createdMember.SyncStatus = "pending"
+		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - member will be in pending state")
+	}
+
 	// Step 6: Publish messages (indexer and access control)
 	if o.publisher != nil {
 		if err := o.publishMemberMessages(ctx, createdMember, model.ActionCreated); err != nil {
@@ -170,6 +240,44 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 		"revision", revision,
 	)
 
+	// Step 6.1: Sync member updates to Groups.io (if client available and member has GroupsIOMemberID)
+	if o.groupsClient != nil && updatedMember.GroupsIOMemberID != nil {
+		// Get mailing list and parent service domain
+		mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, updatedMember.MailingListUID)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get mailing list for Groups.io sync", "error", err, "mailing_list_uid", updatedMember.MailingListUID)
+			// Continue with local update even if Groups.io sync fails
+			slog.WarnContext(ctx, "continuing with local update despite Groups.io sync failure")
+		} else {
+			parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
+				// Continue with local update even if Groups.io sync fails
+				slog.WarnContext(ctx, "continuing with local update despite Groups.io sync failure")
+			} else {
+				memberUpdates := groupsio.MemberUpdateOptions{
+					FirstName: updatedMember.FirstName,
+					LastName:  updatedMember.LastName,
+					// Note: Email cannot be updated in Groups.io API
+					// ModStatus and other settings can be added here as needed
+				}
+
+				err := o.groupsClient.UpdateMember(ctx, parentService.Domain, uint64(*updatedMember.GroupsIOMemberID), memberUpdates)
+				if err != nil {
+					slog.ErrorContext(ctx, "Groups.io member update failed",
+						"error", err, "domain", parentService.Domain, "member_id", *updatedMember.GroupsIOMemberID)
+					// Continue with local update even if Groups.io sync fails
+					slog.WarnContext(ctx, "continuing with local update despite Groups.io sync failure")
+				} else {
+					slog.InfoContext(ctx, "Groups.io member updated successfully",
+						"member_id", *updatedMember.GroupsIOMemberID, "domain", parentService.Domain)
+				}
+			}
+		}
+	} else {
+		slog.InfoContext(ctx, "Groups.io integration disabled or member not synced - skipping Groups.io update")
+	}
+
 	// Step 7: Publish messages (indexer and access control)
 	if o.publisher != nil {
 		if err := o.publishMemberMessages(ctx, updatedMember, model.ActionUpdated); err != nil {
@@ -196,6 +304,37 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 		)
 	} else {
 		slog.DebugContext(ctx, "no member data provided for deletion - will rely on storage layer for validation")
+	}
+
+	// Step 1: Remove member from Groups.io (if client available and member has GroupsIOMemberID)
+	if o.groupsClient != nil && member != nil && member.GroupsIOMemberID != nil {
+		// Get mailing list and parent service domain
+		mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, member.MailingListUID)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get mailing list for Groups.io deletion", "error", err, "mailing_list_uid", member.MailingListUID)
+			// Continue with local deletion even if Groups.io lookup fails
+			slog.WarnContext(ctx, "continuing with local deletion despite Groups.io lookup failure")
+		} else {
+			parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to get parent service for Groups.io deletion", "error", err, "service_uid", mailingList.ServiceUID)
+				// Continue with local deletion even if Groups.io lookup fails
+				slog.WarnContext(ctx, "continuing with local deletion despite Groups.io lookup failure")
+			} else {
+				err := o.groupsClient.RemoveMember(ctx, parentService.Domain, uint64(*member.GroupsIOMemberID))
+				if err != nil {
+					slog.ErrorContext(ctx, "Groups.io member deletion failed",
+						"error", err, "domain", parentService.Domain, "member_id", *member.GroupsIOMemberID)
+					// Continue with local deletion even if Groups.io fails - orphaned members can be cleaned up later
+					slog.WarnContext(ctx, "continuing with local deletion despite Groups.io failure")
+				} else {
+					slog.InfoContext(ctx, "Groups.io member deleted successfully",
+						"member_id", *member.GroupsIOMemberID, "domain", parentService.Domain)
+				}
+			}
+		}
+	} else {
+		slog.InfoContext(ctx, "Groups.io integration disabled or member not synced - skipping Groups.io deletion")
 	}
 
 	// Delete member from storage with optimistic concurrency control

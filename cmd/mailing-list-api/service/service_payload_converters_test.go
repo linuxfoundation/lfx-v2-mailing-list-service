@@ -38,7 +38,7 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 			expected: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "example.groups.io",
-				GroupID:      12345,
+				GroupID:      int64Ptr(12345),
 				Status:       "active",
 				GlobalOwners: []string{"owner1@example.com", "owner2@example.com"},
 				Prefix:       "test-prefix",
@@ -61,7 +61,7 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 			expected: &model.GrpsIOService{
 				Type:         "formation",
 				Domain:       "",
-				GroupID:      0,
+				GroupID:      int64Ptr(0),
 				Status:       "",
 				GlobalOwners: nil,
 				Prefix:       "",
@@ -218,7 +218,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Type:           "primary",
 				UID:            "service-123",
 				Domain:         "example.groups.io",
-				GroupID:        12345,
+				GroupID:        int64Ptr(12345),
 				Prefix:         "",
 				ProjectSlug:    "test-project",
 				ProjectName:    "Test Project",
@@ -241,7 +241,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Type:           "primary",
 				UID:            "service-123",
 				Domain:         "example.groups.io",
-				GroupID:        12345,
+				GroupID:        int64Ptr(12345),
 				Status:         "inactive",
 				GlobalOwners:   []string{"newowner@example.com"},
 				Prefix:         "",
@@ -264,7 +264,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Type:        "formation",
 				UID:         "service-456",
 				Domain:      "test.groups.io",
-				GroupID:     67890,
+				GroupID:     int64Ptr(67890),
 				ProjectUID:  "project-456",
 				ProjectSlug: "test-formation",
 				CreatedAt:   baseTime,
@@ -277,7 +277,7 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Type:        "formation",
 				UID:         "service-456",
 				Domain:      "test.groups.io",
-				GroupID:     67890,
+				GroupID:     int64Ptr(67890),
 				Status:      "",
 				ProjectUID:  "project-456",
 				ProjectSlug: "test-formation",
@@ -491,7 +491,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 		UID:         "service-123",
 		Type:        "primary",
 		Domain:      "existing.domain.com",
-		GroupID:     12345,
+		GroupID:     int64Ptr(12345),
 		Status:      "active",
 		Public:      true,  // Existing setting
 		GlobalOwners: []string{"existing@example.com"},
@@ -518,7 +518,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 				UID:          "service-123",
 				Type:         "primary",          // IMMUTABLE
 				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      12345,              // IMMUTABLE
+				GroupID:      int64Ptr(12345),              // IMMUTABLE
 				Status:       "updated",          // Updated
 				Public:       false,              // CLEARED (PUT semantics)
 				GlobalOwners: nil,                // CLEARED (PUT semantics)
@@ -538,7 +538,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 				UID:          "service-123",
 				Type:         "primary",          // IMMUTABLE
 				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      12345,              // IMMUTABLE
+				GroupID:      int64Ptr(12345),              // IMMUTABLE
 				Status:       "",                 // CLEARED (PUT semantics)
 				Public:       false,              // Updated
 				GlobalOwners: nil,                // CLEARED (PUT semantics)
@@ -561,7 +561,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 				UID:          "service-123",
 				Type:         "primary",          // IMMUTABLE (can't change service type)
 				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      12345,              // IMMUTABLE
+				GroupID:      int64Ptr(12345),              // IMMUTABLE
 				Status:       "disabled",         // Updated
 				Public:       false,              // Updated
 				GlobalOwners: []string{"new1@example.com", "new2@example.com"}, // Updated
@@ -580,7 +580,7 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 				UID:          "service-123",
 				Type:         "primary",          // IMMUTABLE
 				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      12345,              // IMMUTABLE
+				GroupID:      int64Ptr(12345),              // IMMUTABLE
 				Status:       "",                 // CLEARED (PUT semantics)
 				Public:       false,              // CLEARED to default false (PUT semantics)
 				GlobalOwners: nil,                // CLEARED (PUT semantics)
@@ -738,9 +738,6 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 	}
 }
 
-func boolPtr(b bool) *bool {
-	return &b
-}
 
 // Helper functions for creating pointers to primitives
 func stringPtr(s string) *string {

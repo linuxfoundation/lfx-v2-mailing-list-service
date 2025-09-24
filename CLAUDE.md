@@ -102,8 +102,9 @@ Environment-based configuration for:
 #### Environment Variables
 For local testing with mocks:
 - `export NATS_URL=nats://localhost:4222`
-- `export AUTH_SOURCE=mock` 
+- `export AUTH_SOURCE=mock`
 - `export REPOSITORY_SOURCE=mock`
+- `export GROUPSIO_SOURCE=mock`
 - `export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-user"`
 
 #### Local Kubernetes Deployment with Mock Authentication
@@ -137,3 +138,35 @@ For comprehensive integration testing using local Kubernetes cluster:
 - Use `-f values.local.yaml` for local deployment only
 
 **⚠️ Security Warning**: Never use mock authentication in production environments.
+
+### GroupsIO Integration & Mocking
+
+#### GroupsIO Client Architecture
+The service integrates with Groups.io API through a clean orchestrator pattern:
+
+```go
+// Orchestrator with nil-safe design
+type grpsIOWriterOrchestrator struct {
+    groupsClient *groupsio.Client // May be nil for mock/disabled mode
+}
+
+// Usage pattern throughout service
+if o.groupsClient != nil {
+    result, err := o.groupsClient.CreateGroup(ctx, domain, options)
+    // Handle Groups.io operations
+} else {
+    // Mock mode: operations bypassed, domain logic continues
+}
+```
+
+#### Mock Configuration
+- **Production**: `GROUPSIO_SOURCE=real` - Uses actual Groups.io API client
+- **Testing**: `GROUPSIO_SOURCE=mock` - Returns nil client, enables pure domain testing
+- **Domain Logic**: All business logic flows through `MockRepository` in `internal/infrastructure/mock/grpsio.go`
+- **Error Simulation**: Comprehensive error testing available through domain mock
+
+#### Benefits of This Pattern
+1. **Clean Separation**: Infrastructure (HTTP calls) vs Domain (business logic)
+2. **Nil-Safe**: Orchestrator gracefully handles disabled Groups.io integration
+3. **Testable**: Domain logic fully tested without external API dependencies
+4. **Configurable**: Easy switching between mock and real modes

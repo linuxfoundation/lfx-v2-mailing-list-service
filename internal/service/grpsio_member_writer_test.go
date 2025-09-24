@@ -42,8 +42,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 			inputMember: &model.GrpsIOMember{
 				MailingListUID:   "mailing-list-1",
-				GroupsIOMemberID: 12345,
-				GroupsIOGroupID:  67890,
+				GroupsIOMemberID: writerInt64Ptr(12345),
+				GroupsIOGroupID:  writerInt64Ptr(67890),
 				Username:         "committee-member",
 				FirstName:        "Committee",
 				LastName:         "Member",
@@ -200,8 +200,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 			inputMember: &model.GrpsIOMember{
 				MailingListUID:   "mailing-list-audit",
-				GroupsIOMemberID: 99999,
-				GroupsIOGroupID:  88888,
+				GroupsIOMemberID: writerInt64Ptr(99999),
+				GroupsIOGroupID:  writerInt64Ptr(88888),
 				Username:         "audit-member",
 				FirstName:        "Audit",
 				LastName:         "Member",
@@ -676,4 +676,9 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_MemberTypes(t *testing.T) {
 // Helper function to create string pointer
 func writerStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func writerInt64Ptr(i int64) *int64 {
+	return &i
 }
