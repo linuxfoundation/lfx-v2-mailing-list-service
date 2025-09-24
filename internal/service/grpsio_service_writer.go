@@ -25,24 +25,13 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"project_uid", service.ProjectUID,
 	)
 
-	// Set service identifiers and timestamps (server-side generation for security)
+	// Step 1: Set service identifiers and timestamps (server-side generation for security)
 	now := time.Now()
 	service.UID = uuid.New().String() // Always generate server-side, never trust client
 	service.CreatedAt = now
 	service.UpdatedAt = now
 
-	// For rollback purposes
-	var (
-		keys             []string
-		rollbackRequired bool
-	)
-	defer func() {
-		if err := recover(); err != nil || rollbackRequired {
-			sw.deleteKeys(ctx, keys, true)
-		}
-	}()
-
-	// Step 1: Validate project exists and populate metadata
+	// Step 2: Validate project exists and populate metadata
 	if err := sw.validateAndPopulateProject(ctx, service); err != nil {
 		slog.ErrorContext(ctx, "project validation failed",
 			"error", err,
@@ -57,53 +46,34 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"project_name", service.ProjectName,
 	)
 
-	// Step 2: Reserve unique constraints based on service type
+	// Step 3: Reserve unique constraints based on service type
+	var keys []string
 	constraintKey, err := sw.reserveUniqueConstraints(ctx, service)
 	if err != nil {
-		rollbackRequired = true
 		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
+		// Simple cleanup on error - no complex rollback needed
+		defer func() {
+			if err != nil {
+				sw.deleteKeys(ctx, keys, true)
+			}
+		}()
 	}
 
-	// Step 3: Create in Groups.io FIRST (if client available)
-	var rollbackGroupID uint64
-	defer func() {
-		// Cleanup Groups.io group on error (if created)
-		if err := recover(); err != nil || rollbackRequired {
-			if rollbackGroupID > 0 && sw.groupsClient != nil {
-				if deleteErr := sw.groupsClient.DeleteGroup(ctx, service.Domain, rollbackGroupID); deleteErr != nil {
-					slog.ErrorContext(ctx, "failed to rollback Groups.io group",
-						"group_id", rollbackGroupID, "error", deleteErr)
-				}
-			}
-		}
-	}()
+	// Step 4: Create in Groups.io FIRST (if enabled)
+	groupID, err := sw.createServiceInGroupsIO(ctx, service)
+	if err != nil {
+		// Fail fast for Creates - no partial state
+		return nil, 0, err
+	}
 
-	if sw.groupsClient != nil {
-		groupOptions := groupsio.GroupCreateOptions{
-			GroupName:   service.GroupName,
-			Description: fmt.Sprintf("Mailing lists for %s", service.ProjectName),
-			Public:      service.Public,
-		}
-
-		groupResult, err := sw.groupsClient.CreateGroup(ctx, service.Domain, groupOptions)
-		if err != nil {
-			slog.ErrorContext(ctx, "Groups.io group creation failed",
-				"error", err, "domain", service.Domain, "group_name", service.GroupName)
-			rollbackRequired = true
-			return nil, 0, fmt.Errorf("Groups.io creation failed: %w", err)
-		}
-
-		groupID := int64(groupResult.ID)
-		service.GroupID = &groupID  // Store as nullable pointer
+	if groupID != nil {
+		// Groups.io creation successful
+		service.GroupID = groupID
 		service.SyncStatus = "synced"
 		service.Status = "active"
-		rollbackGroupID = groupResult.ID // Track for rollback if NATS fails
-
-		slog.InfoContext(ctx, "Groups.io group created successfully",
-			"group_id", groupResult.ID, "domain", service.Domain)
 	} else {
 		// Mock/disabled mode - set appropriate status
 		service.SyncStatus = "pending"
@@ -111,7 +81,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		slog.InfoContext(ctx, "Groups.io integration disabled - service will be in pending state")
 	}
 
-	// Step 4: Create service in storage
+	// Step 5: Create service in storage (with Groups.io ID already set)
 	createdService, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service",
@@ -119,25 +89,60 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"service_type", service.Type,
 			"service_domain", service.Domain,
 		)
-		rollbackRequired = true
+		// If storage fails after Groups.io creation, orphan will be handled by reconciliation
 		return nil, 0, err
 	}
-	keys = append(keys, createdService.UID)
 
 	slog.DebugContext(ctx, "service created successfully",
 		"service_uid", createdService.UID,
 		"revision", revision,
 	)
 
-	// Step 4: Publish messages (indexer and access control)
+	// Step 6: Publish messages (indexer and access control)
 	if sw.publisher != nil {
 		if err := sw.publishServiceMessages(ctx, createdService, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish messages", "error", err)
-			// Don't rollback on message failure, service creation succeeded
+			// Don't fail the operation on message failure, service creation succeeded
 		}
 	}
 
 	return createdService, revision, nil
+}
+
+// createServiceInGroupsIO handles Groups.io group creation and returns the ID
+func (sw *grpsIOWriterOrchestrator) createServiceInGroupsIO(ctx context.Context, service *model.GrpsIOService) (*int64, error) {
+	if sw.groupsClient == nil {
+		return nil, nil // Skip Groups.io creation
+	}
+
+	slog.InfoContext(ctx, "creating group in Groups.io",
+		"domain", service.Domain,
+		"group_name", service.GroupName,
+	)
+
+	groupOptions := groupsio.GroupCreateOptions{
+		GroupName:   service.GroupName,
+		Description: fmt.Sprintf("Mailing lists for %s", service.ProjectName),
+		Public:      service.Public,
+	}
+
+	groupResult, err := sw.groupsClient.CreateGroup(ctx, service.Domain, groupOptions)
+	if err != nil {
+		slog.ErrorContext(ctx, "Groups.io group creation failed",
+			"error", err,
+			"domain", service.Domain,
+			"group_name", service.GroupName,
+		)
+		return nil, fmt.Errorf("Groups.io creation failed: %w", err)
+	}
+
+	groupID := int64(groupResult.ID)
+	slog.InfoContext(ctx, "Groups.io group created successfully",
+		"group_id", groupResult.ID,
+		"domain", service.Domain,
+	)
+
+	return &groupID, nil
 }
 
 // UpdateGrpsIOService updates an existing service with transactional patterns

@@ -38,19 +38,19 @@ type MemberObject struct {
 	FirstName    string `json:"first_name,omitempty"`
 	LastName     string `json:"last_name,omitempty"`
 	Username     string `json:"username,omitempty"`
-	Status       string `json:"status"`       // normal, pending, bouncing, etc.
-	ModStatus    string `json:"mod_status"`  // none, moderator, owner
-	DeliveryMode string `json:"delivery"`    // individual, digest, no_email
+	Status       string `json:"status"`     // normal, pending, bouncing, etc.
+	ModStatus    string `json:"mod_status"` // none, moderator, owner
+	DeliveryMode string `json:"delivery"`   // individual, digest, no_email
 	JoinedAt     string `json:"joined"`
 	UpdatedAt    string `json:"updated"`
 }
 
 // LoginObject represents the Groups.io login response
 type LoginObject struct {
-	Token    string `json:"token"`
-	User     string `json:"user"`
-	UserID   uint64 `json:"user_id"`
-	Email    string `json:"email"`
+	Token     string `json:"token"`
+	User      string `json:"user"`
+	UserID    uint64 `json:"user_id"`
+	Email     string `json:"email"`
 	ExpiresAt string `json:"expires_at"`
 }
 
@@ -80,9 +80,9 @@ type SubgroupCreateOptions struct {
 
 // MemberUpdateOptions represents options for updating a member
 type MemberUpdateOptions struct {
-	ModStatus    string `url:"mod_status,omitempty"`    // none, moderator, owner
-	DeliveryMode string `url:"delivery,omitempty"`      // individual, digest, no_email
-	Status       string `url:"status,omitempty"`        // normal, pending, bouncing
+	ModStatus    string `url:"mod_status,omitempty"` // none, moderator, owner
+	DeliveryMode string `url:"delivery,omitempty"`   // individual, digest, no_email
+	Status       string `url:"status,omitempty"`     // normal, pending, bouncing
 	FirstName    string `url:"first_name,omitempty"`
 	LastName     string `url:"last_name,omitempty"`
 }

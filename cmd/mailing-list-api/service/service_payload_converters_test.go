@@ -61,7 +61,7 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 			expected: &model.GrpsIOService{
 				Type:         "formation",
 				Domain:       "",
-				GroupID:      int64Ptr(0),
+				GroupID:      nil,
 				Status:       "",
 				GlobalOwners: nil,
 				Prefix:       "",
@@ -345,8 +345,8 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 		LastName:       "User",
 		Organization:   "Existing Corp",
 		JobTitle:       "Existing Engineer",
-		DeliveryMode:   "digest",     // Existing preference
-		ModStatus:      "moderator",  // Existing permission
+		DeliveryMode:   "digest",    // Existing preference
+		ModStatus:      "moderator", // Existing permission
 		MemberType:     "direct",
 		Status:         "active",
 		CreatedAt:      now.Add(-24 * time.Hour),
@@ -371,15 +371,15 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "",            // CLEARED (PUT semantics)
-				FirstName:      "Updated",     // Updated
-				LastName:       "Name",        // Updated
-				Organization:   "",            // CLEARED (PUT semantics)
-				JobTitle:       "",            // CLEARED (PUT semantics)
-				DeliveryMode:   "",            // CLEARED (PUT semantics)
-				ModStatus:      "",            // CLEARED (PUT semantics)
-				MemberType:     "direct",      // IMMUTABLE
-				Status:         "active",      // IMMUTABLE
+				Username:       "",        // CLEARED (PUT semantics)
+				FirstName:      "Updated", // Updated
+				LastName:       "Name",    // Updated
+				Organization:   "",        // CLEARED (PUT semantics)
+				JobTitle:       "",        // CLEARED (PUT semantics)
+				DeliveryMode:   "",        // CLEARED (PUT semantics)
+				ModStatus:      "",        // CLEARED (PUT semantics)
+				MemberType:     "direct",  // IMMUTABLE
+				Status:         "active",  // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
@@ -394,15 +394,15 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "",                   // CLEARED (PUT semantics)
-				FirstName:      "",                   // CLEARED (PUT semantics)
-				LastName:       "",                   // CLEARED (PUT semantics)
-				Organization:   "",                   // CLEARED (PUT semantics)
-				JobTitle:       "",                   // CLEARED (PUT semantics)
-				DeliveryMode:   "normal",             // Updated
-				ModStatus:      "",                   // CLEARED (PUT semantics)
-				MemberType:     "direct",             // IMMUTABLE
-				Status:         "active",             // IMMUTABLE
+				Username:       "",       // CLEARED (PUT semantics)
+				FirstName:      "",       // CLEARED (PUT semantics)
+				LastName:       "",       // CLEARED (PUT semantics)
+				Organization:   "",       // CLEARED (PUT semantics)
+				JobTitle:       "",       // CLEARED (PUT semantics)
+				DeliveryMode:   "normal", // Updated
+				ModStatus:      "",       // CLEARED (PUT semantics)
+				MemberType:     "direct", // IMMUTABLE
+				Status:         "active", // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
@@ -421,38 +421,38 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
 				MailingListUID: "ml-456",
-				Email:          "existing@example.com",  // Immutable
-				Username:       "newuser",              // Updated
-				FirstName:      "New",                  // Updated
-				LastName:       "Person",               // Updated
-				Organization:   "New Corp",             // Updated
-				JobTitle:       "New Role",             // Updated
-				DeliveryMode:   "none",                 // Updated
-				ModStatus:      "owner",                // Updated
-				MemberType:     "direct",               // Immutable
-				Status:         "active",               // Immutable
+				Email:          "existing@example.com",   // Immutable
+				Username:       "newuser",                // Updated
+				FirstName:      "New",                    // Updated
+				LastName:       "Person",                 // Updated
+				Organization:   "New Corp",               // Updated
+				JobTitle:       "New Role",               // Updated
+				DeliveryMode:   "none",                   // Updated
+				ModStatus:      "owner",                  // Updated
+				MemberType:     "direct",                 // Immutable
+				Status:         "active",                 // Immutable
 				CreatedAt:      existingMember.CreatedAt, // Immutable
 			},
 		},
 		{
 			name:     "empty update - no fields provided, all mutable fields cleared (PUT semantics)",
 			existing: existingMember,
-			payload: &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
+			payload:  &mailinglistservice.UpdateGrpsioMailingListMemberPayload{
 				// All fields nil - PUT semantics clears all mutable fields
 			},
 			expected: &model.GrpsIOMember{
 				UID:            "member-123",
 				MailingListUID: "ml-456",
 				Email:          "existing@example.com",
-				Username:       "",           // CLEARED (PUT semantics)
-				FirstName:      "",           // CLEARED (PUT semantics)
-				LastName:       "",           // CLEARED (PUT semantics)
-				Organization:   "",           // CLEARED (PUT semantics)
-				JobTitle:       "",           // CLEARED (PUT semantics)
-				DeliveryMode:   "",           // CLEARED (PUT semantics)
-				ModStatus:      "",           // CLEARED (PUT semantics)
-				MemberType:     "direct",     // IMMUTABLE
-				Status:         "active",     // IMMUTABLE
+				Username:       "",       // CLEARED (PUT semantics)
+				FirstName:      "",       // CLEARED (PUT semantics)
+				LastName:       "",       // CLEARED (PUT semantics)
+				Organization:   "",       // CLEARED (PUT semantics)
+				JobTitle:       "",       // CLEARED (PUT semantics)
+				DeliveryMode:   "",       // CLEARED (PUT semantics)
+				ModStatus:      "",       // CLEARED (PUT semantics)
+				MemberType:     "direct", // IMMUTABLE
+				Status:         "active", // IMMUTABLE
 				CreatedAt:      existingMember.CreatedAt,
 			},
 		},
@@ -488,16 +488,16 @@ func TestConvertMemberUpdatePayloadToDomain(t *testing.T) {
 func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 	now := time.Now().UTC()
 	existingService := &model.GrpsIOService{
-		UID:         "service-123",
-		Type:        "primary",
-		Domain:      "existing.domain.com",
-		GroupID:     int64Ptr(12345),
-		Status:      "active",
-		Public:      true,  // Existing setting
+		UID:          "service-123",
+		Type:         "primary",
+		Domain:       "existing.domain.com",
+		GroupID:      int64Ptr(12345),
+		Status:       "active",
+		Public:       true, // Existing setting
 		GlobalOwners: []string{"existing@example.com"},
-		ProjectUID:  "project-123",
-		CreatedAt:   now.Add(-24 * time.Hour),
-		UpdatedAt:   now.Add(-1 * time.Hour),
+		ProjectUID:   "project-123",
+		CreatedAt:    now.Add(-24 * time.Hour),
+		UpdatedAt:    now.Add(-1 * time.Hour),
 	}
 
 	tests := []struct {
@@ -516,13 +516,13 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // IMMUTABLE
-				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      int64Ptr(12345),              // IMMUTABLE
-				Status:       "updated",          // Updated
-				Public:       false,              // CLEARED (PUT semantics)
-				GlobalOwners: nil,                // CLEARED (PUT semantics)
-				ProjectUID:   "project-123",      // IMMUTABLE
+				Type:         "primary",                 // IMMUTABLE
+				Domain:       "existing.domain.com",     // IMMUTABLE
+				GroupID:      int64Ptr(12345),           // IMMUTABLE
+				Status:       "updated",                 // Updated
+				Public:       false,                     // CLEARED (PUT semantics)
+				GlobalOwners: nil,                       // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",             // IMMUTABLE
 				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -536,13 +536,13 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // IMMUTABLE
-				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      int64Ptr(12345),              // IMMUTABLE
-				Status:       "",                 // CLEARED (PUT semantics)
-				Public:       false,              // Updated
-				GlobalOwners: nil,                // CLEARED (PUT semantics)
-				ProjectUID:   "project-123",      // IMMUTABLE
+				Type:         "primary",                 // IMMUTABLE
+				Domain:       "existing.domain.com",     // IMMUTABLE
+				GroupID:      int64Ptr(12345),           // IMMUTABLE
+				Status:       "",                        // CLEARED (PUT semantics)
+				Public:       false,                     // Updated
+				GlobalOwners: nil,                       // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",             // IMMUTABLE
 				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -559,14 +559,14 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // IMMUTABLE (can't change service type)
-				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      int64Ptr(12345),              // IMMUTABLE
-				Status:       "disabled",         // Updated
-				Public:       false,              // Updated
+				Type:         "primary",                                        // IMMUTABLE (can't change service type)
+				Domain:       "existing.domain.com",                            // IMMUTABLE
+				GroupID:      int64Ptr(12345),                                  // IMMUTABLE
+				Status:       "disabled",                                       // Updated
+				Public:       false,                                            // Updated
 				GlobalOwners: []string{"new1@example.com", "new2@example.com"}, // Updated
-				ProjectUID:   "project-123",      // IMMUTABLE (can't change project)
-				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
+				ProjectUID:   "project-123",                                    // IMMUTABLE (can't change project)
+				CreatedAt:    existingService.CreatedAt,                        // IMMUTABLE
 			},
 		},
 		{
@@ -578,13 +578,13 @@ func TestConvertServiceUpdatePayloadToDomain(t *testing.T) {
 			},
 			expected: &model.GrpsIOService{
 				UID:          "service-123",
-				Type:         "primary",          // IMMUTABLE
-				Domain:       "existing.domain.com", // IMMUTABLE
-				GroupID:      int64Ptr(12345),              // IMMUTABLE
-				Status:       "",                 // CLEARED (PUT semantics)
-				Public:       false,              // CLEARED to default false (PUT semantics)
-				GlobalOwners: nil,                // CLEARED (PUT semantics)
-				ProjectUID:   "project-123",      // IMMUTABLE
+				Type:         "primary",                 // IMMUTABLE
+				Domain:       "existing.domain.com",     // IMMUTABLE
+				GroupID:      int64Ptr(12345),           // IMMUTABLE
+				Status:       "",                        // CLEARED (PUT semantics)
+				Public:       false,                     // CLEARED to default false (PUT semantics)
+				GlobalOwners: nil,                       // CLEARED (PUT semantics)
+				ProjectUID:   "project-123",             // IMMUTABLE
 				CreatedAt:    existingService.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -618,7 +618,7 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 	existingMailingList := &model.GrpsIOMailingList{
 		UID:         "ml-123",
 		GroupName:   "existing-group",
-		Public:      false,  // Existing setting
+		Public:      false, // Existing setting
 		Type:        "discussion_moderated",
 		Description: "Existing description for the group",
 		Title:       "Existing Title",
@@ -642,14 +642,14 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 				// All other fields nil - PUT semantics clears mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",            // IMMUTABLE
-				GroupName:   "existing-group",    // IMMUTABLE
-				Public:      false,               // CLEARED to default false
-				Type:        "",                  // CLEARED (PUT semantics)
-				Description: "",                  // CLEARED (PUT semantics)
-				Title:       "Updated Title",     // Updated
-				ServiceUID:  "",                  // CLEARED (PUT semantics)
-				ProjectUID:  "project-123",       // IMMUTABLE
+				UID:         "ml-123",                      // IMMUTABLE
+				GroupName:   "existing-group",              // IMMUTABLE
+				Public:      false,                         // CLEARED to default false
+				Type:        "",                            // CLEARED (PUT semantics)
+				Description: "",                            // CLEARED (PUT semantics)
+				Title:       "Updated Title",               // Updated
+				ServiceUID:  "",                            // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",                 // IMMUTABLE
 				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -661,14 +661,14 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 				// All other fields nil - PUT semantics clears mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",            // IMMUTABLE
-				GroupName:   "existing-group",    // IMMUTABLE
-				Public:      true,                // Updated
-				Type:        "",                  // CLEARED (PUT semantics)
-				Description: "",                  // CLEARED (PUT semantics)
-				Title:       "",                  // CLEARED (PUT semantics)
-				ServiceUID:  "",                  // CLEARED (PUT semantics)
-				ProjectUID:  "project-123",       // IMMUTABLE
+				UID:         "ml-123",                      // IMMUTABLE
+				GroupName:   "existing-group",              // IMMUTABLE
+				Public:      true,                          // Updated
+				Type:        "",                            // CLEARED (PUT semantics)
+				Description: "",                            // CLEARED (PUT semantics)
+				Title:       "",                            // CLEARED (PUT semantics)
+				ServiceUID:  "",                            // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",                 // IMMUTABLE
 				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -684,32 +684,32 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 				ServiceUID:  "new-service-456",
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",            // IMMUTABLE
-				GroupName:   "existing-group",    // IMMUTABLE (can't change group name)
-				Public:      true,                // Updated
-				Type:        "discussion_open",   // Updated
+				UID:         "ml-123",                              // IMMUTABLE
+				GroupName:   "existing-group",                      // IMMUTABLE (can't change group name)
+				Public:      true,                                  // Updated
+				Type:        "discussion_open",                     // Updated
 				Description: "New description that is long enough", // Updated
-				Title:       "New Title",         // Updated
-				ServiceUID:  "new-service-456",   // Updated
-				ProjectUID:  "project-123",       // IMMUTABLE
-				CreatedAt:   existingMailingList.CreatedAt, // PRESERVED (immutable)
+				Title:       "New Title",                           // Updated
+				ServiceUID:  "new-service-456",                     // Updated
+				ProjectUID:  "project-123",                         // IMMUTABLE
+				CreatedAt:   existingMailingList.CreatedAt,         // PRESERVED (immutable)
 			},
 		},
 		{
 			name:     "empty update - no fields provided, all mutable fields cleared (PUT semantics)",
 			existing: existingMailingList,
-			payload: &mailinglistservice.UpdateGrpsioMailingListPayload{
+			payload:  &mailinglistservice.UpdateGrpsioMailingListPayload{
 				// All fields nil - PUT semantics clears all mutable fields
 			},
 			expected: &model.GrpsIOMailingList{
-				UID:         "ml-123",            // IMMUTABLE
-				GroupName:   "existing-group",    // IMMUTABLE
-				Public:      false,               // CLEARED to default false
-				Type:        "",                  // CLEARED (PUT semantics)
-				Description: "",                  // CLEARED (PUT semantics)
-				Title:       "",                  // CLEARED (PUT semantics)
-				ServiceUID:  "",                  // CLEARED (PUT semantics)
-				ProjectUID:  "project-123",       // IMMUTABLE
+				UID:         "ml-123",                      // IMMUTABLE
+				GroupName:   "existing-group",              // IMMUTABLE
+				Public:      false,                         // CLEARED to default false
+				Type:        "",                            // CLEARED (PUT semantics)
+				Description: "",                            // CLEARED (PUT semantics)
+				Title:       "",                            // CLEARED (PUT semantics)
+				ServiceUID:  "",                            // CLEARED (PUT semantics)
+				ProjectUID:  "project-123",                 // IMMUTABLE
 				CreatedAt:   existingMailingList.CreatedAt, // IMMUTABLE
 			},
 		},
@@ -737,7 +737,6 @@ func TestConvertMailingListUpdatePayloadToDomain(t *testing.T) {
 		})
 	}
 }
-
 
 // Helper functions for creating pointers to primitives
 func stringPtr(s string) *string {

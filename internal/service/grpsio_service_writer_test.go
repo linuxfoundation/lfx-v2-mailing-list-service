@@ -106,7 +106,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "shared", result.Type)
-				assert.Equal(t, int64(34567), result.GroupID)
+				assert.Equal(t, writerInt64Ptr(34567), result.GroupID)
 				assert.False(t, result.Public)
 				assert.Equal(t, "project-3", result.ProjectUID)
 				assert.Equal(t, uint64(1), revision)

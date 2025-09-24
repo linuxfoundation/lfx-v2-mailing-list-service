@@ -59,7 +59,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-1", result.MailingListUID)
-				assert.Equal(t, int64(12345), result.GroupsIOMemberID)
+				assert.Equal(t, writerInt64Ptr(12345), result.GroupsIOMemberID)
 				assert.Equal(t, "committee-member", result.Username)
 				assert.Equal(t, "Committee", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -136,7 +136,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEqual(t, "client-provided-uid", result.UID) // Should NOT preserve client UID
-				assert.NotEmpty(t, result.UID) // Should have server-generated UID
+				assert.NotEmpty(t, result.UID)                        // Should have server-generated UID
 				assert.Equal(t, "mailing-list-3", result.MailingListUID)
 				assert.Equal(t, "normal", result.Status) // Should preserve provided status
 				assert.Equal(t, uint64(1), revision)
@@ -219,8 +219,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-audit", result.MailingListUID)
-				assert.Equal(t, int64(99999), result.GroupsIOMemberID)
-				assert.Equal(t, int64(88888), result.GroupsIOGroupID)
+				assert.Equal(t, writerInt64Ptr(99999), result.GroupsIOMemberID)
+				assert.Equal(t, writerInt64Ptr(88888), result.GroupsIOGroupID)
 				assert.Equal(t, "audit-member", result.Username)
 				assert.Equal(t, "Audit", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -309,7 +309,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			MemberType:     "committee",
 			Status:         "normal",
 			CreatedAt:      existingMember.CreatedAt, // Preserve created time
-			UpdatedAt:      time.Now(), // This will be set by the orchestrator
+			UpdatedAt:      time.Now(),               // This will be set by the orchestrator
 		}
 
 		result, revision, err := writer.UpdateGrpsIOMember(ctx, "test-member", updatedMember, 1)

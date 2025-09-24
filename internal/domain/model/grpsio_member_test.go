@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestGrpsIOMember_BuildIndexKey(t *testing.T) {
 	ctx := context.Background()
 

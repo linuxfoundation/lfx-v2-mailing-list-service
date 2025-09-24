@@ -10,3 +10,4 @@ revive.log
 .claude/
 .vscode/settings.json
 coverage.html
+.serena/

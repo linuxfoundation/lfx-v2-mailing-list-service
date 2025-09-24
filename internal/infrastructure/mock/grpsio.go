@@ -25,12 +25,12 @@ var (
 
 // ErrorSimulationConfig configures error simulation for testing scenarios
 type ErrorSimulationConfig struct {
-	Enabled           bool                 `json:"enabled"`
-	ServiceErrors     map[string]error     `json:"-"` // service_uid -> error to return
-	MailingListErrors map[string]error     `json:"-"` // mailing_list_uid -> error to return
-	MemberErrors      map[string]error     `json:"-"` // member_uid -> error to return
-	GlobalError       error                `json:"-"` // error for all operations
-	OperationErrors   map[string]error     `json:"-"` // operation_name -> error
+	Enabled           bool             `json:"enabled"`
+	ServiceErrors     map[string]error `json:"-"` // service_uid -> error to return
+	MailingListErrors map[string]error `json:"-"` // mailing_list_uid -> error to return
+	MemberErrors      map[string]error `json:"-"` // member_uid -> error to return
+	GlobalError       error            `json:"-"` // error for all operations
+	OperationErrors   map[string]error `json:"-"` // operation_name -> error
 }
 
 // MockRepository provides a mock implementation of all repository interfaces for testing
@@ -47,8 +47,8 @@ type MockRepository struct {
 	projectSlugs         map[string]string                   // projectUID -> slug
 	projectNames         map[string]string                   // projectUID -> name
 	committeeNames       map[string]string                   // committeeUID -> name
-	errorSimulation      ErrorSimulationConfig              // Error simulation configuration
-	errorSimulationMu    sync.RWMutex                       // Protect concurrent access to error config
+	errorSimulation      ErrorSimulationConfig               // Error simulation configuration
+	errorSimulationMu    sync.RWMutex                        // Protect concurrent access to error config
 	mu                   sync.RWMutex                        // Protect concurrent access to maps
 }
 
@@ -413,11 +413,11 @@ func (w *MockGrpsIOWriter) UpdateGrpsIOMember(ctx context.Context, uid string, m
 
 	// Update member while preserving immutable fields
 	memberCopy := *member
-	memberCopy.UID = existing.UID // Preserve UID
-	memberCopy.Email = existing.Email // Preserve email (immutable)
+	memberCopy.UID = existing.UID                       // Preserve UID
+	memberCopy.Email = existing.Email                   // Preserve email (immutable)
 	memberCopy.MailingListUID = existing.MailingListUID // Preserve mailing list UID (immutable)
-	memberCopy.CreatedAt = existing.CreatedAt // Preserve created timestamp
-	memberCopy.UpdatedAt = time.Now() // Update timestamp
+	memberCopy.CreatedAt = existing.CreatedAt           // Preserve created timestamp
+	memberCopy.UpdatedAt = time.Now()                   // Update timestamp
 
 	// Store updated member and increment revision
 	w.mock.members[uid] = &memberCopy
@@ -1333,7 +1333,6 @@ func (m *MockRepository) GetMemberRevision(ctx context.Context, uid string) (uin
 
 	return 0, errors.NewNotFound("member not found")
 }
-
 
 // AddMember adds a member to the mock repository for testing
 func (m *MockRepository) AddMember(member *model.GrpsIOMember) {

@@ -160,18 +160,20 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 		sharedService1 := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
+			GroupName:  "group-1",
 			GroupID:    int64Ptr(12345),
 		}
 		sharedService2 := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
+			GroupName:  "group-2",
 			GroupID:    int64Ptr(67890),
 		}
 
 		key1 := sharedService1.BuildIndexKey(ctx)
 		key2 := sharedService2.BuildIndexKey(ctx)
 
-		assert.NotEqual(t, key1, key2, "Shared services with different group IDs should have different keys")
+		assert.NotEqual(t, key1, key2, "Shared services with different group names should have different keys")
 	})
 }
 

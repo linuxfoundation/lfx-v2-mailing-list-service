@@ -67,7 +67,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 				assert.Equal(t, testServiceUID, service.UID)
 				assert.Equal(t, "primary", service.Type)
 				assert.Equal(t, "lists.testproject.org", service.Domain)
-				assert.Equal(t, int64(12345), service.GroupID)
+				assert.Equal(t, serviceInt64Ptr(12345), service.GroupID)
 				assert.Equal(t, "created", service.Status)
 				assert.Equal(t, []string{"admin@testproject.org"}, service.GlobalOwners)
 				assert.Equal(t, "", service.Prefix)
@@ -339,7 +339,7 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		// Validate complete service data
 		assert.Equal(t, "formation", service.Type)
 		assert.Equal(t, "lists.formation.testproject.org", service.Domain)
-		assert.Equal(t, int64(67890), service.GroupID)
+		assert.Equal(t, serviceInt64Ptr(67890), service.GroupID)
 		assert.Equal(t, "created", service.Status)
 		assert.Equal(t, []string{"formation@testproject.org", "admin@testproject.org"}, service.GlobalOwners)
 		assert.Equal(t, "formation", service.Prefix)

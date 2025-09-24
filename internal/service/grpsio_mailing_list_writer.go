@@ -23,17 +23,6 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"parent_uid", request.ServiceUID,
 		"committee_uid", request.CommitteeUID)
 
-	// For rollback purposes
-	var (
-		keys             []string
-		rollbackRequired bool
-	)
-	defer func() {
-		if err := recover(); err != nil || rollbackRequired {
-			ml.deleteKeys(ctx, keys, true)
-		}
-	}()
-
 	// Step 1: Validate timestamps
 	if err := request.ValidateLastReviewedAt(); err != nil {
 		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
@@ -61,104 +50,75 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 4: Validate parent service and inherit metadata
+	// Step 5: Validate parent service and inherit metadata
 	parentService, err := ml.validateAndInheritFromParent(ctx, request)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Step 5: Validate committee and populate metadata (if specified)
+	// Step 6: Validate committee and populate metadata (if specified)
 	if err := ml.validateAndPopulateCommittee(ctx, request, parentService.ProjectUID); err != nil {
 		return nil, 0, err
 	}
 
-	// Step 6: Validate group name prefix for non-primary services
+	// Step 7: Validate group name prefix for non-primary services
 	if err := request.ValidateGroupNamePrefix(parentService.Type, parentService.Prefix); err != nil {
 		slog.WarnContext(ctx, "group name prefix validation failed", "error", err)
 		return nil, 0, err
 	}
 
-	// Step 7: Reserve unique constraints (like service pattern)
+	// Step 8: Reserve unique constraints
+	var keys []string
 	constraintKey, err := ml.reserveMailingListConstraints(ctx, request)
 	if err != nil {
-		rollbackRequired = true
 		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
+		// Simple cleanup on error - no complex rollback needed
+		defer func() {
+			if err != nil {
+				ml.deleteKeys(ctx, keys, true)
+			}
+		}()
 	}
 
-	// Step 8: Create mailing list in storage
+	// Step 9: Create in Groups.io FIRST (if enabled)
+	subgroupID, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
+	if err != nil {
+		// Fail fast for Creates - no partial state
+		return nil, 0, err
+	}
+
+	if subgroupID != nil {
+		// Groups.io creation successful
+		request.SubgroupID = subgroupID
+		request.SyncStatus = "synced"
+	} else {
+		// Mock/disabled mode or parent service has no GroupID - set appropriate status
+		request.SyncStatus = "pending"
+		slog.InfoContext(ctx, "Groups.io integration disabled or parent service not synced - mailing list will be in pending state")
+	}
+
+	// Step 10: Create mailing list in storage (with Groups.io ID already set)
 	createdMailingList, revision, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list in storage", "error", err)
-		rollbackRequired = true
+		// If storage fails after Groups.io creation, orphan will be handled by reconciliation
 		return nil, 0, err
 	}
 	keys = append(keys, createdMailingList.UID)
 
-	// Step 8.1: Create secondary indices for the mailing list
+	// Step 11: Create secondary indices for the mailing list
 	secondaryKeys, err := ml.createMailingListSecondaryIndices(ctx, createdMailingList)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list secondary indices", "error", err)
-		rollbackRequired = true
+		// Clean up primary record and constraints on secondary index failure
+		ml.deleteKeys(ctx, append(keys, secondaryKeys...), true)
 		return nil, 0, err
 	}
-	// Add secondary keys to rollback list
-	keys = append(keys, secondaryKeys...)
 
-	// Step 8.2: Create subgroup in Groups.io (if client available and parent has GroupID)
-	var rollbackSubgroupID uint64
-	defer func() {
-		// Cleanup Groups.io subgroup on error (if created)
-		if err := recover(); err != nil || rollbackRequired {
-			if rollbackSubgroupID > 0 && ml.groupsClient != nil {
-				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, parentService.Domain, rollbackSubgroupID); deleteErr != nil {
-					slog.ErrorContext(ctx, "failed to rollback Groups.io subgroup",
-						"subgroup_id", rollbackSubgroupID, "error", deleteErr)
-				}
-			}
-		}
-	}()
-
-	if ml.groupsClient != nil && parentService.GroupID != nil {
-		subgroupOptions := groupsio.SubgroupCreateOptions{
-			SubgroupName: createdMailingList.GroupName,
-			Description:  fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, createdMailingList.GroupName),
-			Public:       createdMailingList.Public,
-		}
-
-		subgroupResult, err := ml.groupsClient.CreateSubgroup(ctx, parentService.Domain, uint64(*parentService.GroupID), subgroupOptions)
-		if err != nil {
-			slog.ErrorContext(ctx, "Groups.io subgroup creation failed",
-				"error", err, "domain", parentService.Domain, "parent_group_id", *parentService.GroupID, "subgroup_name", createdMailingList.GroupName)
-			rollbackRequired = true
-			return nil, 0, fmt.Errorf("Groups.io subgroup creation failed: %w", err)
-		}
-
-		subgroupID := int64(subgroupResult.ID)
-		createdMailingList.SubgroupID = &subgroupID // Store as nullable pointer
-		createdMailingList.SyncStatus = "synced"
-		rollbackSubgroupID = subgroupResult.ID // Track for rollback if NATS fails
-
-		slog.InfoContext(ctx, "Groups.io subgroup created successfully",
-			"subgroup_id", subgroupResult.ID, "domain", parentService.Domain, "parent_group_id", *parentService.GroupID)
-
-		// Update the mailing list with SubgroupID in storage
-		updatedMailingList, _, err := ml.grpsIOWriter.UpdateGrpsIOMailingList(ctx, createdMailingList.UID, createdMailingList, revision)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to update mailing list with SubgroupID", "error", err)
-			rollbackRequired = true
-			return nil, 0, err
-		}
-		createdMailingList = updatedMailingList
-	} else {
-		// Mock/disabled mode or parent service has no GroupID - set appropriate status
-		createdMailingList.SyncStatus = "pending"
-		slog.InfoContext(ctx, "Groups.io integration disabled or parent service not synced - mailing list will be in pending state")
-	}
-
-	// Step 9: Publish messages concurrently (indexer + access control)
+	// Step 12: Publish messages concurrently (indexer + access control)
 	if err := ml.publishMailingListMessages(ctx, createdMailingList); err != nil {
 		// Log warning but don't fail the operation - mailing list is already created
 		slog.WarnContext(ctx, "failed to publish messages", "error", err, "mailing_list_uid", createdMailingList.UID)
@@ -172,6 +132,50 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"committee_based", createdMailingList.IsCommitteeBased())
 
 	return createdMailingList, revision, nil
+}
+
+// createMailingListInGroupsIO handles Groups.io subgroup creation and returns the ID
+func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, error) {
+	if ml.groupsClient == nil || parentService.GroupID == nil {
+		return nil, nil // Skip Groups.io creation
+	}
+
+	slog.InfoContext(ctx, "creating subgroup in Groups.io",
+		"domain", parentService.Domain,
+		"parent_group_id", *parentService.GroupID,
+		"subgroup_name", mailingList.GroupName,
+	)
+
+	subgroupOptions := groupsio.SubgroupCreateOptions{
+		SubgroupName: mailingList.GroupName,
+		Description:  fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName),
+		Public:       mailingList.Public,
+	}
+
+	subgroupResult, err := ml.groupsClient.CreateSubgroup(
+		ctx,
+		parentService.Domain,
+		uint64(*parentService.GroupID),
+		subgroupOptions,
+	)
+	if err != nil {
+		slog.ErrorContext(ctx, "Groups.io subgroup creation failed",
+			"error", err,
+			"domain", parentService.Domain,
+			"parent_group_id", *parentService.GroupID,
+			"subgroup_name", mailingList.GroupName,
+		)
+		return nil, fmt.Errorf("Groups.io subgroup creation failed: %w", err)
+	}
+
+	subgroupID := int64(subgroupResult.ID)
+	slog.InfoContext(ctx, "Groups.io subgroup created successfully",
+		"subgroup_id", subgroupResult.ID,
+		"domain", parentService.Domain,
+		"parent_group_id", *parentService.GroupID,
+	)
+
+	return &subgroupID, nil
 }
 
 // validateAndInheritFromParent validates parent service exists and inherits metadata

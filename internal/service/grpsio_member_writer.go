@@ -40,17 +40,6 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	member.CreatedAt = now
 	member.UpdatedAt = now
 
-	// For rollback purposes
-	var (
-		keys             []string
-		rollbackRequired bool
-	)
-	defer func() {
-		if err := recover(); err != nil || rollbackRequired {
-			o.deleteKeys(ctx, keys, true)
-		}
-	}()
-
 	// Step 3: Validate mailing list exists and populate metadata
 	if err := o.validateAndPopulateMailingList(ctx, member); err != nil {
 		slog.ErrorContext(ctx, "mailing list validation failed",
@@ -64,65 +53,31 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		"mailing_list_uid", member.MailingListUID,
 	)
 
-	// Step 3: Set default status if not provided
+	// Step 4: Set default status if not provided
 	if member.Status == "" {
 		member.Status = "pending"
 	}
 
-	// Step 4: Reserve unique constraints (member email per mailing list)
+	// Step 5: Reserve unique constraints (member email per mailing list)
+	var keys []string
 	constraintKey, err := o.grpsIOWriter.UniqueMember(ctx, member)
 	if err != nil {
-		rollbackRequired = true
 		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
-	}
-
-	// Step 5: Create member in storage
-	createdMember, revision, err := o.grpsIOWriter.CreateGrpsIOMember(ctx, member)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to create member",
-			"error", err,
-			"member_email", member.Email,
-			"mailing_list_uid", member.MailingListUID,
-		)
-		rollbackRequired = true
-		return nil, 0, err
-	}
-	keys = append(keys, createdMember.UID)
-
-	slog.DebugContext(ctx, "member created successfully",
-		"member_uid", createdMember.UID,
-		"revision", revision,
-	)
-
-	// Step 5.1: Add member to Groups.io subgroup (if client available and mailing list has SubgroupID)
-	var rollbackMemberID uint64
-	defer func() {
-		// Cleanup Groups.io member on error (if created)
-		if err := recover(); err != nil || rollbackRequired {
-			if rollbackMemberID > 0 && o.groupsClient != nil {
-				// Get mailing list and parent service domain for rollback
-				mailingList, _, mailingListErr := o.grpsIOReader.GetGrpsIOMailingList(ctx, createdMember.MailingListUID)
-				if mailingListErr == nil {
-					parentService, _, serviceErr := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
-					if serviceErr == nil {
-						if deleteErr := o.groupsClient.RemoveMember(ctx, parentService.Domain, rollbackMemberID); deleteErr != nil {
-							slog.ErrorContext(ctx, "failed to rollback Groups.io member",
-								"member_id", rollbackMemberID, "error", deleteErr)
-						}
-					}
-				}
+		// Simple cleanup on error - no complex rollback needed
+		defer func() {
+			if err != nil {
+				o.deleteKeys(ctx, keys, true)
 			}
-		}
-	}()
+		}()
+	}
 
-	// Get mailing list data to check if it has SubgroupID
-	mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, createdMember.MailingListUID)
+	// Step 6: Create in Groups.io FIRST (if enabled)
+	mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, member.MailingListUID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list for Groups.io sync", "error", err, "mailing_list_uid", createdMember.MailingListUID)
-		rollbackRequired = true
+		slog.ErrorContext(ctx, "failed to get mailing list for Groups.io sync", "error", err, "mailing_list_uid", member.MailingListUID)
 		return nil, 0, err
 	}
 
@@ -131,50 +86,90 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
-			rollbackRequired = true
 			return nil, 0, err
 		}
 
-		memberResult, err := o.groupsClient.AddMember(ctx, parentService.Domain, uint64(*mailingList.SubgroupID), createdMember.Email, fmt.Sprintf("%s %s", createdMember.FirstName, createdMember.LastName))
+		memberID, groupID, err := o.createMemberInGroupsIO(ctx, member, mailingList, parentService)
 		if err != nil {
-			slog.ErrorContext(ctx, "Groups.io member creation failed",
-				"error", err, "domain", parentService.Domain, "subgroup_id", *mailingList.SubgroupID, "email", createdMember.Email)
-			rollbackRequired = true
-			return nil, 0, fmt.Errorf("Groups.io member creation failed: %w", err)
-		}
-
-		memberID := int64(memberResult.ID)
-		createdMember.GroupsIOMemberID = &memberID // Store as nullable pointer
-		createdMember.GroupsIOGroupID = mailingList.SubgroupID // Copy from mailing list
-		createdMember.SyncStatus = "synced"
-		rollbackMemberID = memberResult.ID // Track for rollback
-
-		slog.InfoContext(ctx, "Groups.io member created successfully",
-			"member_id", memberResult.ID, "domain", parentService.Domain, "subgroup_id", *mailingList.SubgroupID)
-
-		// Update the member with GroupsIO IDs in storage
-		updatedMember, _, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, createdMember.UID, createdMember, revision)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to update member with GroupsIO IDs", "error", err)
-			rollbackRequired = true
+			// Fail fast for Creates - no partial state
 			return nil, 0, err
 		}
-		createdMember = updatedMember
+
+		// Set Groups.io IDs on member before storage creation
+		member.GroupsIOMemberID = memberID
+		member.GroupsIOGroupID = groupID
+		member.SyncStatus = "synced"
 	} else {
 		// Mock/disabled mode or mailing list not synced - set appropriate status
-		createdMember.SyncStatus = "pending"
+		member.SyncStatus = "pending"
 		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - member will be in pending state")
 	}
 
-	// Step 6: Publish messages (indexer and access control)
+	// Step 7: Create member in storage (with Groups.io IDs already set)
+	createdMember, revision, err := o.grpsIOWriter.CreateGrpsIOMember(ctx, member)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create member",
+			"error", err,
+			"member_email", member.Email,
+			"mailing_list_uid", member.MailingListUID,
+		)
+		// If storage fails after Groups.io creation, orphan will be handled by reconciliation
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "member created successfully",
+		"member_uid", createdMember.UID,
+		"revision", revision,
+	)
+
+	// Step 8: Publish messages (indexer and access control)
 	if o.publisher != nil {
 		if err := o.publishMemberMessages(ctx, createdMember, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish member messages", "error", err)
-			// Don't rollback on message failure, member creation succeeded
+			// Don't fail the operation on message failure, member creation succeeded
 		}
 	}
 
 	return createdMember, revision, nil
+}
+
+// createMemberInGroupsIO handles Groups.io member creation and returns the IDs
+func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, member *model.GrpsIOMember, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, *int64, error) {
+	if o.groupsClient == nil || mailingList.SubgroupID == nil {
+		return nil, nil, nil // Skip Groups.io creation
+	}
+
+	slog.InfoContext(ctx, "creating member in Groups.io",
+		"domain", parentService.Domain,
+		"subgroup_id", *mailingList.SubgroupID,
+		"email", member.Email,
+	)
+
+	memberResult, err := o.groupsClient.AddMember(
+		ctx,
+		parentService.Domain,
+		uint64(*mailingList.SubgroupID),
+		member.Email,
+		fmt.Sprintf("%s %s", member.FirstName, member.LastName),
+	)
+	if err != nil {
+		slog.ErrorContext(ctx, "Groups.io member creation failed",
+			"error", err,
+			"domain", parentService.Domain,
+			"subgroup_id", *mailingList.SubgroupID,
+			"email", member.Email,
+		)
+		return nil, nil, fmt.Errorf("Groups.io member creation failed: %w", err)
+	}
+
+	memberID := int64(memberResult.ID)
+	slog.InfoContext(ctx, "Groups.io member created successfully",
+		"member_id", memberResult.ID,
+		"domain", parentService.Domain,
+		"subgroup_id", *mailingList.SubgroupID,
+	)
+
+	return &memberID, mailingList.SubgroupID, nil
 }
 
 // UpdateGrpsIOMember updates an existing member following the service pattern with pre-fetch and validation

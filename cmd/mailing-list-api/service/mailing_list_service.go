@@ -593,7 +593,6 @@ func payloadStringValue(val *string) string {
 	return *val
 }
 
-
 // payloadInt64Ptr safely converts int64 pointer from payload to nullable pointer for domain model
 func payloadInt64Ptr(val *int64) *int64 {
 	if val == nil {
