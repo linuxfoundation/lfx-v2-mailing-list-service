@@ -13,6 +13,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
@@ -115,7 +116,7 @@ func NewMockRepository() *MockRepository {
 		sampleServices := []*model.GrpsIOService{
 			{
 				Type:         "primary",
-				UID:          "service-1",
+				UID:          "550e8400-e29b-41d4-a716-446655440001",
 				Domain:       "lists.testproject.org",
 				GroupID:      func() *int64 { id := int64(12345); return &id }(),
 				Status:       "created",
@@ -131,7 +132,7 @@ func NewMockRepository() *MockRepository {
 			},
 			{
 				Type:         "formation",
-				UID:          "service-2",
+				UID:          "550e8400-e29b-41d4-a716-446655440002",
 				Domain:       "lists.formation.testproject.org",
 				GroupID:      func() *int64 { id := int64(12346); return &id }(),
 				Status:       "created",
@@ -147,7 +148,7 @@ func NewMockRepository() *MockRepository {
 			},
 			{
 				Type:         "primary",
-				UID:          "service-3",
+				UID:          "550e8400-e29b-41d4-a716-446655440003",
 				Domain:       "lists.example.org",
 				GroupID:      func() *int64 { id := int64(12347); return &id }(),
 				Status:       "pending",
@@ -170,9 +171,9 @@ func NewMockRepository() *MockRepository {
 			mock.serviceIndexKeys[service.BuildIndexKey(context.Background())] = service
 		}
 
-		// Add project mappings
-		mock.projectSlugs["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "test-project"
-		mock.projectNames["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "Test Project"
+		// Add project mappings - using consistent naming
+		mock.projectSlugs["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "sample-project"
+		mock.projectNames["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "Cloud Native Computing Foundation"
 		mock.projectSlugs["8dbc6b9e-20e1-42b5-92b7-154564eaf0ff"] = "example-project"
 		mock.projectNames["8dbc6b9e-20e1-42b5-92b7-154564eaf0ff"] = "Example Project"
 
@@ -189,7 +190,7 @@ func NewMockRepository() *MockRepository {
 				Description:      "Development discussions and technical matters for the project",
 				Title:            "Development List",
 				SubjectTag:       "[DEV]",
-				ServiceUID:       "service-1",
+				ServiceUID:       "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:       "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:          []string{"dev-admin@testproject.org"},
 				Auditors:         []string{"auditor@testproject.org"},
@@ -204,7 +205,7 @@ func NewMockRepository() *MockRepository {
 				Description: "Official announcements and project news for all stakeholders",
 				Title:       "Announcements",
 				SubjectTag:  "[ANNOUNCE]",
-				ServiceUID:  "service-1",
+				ServiceUID:  "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:  "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:     []string{"admin@testproject.org"},
 				Auditors:    []string{"auditor@testproject.org"},
@@ -222,7 +223,7 @@ func NewMockRepository() *MockRepository {
 				Description:      "Private security discussions for committee members only",
 				Title:            "Formation Security List",
 				SubjectTag:       "[SECURITY]",
-				ServiceUID:       "service-2",
+				ServiceUID:       "550e8400-e29b-41d4-a716-446655440002",
 				ProjectUID:       "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:          []string{"security@testproject.org"},
 				Auditors:         []string{"security-audit@testproject.org"},
@@ -949,6 +950,126 @@ func (p *MockGrpsIOMessagePublisher) Access(ctx context.Context, subject string,
 // NewMockGrpsIOMessagePublisher creates a mock message publisher
 func NewMockGrpsIOMessagePublisher() port.MessagePublisher {
 	return &MockGrpsIOMessagePublisher{}
+}
+
+// MockGroupsIOClient provides a mock implementation of the GroupsIO HTTP client
+type MockGroupsIOClient struct {
+	CallLog []string // Track method calls for testing
+}
+
+// Verify MockGroupsIOClient implements ClientInterface
+var _ groupsio.ClientInterface = (*MockGroupsIOClient)(nil)
+
+// NewMockGroupsIOClient creates a new mock GroupsIO client
+func NewMockGroupsIOClient() *MockGroupsIOClient {
+	return &MockGroupsIOClient{
+		CallLog: make([]string, 0),
+	}
+}
+
+// CreateGroup mocks the Groups.io group creation API
+func (m *MockGroupsIOClient) CreateGroup(ctx context.Context, domain string, options groupsio.GroupCreateOptions) (*groupsio.GroupObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("CreateGroup(domain=%s, group_name=%s)", domain, options.GroupName))
+
+	// Return mock result
+	return &groupsio.GroupObject{
+		ID: 12345, // Mock group ID
+	}, nil
+}
+
+// UpdateGroup mocks the Groups.io group update API
+func (m *MockGroupsIOClient) UpdateGroup(ctx context.Context, domain string, groupID uint64, updates groupsio.GroupUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateGroup(domain=%s, group_id=%d, owners=%v)", domain, groupID, updates.GlobalOwners))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io group update simulated",
+		"domain", domain, "group_id", groupID, "global_owners", updates.GlobalOwners)
+
+	return nil
+}
+
+// UpdateMember mocks the Groups.io member update API
+func (m *MockGroupsIOClient) UpdateMember(ctx context.Context, domain string, memberID uint64, updates groupsio.MemberUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateMember(domain=%s, member_id=%d, mod_status=%s)", domain, memberID, updates.ModStatus))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io member update simulated",
+		"domain", domain, "member_id", memberID, "mod_status", updates.ModStatus, "delivery", updates.DeliveryMode)
+
+	return nil
+}
+
+// UpdateSubgroup mocks the Groups.io subgroup update API
+func (m *MockGroupsIOClient) UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates groupsio.SubgroupUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateSubgroup(domain=%s, subgroup_id=%d, title=%s)", domain, subgroupID, updates.Title))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io subgroup update simulated",
+		"domain", domain, "subgroup_id", subgroupID, "title", updates.Title, "description", updates.Description)
+
+	return nil
+}
+
+// DeleteGroup mocks the Groups.io group deletion API
+func (m *MockGroupsIOClient) DeleteGroup(ctx context.Context, domain string, groupID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("DeleteGroup(domain=%s, group_id=%d)", domain, groupID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io group deletion simulated",
+		"domain", domain, "group_id", groupID)
+
+	return nil
+}
+
+// CreateSubgroup mocks the Groups.io subgroup creation API
+func (m *MockGroupsIOClient) CreateSubgroup(ctx context.Context, domain string, parentGroupID uint64, options groupsio.SubgroupCreateOptions) (*groupsio.SubgroupObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("CreateSubgroup(domain=%s, parent_id=%d, name=%s)", domain, parentGroupID, options.GroupName))
+
+	// Return mock result
+	return &groupsio.SubgroupObject{
+		ID: 67890, // Mock subgroup ID
+	}, nil
+}
+
+// DeleteSubgroup mocks the Groups.io subgroup deletion API
+func (m *MockGroupsIOClient) DeleteSubgroup(ctx context.Context, domain string, subgroupID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("DeleteSubgroup(domain=%s, subgroup_id=%d)", domain, subgroupID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io subgroup deletion simulated",
+		"domain", domain, "subgroup_id", subgroupID)
+
+	return nil
+}
+
+// AddMember mocks the Groups.io member addition API
+func (m *MockGroupsIOClient) AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*groupsio.MemberObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("AddMember(domain=%s, subgroup_id=%d, email=%s)", domain, subgroupID, email))
+
+	// Return mock result
+	return &groupsio.MemberObject{
+		ID: 11111, // Mock member ID
+	}, nil
+}
+
+// RemoveMember mocks the Groups.io member removal API
+func (m *MockGroupsIOClient) RemoveMember(ctx context.Context, domain string, memberID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("RemoveMember(domain=%s, member_id=%d)", domain, memberID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io member removal simulated",
+		"domain", domain, "member_id", memberID)
+
+	return nil
+}
+
+// IsReady mocks the readiness check
+func (m *MockGroupsIOClient) IsReady(ctx context.Context) error {
+	return nil // Mock client is always ready
+}
+
+// GetCallLog returns the log of method calls for testing
+func (m *MockGroupsIOClient) GetCallLog() []string {
+	return m.CallLog
+}
+
+// ClearCallLog clears the call log
+func (m *MockGroupsIOClient) ClearCallLog() {
+	m.CallLog = make([]string, 0)
 }
 
 // GetServiceCount returns the total number of services

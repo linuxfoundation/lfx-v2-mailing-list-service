@@ -50,6 +50,84 @@ The LFX v2 Mailing List Service is a RESTful API service that manages mailing li
 - **Validation**: Comprehensive input validation and business rules enforcement
 - **ETag Support**: Optimistic concurrency control for update operations
 
+## Configuration
+
+The service is configured through environment variables:
+
+### Groups.io Integration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GROUPSIO_EMAIL` | Yes* | - | Groups.io account email for authentication |
+| `GROUPSIO_PASSWORD` | Yes* | - | Groups.io account password for authentication |
+| `GROUPSIO_BASE_URL` | No | `https://api.groups.io` | Groups.io API base URL |
+| `GROUPSIO_TIMEOUT` | No | `30s` | HTTP timeout for Groups.io API calls |
+| `GROUPSIO_MAX_RETRIES` | No | `3` | Maximum retry attempts for failed requests |
+| `GROUPSIO_RETRY_DELAY` | No | `1s` | Delay between retry attempts |
+| `GROUPSIO_SOURCE` | No | - | Set to `mock` to disable real Groups.io calls |
+
+*Required for production use (Groups.io integration is always enabled)
+
+### Authentication
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AUTH_SOURCE` | No | `jwt` | Authentication source (`jwt` or `mock`) |
+| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | No | - | Mock user for local development (when `AUTH_SOURCE=mock`) |
+
+### Service Configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LOG_LEVEL` | No | `info` | Logging level (`debug`, `info`, `warn`, `error`) |
+| `PORT` | No | `8080` | HTTP server port |
+
+### Groups.io Domain Configuration
+
+The Groups.io domain can be specified in two ways:
+
+1. **API Field Parameter (Recommended)**: Pass the `domain` field in service creation requests
+2. **Default**: Uses `groups.io` if no domain is specified
+
+#### Sandbox Testing with Linux Foundation Groups.io
+
+**Important**: For sandbox testing with Linux Foundation's Groups.io tenant, you **must** specify the domain as `linuxfoundation.groups.io` in your API requests.
+
+Example service creation with domain:
+
+```bash
+curl -X POST "localhost:8080/groupsio/services?v=1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_uid": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "primary",
+    "domain": "linuxfoundation.groups.io",
+    "global_owners": ["admin@example.com"],
+    "project_name": "Test Project"
+  }'
+```
+
+### Example Configuration
+
+For development with Groups.io integration:
+
+```bash
+export GROUPSIO_EMAIL="your-groups-io-email@example.com"
+export GROUPSIO_PASSWORD="your-groups-io-password"
+export AUTH_SOURCE="mock"
+export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-admin"
+export LOG_LEVEL="debug"
+```
+
+For local development without Groups.io:
+
+```bash
+export GROUPSIO_SOURCE="mock"
+export AUTH_SOURCE="mock"
+export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-admin"
+export LOG_LEVEL="debug"
+```
+
 ## Development
 
 ### Prerequisites

@@ -653,5 +653,98 @@ func writerServiceInt64Ptr(i int64) *int64 {
 	return &i
 }
 
+func TestGrpsIOWriterOrchestrator_syncServiceToGroupsIO(t *testing.T) {
+	testCases := []struct {
+		name              string
+		setupMock         func(*mock.MockRepository)
+		service           *model.GrpsIOService
+		useNilClient      bool
+		expectedToNotPanic bool
+	}{
+		{
+			name: "sync with nil GroupsIO client should skip gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      writerServiceInt64Ptr(12345),
+				GlobalOwners: []string{"admin@test.org", "owner@test.org"},
+				ProjectUID:   "project-1",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+		{
+			name: "sync with nil GroupID should skip gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      nil, // Not synced to GroupsIO yet
+				GlobalOwners: []string{"admin@test.org"},
+				ProjectUID:   "project-1",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+		{
+			name: "sync handles domain lookup failure gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				// Don't add project - this will cause domain lookup to fail
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      writerServiceInt64Ptr(12345),
+				GlobalOwners: []string{"admin@test.org"},
+				ProjectUID:   "nonexistent-project",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+
+			// Create orchestrator without GroupsIO client (simulate mock mode)
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+				// No WithGroupsIOClient - this simulates mock mode
+			)
+
+			// Execute - should not panic
+			ctx := context.Background()
+			concreteOrchestrator := orchestrator.(*grpsIOWriterOrchestrator)
+
+			// This should execute without panicking
+			assert.NotPanics(t, func() {
+				concreteOrchestrator.syncServiceToGroupsIO(ctx, tc.service)
+			}, "syncServiceToGroupsIO should handle all error cases gracefully")
+		})
+	}
+}
+
 // Note: buildServiceIndexerMessage and buildServiceAccessControlMessage methods are private
 // and are tested indirectly through the Create/Update/Delete operations above

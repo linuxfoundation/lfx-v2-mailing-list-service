@@ -8,15 +8,22 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 )
 
-// Client represents a generic HTTP client with retry logic
+// RoundTripper interface for request middleware (inspired by production pattern)
+type RoundTripper interface {
+	RoundTrip(req *http.Request, next func(*http.Request) (*http.Response, error)) (*http.Response, error)
+}
+
+// Client represents a generic HTTP client with retry logic and middleware support
 type Client struct {
-	config     Config
-	httpClient *http.Client
+	config        Config
+	httpClient    *http.Client
+	roundTrippers []RoundTripper
 }
 
 // Request represents an HTTP request configuration
@@ -53,7 +60,17 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 			// Calculate delay with optional exponential backoff
 			delay := c.config.RetryDelay
 			if c.config.RetryBackoff {
-				delay = time.Duration(int64(delay) * int64(1<<(attempt-1)))
+				// Clean doubling with overflow protection
+				for i := 1; i < attempt && delay < c.config.MaxDelay/2; i++ {
+					delay *= 2
+				}
+				if delay > c.config.MaxDelay {
+					delay = c.config.MaxDelay
+				}
+
+				// Add jitter (25% random variance) to prevent thundering herd
+				jitter := time.Duration(rand.Int63n(int64(delay / 4)))
+				delay = delay + jitter
 			}
 
 			select {
@@ -81,7 +98,7 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 	return nil, lastErr
 }
 
-// doRequest performs a single HTTP request
+// doRequest performs a single HTTP request with RoundTripper middleware
 func (c *Client) doRequest(ctx context.Context, reqConfig Request) (*Response, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, reqConfig.Method, reqConfig.URL, reqConfig.Body)
 	if err != nil {
@@ -96,7 +113,8 @@ func (c *Client) doRequest(ctx context.Context, reqConfig Request) (*Response, e
 		httpReq.Header.Set(key, value)
 	}
 
-	resp, err := c.httpClient.Do(httpReq)
+	// Execute RoundTripper chain (production pattern)
+	resp, err := c.executeRoundTripperChain(httpReq, 0)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -155,10 +173,36 @@ func (c *Client) Request(ctx context.Context, verb, url string, body io.Reader, 
 	return c.Do(ctx, req)
 }
 
+// executeRoundTripperChain executes the RoundTripper middleware chain
+func (c *Client) executeRoundTripperChain(req *http.Request, index int) (*http.Response, error) {
+	if index >= len(c.roundTrippers) {
+		// Base case: execute the actual HTTP request
+		return c.httpClient.Do(req)
+	}
+
+	// Execute current RoundTripper with next function
+	next := func(req *http.Request) (*http.Response, error) {
+		return c.executeRoundTripperChain(req, index+1)
+	}
+
+	return c.roundTrippers[index].RoundTrip(req, next)
+}
+
+// AddRoundTripper adds a middleware RoundTripper to the client
+func (c *Client) AddRoundTripper(rt RoundTripper) {
+	c.roundTrippers = append(c.roundTrippers, rt)
+}
+
 // NewClient creates a new HTTP client with the given configuration
 func NewClient(config Config) *Client {
+	// Set sensible default for MaxDelay if not configured
+	if config.MaxDelay == 0 {
+		config.MaxDelay = 30 * time.Second
+	}
+
 	return &Client{
-		config: config,
+		config:        config,
+		roundTrippers: make([]RoundTripper, 0),
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 		},

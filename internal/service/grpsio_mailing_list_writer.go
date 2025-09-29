@@ -23,6 +23,26 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"parent_uid", request.ServiceUID,
 		"committee_uid", request.CommitteeUID)
 
+	// For rollback purposes
+	var (
+		keys                   []string
+		rollbackRequired       bool
+		rollbackSubgroupID     *int64
+		rollbackGroupsIODomain string
+	)
+	defer func() {
+		if err := recover(); err != nil || rollbackRequired {
+			ml.deleteKeys(ctx, keys, true)
+
+			// Clean up GroupsIO subgroup if created
+			if rollbackSubgroupID != nil && ml.groupsClient != nil {
+				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, rollbackGroupsIODomain, uint64(*rollbackSubgroupID)); deleteErr != nil {
+					slog.WarnContext(ctx, "failed to cleanup GroupsIO subgroup during rollback", "error", deleteErr, "subgroup_id", *rollbackSubgroupID)
+				}
+			}
+		}
+	}()
+
 	// Step 1: Validate timestamps
 	if err := request.ValidateLastReviewedAt(); err != nil {
 		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
@@ -68,30 +88,27 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	}
 
 	// Step 8: Reserve unique constraints
-	var keys []string
 	constraintKey, err := ml.reserveMailingListConstraints(ctx, request)
 	if err != nil {
+		rollbackRequired = true
 		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
-		// Simple cleanup on error - no complex rollback needed
-		defer func() {
-			if err != nil {
-				ml.deleteKeys(ctx, keys, true)
-			}
-		}()
 	}
 
 	// Step 9: Create in Groups.io FIRST (if enabled)
 	subgroupID, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
 	if err != nil {
-		// Fail fast for Creates - no partial state
+		rollbackRequired = true
 		return nil, 0, err
 	}
 
 	if subgroupID != nil {
-		// Groups.io creation successful
+		// Groups.io creation successful - track for rollback cleanup
+		rollbackSubgroupID = subgroupID
+		rollbackGroupsIODomain = parentService.Domain
+
 		request.SubgroupID = subgroupID
 		request.SyncStatus = "synced"
 	} else {
@@ -104,7 +121,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	createdMailingList, revision, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list in storage", "error", err)
-		// If storage fails after Groups.io creation, orphan will be handled by reconciliation
+		rollbackRequired = true
 		return nil, 0, err
 	}
 	keys = append(keys, createdMailingList.UID)
@@ -113,10 +130,12 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	secondaryKeys, err := ml.createMailingListSecondaryIndices(ctx, createdMailingList)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list secondary indices", "error", err)
-		// Clean up primary record and constraints on secondary index failure
-		ml.deleteKeys(ctx, append(keys, secondaryKeys...), true)
+		rollbackRequired = true
 		return nil, 0, err
 	}
+
+	// Add secondary keys to rollback list
+	keys = append(keys, secondaryKeys...)
 
 	// Step 12: Publish messages concurrently (indexer + access control)
 	if err := ml.publishMailingListMessages(ctx, createdMailingList); err != nil {
@@ -147,9 +166,10 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 	)
 
 	subgroupOptions := groupsio.SubgroupCreateOptions{
-		SubgroupName: mailingList.GroupName,
-		Description:  fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName),
-		Public:       mailingList.Public,
+		ParentGroupID: uint64(*parentService.GroupID),                                                            // Production field
+		GroupName:     mailingList.GroupName,                                                                     // Fixed: was SubgroupName
+		Desc:          fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName), // Fixed: was Description
+		// Privacy: leave empty to inherit from parent group (production pattern)
 	}
 
 	subgroupResult, err := ml.groupsClient.CreateSubgroup(
@@ -165,7 +185,7 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 			"parent_group_id", *parentService.GroupID,
 			"subgroup_name", mailingList.GroupName,
 		)
-		return nil, fmt.Errorf("Groups.io subgroup creation failed: %w", err)
+		return nil, fmt.Errorf("groups.io subgroup creation failed: %w", err)
 	}
 
 	subgroupID := int64(subgroupResult.ID)
@@ -384,6 +404,9 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		"revision", newRevision,
 	)
 
+	// Sync mailing list updates to Groups.io
+	ml.syncMailingListToGroupsIO(ctx, updatedMailingList)
+
 	// Publish update messages
 	if ml.publisher != nil {
 		if err := ml.publishMailingListUpdateMessages(ctx, updatedMailingList); err != nil {
@@ -511,28 +534,7 @@ func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context,
 		"public", mailingListData.Public)
 
 	// Step 2.1: Delete subgroup from Groups.io (if client available and mailing list has SubgroupID)
-	if ml.groupsClient != nil && mailingListData.SubgroupID != nil {
-		// Get parent service to obtain domain
-		parentService, _, err := ml.grpsIOReader.GetGrpsIOService(ctx, mailingListData.ServiceUID)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to get parent service for domain", "error", err, "service_uid", mailingListData.ServiceUID)
-			// Continue with local deletion even if we can't get parent service domain
-			slog.WarnContext(ctx, "continuing with local deletion despite parent service lookup failure")
-		} else {
-			err := ml.groupsClient.DeleteSubgroup(ctx, parentService.Domain, uint64(*mailingListData.SubgroupID))
-			if err != nil {
-				slog.ErrorContext(ctx, "Groups.io subgroup deletion failed",
-					"error", err, "domain", parentService.Domain, "subgroup_id", *mailingListData.SubgroupID)
-				// Continue with local deletion even if Groups.io fails - orphaned subgroups can be cleaned up later
-				slog.WarnContext(ctx, "continuing with local deletion despite Groups.io failure")
-			} else {
-				slog.InfoContext(ctx, "Groups.io subgroup deleted successfully",
-					"subgroup_id", *mailingListData.SubgroupID, "domain", parentService.Domain)
-			}
-		}
-	} else {
-		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - skipping subgroup deletion")
-	}
+	ml.deleteSubgroupWithCleanup(ctx, mailingListData.ServiceUID, mailingListData.SubgroupID)
 
 	// Delete from storage with revision check
 	err := ml.grpsIOWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingListData)
@@ -581,4 +583,39 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 		"mailing_list_uid", existing.UID,
 		"mutable_fields", []string{"public", "type", "description", "title", "committee_uid", "committee_name", "committee_filters", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
 	)
+}
+
+// syncMailingListToGroupsIO handles Groups.io mailing list update with proper error handling
+func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList) {
+	// Guard clause: skip if Groups.io client not available or mailing list not synced
+	if ml.groupsClient == nil || mailingList.SubgroupID == nil {
+		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - skipping Groups.io update")
+		return
+	}
+
+	// Get domain using helper method
+	domain, err := ml.getGroupsIODomainForResource(ctx, mailingList.UID, constants.ResourceTypeMailingList)
+	if err != nil {
+		slog.WarnContext(ctx, "Groups.io mailing list sync skipped due to domain lookup failure, local update will proceed",
+			"error", err, "mailing_list_uid", mailingList.UID)
+		return
+	}
+
+	// Build update options from mailing list model
+	updates := groupsio.SubgroupUpdateOptions{
+		Title:       mailingList.Title,
+		Description: mailingList.Description,
+		SubjectTag:  mailingList.SubjectTag,
+		Committee:   mailingList.CommitteeUID,
+	}
+
+	// Perform Groups.io mailing list update
+	err = ml.groupsClient.UpdateSubgroup(ctx, domain, uint64(*mailingList.SubgroupID), updates)
+	if err != nil {
+		slog.WarnContext(ctx, "Groups.io mailing list update failed, local update will proceed",
+			"error", err, "domain", domain, "subgroup_id", *mailingList.SubgroupID)
+	} else {
+		slog.InfoContext(ctx, "Groups.io mailing list updated successfully",
+			"subgroup_id", *mailingList.SubgroupID, "domain", domain)
+	}
 }

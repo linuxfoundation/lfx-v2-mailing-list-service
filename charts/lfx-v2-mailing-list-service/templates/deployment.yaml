@@ -38,8 +38,6 @@ spec:
             - name: JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL
               value: {{.Values.app.jwtAuthDisabledMockLocalPrincipal}}
             # GroupsIO configuration
-            - name: GROUPSIO_ENABLED
-              value: {{.Values.app.groupsio.enabled | quote}}
             - name: GROUPSIO_SOURCE
               value: {{.Values.app.groupsio.source}}
             - name: GROUPSIO_BASE_URL

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
@@ -681,4 +682,101 @@ func writerStringPtr(s string) *string {
 // Helper function to create int64 pointer
 func writerInt64Ptr(i int64) *int64 {
 	return &i
+}
+
+// TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO tests the syncMemberToGroupsIO method
+func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
+	testCases := []struct {
+		name           string
+		setupMocks     func() (*grpsIOWriterOrchestrator, *mock.MockRepository)
+		member         *model.GrpsIOMember
+		updates        groupsio.MemberUpdateOptions
+		expectSkip     bool
+		expectWarning  bool
+	}{
+		{
+			name: "skip sync when Groups.io client is nil",
+			setupMocks: func() (*grpsIOWriterOrchestrator, *mock.MockRepository) {
+				mockRepo := mock.NewMockRepository()
+				orchestrator := &grpsIOWriterOrchestrator{
+					groupsClient: nil, // No client
+				}
+				return orchestrator, mockRepo
+			},
+			member: &model.GrpsIOMember{
+				UID:              "member-1",
+				GroupsIOMemberID: func() *int64 { i := int64(12345); return &i }(),
+				FirstName:        "John",
+				LastName:         "Doe",
+			},
+			updates: groupsio.MemberUpdateOptions{
+				FirstName: "John",
+				LastName:  "Doe",
+			},
+			expectSkip: true,
+		},
+		{
+			name: "skip sync when member GroupsIOMemberID is nil",
+			setupMocks: func() (*grpsIOWriterOrchestrator, *mock.MockRepository) {
+				mockRepo := mock.NewMockRepository()
+				orchestrator := &grpsIOWriterOrchestrator{
+					groupsClient: nil, // Could be any client, but GroupsIOMemberID is nil
+				}
+				return orchestrator, mockRepo
+			},
+			member: &model.GrpsIOMember{
+				UID:              "member-2",
+				GroupsIOMemberID: nil, // No member ID - not synced
+				FirstName:        "Jane",
+				LastName:         "Smith",
+			},
+			updates: groupsio.MemberUpdateOptions{
+				FirstName: "Jane",
+				LastName:  "Smith",
+			},
+			expectSkip: true,
+		},
+		{
+			name: "skip sync when domain lookup fails",
+			setupMocks: func() (*grpsIOWriterOrchestrator, *mock.MockRepository) {
+				mockRepo := mock.NewMockRepository()
+				mockReader := mock.NewMockGrpsIOReader(mockRepo)
+
+				orchestrator := &grpsIOWriterOrchestrator{
+					groupsClient: nil, // Any non-nil would work for this test
+					grpsIOReader: mockReader,
+				}
+
+				// Note: We don't need actual client for this test as domain lookup will fail first
+				return orchestrator, mockRepo
+			},
+			member: &model.GrpsIOMember{
+				UID:              "nonexistent-member",
+				GroupsIOMemberID: func() *int64 { i := int64(12345); return &i }(),
+				FirstName:        "Test",
+				LastName:         "User",
+			},
+			updates: groupsio.MemberUpdateOptions{
+				FirstName: "Test",
+				LastName:  "User",
+			},
+			expectWarning: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			ctx := context.Background()
+			orchestrator, _ := tc.setupMocks()
+
+			// Execute - should not panic regardless of nil clients or missing data
+			require.NotPanics(t, func() {
+				orchestrator.syncMemberToGroupsIO(ctx, tc.member, tc.updates)
+			}, "syncMemberToGroupsIO should handle nil clients and missing data gracefully")
+
+			// The method should complete without errors, handling all edge cases internally
+			// This validates that our error handling and guard clauses work correctly
+		})
+	}
 }

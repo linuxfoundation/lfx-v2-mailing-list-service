@@ -31,6 +31,25 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 	service.CreatedAt = now
 	service.UpdatedAt = now
 
+	// For rollback purposes
+	var (
+		keys             []string
+		rollbackRequired bool
+		serviceID        *int64
+	)
+	defer func() {
+		if err := recover(); err != nil || rollbackRequired {
+			sw.deleteKeys(ctx, keys, true)
+
+			// Clean up GroupsIO resource if created
+			if serviceID != nil && sw.groupsClient != nil {
+				if deleteErr := sw.groupsClient.DeleteGroup(ctx, service.Domain, uint64(*serviceID)); deleteErr != nil {
+					slog.WarnContext(ctx, "failed to cleanup GroupsIO group during rollback", "error", deleteErr, "group_id", *serviceID)
+				}
+			}
+		}
+	}()
+
 	// Step 2: Validate project exists and populate metadata
 	if err := sw.validateAndPopulateProject(ctx, service); err != nil {
 		slog.ErrorContext(ctx, "project validation failed",
@@ -47,30 +66,26 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 	)
 
 	// Step 3: Reserve unique constraints based on service type
-	var keys []string
 	constraintKey, err := sw.reserveUniqueConstraints(ctx, service)
 	if err != nil {
+		rollbackRequired = true
 		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
-		// Simple cleanup on error - no complex rollback needed
-		defer func() {
-			if err != nil {
-				sw.deleteKeys(ctx, keys, true)
-			}
-		}()
 	}
 
 	// Step 4: Create in Groups.io FIRST (if enabled)
 	groupID, err := sw.createServiceInGroupsIO(ctx, service)
 	if err != nil {
-		// Fail fast for Creates - no partial state
+		rollbackRequired = true
 		return nil, 0, err
 	}
 
 	if groupID != nil {
-		// Groups.io creation successful
+		// Groups.io creation successful - track for rollback cleanup
+		serviceID = groupID
+
 		service.GroupID = groupID
 		service.SyncStatus = "synced"
 		service.Status = "active"
@@ -89,7 +104,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"service_type", service.Type,
 			"service_domain", service.Domain,
 		)
-		// If storage fails after Groups.io creation, orphan will be handled by reconciliation
+		rollbackRequired = true
 		return nil, 0, err
 	}
 
@@ -115,25 +130,31 @@ func (sw *grpsIOWriterOrchestrator) createServiceInGroupsIO(ctx context.Context,
 		return nil, nil // Skip Groups.io creation
 	}
 
+	// Use domain methods for effective values
+	effectiveDomain := service.GetDomain()
+	effectiveGroupName := service.GetGroupName()
+
 	slog.InfoContext(ctx, "creating group in Groups.io",
-		"domain", service.Domain,
-		"group_name", service.GroupName,
+		"domain", effectiveDomain,
+		"group_name", effectiveGroupName,
 	)
 
 	groupOptions := groupsio.GroupCreateOptions{
-		GroupName:   service.GroupName,
-		Description: fmt.Sprintf("Mailing lists for %s", service.ProjectName),
-		Public:      service.Public,
+		GroupName:      effectiveGroupName,
+		Desc:           fmt.Sprintf("Mailing lists for %s", service.ProjectName), // Fixed: was Description
+		Privacy:        "group_privacy_unlisted_public",                          // Production value
+		SubGroupAccess: "sub_group_owners",                                       // Production value
+		EmailDelivery:  "email_delivery_none",                                    // Production value
 	}
 
-	groupResult, err := sw.groupsClient.CreateGroup(ctx, service.Domain, groupOptions)
+	groupResult, err := sw.groupsClient.CreateGroup(ctx, effectiveDomain, groupOptions)
 	if err != nil {
 		slog.ErrorContext(ctx, "Groups.io group creation failed",
 			"error", err,
-			"domain", service.Domain,
+			"domain", effectiveDomain,
 			"group_name", service.GroupName,
 		)
-		return nil, fmt.Errorf("Groups.io creation failed: %w", err)
+		return nil, fmt.Errorf("groups.io creation failed: %w", err)
 	}
 
 	groupID := int64(groupResult.ID)
@@ -141,6 +162,37 @@ func (sw *grpsIOWriterOrchestrator) createServiceInGroupsIO(ctx context.Context,
 		"group_id", groupResult.ID,
 		"domain", service.Domain,
 	)
+
+	// Step 2: Update group with additional settings that cannot be set at creation time
+	announce := true
+	updateOptions := groupsio.GroupUpdateOptions{
+		Announce:              &announce,
+		ReplyTo:               "group_reply_to_sender",
+		MembersVisible:        "group_view_members_moderators",
+		CalendarAccess:        "group_access_none",
+		FilesAccess:           "group_access_none",
+		DatabaseAccess:        "group_access_none",
+		WikiAccess:            "group_access_none",
+		PhotosAccess:          "group_access_none",
+		MemberDirectoryAccess: "group_access_moderators_only",
+		PollsAccess:           "polls_access_none",
+		ChatAccess:            "group_access_none",
+	}
+
+	err = sw.groupsClient.UpdateGroup(ctx, effectiveDomain, uint64(groupID), updateOptions)
+	if err != nil {
+		slog.WarnContext(ctx, "Groups.io group update failed, but group creation succeeded",
+			"error", err,
+			"group_id", groupID,
+			"domain", effectiveDomain,
+		)
+		// Don't fail the creation if update fails, as the group was created successfully
+	} else {
+		slog.InfoContext(ctx, "Groups.io group updated with additional settings",
+			"group_id", groupID,
+			"domain", effectiveDomain,
+		)
+	}
 
 	return &groupID, nil
 }
@@ -240,6 +292,9 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 		"service_uid", uid,
 		"revision", revision,
 	)
+
+	// Sync service updates to Groups.io
+	sw.syncServiceToGroupsIO(ctx, updatedService)
 
 	// Publish update messages
 	if sw.publisher != nil {
@@ -481,4 +536,36 @@ func (sw *grpsIOWriterOrchestrator) mergeServiceData(ctx context.Context, existi
 		"service_id", existing.UID,
 		"mutable_fields", []string{"global_owners", "status", "public"},
 	)
+}
+
+// syncServiceToGroupsIO handles Groups.io service update with proper error handling
+func (sw *grpsIOWriterOrchestrator) syncServiceToGroupsIO(ctx context.Context, service *model.GrpsIOService) {
+	// Guard clause: skip if Groups.io client not available or service not synced
+	if sw.groupsClient == nil || service.GroupID == nil {
+		slog.InfoContext(ctx, "Groups.io integration disabled or service not synced - skipping Groups.io update")
+		return
+	}
+
+	// Get domain using helper method
+	domain, err := sw.getGroupsIODomainForResource(ctx, service.UID, constants.ResourceTypeService)
+	if err != nil {
+		slog.WarnContext(ctx, "Groups.io service sync skipped due to domain lookup failure, local update will proceed",
+			"error", err, "service_uid", service.UID)
+		return
+	}
+
+	// Build update options from service model
+	updates := groupsio.GroupUpdateOptions{
+		GlobalOwners: service.GlobalOwners,
+	}
+
+	// Perform Groups.io service update
+	err = sw.groupsClient.UpdateGroup(ctx, domain, uint64(*service.GroupID), updates)
+	if err != nil {
+		slog.WarnContext(ctx, "Groups.io service update failed, local update will proceed",
+			"error", err, "domain", domain, "group_id", *service.GroupID)
+	} else {
+		slog.InfoContext(ctx, "Groups.io service updated successfully",
+			"group_id", *service.GroupID, "domain", domain)
+	}
 }

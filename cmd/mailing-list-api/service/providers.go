@@ -24,7 +24,7 @@ var (
 	natsStorageClient   port.GrpsIOReaderWriter
 	natsMessagingClient port.EntityAttributeReader
 	natsPublisherClient port.MessagePublisher
-	groupsIOClient      *groupsio.Client
+	groupsIOClient      groupsio.ClientInterface
 
 	natsDoOnce         sync.Once
 	groupsIOClientOnce sync.Once
@@ -278,28 +278,22 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 }
 
 // GroupsIOClient initializes the GroupsIO client with singleton pattern
-func GroupsIOClient(ctx context.Context) *groupsio.Client {
+func GroupsIOClient(ctx context.Context) groupsio.ClientInterface {
 	groupsIOClientOnce.Do(func() {
 		// Check if we should use mock
 		if os.Getenv("GROUPSIO_SOURCE") == "mock" {
 			slog.InfoContext(ctx, "using mock GroupsIO client")
-			// Mock returns nil, orchestrator handles nil gracefully
+			groupsIOClient = infrastructure.NewMockGroupsIOClient()
 			return
 		}
 
-		// Only initialize if explicitly enabled
-		if os.Getenv("GROUPSIO_ENABLED") != "true" {
-			slog.InfoContext(ctx, "GroupsIO integration disabled")
-			return
-		}
-
-		// Real client initialization
+		// Real client initialization - Groups.io integration
 		config := groupsio.NewConfigFromEnv()
 
 		client, err := groupsio.NewClient(config)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to initialize GroupsIO client", "error", err)
-			// Don't fatal - service can run without GroupsIO
+			slog.ErrorContext(ctx, "failed to initialize GroupsIO client - this service requires Groups.io integration", "error", err)
+			// Don't fatal - service can run without GroupsIO for local development
 			return
 		}
 

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -20,6 +21,58 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/httpclient"
 )
 
+// groupsioBasicAuthRoundTripper implements automatic BasicAuth injection (production pattern)
+type groupsioBasicAuthRoundTripper struct {
+	client *Client
+}
+
+// RoundTrip ensures authentication before non-login requests to groups.io
+// and adds authorization header to those requests (production pattern)
+func (rt *groupsioBasicAuthRoundTripper) RoundTrip(req *http.Request, next func(*http.Request) (*http.Response, error)) (*http.Response, error) {
+	// Skip auth for login requests to avoid infinite recursion
+	if strings.Contains(req.URL.Path, "/v1/login") {
+		return next(req)
+	}
+
+	// Get cached token for this domain
+	rt.client.cacheMu.RLock()
+	if cache, exists := rt.client.cache[req.Host]; exists {
+		cache.mu.RLock()
+		if time.Now().Before(cache.expiry) && cache.token != "" {
+			// Use cached token with BasicAuth (production pattern: req.SetBasicAuth)
+			req.SetBasicAuth(cache.token, "")
+			cache.mu.RUnlock()
+			rt.client.cacheMu.RUnlock()
+
+			slog.DebugContext(req.Context(), "RoundTripper: using cached Groups.io token",
+				"host", req.Host, "path", req.URL.Path)
+			return next(req)
+		}
+		cache.mu.RUnlock()
+	}
+	rt.client.cacheMu.RUnlock()
+
+	// No valid cached token - authenticate first (production pattern)
+	if err := rt.client.WithDomain(req.Context(), req.Host); err != nil {
+		return nil, fmt.Errorf("authentication failed in RoundTripper: %w", err)
+	}
+
+	// Now get the token and set BasicAuth
+	rt.client.cacheMu.RLock()
+	if cache, exists := rt.client.cache[req.Host]; exists {
+		cache.mu.RLock()
+		if cache.token != "" {
+			req.SetBasicAuth(cache.token, "")
+			slog.DebugContext(req.Context(), "RoundTripper: using fresh Groups.io token",
+				"host", req.Host, "path", req.URL.Path)
+		}
+		cache.mu.RUnlock()
+	}
+	rt.client.cacheMu.RUnlock()
+
+	return next(req)
+}
+
 // tokenCache holds cached authentication tokens per domain
 type tokenCache struct {
 	token  string
@@ -28,6 +81,20 @@ type tokenCache struct {
 }
 
 // Client handles all Groups.io API operations with smart token caching
+// ClientInterface defines the contract for GroupsIO API operations
+type ClientInterface interface {
+	CreateGroup(ctx context.Context, domain string, options GroupCreateOptions) (*GroupObject, error)
+	DeleteGroup(ctx context.Context, domain string, groupID uint64) error
+	CreateSubgroup(ctx context.Context, domain string, parentGroupID uint64, options SubgroupCreateOptions) (*SubgroupObject, error)
+	DeleteSubgroup(ctx context.Context, domain string, subgroupID uint64) error
+	AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*MemberObject, error)
+	UpdateMember(ctx context.Context, domain string, memberID uint64, updates MemberUpdateOptions) error
+	UpdateGroup(ctx context.Context, domain string, groupID uint64, updates GroupUpdateOptions) error
+	UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates SubgroupUpdateOptions) error
+	RemoveMember(ctx context.Context, domain string, memberID uint64) error
+	IsReady(ctx context.Context) error
+}
+
 type Client struct {
 	config     Config
 	httpClient *httpclient.Client
@@ -56,13 +123,22 @@ func NewClient(cfg Config) (*Client, error) {
 		MaxRetries:   cfg.MaxRetries,
 		RetryDelay:   cfg.RetryDelay,
 		RetryBackoff: true,
+		MaxDelay:     30 * time.Second, // Cap exponential backoff at 30s
 	}
 
-	return &Client{
+	client := &Client{
 		config:     cfg,
 		httpClient: httpclient.NewClient(httpConfig),
 		cache:      make(map[string]*tokenCache),
-	}, nil
+	}
+
+	// Register BasicAuth RoundTripper for automatic token injection (production pattern)
+	authRoundTripper := &groupsioBasicAuthRoundTripper{client: client}
+	client.httpClient.AddRoundTripper(authRoundTripper)
+
+	slog.InfoContext(context.Background(), "Groups.io client initialized with RoundTripper auth pattern")
+
+	return client, nil
 }
 
 // CreateGroup creates a main group in Groups.io
@@ -76,7 +152,7 @@ func (c *Client) CreateGroup(ctx context.Context, domain string, options GroupCr
 	}
 
 	var response GroupObject
-	err = c.makeRequest(ctx, domain, "POST", "/creategroup", data, &response)
+	err = c.makeRequest(ctx, domain, http.MethodPost, "/creategroup", data, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -96,22 +172,26 @@ func (c *Client) DeleteGroup(ctx context.Context, domain string, groupID uint64)
 		"group_id": {strconv.FormatUint(groupID, 10)},
 	}
 
-	return c.makeRequest(ctx, domain, "POST", "/deletegroup", data, nil)
+	return c.makeRequest(ctx, domain, http.MethodPost, "/deletegroup", data, nil)
 }
 
 // CreateSubgroup creates a subgroup (mailing list) in Groups.io
 func (c *Client) CreateSubgroup(ctx context.Context, domain string, parentGroupID uint64, options SubgroupCreateOptions) (*SubgroupObject, error) {
 	slog.InfoContext(ctx, "creating subgroup in Groups.io",
-		"domain", domain, "parent_group_id", parentGroupID, "subgroup_name", options.SubgroupName)
+		"domain", domain, "parent_group_id", parentGroupID, "subgroup_name", options.GroupName)
+
+	// Set the parent group ID in options if not already set (for backwards compatibility)
+	if options.ParentGroupID == 0 {
+		options.ParentGroupID = parentGroupID
+	}
 
 	data, err := query.Values(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode options: %w", err)
 	}
-	data.Set("group_id", strconv.FormatUint(parentGroupID, 10))
 
 	var response SubgroupObject
-	err = c.makeRequest(ctx, domain, "POST", "/createsubgroup", data, &response)
+	err = c.makeRequest(ctx, domain, http.MethodPost, "/createsubgroup", data, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +211,7 @@ func (c *Client) DeleteSubgroup(ctx context.Context, domain string, subgroupID u
 		"subgroup_id": {strconv.FormatUint(subgroupID, 10)},
 	}
 
-	return c.makeRequest(ctx, domain, "POST", "/deletesubgroup", data, nil)
+	return c.makeRequest(ctx, domain, http.MethodPost, "/deletesubgroup", data, nil)
 }
 
 // AddMember adds a single member to a subgroup
@@ -146,7 +226,7 @@ func (c *Client) AddMember(ctx context.Context, domain string, subgroupID uint64
 	}
 
 	var result MemberObject
-	err := c.makeRequest(ctx, domain, "POST", "/addmember", data, &result)
+	err := c.makeRequest(ctx, domain, http.MethodPost, "/addmember", data, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -168,13 +248,57 @@ func (c *Client) UpdateMember(ctx context.Context, domain string, memberID uint6
 	}
 	data.Set("member_id", strconv.FormatUint(memberID, 10))
 
-	err = c.makeRequest(ctx, domain, "POST", "/updatemember", data, nil)
+	err = c.makeRequest(ctx, domain, http.MethodPost, "/updatemember", data, nil)
 	if err != nil {
 		return err
 	}
 
 	slog.InfoContext(ctx, "member updated successfully in Groups.io",
 		"member_id", memberID)
+
+	return nil
+}
+
+// UpdateGroup updates a Groups.io group with the provided options
+func (c *Client) UpdateGroup(ctx context.Context, domain string, groupID uint64, updates GroupUpdateOptions) error {
+	slog.InfoContext(ctx, "updating group in Groups.io",
+		"domain", domain, "group_id", groupID)
+
+	data, err := query.Values(updates)
+	if err != nil {
+		return fmt.Errorf("failed to encode updates: %w", err)
+	}
+	data.Set("group_id", strconv.FormatUint(groupID, 10))
+
+	err = c.makeRequest(ctx, domain, http.MethodPost, "/updategroup", data, nil)
+	if err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, "group updated successfully in Groups.io",
+		"group_id", groupID)
+
+	return nil
+}
+
+// UpdateSubgroup updates a Groups.io subgroup with the provided options
+func (c *Client) UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates SubgroupUpdateOptions) error {
+	slog.InfoContext(ctx, "updating subgroup in Groups.io",
+		"domain", domain, "subgroup_id", subgroupID)
+
+	data, err := query.Values(updates)
+	if err != nil {
+		return fmt.Errorf("failed to encode updates: %w", err)
+	}
+	data.Set("subgroup_id", strconv.FormatUint(subgroupID, 10))
+
+	err = c.makeRequest(ctx, domain, http.MethodPost, "/updatesubgroup", data, nil)
+	if err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, "subgroup updated successfully in Groups.io",
+		"subgroup_id", subgroupID)
 
 	return nil
 }
@@ -188,7 +312,7 @@ func (c *Client) RemoveMember(ctx context.Context, domain string, memberID uint6
 		"member_id": {strconv.FormatUint(memberID, 10)},
 	}
 
-	err := c.makeRequest(ctx, domain, "POST", "/removemember", data, nil)
+	err := c.makeRequest(ctx, domain, http.MethodPost, "/removemember", data, nil)
 	if err != nil {
 		return err
 	}
@@ -225,7 +349,10 @@ func (c *Client) makeRequest(ctx context.Context, domain string, method string, 
 	// Set domain header for vhost auth (critical for multi-tenant)
 	headers["Host"] = domain
 
-	// Make request using httpclient (with retry logic)
+	// NOTE: BasicAuth is now handled automatically by RoundTripper (production pattern)
+	// No manual Authorization header needed - RoundTripper calls req.SetBasicAuth(token, "")
+
+	// Make request using httpclient (with retry logic + RoundTripper auth)
 	resp, err := c.httpClient.Request(ctx, method, reqURL, body, headers)
 	if err != nil {
 		return MapHTTPError(ctx, err)
@@ -238,6 +365,31 @@ func (c *Client) makeRequest(ctx context.Context, domain string, method string, 
 		}
 	}
 
+	return nil
+}
+
+// WithDomain ensures authentication for a domain (production pattern)
+func (c *Client) WithDomain(ctx context.Context, domain string) error {
+	// Check if auth token is already cached
+	c.cacheMu.RLock()
+	if cache, exists := c.cache[domain]; exists {
+		cache.mu.RLock()
+		if time.Now().Before(cache.expiry) {
+			cache.mu.RUnlock()
+			c.cacheMu.RUnlock()
+			slog.DebugContext(ctx, "using cached Groups.io login token", "domain", domain)
+			return nil
+		}
+		cache.mu.RUnlock()
+	}
+	c.cacheMu.RUnlock()
+
+	// Need to get new token
+	_, err := c.getToken(ctx, domain)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to authenticate with Groups.io", "error", err, "domain", domain)
+		return fmt.Errorf("failed to authenticate request: %w", err)
+	}
 	return nil
 }
 
@@ -256,14 +408,14 @@ func (c *Client) getOrRefreshToken(ctx context.Context, domain string) (string, 
 	}
 	c.cacheMu.RUnlock()
 
-	// Need to authenticate
-	return c.authenticate(ctx, domain)
+	// Need to authenticate - use simplified getToken
+	return c.getToken(ctx, domain)
 }
 
-// authenticate implements Groups.io login with JWT parsing (from go-groupsio pattern)
-func (c *Client) authenticate(ctx context.Context, domain string) (string, error) {
+// getToken authenticates a user and returns a login token (production pattern)
+func (c *Client) getToken(ctx context.Context, domain string) (string, error) {
 	// Login endpoint with timeout (prevents hanging on invalid domains)
-	loginCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	loginCtx, cancel := context.WithTimeout(ctx, c.config.Timeout)
 	defer cancel()
 
 	data := url.Values{
@@ -274,12 +426,12 @@ func (c *Client) authenticate(ctx context.Context, domain string) (string, error
 
 	// Set domain header for vhost auth (critical for multi-tenant)
 	headers := map[string]string{
-		"Host":         domain,
-		"Content-Type": "application/x-www-form-urlencoded",
+		"Host": domain,
 	}
 
-	resp, err := c.httpClient.Request(loginCtx, "POST", c.config.BaseURL+"/v1/login",
-		strings.NewReader(data.Encode()), headers)
+	// Use GET with query parameters (production pattern)
+	loginURL := c.config.BaseURL + "/v1/login?" + data.Encode()
+	resp, err := c.httpClient.Request(loginCtx, http.MethodGet, loginURL, nil, headers)
 	if err != nil {
 		return "", fmt.Errorf("login request failed: %w", MapHTTPError(loginCtx, err))
 	}
@@ -294,10 +446,10 @@ func (c *Client) authenticate(ctx context.Context, domain string) (string, error
 		return "", fmt.Errorf("no token in login response")
 	}
 
-	// Parse JWT for expiry (from go-groupsio pattern)
+	// Parse JWT for expiry (production pattern)
 	expiry := c.parseTokenExpiry(token)
 
-	// Cache token
+	// Cache token for this domain
 	c.cacheMu.Lock()
 	if c.cache[domain] == nil {
 		c.cache[domain] = &tokenCache{}
@@ -341,10 +493,10 @@ func (c *Client) parseTokenExpiry(token string) time.Time {
 func (c *Client) IsReady(ctx context.Context) error {
 	resp, err := c.httpClient.Request(ctx, "GET", c.config.BaseURL, nil, nil)
 	if err != nil {
-		return fmt.Errorf("Groups.io API unreachable: %w", MapHTTPError(ctx, err))
+		return fmt.Errorf("groups.io API unreachable: %w", MapHTTPError(ctx, err))
 	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("Groups.io API unhealthy (status: %d)", resp.StatusCode)
+		return fmt.Errorf("groups.io API unhealthy (status: %d)", resp.StatusCode)
 	}
 	return nil
 }

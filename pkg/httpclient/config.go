@@ -20,6 +20,9 @@ type Config struct {
 
 	// RetryBackoff enables exponential backoff for retries
 	RetryBackoff bool
+
+	// MaxDelay is the maximum delay for exponential backoff (default: 30s)
+	MaxDelay time.Duration
 }
 
 // DefaultConfig returns a Config with sensible defaults
@@ -29,5 +32,6 @@ func DefaultConfig() Config {
 		MaxRetries:   2,
 		RetryDelay:   1 * time.Second,
 		RetryBackoff: true,
+		MaxDelay:     30 * time.Second,
 	}
 }

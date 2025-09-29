@@ -15,6 +15,9 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
+// DefaultGroupsIODomain is the default domain for Groups.io API calls
+const DefaultGroupsIODomain = "groups.io"
+
 // GrpsIOService represents a GroupsIO service entity
 type GrpsIOService struct {
 	Type           string    `json:"type"`
@@ -117,4 +120,30 @@ func (s *GrpsIOService) ValidateLastReviewedAt() error {
 // Returns nil if the field is nil or empty, or the parsed time if valid.
 func (s *GrpsIOService) GetLastReviewedAtTime() (*time.Time, error) {
 	return utils.ParseTimestampPtr(s.LastReviewedAt)
+}
+
+// GetDomain returns the appropriate domain for Groups.io API calls
+func (s *GrpsIOService) GetDomain() string {
+	if s.Domain != "" {
+		return s.Domain // Use custom domain if set
+	}
+	return DefaultGroupsIODomain // Default to groups.io
+}
+
+// GetGroupName returns the appropriate group name for Groups.io API calls with comprehensive fallback logic
+func (s *GrpsIOService) GetGroupName() string {
+	if s.GroupName != "" {
+		return s.GroupName // Use explicit group name if set
+	}
+
+	switch s.Type {
+	case "primary":
+		return s.ProjectSlug
+	case "formation":
+		return fmt.Sprintf("%s-formation", s.ProjectSlug)
+	case "shared":
+		return s.ProjectSlug // fallback for shared services
+	default:
+		return s.ProjectUID // fallback for unknown types
+	}
 }
