@@ -140,7 +140,7 @@ app:
     # source determines the GroupsIO implementation (groupsio or mock)
     source: groupsio
     # baseUrl is the Groups.io API base URL
-    baseUrl: "https://api.groups.io"
+    baseUrl: "https://groups.io/api"
     # email is the Groups.io account email for authentication
     email: ""
     # password is the Groups.io account password for authentication
