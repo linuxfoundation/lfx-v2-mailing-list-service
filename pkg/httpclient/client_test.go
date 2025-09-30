@@ -11,6 +11,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewClient(t *testing.T) {
@@ -84,7 +87,7 @@ func TestClient_Get_NotFound(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 		_, err := w.Write([]byte(`{"error": "not found"}`))
 		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
+			t.Errorf("Expected no error writing response, got %v", err)
 		}
 	}))
 	defer server.Close()
@@ -95,36 +98,14 @@ func TestClient_Get_NotFound(t *testing.T) {
 
 	_, err := client.Request(ctx, "GET", server.URL, nil, nil)
 
-	// Should return response with error
-	if err == nil {
-		t.Fatal("Expected error for 404 status, got none")
-	}
+	// Error contract: Non-2xx responses MUST return *RetryableError
+	// See client.go lines 142-146 where StatusCode >= 400 creates RetryableError
+	require.Error(t, err, "Expected error for 404 status")
 
-	// The error might be wrapped, so we need to check the underlying error
 	var retryableErr *RetryableError
-	found := false
-	if re, ok := err.(*RetryableError); ok {
-		retryableErr = re
-		found = true
-	} else {
-		// Check if it's a wrapped error
-		t.Logf("Error type: %T, Error: %v", err, err)
-		// For now, just check that we got an error - the wrapping behavior might be different
-		found = true
-		// Create a mock retryableErr for the rest of the test
-		retryableErr = &RetryableError{StatusCode: 404}
-	}
-
-	if !found {
-		t.Fatalf("Expected RetryableError or wrapped error, got %T", err)
-	}
-
-	if retryableErr.StatusCode != http.StatusNotFound {
-		t.Errorf("Expected status code 404, got %d", retryableErr.StatusCode)
-	}
-
-	// Note: The response might be nil when the error is wrapped
-	// This is acceptable behavior for the HTTP client
+	require.ErrorAs(t, err, &retryableErr, "Expected *RetryableError for non-2xx response, got %T", err)
+	assert.Equal(t, http.StatusNotFound, retryableErr.StatusCode, "Expected status code 404")
+	assert.Contains(t, retryableErr.Message, "not found", "Expected error message to contain 'not found'")
 }
 
 func TestClient_Retry_ServerError(t *testing.T) {

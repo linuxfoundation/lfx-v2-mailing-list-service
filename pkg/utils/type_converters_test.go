@@ -35,6 +35,16 @@ func TestInt64PtrToUint64(t *testing.T) {
 			input:    int64Ptr(9223372036854775807), // max int64
 			expected: 9223372036854775807,
 		},
+		{
+			name:     "negative value wraps around (documented behavior)",
+			input:    int64Ptr(-1),
+			expected: 18446744073709551615, // uint64 max - documents wrap-around behavior
+		},
+		{
+			name:     "negative large value wraps around",
+			input:    int64Ptr(-9223372036854775808), // min int64
+			expected: 9223372036854775808,            // wraps to uint64 equivalent
+		},
 	}
 
 	for _, tt := range tests {
@@ -68,6 +78,18 @@ func TestInt64PtrToUint64Ptr(t *testing.T) {
 			input:     int64Ptr(0),
 			expectNil: false,
 			expected:  0,
+		},
+		{
+			name:      "negative value wraps around (documented behavior)",
+			input:     int64Ptr(-1),
+			expectNil: false,
+			expected:  18446744073709551615, // uint64 max - documents wrap-around behavior
+		},
+		{
+			name:      "negative large value wraps around",
+			input:     int64Ptr(-9223372036854775808), // min int64
+			expectNil: false,
+			expected:  9223372036854775808, // wraps to uint64 equivalent
 		},
 	}
 
