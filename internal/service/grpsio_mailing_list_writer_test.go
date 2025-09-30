@@ -947,12 +947,12 @@ func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
 // TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO tests the syncMailingListToGroupsIO method
 func TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO(t *testing.T) {
 	testCases := []struct {
-		name           string
-		setupMocks     func() (*grpsIOWriterOrchestrator, *mock.MockRepository)
-		mailingList    *model.GrpsIOMailingList
-		expectSkip     bool
-		expectWarning  bool
-		validateLogs   func(t *testing.T)
+		name          string
+		setupMocks    func() (*grpsIOWriterOrchestrator, *mock.MockRepository)
+		mailingList   *model.GrpsIOMailingList
+		expectSkip    bool
+		expectWarning bool
+		validateLogs  func(t *testing.T)
 	}{
 		{
 			name: "skip sync when Groups.io client is nil",

@@ -655,10 +655,10 @@ func writerServiceInt64Ptr(i int64) *int64 {
 
 func TestGrpsIOWriterOrchestrator_syncServiceToGroupsIO(t *testing.T) {
 	testCases := []struct {
-		name              string
-		setupMock         func(*mock.MockRepository)
-		service           *model.GrpsIOService
-		useNilClient      bool
+		name               string
+		setupMock          func(*mock.MockRepository)
+		service            *model.GrpsIOService
+		useNilClient       bool
 		expectedToNotPanic bool
 	}{
 		{

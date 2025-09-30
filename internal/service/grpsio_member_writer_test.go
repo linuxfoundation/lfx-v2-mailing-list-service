@@ -687,12 +687,12 @@ func writerInt64Ptr(i int64) *int64 {
 // TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO tests the syncMemberToGroupsIO method
 func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
 	testCases := []struct {
-		name           string
-		setupMocks     func() (*grpsIOWriterOrchestrator, *mock.MockRepository)
-		member         *model.GrpsIOMember
-		updates        groupsio.MemberUpdateOptions
-		expectSkip     bool
-		expectWarning  bool
+		name          string
+		setupMocks    func() (*grpsIOWriterOrchestrator, *mock.MockRepository)
+		member        *model.GrpsIOMember
+		updates       groupsio.MemberUpdateOptions
+		expectSkip    bool
+		expectWarning bool
 	}{
 		{
 			name: "skip sync when Groups.io client is nil",

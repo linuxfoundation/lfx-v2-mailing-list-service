@@ -223,7 +223,6 @@ func (o *grpsIOWriterOrchestrator) getGroupsIODomainForResource(ctx context.Cont
 
 		parentService, err := o.getServiceFromMailingList(ctx, member.MailingListUID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", mailingList.ServiceUID)
 			return "", err
 		}
 
@@ -233,7 +232,6 @@ func (o *grpsIOWriterOrchestrator) getGroupsIODomainForResource(ctx context.Cont
 		// Mailing List -> Service lookup
 		parentService, err := o.getServiceFromMailingList(ctx, resourceUID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", resourceUID)
 			return "", err
 		}
 
