@@ -16,6 +16,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // CreateGrpsIOMember creates a new member with transactional operations and rollback following service pattern
@@ -113,7 +114,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 
 		// Groups.io creation successful - track for rollback cleanup
 		if memberID != nil {
-			rollbackMemberID = convertInt64PtrToUint64Ptr(memberID)
+			rollbackMemberID = utils.Int64PtrToUint64Ptr(memberID)
 			rollbackGroupsIODomain = parentService.Domain
 		}
 
@@ -138,6 +139,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		rollbackRequired = true
 		return nil, 0, err
 	}
+	keys = append(keys, createdMember.UID)
 
 	slog.DebugContext(ctx, "member created successfully",
 		"member_uid", createdMember.UID,
@@ -170,7 +172,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 	memberResult, err := o.groupsClient.AddMember(
 		ctx,
 		parentService.Domain,
-		uint64(*mailingList.SubgroupID),
+		utils.Int64PtrToUint64(mailingList.SubgroupID),
 		member.Email,
 		fmt.Sprintf("%s %s", member.FirstName, member.LastName),
 	)
@@ -460,15 +462,6 @@ func (o *grpsIOWriterOrchestrator) mergeMemberData(ctx context.Context, existing
 	)
 }
 
-// convertInt64PtrToUint64Ptr safely converts *int64 to *uint64, following the existing helper pattern
-func convertInt64PtrToUint64Ptr(val *int64) *uint64 {
-	if val == nil {
-		return nil
-	}
-	converted := uint64(*val)
-	return &converted
-}
-
 // syncMemberToGroupsIO handles Groups.io member update synchronization with proper error handling
 func (o *grpsIOWriterOrchestrator) syncMemberToGroupsIO(ctx context.Context, member *model.GrpsIOMember, updates groupsio.MemberUpdateOptions) {
 	// Guard clause: skip if Groups.io client not available or member not synced
@@ -486,7 +479,7 @@ func (o *grpsIOWriterOrchestrator) syncMemberToGroupsIO(ctx context.Context, mem
 	}
 
 	// Perform Groups.io member update
-	err = o.groupsClient.UpdateMember(ctx, domain, uint64(*member.GroupsIOMemberID), updates)
+	err = o.groupsClient.UpdateMember(ctx, domain, utils.Int64PtrToUint64(member.GroupsIOMemberID), updates)
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io member update failed, local update will proceed",
 			"error", err, "domain", domain, "member_id", *member.GroupsIOMemberID)

@@ -5,10 +5,11 @@ package httpclient
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"log/slog"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -69,8 +70,14 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 				}
 
 				// Add jitter (25% random variance) to prevent thundering herd
-				jitter := time.Duration(rand.Int63n(int64(delay / 4)))
-				delay = delay + jitter
+				// Use crypto/rand for unpredictable jitter across service restarts
+				maxJitter := int64(delay / 4)
+				if maxJitter > 0 {
+					jitterBig, err := rand.Int(rand.Reader, big.NewInt(maxJitter))
+					if err == nil {
+						delay = delay + time.Duration(jitterBig.Int64())
+					}
+				}
 			}
 
 			select {
@@ -188,7 +195,9 @@ func (c *Client) executeRoundTripperChain(req *http.Request, index int) (*http.R
 	return c.roundTrippers[index].RoundTrip(req, next)
 }
 
-// AddRoundTripper adds a middleware RoundTripper to the client
+// AddRoundTripper adds a middleware RoundTripper to the client.
+// This method is not safe for concurrent use and should only be called
+// during client initialization before making any requests.
 func (c *Client) AddRoundTripper(rt RoundTripper) {
 	c.roundTrippers = append(c.roundTrippers, rt)
 }

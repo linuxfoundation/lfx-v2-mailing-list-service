@@ -18,6 +18,13 @@ import (
 )
 
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
+// Sync status constants for GroupsIO integration
+const (
+	SyncStatusPending = "pending" // Initial state, waiting for Groups.io sync
+	SyncStatusSynced  = "synced"  // Successfully synced with Groups.io
+	SyncStatusFailed  = "failed"  // Sync failed, requires reconciliation
+)
+
 type GrpsIOMailingList struct {
 	UID              string   `json:"uid"`
 	SubgroupID       *int64   `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async

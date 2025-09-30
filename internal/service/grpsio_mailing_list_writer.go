@@ -14,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // CreateGrpsIOMailingList creates a new mailing list with comprehensive validation and messaging
@@ -36,7 +37,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 
 			// Clean up GroupsIO subgroup if created
 			if rollbackSubgroupID != nil && ml.groupsClient != nil {
-				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, rollbackGroupsIODomain, uint64(*rollbackSubgroupID)); deleteErr != nil {
+				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, rollbackGroupsIODomain, utils.Int64PtrToUint64(rollbackSubgroupID)); deleteErr != nil {
 					slog.WarnContext(ctx, "failed to cleanup GroupsIO subgroup during rollback", "error", deleteErr, "subgroup_id", *rollbackSubgroupID)
 				}
 			}
@@ -166,7 +167,7 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 	)
 
 	subgroupOptions := groupsio.SubgroupCreateOptions{
-		ParentGroupID: uint64(*parentService.GroupID),                                                            // Production field
+		ParentGroupID: utils.Int64PtrToUint64(parentService.GroupID),                                             // Production field
 		GroupName:     mailingList.GroupName,                                                                     // Fixed: was SubgroupName
 		Desc:          fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName), // Fixed: was Description
 		// Privacy: leave empty to inherit from parent group (production pattern)
@@ -175,7 +176,7 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 	subgroupResult, err := ml.groupsClient.CreateSubgroup(
 		ctx,
 		parentService.Domain,
-		uint64(*parentService.GroupID),
+		utils.Int64PtrToUint64(parentService.GroupID),
 		subgroupOptions,
 	)
 	if err != nil {
@@ -610,7 +611,7 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 	}
 
 	// Perform Groups.io mailing list update
-	err = ml.groupsClient.UpdateSubgroup(ctx, domain, uint64(*mailingList.SubgroupID), updates)
+	err = ml.groupsClient.UpdateSubgroup(ctx, domain, utils.Int64PtrToUint64(mailingList.SubgroupID), updates)
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io mailing list update failed, local update will proceed",
 			"error", err, "domain", domain, "subgroup_id", *mailingList.SubgroupID)

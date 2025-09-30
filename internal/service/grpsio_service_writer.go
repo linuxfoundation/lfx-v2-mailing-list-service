@@ -15,6 +15,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/concurrent"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // CreateGrpsIOService creates a new service with transactional operations and rollback
@@ -43,7 +44,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 
 			// Clean up GroupsIO resource if created
 			if serviceID != nil && sw.groupsClient != nil {
-				if deleteErr := sw.groupsClient.DeleteGroup(ctx, service.Domain, uint64(*serviceID)); deleteErr != nil {
+				if deleteErr := sw.groupsClient.DeleteGroup(ctx, service.GetDomain(), utils.Int64PtrToUint64(serviceID)); deleteErr != nil {
 					slog.WarnContext(ctx, "failed to cleanup GroupsIO group during rollback", "error", deleteErr, "group_id", *serviceID)
 				}
 			}
@@ -187,6 +188,7 @@ func (sw *grpsIOWriterOrchestrator) createServiceInGroupsIO(ctx context.Context,
 			"domain", effectiveDomain,
 		)
 		// Don't fail the creation if update fails, as the group was created successfully
+		// TODO: Will be fixed in next PR to handle the sync status
 	} else {
 		slog.InfoContext(ctx, "Groups.io group updated with additional settings",
 			"group_id", groupID,
@@ -560,7 +562,7 @@ func (sw *grpsIOWriterOrchestrator) syncServiceToGroupsIO(ctx context.Context, s
 	}
 
 	// Perform Groups.io service update
-	err = sw.groupsClient.UpdateGroup(ctx, domain, uint64(*service.GroupID), updates)
+	err = sw.groupsClient.UpdateGroup(ctx, domain, utils.Int64PtrToUint64(service.GroupID), updates)
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io service update failed, local update will proceed",
 			"error", err, "domain", domain, "group_id", *service.GroupID)

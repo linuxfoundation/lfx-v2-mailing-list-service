@@ -142,8 +142,10 @@ app:
     # baseUrl is the Groups.io API base URL
     baseUrl: "https://groups.io/api"
     # email is the Groups.io account email for authentication
+    # Do not commit actual credentials to this file will be set by Kubernetes secrets 
     email: ""
     # password is the Groups.io account password for authentication
+    # Do not commit actual credentials to this file will be set by Kubernetes secrets
     password: ""
     # timeout is the HTTP client timeout for Groups.io requests
     timeout: "30s"

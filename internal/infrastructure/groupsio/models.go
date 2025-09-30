@@ -92,8 +92,8 @@ type SubgroupCreateOptions struct {
 	// Subgroup options (production field names)
 	ParentGroupID   uint64 `url:"group_id,omitempty"`   // Parent group ID
 	ParentGroupName string `url:"group_name,omitempty"` // Parent group name
-	GroupName       string `url:"sub_group_name"`       // Subgroup name (CRITICAL: was "subgroup_name")
-	Desc            string `url:"desc"`                 // Description (CRITICAL: was "description")
+	GroupName       string `url:"sub_group_name"`       // REQUIRED by Groups.io API: must be "sub_group_name" not "subgroup_name" per API spec
+	Desc            string `url:"desc"`                 // REQUIRED by Groups.io API: must be "desc" not "description" per API spec
 	Privacy         string `url:"privacy,omitempty"`    // Privacy setting (optional - may inherit from parent)
 
 	// Creator subscription options (from production)

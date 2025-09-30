@@ -12,6 +12,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // GrpsIOWriter defines the composite interface that combines writers
@@ -184,6 +185,23 @@ func (o *grpsIOWriterOrchestrator) deleteKeys(ctx context.Context, keys []string
 
 // getGroupsIODomainForResource resolves the Groups.io domain for a resource
 // Handles both direct service lookup and member -> mailing list -> service lookup chains
+// getServiceFromMailingList retrieves the parent service for a mailing list
+func (o *grpsIOWriterOrchestrator) getServiceFromMailingList(ctx context.Context, mailingListUID string) (*model.GrpsIOService, error) {
+	mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, mailingListUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list for Groups.io domain", "error", err, "mailing_list_uid", mailingListUID)
+		return nil, err
+	}
+
+	parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", mailingList.ServiceUID)
+		return nil, err
+	}
+
+	return parentService, nil
+}
+
 func (o *grpsIOWriterOrchestrator) getGroupsIODomainForResource(ctx context.Context, resourceUID string, resourceType string) (string, error) {
 	switch resourceType {
 	case constants.ResourceTypeService:
@@ -203,15 +221,7 @@ func (o *grpsIOWriterOrchestrator) getGroupsIODomainForResource(ctx context.Cont
 			return "", err
 		}
 
-		// Get mailing list
-		mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, member.MailingListUID)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to get mailing list for Groups.io domain", "error", err, "mailing_list_uid", member.MailingListUID)
-			return "", err
-		}
-
-		// Get parent service
-		parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+		parentService, err := o.getServiceFromMailingList(ctx, member.MailingListUID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", mailingList.ServiceUID)
 			return "", err
@@ -221,16 +231,9 @@ func (o *grpsIOWriterOrchestrator) getGroupsIODomainForResource(ctx context.Cont
 
 	case constants.ResourceTypeMailingList:
 		// Mailing List -> Service lookup
-		mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, resourceUID)
+		parentService, err := o.getServiceFromMailingList(ctx, resourceUID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get mailing list for Groups.io domain", "error", err, "mailing_list_uid", resourceUID)
-			return "", err
-		}
-
-		// Get parent service
-		parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", mailingList.ServiceUID)
+			slog.ErrorContext(ctx, "failed to get parent service for Groups.io domain", "error", err, "service_uid", resourceUID)
 			return "", err
 		}
 
@@ -258,7 +261,7 @@ func (o *grpsIOWriterOrchestrator) deleteSubgroupWithCleanup(ctx context.Context
 	}
 
 	// Perform Groups.io subgroup deletion
-	err = o.groupsClient.DeleteSubgroup(ctx, domain, uint64(*subgroupID))
+	err = o.groupsClient.DeleteSubgroup(ctx, domain, utils.Int64PtrToUint64(subgroupID))
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io subgroup deletion failed, local deletion will proceed - orphaned subgroups can be cleaned up later",
 			"error", err, "domain", domain, "subgroup_id", *subgroupID)
@@ -285,7 +288,7 @@ func (o *grpsIOWriterOrchestrator) removeMemberFromGroupsIO(ctx context.Context,
 	}
 
 	// Perform Groups.io member removal
-	err = o.groupsClient.RemoveMember(ctx, domain, uint64(*member.GroupsIOMemberID))
+	err = o.groupsClient.RemoveMember(ctx, domain, utils.Int64PtrToUint64(member.GroupsIOMemberID))
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io member deletion failed, local deletion will proceed - orphaned members can be cleaned up later",
 			"error", err, "domain", domain, "member_id", *member.GroupsIOMemberID)
