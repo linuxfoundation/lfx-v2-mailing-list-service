@@ -18,7 +18,7 @@ spec:
       execute:
         - authenticator: oidc
         - authenticator: anonymous_authenticator
-        {{- if .Values.app.use_oidc_contextualizer}}
+        {{- if .Values.app.use_oidc_contextualizer }}
         - contextualizer: oidc_contextualizer
         {{- end }}
         {{- if .Values.openfga.enabled }}
@@ -138,7 +138,7 @@ spec:
         {{- end }}
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
-        
+
         - authorizer: openfga_check
           config:
             values:
@@ -245,7 +245,7 @@ spec:
         {{- end }}
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
-        
+
         - authorizer: openfga_check
           config:
             values:

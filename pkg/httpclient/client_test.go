@@ -395,7 +395,7 @@ func TestClient_RoundTripper_BasicAuth_Production_Pattern(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message": "authenticated"}`))
+		_, _ = w.Write([]byte(`{"message": "authenticated"}`))
 	}))
 	defer server.Close()
 
@@ -440,7 +440,7 @@ func TestClient_RoundTripper_MultipleMiddleware(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"authenticated": true}`))
+		_, _ = w.Write([]byte(`{"authenticated": true}`))
 	}))
 	defer server.Close()
 
@@ -484,12 +484,12 @@ func TestClient_RoundTripper_WithRetry(t *testing.T) {
 
 		if attempts == 1 {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "server error"}`))
+			_, _ = w.Write([]byte(`{"error": "server error"}`))
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok"}`))
+		_, _ = w.Write([]byte(`{"status": "ok"}`))
 	}))
 	defer server.Close()
 
