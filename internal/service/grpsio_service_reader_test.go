@@ -27,7 +27,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 		Type:           "primary",
 		UID:            testServiceUID,
 		Domain:         "lists.testproject.org",
-		GroupID:        12345,
+		GroupID:        serviceInt64Ptr(12345),
 		Status:         "created",
 		GlobalOwners:   []string{"admin@testproject.org"},
 		Prefix:         "",
@@ -67,7 +67,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 				assert.Equal(t, testServiceUID, service.UID)
 				assert.Equal(t, "primary", service.Type)
 				assert.Equal(t, "lists.testproject.org", service.Domain)
-				assert.Equal(t, int64(12345), service.GroupID)
+				assert.Equal(t, serviceInt64Ptr(12345), service.GroupID)
 				assert.Equal(t, "created", service.Status)
 				assert.Equal(t, []string{"admin@testproject.org"}, service.GlobalOwners)
 				assert.Equal(t, "", service.Prefix)
@@ -155,7 +155,7 @@ func TestGrpsIOReaderOrchestratorGetRevision(t *testing.T) {
 		Type:        "primary",
 		UID:         testServiceUID,
 		Domain:      "lists.testproject.org",
-		GroupID:     12345,
+		GroupID:     serviceInt64Ptr(12345),
 		Status:      "created",
 		ProjectSlug: "test-project",
 		ProjectUID:  "test-project-uid",
@@ -296,7 +296,7 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		Type:           "formation",
 		UID:            testServiceUID,
 		Domain:         "lists.formation.testproject.org",
-		GroupID:        67890,
+		GroupID:        serviceInt64Ptr(67890),
 		Status:         "created",
 		GlobalOwners:   []string{"formation@testproject.org", "admin@testproject.org"},
 		Prefix:         "formation",
@@ -339,7 +339,7 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		// Validate complete service data
 		assert.Equal(t, "formation", service.Type)
 		assert.Equal(t, "lists.formation.testproject.org", service.Domain)
-		assert.Equal(t, int64(67890), service.GroupID)
+		assert.Equal(t, serviceInt64Ptr(67890), service.GroupID)
 		assert.Equal(t, "created", service.Status)
 		assert.Equal(t, []string{"formation@testproject.org", "admin@testproject.org"}, service.GlobalOwners)
 		assert.Equal(t, "formation", service.Prefix)
@@ -367,4 +367,9 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 // Helper function to create string pointer
 func serviceStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func serviceInt64Ptr(i int64) *int64 {
+	return &i
 }

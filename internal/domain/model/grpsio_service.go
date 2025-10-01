@@ -15,13 +15,17 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
+// DefaultGroupsIODomain is the default domain for Groups.io API calls
+const DefaultGroupsIODomain = "groups.io"
+
 // GrpsIOService represents a GroupsIO service entity
 type GrpsIOService struct {
 	Type           string    `json:"type"`
 	UID            string    `json:"uid"`
 	Domain         string    `json:"domain"`
-	GroupID        int64     `json:"group_id"`
+	GroupID        *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
 	Status         string    `json:"status"`
+	SyncStatus     string    `json:"sync_status,omitempty"` // "pending", "synced", "failed"
 	GlobalOwners   []string  `json:"global_owners"`
 	Prefix         string    `json:"prefix"`
 	ProjectSlug    string    `json:"project_slug"`
@@ -53,8 +57,8 @@ func (s *GrpsIOService) BuildIndexKey(ctx context.Context) string {
 		// Formation service: unique by project + prefix
 		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.Prefix)
 	case "shared":
-		// Shared service: unique by project + group_id
-		data = fmt.Sprintf("%s|%s|%d", s.ProjectUID, s.Type, s.GroupID)
+		// Shared service: unique by project + group_name (decoupled from GroupID)
+		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.GroupName)
 	default:
 		// Fallback for unknown types
 		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.UID)
@@ -67,7 +71,7 @@ func (s *GrpsIOService) BuildIndexKey(ctx context.Context) string {
 		"project_uid", s.ProjectUID,
 		"service_type", s.Type,
 		"service_prefix", s.Prefix,
-		"service_group_id", s.GroupID,
+		"service_group_name", s.GroupName,
 		"key", key,
 	)
 
@@ -116,4 +120,30 @@ func (s *GrpsIOService) ValidateLastReviewedAt() error {
 // Returns nil if the field is nil or empty, or the parsed time if valid.
 func (s *GrpsIOService) GetLastReviewedAtTime() (*time.Time, error) {
 	return utils.ParseTimestampPtr(s.LastReviewedAt)
+}
+
+// GetDomain returns the appropriate domain for Groups.io API calls
+func (s *GrpsIOService) GetDomain() string {
+	if s.Domain != "" {
+		return s.Domain // Use custom domain if set
+	}
+	return DefaultGroupsIODomain // Default to groups.io
+}
+
+// GetGroupName returns the appropriate group name for Groups.io API calls with comprehensive fallback logic
+func (s *GrpsIOService) GetGroupName() string {
+	if s.GroupName != "" {
+		return s.GroupName // Use explicit group name if set
+	}
+
+	switch s.Type {
+	case "primary":
+		return s.ProjectSlug
+	case "formation":
+		return fmt.Sprintf("%s-formation", s.ProjectSlug)
+	case "shared":
+		return s.ProjectSlug // fallback for shared services
+	default:
+		return s.ProjectUID // fallback for unknown types
+	}
 }

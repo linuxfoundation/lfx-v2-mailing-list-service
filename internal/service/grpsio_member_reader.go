@@ -55,4 +55,3 @@ func (r *grpsIOReaderOrchestrator) GetMemberRevision(ctx context.Context, uid st
 	slog.DebugContext(ctx, "member revision retrieved successfully", "member_uid", uid, "revision", revision)
 	return revision, nil
 }
-

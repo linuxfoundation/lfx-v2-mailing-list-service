@@ -79,3 +79,28 @@ func NewConflict(message string, err ...error) Conflict {
 		},
 	}
 }
+
+// Unauthorized represents an unauthorized error in the application.
+type Unauthorized struct {
+	base
+}
+
+// Error returns the error message for Unauthorized.
+func (u Unauthorized) Error() string {
+	return u.error()
+}
+
+// Unwrap returns the wrapped error, if any.
+func (u Unauthorized) Unwrap() error {
+	return u.err
+}
+
+// NewUnauthorized creates a new Unauthorized error with the provided message.
+func NewUnauthorized(message string, err ...error) Unauthorized {
+	return Unauthorized{
+		base: base{
+			message: message,
+			err:     errors.Join(err...),
+		},
+	}
+}

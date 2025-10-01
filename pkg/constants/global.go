@@ -34,3 +34,13 @@ const (
 	// EnvNATSCredentials is the environment variable for NATS credentials
 	EnvNATSCredentials = "NATS_CREDENTIALS"
 )
+
+// Resource type constants for domain resolution
+const (
+	// ResourceTypeService represents a GroupsIO service resource
+	ResourceTypeService = "service"
+	// ResourceTypeMember represents a GroupsIO member resource
+	ResourceTypeMember = "member"
+	// ResourceTypeMailingList represents a GroupsIO mailing list resource
+	ResourceTypeMailingList = "mailing_list"
+)

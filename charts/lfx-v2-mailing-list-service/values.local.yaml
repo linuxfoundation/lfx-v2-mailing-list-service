@@ -13,6 +13,9 @@ app:
   jwtAuthDisabledMockLocalPrincipal: "test-super-admin"
   # Enable debug logging for local development
   logLevel: debug
+  # Use mock GroupsIO integration for local testing
+  groupsioSource: mock
+
 
 # Disable OpenFGA authorization for local testing
 openfga:

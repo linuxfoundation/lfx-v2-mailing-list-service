@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
@@ -42,8 +43,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 			inputMember: &model.GrpsIOMember{
 				MailingListUID:   "mailing-list-1",
-				GroupsIOMemberID: 12345,
-				GroupsIOGroupID:  67890,
+				GroupsIOMemberID: writerInt64Ptr(12345),
+				GroupsIOGroupID:  writerInt64Ptr(67890),
 				Username:         "committee-member",
 				FirstName:        "Committee",
 				LastName:         "Member",
@@ -59,7 +60,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-1", result.MailingListUID)
-				assert.Equal(t, int64(12345), result.GroupsIOMemberID)
+				require.NotNil(t, result.GroupsIOMemberID)
+				assert.Equal(t, int64(12345), *result.GroupsIOMemberID)
 				assert.Equal(t, "committee-member", result.Username)
 				assert.Equal(t, "Committee", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -136,7 +138,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEqual(t, "client-provided-uid", result.UID) // Should NOT preserve client UID
-				assert.NotEmpty(t, result.UID) // Should have server-generated UID
+				assert.NotEmpty(t, result.UID)                        // Should have server-generated UID
 				assert.Equal(t, "mailing-list-3", result.MailingListUID)
 				assert.Equal(t, "normal", result.Status) // Should preserve provided status
 				assert.Equal(t, uint64(1), revision)
@@ -200,8 +202,8 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			},
 			inputMember: &model.GrpsIOMember{
 				MailingListUID:   "mailing-list-audit",
-				GroupsIOMemberID: 99999,
-				GroupsIOGroupID:  88888,
+				GroupsIOMemberID: writerInt64Ptr(99999),
+				GroupsIOGroupID:  writerInt64Ptr(88888),
 				Username:         "audit-member",
 				FirstName:        "Audit",
 				LastName:         "Member",
@@ -219,8 +221,10 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-audit", result.MailingListUID)
-				assert.Equal(t, int64(99999), result.GroupsIOMemberID)
-				assert.Equal(t, int64(88888), result.GroupsIOGroupID)
+				require.NotNil(t, result.GroupsIOMemberID)
+				assert.Equal(t, int64(99999), *result.GroupsIOMemberID)
+				require.NotNil(t, result.GroupsIOGroupID)
+				assert.Equal(t, int64(88888), *result.GroupsIOGroupID)
 				assert.Equal(t, "audit-member", result.Username)
 				assert.Equal(t, "Audit", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -309,7 +313,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			MemberType:     "committee",
 			Status:         "normal",
 			CreatedAt:      existingMember.CreatedAt, // Preserve created time
-			UpdatedAt:      time.Now(), // This will be set by the orchestrator
+			UpdatedAt:      time.Now(),               // This will be set by the orchestrator
 		}
 
 		result, revision, err := writer.UpdateGrpsIOMember(ctx, "test-member", updatedMember, 1)
@@ -676,4 +680,75 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_MemberTypes(t *testing.T) {
 // Helper function to create string pointer
 func writerStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func writerInt64Ptr(i int64) *int64 {
+	return &i
+}
+
+// TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO tests the syncMemberToGroupsIO method
+// Note: This method returns void and only logs errors/warnings. Comprehensive testing would
+// require log capture or refactoring the method to return an error/status.
+// These tests verify that guard clauses prevent panics in edge cases.
+func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
+	testCases := []struct {
+		name       string
+		setupMocks func() *grpsIOWriterOrchestrator
+		member     *model.GrpsIOMember
+		updates    groupsio.MemberUpdateOptions
+	}{
+		{
+			name: "skip sync when Groups.io client is nil",
+			setupMocks: func() *grpsIOWriterOrchestrator {
+				return &grpsIOWriterOrchestrator{
+					groupsClient: nil, // No client - should skip gracefully
+				}
+			},
+			member: &model.GrpsIOMember{
+				UID:              "member-1",
+				GroupsIOMemberID: func() *int64 { i := int64(12345); return &i }(),
+				FirstName:        "John",
+				LastName:         "Doe",
+			},
+			updates: groupsio.MemberUpdateOptions{
+				FirstName: "John",
+				LastName:  "Doe",
+			},
+		},
+		{
+			name: "skip sync when member GroupsIOMemberID is nil",
+			setupMocks: func() *grpsIOWriterOrchestrator {
+				return &grpsIOWriterOrchestrator{
+					groupsClient: nil, // Could be any value, but GroupsIOMemberID is nil
+				}
+			},
+			member: &model.GrpsIOMember{
+				UID:              "member-2",
+				GroupsIOMemberID: nil, // No member ID - should skip gracefully
+				FirstName:        "Jane",
+				LastName:         "Smith",
+			},
+			updates: groupsio.MemberUpdateOptions{
+				FirstName: "Jane",
+				LastName:  "Smith",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			ctx := context.Background()
+			orchestrator := tc.setupMocks()
+
+			// Execute - should not panic regardless of nil clients or missing data
+			require.NotPanics(t, func() {
+				orchestrator.syncMemberToGroupsIO(ctx, tc.member, tc.updates)
+			}, "syncMemberToGroupsIO should handle nil clients and missing data gracefully")
+
+			// Note: Without log capture or return values, we can only verify no panic occurs.
+			// The guard clauses at lines 468-471 in grpsio_member_writer.go ensure safe exit.
+		})
+	}
 }

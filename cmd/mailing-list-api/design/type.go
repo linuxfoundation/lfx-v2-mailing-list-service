@@ -56,7 +56,6 @@ func GrpsIOServiceBaseAttributes() {
 	dsl.Required("type", "project_uid")
 }
 
-
 // GrpsIOServiceWithReadonlyAttributes is the DSL type for a GroupsIO service with readonly attributes.
 var GrpsIOServiceWithReadonlyAttributes = dsl.Type("grps-io-service-with-readonly-attributes", func() {
 	dsl.Description("A representation of GroupsIO services with readonly attributes.")
@@ -295,7 +294,6 @@ func GrpsIOMailingListBaseAttributes() {
 
 }
 
-
 // GrpsIOMailingListUIDAttribute is the DSL attribute for mailing list UID.
 func GrpsIOMailingListUIDAttribute() {
 	dsl.Attribute("uid", dsl.String, "Mailing list UID -- unique identifier for the mailing list", func() {
@@ -528,4 +526,3 @@ func GrpsIOMemberUpdateAttributes() {
 		dsl.Default("none")
 	})
 }
-

@@ -7,6 +7,8 @@ go 1.24.0
 
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/nats-io/nats.go v1.31.0
 	github.com/stretchr/testify v1.10.0

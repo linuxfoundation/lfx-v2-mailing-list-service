@@ -134,3 +134,22 @@ app:
   # jwt is the configuration for JWT authentication
   # audience is the intended audience for the JWT token
   audience: lfx-v2-mailing-list-service
+
+  # GroupsIO integration configuration
+  groupsio:
+    # source determines the GroupsIO implementation (groupsio or mock)
+    source: groupsio
+    # baseUrl is the Groups.io API base URL
+    baseUrl: "https://groups.io/api"
+    # email is the Groups.io account email for authentication
+    # Do not commit actual credentials to this file will be set by Kubernetes secrets
+    email: ""
+    # password is the Groups.io account password for authentication
+    # Do not commit actual credentials to this file will be set by Kubernetes secrets
+    password: ""
+    # timeout is the HTTP client timeout for Groups.io requests
+    timeout: "30s"
+    # maxRetries is the maximum number of retry attempts for failed requests
+    maxRetries: 3
+    # retryDelay is the delay between retry attempts
+    retryDelay: "1s"

@@ -22,7 +22,7 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 	service := &model.GrpsIOService{
 		Type:         p.Type,
 		Domain:       payloadStringValue(p.Domain),
-		GroupID:      payloadInt64Value(p.GroupID),
+		GroupID:      payloadInt64Ptr(p.GroupID),
 		Status:       payloadStringValue(p.Status),
 		GlobalOwners: p.GlobalOwners,
 		Prefix:       payloadStringValue(p.Prefix),

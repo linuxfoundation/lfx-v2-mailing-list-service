@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Helper function for test pointer creation
+func int64Ptr(v int64) *int64 { return &v }
+
 func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 	ctx := context.Background()
 
@@ -26,7 +29,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 				UID:        "service-123",
 				ProjectUID: "project-456",
 				Prefix:     "test-prefix",
-				GroupID:    12345,
+				GroupID:    int64Ptr(12345),
 			},
 			description: "Primary service should use project_uid and type only",
 		},
@@ -37,7 +40,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 				UID:        "service-456",
 				ProjectUID: "project-789",
 				Prefix:     "formation-prefix",
-				GroupID:    67890,
+				GroupID:    int64Ptr(67890),
 			},
 			description: "Formation service should use project_uid, type, and prefix",
 		},
@@ -48,7 +51,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 				UID:        "service-789",
 				ProjectUID: "project-123",
 				Prefix:     "shared-prefix",
-				GroupID:    54321,
+				GroupID:    int64Ptr(54321),
 			},
 			description: "Shared service should use project_uid, type, and group_id",
 		},
@@ -59,7 +62,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 				UID:        "service-999",
 				ProjectUID: "project-999",
 				Prefix:     "unknown-prefix",
-				GroupID:    99999,
+				GroupID:    int64Ptr(99999),
 			},
 			description: "Unknown service type should use project_uid, type, and uid as fallback",
 		},
@@ -117,7 +120,7 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 		sharedService := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
-			GroupID:    12345,
+			GroupID:    int64Ptr(12345),
 		}
 
 		primaryKey := primaryService.BuildIndexKey(ctx)
@@ -157,18 +160,20 @@ func TestGrpsIOService_BuildIndexKey(t *testing.T) {
 		sharedService1 := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
-			GroupID:    12345,
+			GroupName:  "group-1",
+			GroupID:    int64Ptr(12345),
 		}
 		sharedService2 := &GrpsIOService{
 			Type:       "shared",
 			ProjectUID: projectUID,
-			GroupID:    67890,
+			GroupName:  "group-2",
+			GroupID:    int64Ptr(67890),
 		}
 
 		key1 := sharedService1.BuildIndexKey(ctx)
 		key2 := sharedService2.BuildIndexKey(ctx)
 
-		assert.NotEqual(t, key1, key2, "Shared services with different group IDs should have different keys")
+		assert.NotEqual(t, key1, key2, "Shared services with different group names should have different keys")
 	})
 }
 
@@ -331,7 +336,7 @@ func BenchmarkGrpsIOService_BuildIndexKey(b *testing.B) {
 			service: &GrpsIOService{
 				Type:       "shared",
 				ProjectUID: "project-" + uuid.New().String(),
-				GroupID:    12345,
+				GroupID:    int64Ptr(12345),
 			},
 		},
 	}

@@ -27,8 +27,8 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 	testMember := &model.GrpsIOMember{
 		UID:              testMemberUID,
 		MailingListUID:   testMailingListUID,
-		GroupsIOMemberID: 12345,
-		GroupsIOGroupID:  67890,
+		GroupsIOMemberID: memberInt64Ptr(12345),
+		GroupsIOGroupID:  memberInt64Ptr(67890),
 		Username:         "testuser",
 		FirstName:        "John",
 		LastName:         "Doe",
@@ -66,8 +66,8 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 				assert.NotNil(t, member)
 				assert.Equal(t, testMemberUID, member.UID)
 				assert.Equal(t, testMailingListUID, member.MailingListUID)
-				assert.Equal(t, int64(12345), member.GroupsIOMemberID)
-				assert.Equal(t, int64(67890), member.GroupsIOGroupID)
+				assert.Equal(t, memberInt64Ptr(12345), member.GroupsIOMemberID)
+				assert.Equal(t, memberInt64Ptr(67890), member.GroupsIOGroupID)
 				assert.Equal(t, "testuser", member.Username)
 				assert.Equal(t, "John", member.FirstName)
 				assert.Equal(t, "Doe", member.LastName)
@@ -144,8 +144,12 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 	}
 }
 
-
 // Helper function to create string pointer
 func memberStringPtr(s string) *string {
 	return &s
+}
+
+// Helper function to create int64 pointer
+func memberInt64Ptr(i int64) *int64 {
+	return &i
 }

@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
@@ -21,6 +23,16 @@ var (
 	globalMockRepo     *MockRepository
 	globalMockRepoOnce = &sync.Once{}
 )
+
+// ErrorSimulationConfig configures error simulation for testing scenarios
+type ErrorSimulationConfig struct {
+	Enabled           bool             `json:"enabled"`
+	ServiceErrors     map[string]error `json:"-"` // service_uid -> error to return
+	MailingListErrors map[string]error `json:"-"` // mailing_list_uid -> error to return
+	MemberErrors      map[string]error `json:"-"` // member_uid -> error to return
+	GlobalError       error            `json:"-"` // error for all operations
+	OperationErrors   map[string]error `json:"-"` // operation_name -> error
+}
 
 // MockRepository provides a mock implementation of all repository interfaces for testing
 type MockRepository struct {
@@ -36,6 +48,8 @@ type MockRepository struct {
 	projectSlugs         map[string]string                   // projectUID -> slug
 	projectNames         map[string]string                   // projectUID -> name
 	committeeNames       map[string]string                   // committeeUID -> name
+	errorSimulation      ErrorSimulationConfig               // Error simulation configuration
+	errorSimulationMu    sync.RWMutex                        // Protect concurrent access to error config
 	mu                   sync.RWMutex                        // Protect concurrent access to maps
 }
 
@@ -58,6 +72,14 @@ func NewMockRepository() *MockRepository {
 			projectSlugs:         make(map[string]string),
 			projectNames:         make(map[string]string),
 			committeeNames:       make(map[string]string),
+			errorSimulation: ErrorSimulationConfig{
+				Enabled:           false,
+				ServiceErrors:     make(map[string]error),
+				MailingListErrors: make(map[string]error),
+				MemberErrors:      make(map[string]error),
+				GlobalError:       nil,
+				OperationErrors:   make(map[string]error),
+			},
 		}
 
 		// Add sample project data for testing
@@ -94,9 +116,9 @@ func NewMockRepository() *MockRepository {
 		sampleServices := []*model.GrpsIOService{
 			{
 				Type:         "primary",
-				UID:          "service-1",
+				UID:          "550e8400-e29b-41d4-a716-446655440001",
 				Domain:       "lists.testproject.org",
-				GroupID:      12345,
+				GroupID:      func() *int64 { id := int64(12345); return &id }(),
 				Status:       "created",
 				GlobalOwners: []string{"admin@testproject.org"},
 				Prefix:       "",
@@ -110,9 +132,9 @@ func NewMockRepository() *MockRepository {
 			},
 			{
 				Type:         "formation",
-				UID:          "service-2",
+				UID:          "550e8400-e29b-41d4-a716-446655440002",
 				Domain:       "lists.formation.testproject.org",
-				GroupID:      12346,
+				GroupID:      func() *int64 { id := int64(12346); return &id }(),
 				Status:       "created",
 				GlobalOwners: []string{"formation@testproject.org"},
 				Prefix:       "formation",
@@ -126,9 +148,9 @@ func NewMockRepository() *MockRepository {
 			},
 			{
 				Type:         "primary",
-				UID:          "service-3",
+				UID:          "550e8400-e29b-41d4-a716-446655440003",
 				Domain:       "lists.example.org",
-				GroupID:      12347,
+				GroupID:      func() *int64 { id := int64(12347); return &id }(),
 				Status:       "pending",
 				GlobalOwners: []string{"owner@example.org", "admin@example.org"},
 				Prefix:       "",
@@ -149,9 +171,9 @@ func NewMockRepository() *MockRepository {
 			mock.serviceIndexKeys[service.BuildIndexKey(context.Background())] = service
 		}
 
-		// Add project mappings
-		mock.projectSlugs["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "test-project"
-		mock.projectNames["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "Test Project"
+		// Add project mappings - using consistent naming
+		mock.projectSlugs["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "sample-project"
+		mock.projectNames["7cad5a8d-19d0-41a4-81a6-043453daf9ee"] = "Cloud Native Computing Foundation"
 		mock.projectSlugs["8dbc6b9e-20e1-42b5-92b7-154564eaf0ff"] = "example-project"
 		mock.projectNames["8dbc6b9e-20e1-42b5-92b7-154564eaf0ff"] = "Example Project"
 
@@ -168,7 +190,7 @@ func NewMockRepository() *MockRepository {
 				Description:      "Development discussions and technical matters for the project",
 				Title:            "Development List",
 				SubjectTag:       "[DEV]",
-				ServiceUID:       "service-1",
+				ServiceUID:       "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:       "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:          []string{"dev-admin@testproject.org"},
 				Auditors:         []string{"auditor@testproject.org"},
@@ -183,7 +205,7 @@ func NewMockRepository() *MockRepository {
 				Description: "Official announcements and project news for all stakeholders",
 				Title:       "Announcements",
 				SubjectTag:  "[ANNOUNCE]",
-				ServiceUID:  "service-1",
+				ServiceUID:  "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:  "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:     []string{"admin@testproject.org"},
 				Auditors:    []string{"auditor@testproject.org"},
@@ -201,7 +223,7 @@ func NewMockRepository() *MockRepository {
 				Description:      "Private security discussions for committee members only",
 				Title:            "Formation Security List",
 				SubjectTag:       "[SECURITY]",
-				ServiceUID:       "service-2",
+				ServiceUID:       "550e8400-e29b-41d4-a716-446655440002",
 				ProjectUID:       "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 				Writers:          []string{"security@testproject.org"},
 				Auditors:         []string{"security-audit@testproject.org"},
@@ -392,11 +414,11 @@ func (w *MockGrpsIOWriter) UpdateGrpsIOMember(ctx context.Context, uid string, m
 
 	// Update member while preserving immutable fields
 	memberCopy := *member
-	memberCopy.UID = existing.UID // Preserve UID
-	memberCopy.Email = existing.Email // Preserve email (immutable)
+	memberCopy.UID = existing.UID                       // Preserve UID
+	memberCopy.Email = existing.Email                   // Preserve email (immutable)
 	memberCopy.MailingListUID = existing.MailingListUID // Preserve mailing list UID (immutable)
-	memberCopy.CreatedAt = existing.CreatedAt // Preserve created timestamp
-	memberCopy.UpdatedAt = time.Now() // Update timestamp
+	memberCopy.CreatedAt = existing.CreatedAt           // Preserve created timestamp
+	memberCopy.UpdatedAt = time.Now()                   // Update timestamp
 
 	// Store updated member and increment revision
 	w.mock.members[uid] = &memberCopy
@@ -494,9 +516,111 @@ func (r *MockEntityAttributeReader) CommitteeName(ctx context.Context, uid strin
 	return name, nil
 }
 
+// Error configuration methods for testing
+
+// SetErrorForService configures the mock to return an error for a specific service UID
+func (m *MockRepository) SetErrorForService(serviceUID string, err error) {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = true
+	m.errorSimulation.ServiceErrors[serviceUID] = err
+}
+
+// SetErrorForMailingList configures the mock to return an error for a specific mailing list UID
+func (m *MockRepository) SetErrorForMailingList(mailingListUID string, err error) {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = true
+	m.errorSimulation.MailingListErrors[mailingListUID] = err
+}
+
+// SetErrorForMember configures the mock to return an error for a specific member UID
+func (m *MockRepository) SetErrorForMember(memberUID string, err error) {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = true
+	m.errorSimulation.MemberErrors[memberUID] = err
+}
+
+// SetErrorForOperation configures the mock to return an error for a specific operation
+func (m *MockRepository) SetErrorForOperation(operation string, err error) {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = true
+	m.errorSimulation.OperationErrors[operation] = err
+}
+
+// SetGlobalError configures the mock to return an error for all operations
+func (m *MockRepository) SetGlobalError(err error) {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = true
+	m.errorSimulation.GlobalError = err
+}
+
+// ClearErrorSimulation disables all error simulation
+func (m *MockRepository) ClearErrorSimulation() {
+	m.errorSimulationMu.Lock()
+	defer m.errorSimulationMu.Unlock()
+
+	m.errorSimulation.Enabled = false
+	m.errorSimulation.ServiceErrors = make(map[string]error)
+	m.errorSimulation.MailingListErrors = make(map[string]error)
+	m.errorSimulation.MemberErrors = make(map[string]error)
+	m.errorSimulation.OperationErrors = make(map[string]error)
+	m.errorSimulation.GlobalError = nil
+}
+
+// checkErrorSimulation checks if an error should be returned based on configuration
+func (m *MockRepository) checkErrorSimulation(operation, resourceUID string) error {
+	m.errorSimulationMu.RLock()
+	defer m.errorSimulationMu.RUnlock()
+
+	if !m.errorSimulation.Enabled {
+		return nil
+	}
+
+	// Check global error first
+	if m.errorSimulation.GlobalError != nil {
+		return m.errorSimulation.GlobalError
+	}
+
+	// Check operation-specific error
+	if err, exists := m.errorSimulation.OperationErrors[operation]; exists {
+		return err
+	}
+
+	// Check resource-specific errors based on operation type
+	if strings.Contains(operation, "Service") {
+		if err, exists := m.errorSimulation.ServiceErrors[resourceUID]; exists {
+			return err
+		}
+	} else if strings.Contains(operation, "MailingList") {
+		if err, exists := m.errorSimulation.MailingListErrors[resourceUID]; exists {
+			return err
+		}
+	} else if strings.Contains(operation, "Member") {
+		if err, exists := m.errorSimulation.MemberErrors[resourceUID]; exists {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // GetGrpsIOService retrieves a single service by ID and returns ETag revision
 func (m *MockRepository) GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "mock service: getting service", "service_uid", uid)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetGrpsIOService", uid); err != nil {
+		return nil, 0, err
+	}
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -828,6 +952,126 @@ func NewMockGrpsIOMessagePublisher() port.MessagePublisher {
 	return &MockGrpsIOMessagePublisher{}
 }
 
+// MockGroupsIOClient provides a mock implementation of the GroupsIO HTTP client
+type MockGroupsIOClient struct {
+	CallLog []string // Track method calls for testing
+}
+
+// Verify MockGroupsIOClient implements ClientInterface
+var _ groupsio.ClientInterface = (*MockGroupsIOClient)(nil)
+
+// NewMockGroupsIOClient creates a new mock GroupsIO client
+func NewMockGroupsIOClient() *MockGroupsIOClient {
+	return &MockGroupsIOClient{
+		CallLog: make([]string, 0),
+	}
+}
+
+// CreateGroup mocks the Groups.io group creation API
+func (m *MockGroupsIOClient) CreateGroup(ctx context.Context, domain string, options groupsio.GroupCreateOptions) (*groupsio.GroupObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("CreateGroup(domain=%s, group_name=%s)", domain, options.GroupName))
+
+	// Return mock result
+	return &groupsio.GroupObject{
+		ID: 12345, // Mock group ID
+	}, nil
+}
+
+// UpdateGroup mocks the Groups.io group update API
+func (m *MockGroupsIOClient) UpdateGroup(ctx context.Context, domain string, groupID uint64, updates groupsio.GroupUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateGroup(domain=%s, group_id=%d, owners=%v)", domain, groupID, updates.GlobalOwners))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io group update simulated",
+		"domain", domain, "group_id", groupID, "global_owners", updates.GlobalOwners)
+
+	return nil
+}
+
+// UpdateMember mocks the Groups.io member update API
+func (m *MockGroupsIOClient) UpdateMember(ctx context.Context, domain string, memberID uint64, updates groupsio.MemberUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateMember(domain=%s, member_id=%d, mod_status=%s)", domain, memberID, updates.ModStatus))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io member update simulated",
+		"domain", domain, "member_id", memberID, "mod_status", updates.ModStatus, "delivery", updates.DeliveryMode)
+
+	return nil
+}
+
+// UpdateSubgroup mocks the Groups.io subgroup update API
+func (m *MockGroupsIOClient) UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates groupsio.SubgroupUpdateOptions) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("UpdateSubgroup(domain=%s, subgroup_id=%d, title=%s)", domain, subgroupID, updates.Title))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io subgroup update simulated",
+		"domain", domain, "subgroup_id", subgroupID, "title", updates.Title, "description", updates.Description)
+
+	return nil
+}
+
+// DeleteGroup mocks the Groups.io group deletion API
+func (m *MockGroupsIOClient) DeleteGroup(ctx context.Context, domain string, groupID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("DeleteGroup(domain=%s, group_id=%d)", domain, groupID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io group deletion simulated",
+		"domain", domain, "group_id", groupID)
+
+	return nil
+}
+
+// CreateSubgroup mocks the Groups.io subgroup creation API
+func (m *MockGroupsIOClient) CreateSubgroup(ctx context.Context, domain string, parentGroupID uint64, options groupsio.SubgroupCreateOptions) (*groupsio.SubgroupObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("CreateSubgroup(domain=%s, parent_id=%d, name=%s)", domain, parentGroupID, options.GroupName))
+
+	// Return mock result
+	return &groupsio.SubgroupObject{
+		ID: 67890, // Mock subgroup ID
+	}, nil
+}
+
+// DeleteSubgroup mocks the Groups.io subgroup deletion API
+func (m *MockGroupsIOClient) DeleteSubgroup(ctx context.Context, domain string, subgroupID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("DeleteSubgroup(domain=%s, subgroup_id=%d)", domain, subgroupID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io subgroup deletion simulated",
+		"domain", domain, "subgroup_id", subgroupID)
+
+	return nil
+}
+
+// AddMember mocks the Groups.io member addition API
+func (m *MockGroupsIOClient) AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*groupsio.MemberObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("AddMember(domain=%s, subgroup_id=%d, email=%s)", domain, subgroupID, email))
+
+	// Return mock result
+	return &groupsio.MemberObject{
+		ID: 11111, // Mock member ID
+	}, nil
+}
+
+// RemoveMember mocks the Groups.io member removal API
+func (m *MockGroupsIOClient) RemoveMember(ctx context.Context, domain string, memberID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("RemoveMember(domain=%s, member_id=%d)", domain, memberID))
+
+	slog.InfoContext(ctx, "[MOCK] Groups.io member removal simulated",
+		"domain", domain, "member_id", memberID)
+
+	return nil
+}
+
+// IsReady mocks the readiness check
+func (m *MockGroupsIOClient) IsReady(ctx context.Context) error {
+	return nil // Mock client is always ready
+}
+
+// GetCallLog returns the log of method calls for testing
+func (m *MockGroupsIOClient) GetCallLog() []string {
+	return m.CallLog
+}
+
+// ClearCallLog clears the call log
+func (m *MockGroupsIOClient) ClearCallLog() {
+	m.CallLog = make([]string, 0)
+}
+
 // GetServiceCount returns the total number of services
 func (m *MockRepository) GetServiceCount() int {
 	m.mu.RLock()
@@ -851,6 +1095,11 @@ func (m *MockRepository) GetMailingListRevision(ctx context.Context, uid string)
 // GetGrpsIOMailingListWithRevision retrieves a mailing list by UID with revision (internal helper)
 func (m *MockRepository) GetGrpsIOMailingListWithRevision(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "mock mailing list: getting mailing list with revision", "mailing_list_uid", uid)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetGrpsIOMailingList", uid); err != nil {
+		return nil, 0, err
+	}
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -916,6 +1165,11 @@ func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, g
 func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "mock mailing list: creating mailing list", "mailing_list_id", mailingList.UID)
 
+	// Check error simulation first
+	if err := m.checkErrorSimulation("CreateGrpsIOMailingList", mailingList.UID); err != nil {
+		return nil, 0, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -953,6 +1207,11 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 // UpdateGrpsIOMailingList updates an existing mailing list (interface implementation)
 func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, error) {
 	slog.DebugContext(ctx, "mock mailing list: updating mailing list", "mailing_list_uid", mailingList.UID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("UpdateGrpsIOMailingList", mailingList.UID); err != nil {
+		return nil, err
+	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -1046,6 +1305,11 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 // DeleteGrpsIOMailingList deletes a mailing list (interface implementation)
 func (m *MockRepository) DeleteGrpsIOMailingList(ctx context.Context, uid string) error {
 	slog.DebugContext(ctx, "mock mailing list: deleting mailing list", "mailing_list_uid", uid)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("DeleteGrpsIOMailingList", uid); err != nil {
+		return err
+	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -1158,6 +1422,11 @@ func (m *MockRepository) GetMailingListCount() int {
 func (m *MockRepository) GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "mock member: getting member", "member_uid", uid)
 
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetGrpsIOMember", uid); err != nil {
+		return nil, 0, err
+	}
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -1185,7 +1454,6 @@ func (m *MockRepository) GetMemberRevision(ctx context.Context, uid string) (uin
 
 	return 0, errors.NewNotFound("member not found")
 }
-
 
 // AddMember adds a member to the mock repository for testing
 func (m *MockRepository) AddMember(member *model.GrpsIOMember) {

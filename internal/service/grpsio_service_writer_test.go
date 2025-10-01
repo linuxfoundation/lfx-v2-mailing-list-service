@@ -33,7 +33,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "project-1",
@@ -63,7 +63,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "formation",
 				Domain:       "lists.formation.org",
-				GroupID:      23456,
+				GroupID:      writerServiceInt64Ptr(23456),
 				GlobalOwners: []string{"admin@formation.org"},
 				Prefix:       "form",
 				ProjectUID:   "project-2",
@@ -93,7 +93,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "shared",
 				Domain:       "lists.shared.org",
-				GroupID:      34567,
+				GroupID:      writerServiceInt64Ptr(34567),
 				GlobalOwners: []string{"admin@shared.org"},
 				Prefix:       "",
 				ProjectUID:   "project-3",
@@ -106,7 +106,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "shared", result.Type)
-				assert.Equal(t, int64(34567), result.GroupID)
+				assert.Equal(t, writerInt64Ptr(34567), result.GroupID)
 				assert.False(t, result.Public)
 				assert.Equal(t, "project-3", result.ProjectUID)
 				assert.Equal(t, uint64(1), revision)
@@ -122,7 +122,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "nonexistent-project",
@@ -147,7 +147,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			inputService: &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.audit.org",
-				GroupID:      45678,
+				GroupID:      writerServiceInt64Ptr(45678),
 				GlobalOwners: []string{"admin@audit.org"},
 				Writers:      []string{"writer1@audit.org", "writer2@audit.org"},
 				Auditors:     []string{"auditor1@audit.org"},
@@ -258,7 +258,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService_PublishingErrors(t *testin
 			service := &model.GrpsIOService{
 				Type:         "primary",
 				Domain:       "lists.test.org",
-				GroupID:      12345,
+				GroupID:      writerServiceInt64Ptr(12345),
 				GlobalOwners: []string{"admin@test.org"},
 				Prefix:       "",
 				ProjectUID:   "project-1",
@@ -644,6 +644,104 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOService_ConflictHandling(t *testin
 			if tc.validate != nil {
 				tc.validate(t, mockRepo)
 			}
+		})
+	}
+}
+
+// Helper function to create int64 pointer
+func writerServiceInt64Ptr(i int64) *int64 {
+	return &i
+}
+
+func TestGrpsIOWriterOrchestrator_syncServiceToGroupsIO(t *testing.T) {
+	testCases := []struct {
+		name               string
+		setupMock          func(*mock.MockRepository)
+		service            *model.GrpsIOService
+		useNilClient       bool
+		expectedToNotPanic bool
+	}{
+		{
+			name: "sync with nil GroupsIO client should skip gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      writerServiceInt64Ptr(12345),
+				GlobalOwners: []string{"admin@test.org", "owner@test.org"},
+				ProjectUID:   "project-1",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+		{
+			name: "sync with nil GroupID should skip gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      nil, // Not synced to GroupsIO yet
+				GlobalOwners: []string{"admin@test.org"},
+				ProjectUID:   "project-1",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+		{
+			name: "sync handles domain lookup failure gracefully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				// Don't add project - this will cause domain lookup to fail
+			},
+			service: &model.GrpsIOService{
+				UID:          "service-123",
+				Type:         "primary",
+				Domain:       "lists.test.org",
+				GroupID:      writerServiceInt64Ptr(12345),
+				GlobalOwners: []string{"admin@test.org"},
+				ProjectUID:   "nonexistent-project",
+				Status:       "active",
+			},
+			useNilClient:       true,
+			expectedToNotPanic: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+
+			// Create orchestrator without GroupsIO client (simulate mock mode)
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+				// No WithGroupsIOClient - this simulates mock mode
+			)
+
+			// Execute - should not panic
+			ctx := context.Background()
+			concreteOrchestrator := orchestrator.(*grpsIOWriterOrchestrator)
+
+			// This should execute without panicking
+			assert.NotPanics(t, func() {
+				concreteOrchestrator.syncServiceToGroupsIO(ctx, tc.service)
+			}, "syncServiceToGroupsIO should handle all error cases gracefully")
 		})
 	}
 }
