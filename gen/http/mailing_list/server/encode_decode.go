@@ -1783,3 +1783,94 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 		}
 	}
 }
+
+// EncodeGroupsioWebhookResponse returns an encoder for responses returned by
+// the mailing-list groupsio-webhook endpoint.
+func EncodeGroupsioWebhookResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
+}
+
+// DecodeGroupsioWebhookRequest returns a decoder for requests sent to the
+// mailing-list groupsio-webhook endpoint.
+func DecodeGroupsioWebhookRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body GroupsioWebhookRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateGroupsioWebhookRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			signature string
+		)
+		signature = r.Header.Get("x-groupsio-signature")
+		if signature == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("signature", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGroupsioWebhookPayload(&body, signature)
+
+		return payload, nil
+	}
+}
+
+// EncodeGroupsioWebhookError returns an encoder for errors returned by the
+// groupsio-webhook mailing-list endpoint.
+func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGroupsioWebhookBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "Unauthorized":
+			var res *mailinglist.UnauthorizedError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGroupsioWebhookUnauthorizedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}

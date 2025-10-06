@@ -52,6 +52,9 @@ spec:
               value: {{.Values.app.groupsio.maxRetries | quote}}
             - name: GROUPSIO_RETRY_DELAY
               value: {{.Values.app.groupsio.retryDelay}}
+            # Webhook configuration
+            - name: GROUPSIO_WEBHOOK_SECRET
+              value: {{.Values.app.groupsioWebhookSecret | default "" | quote}}
           ports:
             - containerPort: {{.Values.service.port}}
               name: web

@@ -81,3 +81,8 @@ func UpdateGrpsioMailingListMemberMailingListPath(uid string, memberUID string) 
 func DeleteGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
 }
+
+// GroupsioWebhookMailingListPath returns the URL path to the mailing-list service groupsio-webhook HTTP endpoint.
+func GroupsioWebhookMailingListPath() string {
+	return "/webhooks/groupsio"
+}

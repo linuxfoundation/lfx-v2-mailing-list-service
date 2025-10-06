@@ -63,8 +63,19 @@ func main() {
 	readGrpsIOService := service.GrpsIOReaderOrchestrator(ctx)
 	writeGrpsIOService := service.GrpsIOWriterOrchestrator(ctx)
 
+	// Initialize GroupsIO webhook dependencies
+	grpsioWebhookValidator := service.GrpsIOWebhookValidator(ctx)
+	grpsioWebhookProcessor := service.GrpsIOWebhookProcessor(ctx)
+
 	// Initialize the mailing list service with service management endpoints
-	mailingListServiceSvc := service.NewMailingList(authService, readGrpsIOService, writeGrpsIOService, storage)
+	mailingListServiceSvc := service.NewMailingList(
+		authService,
+		readGrpsIOService,
+		writeGrpsIOService,
+		storage,
+		grpsioWebhookValidator,
+		grpsioWebhookProcessor,
+	)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.

@@ -16,6 +16,9 @@ app:
   # Use mock GroupsIO integration for local testing
   groupsioSource: mock
 
+  # Webhook secret for local testing (NOT FOR PRODUCTION)
+  groupsioWebhookSecret: "local-test-webhook-secret-not-for-production"
+
 
 # Disable OpenFGA authorization for local testing
 openfga:

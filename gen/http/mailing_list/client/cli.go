@@ -595,7 +595,7 @@ func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"normal\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"committee\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"none\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -758,7 +758,7 @@ func BuildUpdateGrpsioMailingListMemberPayload(mailingListUpdateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"normal\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -913,6 +913,35 @@ func BuildDeleteGrpsioMailingListMemberPayload(mailingListDeleteGrpsioMailingLis
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
+// BuildGroupsioWebhookPayload builds the payload for the mailing-list
+// groupsio-webhook endpoint from CLI flags.
+func BuildGroupsioWebhookPayload(mailingListGroupsioWebhookBody string, mailingListGroupsioWebhookSignature string) (*mailinglist.GroupsioWebhookPayload, error) {
+	var err error
+	var body GroupsioWebhookRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListGroupsioWebhookBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"body\": \"UXVvIGVuaW0gYWIgcmF0aW9uZSBxdWFzaS4=\"\n   }'")
+		}
+		if body.Body == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("body", "body"))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var signature string
+	{
+		signature = mailingListGroupsioWebhookSignature
+	}
+	v := &mailinglist.GroupsioWebhookPayload{
+		Body: body.Body,
+	}
+	v.Signature = signature
 
 	return v, nil
 }

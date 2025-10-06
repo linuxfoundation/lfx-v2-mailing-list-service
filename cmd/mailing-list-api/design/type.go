@@ -220,6 +220,14 @@ var NotFoundError = dsl.Type("not-found-error", func() {
 	dsl.Required("message")
 })
 
+// UnauthorizedError is the DSL type for an unauthorized error.
+var UnauthorizedError = dsl.Type("unauthorized-error", func() {
+	dsl.Attribute("message", dsl.String, "Error message", func() {
+		dsl.Example("Unauthorized access.")
+	})
+	dsl.Required("message")
+})
+
 // ConflictError is the DSL type for a conflict error.
 var ConflictError = dsl.Type("conflict-error", func() {
 	dsl.Attribute("message", dsl.String, "Error message", func() {

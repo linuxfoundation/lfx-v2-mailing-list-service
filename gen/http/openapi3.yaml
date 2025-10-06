@@ -482,14 +482,14 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListMemberRequestBody'
                         example:
-                            delivery_mode: normal
+                            delivery_mode: none
                             email: john.doe@example.com
                             first_name: John
                             job_title: Software Engineer
                             last_name: Doe
                             last_reviewed_at: "2023-01-15T14:30:00Z"
                             last_reviewed_by: admin@example.com
-                            member_type: committee
+                            member_type: direct
                             mod_status: owner
                             organization: Example Corp
                             username: jdoe
@@ -505,7 +505,7 @@ paths:
                                     - auditor_user_id1
                                     - auditor_user_id2
                                 created_at: "2023-01-15T10:30:00Z"
-                                delivery_mode: normal
+                                delivery_mode: digest
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -516,7 +516,7 @@ paths:
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 member_type: direct
-                                mod_status: moderator
+                                mod_status: none
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -721,7 +721,7 @@ paths:
                                     - auditor_user_id1
                                     - auditor_user_id2
                                 created_at: "2023-01-15T10:30:00Z"
-                                delivery_mode: none
+                                delivery_mode: normal
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -731,8 +731,8 @@ paths:
                                 last_reviewed_at: "2023-01-15T14:30:00Z"
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                member_type: committee
-                                mod_status: none
+                                member_type: direct
+                                mod_status: owner
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -831,11 +831,11 @@ paths:
                         schema:
                             $ref: '#/components/schemas/UpdateGrpsioMailingListMemberRequestBody'
                         example:
-                            delivery_mode: normal
+                            delivery_mode: digest
                             first_name: John
                             job_title: Software Engineer
                             last_name: Doe
-                            mod_status: owner
+                            mod_status: moderator
                             organization: Example Corp
                             username: jdoe
             responses:
@@ -850,7 +850,7 @@ paths:
                                     - auditor_user_id1
                                     - auditor_user_id2
                                 created_at: "2023-01-15T10:30:00Z"
-                                delivery_mode: digest
+                                delivery_mode: normal
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -861,7 +861,7 @@ paths:
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 member_type: direct
-                                mod_status: owner
+                                mod_status: moderator
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1410,6 +1410,77 @@ paths:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
                                 message: The service is unavailable.
+    /webhooks/groupsio:
+        post:
+            tags:
+                - mailing-list
+            summary: groupsio-webhook mailing-list
+            description: Handle GroupsIO webhook events for subgroup and member changes
+            operationId: mailing-list#groupsio-webhook
+            parameters:
+                - name: x-groupsio-signature
+                  in: header
+                  description: HMAC-SHA1 signature from x-groupsio-signature header
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: HMAC-SHA1 signature from x-groupsio-signature header
+                    example: Et quas doloremque modi.
+                  example: Vel voluptatem omnis.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupsioWebhookRequestBody'
+                        example:
+                            body:
+                                - 81
+                                - 117
+                                - 111
+                                - 32
+                                - 101
+                                - 110
+                                - 105
+                                - 109
+                                - 32
+                                - 97
+                                - 98
+                                - 32
+                                - 114
+                                - 97
+                                - 116
+                                - 105
+                                - 111
+                                - 110
+                                - 101
+                                - 32
+                                - 113
+                                - 117
+                                - 97
+                                - 115
+                                - 105
+                                - 46
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Invalid webhook payload or signature'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "401":
+                    description: 'Unauthorized: Invalid webhook signature'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
 components:
     schemas:
         BadRequestError:
@@ -1441,7 +1512,7 @@ components:
                     type: string
                     description: Email delivery mode
                     default: normal
-                    example: none
+                    example: normal
                     enum:
                         - normal
                         - digest
@@ -1489,7 +1560,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: owner
+                    example: none
                     enum:
                         - none
                         - moderator
@@ -1505,7 +1576,7 @@ components:
                     example: jdoe
                     maxLength: 255
             example:
-                delivery_mode: normal
+                delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
                 job_title: Software Engineer
@@ -1513,7 +1584,7 @@ components:
                 last_reviewed_at: "2023-01-15T14:30:00Z"
                 last_reviewed_by: admin@example.com
                 member_type: direct
-                mod_status: none
+                mod_status: owner
                 organization: Example Corp
                 username: jdoe
             required:
@@ -1525,7 +1596,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Explicabo deserunt sit vitae in dolorem.
+                        example: Ea nesciunt et itaque soluta soluta sed.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1534,7 +1605,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Emeritus
+                        example: None
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1596,7 +1667,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Totam enim natus explicabo libero.
+                        example: Aliquam optio libero totam voluptatem.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1633,7 +1704,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Laborum autem est sint neque.
+                        example: Enim itaque vel sit consectetur inventore sed.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1646,7 +1717,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: ernestine@bartell.info
+                        example: nathaniel_kuvalis@muller.com
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -1701,7 +1772,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Qui ipsam.
+                        example: Quam perspiciatis ex voluptatem dolor.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1728,6 +1799,85 @@ components:
             required:
                 - type
                 - project_uid
+        GroupsioWebhookRequestBody:
+            type: object
+            properties:
+                body:
+                    type: string
+                    description: Raw webhook event body
+                    example:
+                        - 69
+                        - 120
+                        - 99
+                        - 101
+                        - 112
+                        - 116
+                        - 117
+                        - 114
+                        - 105
+                        - 32
+                        - 101
+                        - 116
+                        - 32
+                        - 99
+                        - 111
+                        - 110
+                        - 115
+                        - 101
+                        - 113
+                        - 117
+                        - 97
+                        - 116
+                        - 117
+                        - 114
+                        - 32
+                        - 109
+                        - 111
+                        - 108
+                        - 101
+                        - 115
+                        - 116
+                        - 105
+                        - 97
+                        - 115
+                        - 32
+                        - 111
+                        - 109
+                        - 110
+                        - 105
+                        - 115
+                        - 32
+                        - 97
+                        - 108
+                        - 105
+                        - 113
+                        - 117
+                        - 105
+                        - 100
+                        - 46
+                    format: binary
+            example:
+                body:
+                    - 82
+                    - 101
+                    - 114
+                    - 117
+                    - 109
+                    - 32
+                    - 99
+                    - 111
+                    - 110
+                    - 115
+                    - 101
+                    - 113
+                    - 117
+                    - 97
+                    - 116
+                    - 117
+                    - 114
+                    - 46
+            required:
+                - body
         GrpsIoMailingListFull:
             type: object
             properties:
@@ -1735,7 +1885,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Tenetur sequi molestiae ut corrupti magnam.
+                        example: Neque ad voluptatum magni.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1744,7 +1894,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Alternate Voting Rep
+                        example: None
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1845,7 +1995,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Nisi dolorum et.
+                        example: Dolor dicta qui minus.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -1884,7 +2034,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Animi eaque cupiditate exercitationem.
+                        example: Non rem aut aut.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -1893,7 +2043,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Alternate Voting Rep
+                        example: Emeritus
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1985,7 +2135,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Optio vero aspernatur.
+                        example: Cumque omnis ut et quia.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2022,7 +2172,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Quidem impedit voluptas quia rem.
+                        example: Quis iste itaque occaecati dolores.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -2036,7 +2186,7 @@ components:
                     type: string
                     description: Email delivery mode
                     default: normal
-                    example: digest
+                    example: none
                     enum:
                         - normal
                         - digest
@@ -2099,7 +2249,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: moderator
+                    example: owner
                     enum:
                         - none
                         - moderator
@@ -2132,7 +2282,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Rem aut aut est facere laborum enim.
+                        example: Rerum et rem officiis molestiae voluptas.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2143,7 +2293,7 @@ components:
                     - auditor_user_id1
                     - auditor_user_id2
                 created_at: "2023-01-15T10:30:00Z"
-                delivery_mode: digest
+                delivery_mode: normal
                 email: john.doe@example.com
                 first_name: John
                 groupsio_group_id: 67890
@@ -2182,7 +2332,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Magni fugit similique.
+                        example: Hic tempore non atque ut quis ut.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -2251,7 +2401,7 @@ components:
                     type: string
                     description: Member type
                     default: direct
-                    example: committee
+                    example: direct
                     enum:
                         - committee
                         - direct
@@ -2259,7 +2409,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: none
+                    example: owner
                     enum:
                         - none
                         - moderator
@@ -2292,7 +2442,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Qui minus sapiente neque ad.
+                        example: Cumque quidem impedit voluptas quia rem provident.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2303,7 +2453,7 @@ components:
                     - auditor_user_id1
                     - auditor_user_id2
                 created_at: "2023-01-15T10:30:00Z"
-                delivery_mode: normal
+                delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
                 groupsio_group_id: 67890
@@ -2313,8 +2463,8 @@ components:
                 last_reviewed_at: "2023-01-15T14:30:00Z"
                 last_reviewed_by: admin@example.com
                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                member_type: committee
-                mod_status: owner
+                member_type: direct
+                mod_status: none
                 organization: Example Corp
                 status: pending
                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -2330,7 +2480,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Doloremque nostrum sed quo ullam.
+                        example: Cupiditate exercitationem.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -2348,7 +2498,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: jason@bechtelargerhold.net
+                        example: beth@gerlach.com
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -2435,7 +2585,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Ut explicabo saepe.
+                        example: Et animi.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2478,7 +2628,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Corrupti quis aut voluptatem aut.
+                        example: Eos illum exercitationem dolorum nobis.
                     description: Auditor user IDs who can audit this service
                     example:
                         - auditor_user_id1
@@ -2496,7 +2646,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: kaya@pollichabshire.biz
+                        example: zachary@stehr.com
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -2583,7 +2733,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Voluptatem voluptate vitae saepe mollitia.
+                        example: Voluptatem consequatur qui quia id.
                     description: Manager user IDs who can edit/modify this service
                     example:
                         - manager_user_id1
@@ -2652,6 +2802,17 @@ components:
                 message: The service is unavailable.
             required:
                 - message
+        UnauthorizedError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: Unauthorized access.
+            example:
+                message: Unauthorized access.
+            required:
+                - message
         UpdateGrpsioMailingListMemberRequestBody:
             type: object
             properties:
@@ -2659,7 +2820,7 @@ components:
                     type: string
                     description: Email delivery mode
                     default: normal
-                    example: none
+                    example: digest
                     enum:
                         - normal
                         - digest
@@ -2685,7 +2846,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: moderator
+                    example: none
                     enum:
                         - none
                         - moderator
@@ -2701,11 +2862,11 @@ components:
                     example: jdoe
                     maxLength: 255
             example:
-                delivery_mode: normal
+                delivery_mode: none
                 first_name: John
                 job_title: Software Engineer
                 last_name: Doe
-                mod_status: moderator
+                mod_status: none
                 organization: Example Corp
                 username: jdoe
     securitySchemes:

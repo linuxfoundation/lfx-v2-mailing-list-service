@@ -179,6 +179,13 @@ type UpdateGrpsioMailingListMemberRequestBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 }
 
+// GroupsioWebhookRequestBody is the type of the "mailing-list" service
+// "groupsio-webhook" endpoint HTTP request body.
+type GroupsioWebhookRequestBody struct {
+	// Raw webhook event body
+	Body []byte `form:"body,omitempty" json:"body,omitempty" xml:"body,omitempty"`
+}
+
 // CreateGrpsioServiceResponseBody is the type of the "mailing-list" service
 // "create-grpsio-service" endpoint HTTP response body.
 type CreateGrpsioServiceResponseBody struct {
@@ -919,6 +926,22 @@ type DeleteGrpsioMailingListMemberNotFoundResponseBody struct {
 // the "mailing-list" service "delete-grpsio-mailing-list-member" endpoint HTTP
 // response body for the "ServiceUnavailable" error.
 type DeleteGrpsioMailingListMemberServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GroupsioWebhookBadRequestResponseBody is the type of the "mailing-list"
+// service "groupsio-webhook" endpoint HTTP response body for the "BadRequest"
+// error.
+type GroupsioWebhookBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GroupsioWebhookUnauthorizedResponseBody is the type of the "mailing-list"
+// service "groupsio-webhook" endpoint HTTP response body for the
+// "Unauthorized" error.
+type GroupsioWebhookUnauthorizedResponseBody struct {
 	// Error message
 	Message string `form:"message" json:"message" xml:"message"`
 }
@@ -2080,6 +2103,25 @@ func NewDeleteGrpsioMailingListMemberServiceUnavailableResponseBody(res *mailing
 	return body
 }
 
+// NewGroupsioWebhookBadRequestResponseBody builds the HTTP response body from
+// the result of the "groupsio-webhook" endpoint of the "mailing-list" service.
+func NewGroupsioWebhookBadRequestResponseBody(res *mailinglist.BadRequestError) *GroupsioWebhookBadRequestResponseBody {
+	body := &GroupsioWebhookBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGroupsioWebhookUnauthorizedResponseBody builds the HTTP response body
+// from the result of the "groupsio-webhook" endpoint of the "mailing-list"
+// service.
+func NewGroupsioWebhookUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *GroupsioWebhookUnauthorizedResponseBody {
+	body := &GroupsioWebhookUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateGrpsioServicePayload builds a mailing-list service
 // create-grpsio-service endpoint payload.
 func NewCreateGrpsioServicePayload(body *CreateGrpsioServiceRequestBody, version string, bearerToken *string) *mailinglist.CreateGrpsioServicePayload {
@@ -2382,6 +2424,17 @@ func NewDeleteGrpsioMailingListMemberPayload(uid string, memberUID string, versi
 	v.Version = version
 	v.BearerToken = bearerToken
 	v.IfMatch = ifMatch
+
+	return v
+}
+
+// NewGroupsioWebhookPayload builds a mailing-list service groupsio-webhook
+// endpoint payload.
+func NewGroupsioWebhookPayload(body *GroupsioWebhookRequestBody, signature string) *mailinglist.GroupsioWebhookPayload {
+	v := &mailinglist.GroupsioWebhookPayload{
+		Body: body.Body,
+	}
+	v.Signature = signature
 
 	return v
 }
@@ -2718,6 +2771,15 @@ func ValidateUpdateGrpsioMailingListMemberRequestBody(body *UpdateGrpsioMailingL
 		if !(*body.ModStatus == "none" || *body.ModStatus == "moderator" || *body.ModStatus == "owner") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.mod_status", *body.ModStatus, []any{"none", "moderator", "owner"}))
 		}
+	}
+	return
+}
+
+// ValidateGroupsioWebhookRequestBody runs the validations defined on
+// Groupsio-WebhookRequestBody
+func ValidateGroupsioWebhookRequestBody(body *GroupsioWebhookRequestBody) (err error) {
+	if body.Body == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("body", "body"))
 	}
 	return
 }

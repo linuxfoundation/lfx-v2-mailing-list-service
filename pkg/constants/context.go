@@ -20,4 +20,7 @@ const (
 
 	// RequestIDContextKey is the context key for request ID
 	RequestIDContextKey ContextKey = "request-id"
+
+	// GrpsIOWebhookBodyContextKey is the context key for raw GroupsIO webhook body
+	GrpsIOWebhookBodyContextKey ContextKey = "grpsio-webhook-body"
 )

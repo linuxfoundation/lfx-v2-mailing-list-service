@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -26,15 +27,28 @@ type mailingListService struct {
 	grpsIOReaderOrchestrator service.GrpsIOReader
 	grpsIOWriterOrchestrator service.GrpsIOWriter
 	storage                  port.GrpsIOReaderWriter
+
+	// GroupsIO Webhook dependencies
+	grpsioWebhookValidator port.GrpsIOWebhookValidator
+	grpsioWebhookProcessor service.GrpsIOWebhookProcessor
 }
 
 // NewMailingList returns the mailing list service implementation.
-func NewMailingList(auth port.Authenticator, grpsIOReaderOrchestrator service.GrpsIOReader, grpsIOWriterOrchestrator service.GrpsIOWriter, storage port.GrpsIOReaderWriter) mailinglistservice.Service {
+func NewMailingList(
+	auth port.Authenticator,
+	grpsIOReaderOrchestrator service.GrpsIOReader,
+	grpsIOWriterOrchestrator service.GrpsIOWriter,
+	storage port.GrpsIOReaderWriter,
+	grpsioWebhookValidator port.GrpsIOWebhookValidator,
+	grpsioWebhookProcessor service.GrpsIOWebhookProcessor,
+) mailinglistservice.Service {
 	return &mailingListService{
 		auth:                     auth,
 		grpsIOReaderOrchestrator: grpsIOReaderOrchestrator,
 		grpsIOWriterOrchestrator: grpsIOWriterOrchestrator,
 		storage:                  storage,
+		grpsioWebhookValidator:   grpsioWebhookValidator,
+		grpsioWebhookProcessor:   grpsioWebhookProcessor,
 	}
 }
 
@@ -581,6 +595,49 @@ func (s *mailingListService) DeleteGrpsioMailingListMember(ctx context.Context, 
 		"mailing_list_uid", payload.UID)
 
 	return nil
+}
+
+// GroupsioWebhook handles GroupsIO webhook events
+func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglistservice.GroupsioWebhookPayload) error {
+	// Get raw body from context
+	bodyBytes, ok := ctx.Value(constants.GrpsIOWebhookBodyContextKey).([]byte)
+	if !ok {
+		slog.ErrorContext(ctx, "failed to get raw body from context")
+		return &mailinglistservice.BadRequestError{Message: "missing webhook body"}
+	}
+
+	// Validate signature
+	if err := s.grpsioWebhookValidator.ValidateSignature(bodyBytes, p.Signature); err != nil {
+		slog.ErrorContext(ctx, "webhook signature validation failed", "error", err)
+		return &mailinglistservice.UnauthorizedError{Message: "invalid webhook signature"}
+	}
+
+	// Parse event type
+	var event struct {
+		Action string `json:"action"`
+	}
+	if err := json.Unmarshal(bodyBytes, &event); err != nil {
+		slog.ErrorContext(ctx, "failed to parse webhook event", "error", err)
+		return &mailinglistservice.BadRequestError{Message: "invalid event format"}
+	}
+
+	// Validate event type
+	if !s.grpsioWebhookValidator.IsValidEvent(event.Action) {
+		slog.WarnContext(ctx, "unsupported event type", "event_type", event.Action)
+		return &mailinglistservice.BadRequestError{Message: fmt.Sprintf("unsupported event type: %s", event.Action)}
+	}
+
+	// Process event synchronously with exponential backoff retries
+	err := service.RetryWithExponentialBackoff(ctx, service.DefaultRetryConfig(), func() error {
+		return s.grpsioWebhookProcessor.ProcessEvent(ctx, event.Action, bodyBytes)
+	})
+
+	if err != nil {
+		slog.ErrorContext(ctx, "webhook processing failed after retries", "error", err)
+		// Note: Still return nil (204) to prevent Groups.io from retrying
+	}
+
+	return nil // Always return nil for 204 No Content
 }
 
 // Helper functions

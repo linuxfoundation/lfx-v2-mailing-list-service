@@ -329,3 +329,32 @@ func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 		service.WithGroupsIOClient(groupsClient),
 	)
 }
+
+// GrpsIOWebhookValidator initializes the GroupsIO webhook validator with mock support
+func GrpsIOWebhookValidator(ctx context.Context) port.GrpsIOWebhookValidator {
+	var validator port.GrpsIOWebhookValidator
+
+	// Mock switching (matches GROUPSIO_SOURCE pattern)
+	if os.Getenv("GROUPSIO_SOURCE") == "mock" {
+		slog.InfoContext(ctx, "using mock groupsio webhook validator")
+		validator = infrastructure.NewMockGrpsIOWebhookValidator()
+		return validator
+	}
+
+	// Real validator initialization
+	secret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
+	if secret == "" {
+		slog.WarnContext(ctx, "GROUPSIO_WEBHOOK_SECRET not set, webhook validation may fail")
+	}
+
+	validator = groupsio.NewGrpsIOWebhookValidator(secret)
+	slog.InfoContext(ctx, "groupsio webhook validator initialized")
+
+	return validator
+}
+
+// GrpsIOWebhookProcessor creates GroupsIO webhook processor (SIMPLIFIED FOR MVP)
+// PR #2 will refactor to orchestrator pattern with dependencies
+func GrpsIOWebhookProcessor(ctx context.Context) service.GrpsIOWebhookProcessor {
+	return service.NewGrpsIOWebhookProcessor()
+}
