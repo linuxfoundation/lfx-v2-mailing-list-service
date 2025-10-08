@@ -76,28 +76,54 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		keys = append(keys, constraintKey)
 	}
 
-	// Step 4: Create in Groups.io FIRST (if enabled)
-	groupID, err := sw.createServiceInGroupsIO(ctx, service)
-	if err != nil {
-		rollbackRequired = true
-		return nil, 0, err
+	// Step 4: Set default source if not provided
+	if service.Source == "" {
+		// Default to API source if not specified (preserves existing behavior)
+		service.Source = constants.SourceAPI
 	}
 
-	if groupID != nil {
-		// Groups.io creation successful - track for rollback cleanup
-		serviceID = groupID
+	// Validate source (Service only supports API and Mock, not webhook)
+	if service.Source != constants.SourceAPI && service.Source != constants.SourceMock {
+		return nil, 0, errors.NewValidation(
+			fmt.Sprintf("service only supports api or mock source, got: %s", service.Source))
+	}
 
-		service.GroupID = groupID
-		service.SyncStatus = "synced"
-		service.Status = "active"
-	} else {
-		// Mock/disabled mode - set appropriate status
-		service.SyncStatus = "pending"
+	// Step 5: Source-based strategy dispatch (API and Mock only)
+	var (
+		groupID         *int64
+		requiresCleanup bool
+	)
+
+	switch service.Source {
+	case constants.SourceAPI:
+		groupID, requiresCleanup, err = sw.handleAPISourceService(ctx, service)
+		if err != nil {
+			rollbackRequired = true
+			return nil, 0, err
+		}
+		if requiresCleanup {
+			serviceID = groupID
+		}
+		// Set status based on Groups.io creation (preserves existing logic)
+		if groupID != nil {
+			service.Status = "active"
+		} else {
+			service.Status = "pending"
+		}
+
+	case constants.SourceMock:
+		groupID = sw.handleMockSourceService(ctx, service)
 		service.Status = "pending"
-		slog.InfoContext(ctx, "Groups.io integration disabled - service will be in pending state")
+
+	default:
+		// Should never reach here due to validation above
+		return nil, 0, errors.NewValidation(
+			fmt.Sprintf("unsupported source for service: %s", service.Source))
 	}
 
-	// Step 5: Create service in storage (with Groups.io ID already set)
+	service.GroupID = groupID
+
+	// Step 6: Create service in storage (with Groups.io ID already set)
 	createdService, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service",
@@ -114,7 +140,16 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"revision", revision,
 	)
 
-	// Step 6: Publish messages (indexer and access control)
+	// Step 7: Create secondary indices
+	secondaryKeys, err := sw.createServiceSecondaryIndices(ctx, createdService)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to create service secondary indices", "error", err)
+		// Don't fail the operation, service creation succeeded
+	} else {
+		keys = append(keys, secondaryKeys...)
+	}
+
+	// Step 8: Publish messages (indexer and access control)
 	if sw.publisher != nil {
 		if err := sw.publishServiceMessages(ctx, createdService, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish messages", "error", err)
@@ -408,6 +443,23 @@ func (sw *grpsIOWriterOrchestrator) reserveUniqueConstraints(ctx context.Context
 	}
 }
 
+// createServiceSecondaryIndices creates secondary indices for external GroupsIO IDs
+func (sw *grpsIOWriterOrchestrator) createServiceSecondaryIndices(ctx context.Context, service *model.GrpsIOService) ([]string, error) {
+	// Delegate to storage layer (port interface)
+	// This interface method needs to be added to port.GrpsIOServiceWriter
+	type serviceIndexCreator interface {
+		CreateServiceSecondaryIndices(ctx context.Context, service *model.GrpsIOService) ([]string, error)
+	}
+
+	if indexCreator, ok := sw.grpsIOWriter.(serviceIndexCreator); ok {
+		return indexCreator.CreateServiceSecondaryIndices(ctx, service)
+	}
+
+	// If storage implementation doesn't support indexing (e.g., mock), skip silently
+	slog.DebugContext(ctx, "storage implementation doesn't support secondary indices")
+	return nil, nil
+}
+
 // publishServiceMessages publishes service-specific messages
 func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, service *model.GrpsIOService, action model.MessageAction) error {
 	if sw.publisher == nil {
@@ -571,3 +623,59 @@ func (sw *grpsIOWriterOrchestrator) syncServiceToGroupsIO(ctx context.Context, s
 			"group_id", *service.GroupID, "domain", domain)
 	}
 }
+
+// handleAPISourceService handles API-initiated service creation
+// Preserves existing logic: calls createServiceInGroupsIO and returns cleanup flag
+// For shared services with pre-provided GroupID, preserves the input value
+func (sw *grpsIOWriterOrchestrator) handleAPISourceService(
+	ctx context.Context,
+	service *model.GrpsIOService,
+) (*int64, bool, error) {
+	// Check if GroupID is already provided (shared service scenario)
+	if service.GroupID != nil {
+		slog.InfoContext(ctx, "source=api: using pre-provided group_id for shared service",
+			"group_id", *service.GroupID,
+			"domain", service.GetDomain())
+		return service.GroupID, false, nil
+	}
+
+	slog.InfoContext(ctx, "source=api: creating group in Groups.io",
+		"domain", service.GetDomain(),
+		"project_uid", service.ProjectUID)
+
+	// Call existing createServiceInGroupsIO method (preserves all existing logic)
+	groupID, err := sw.createServiceInGroupsIO(ctx, service)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create group in Groups.io",
+			"error", err,
+			"domain", service.GetDomain())
+		return nil, false, err
+	}
+
+	// Determine if cleanup is required (preserves existing rollback logic)
+	requiresCleanup := groupID != nil
+
+	if groupID != nil {
+		slog.InfoContext(ctx, "group created successfully in Groups.io",
+			"group_id", *groupID)
+	} else {
+		slog.InfoContext(ctx, "Groups.io client not available, service will be in pending state")
+	}
+
+	return groupID, requiresCleanup, nil
+}
+
+// handleMockSourceService handles mock/test mode service creation
+// Preserves existing logic: returns nil for groupID
+func (sw *grpsIOWriterOrchestrator) handleMockSourceService(
+	ctx context.Context,
+	service *model.GrpsIOService,
+) *int64 {
+	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
+		"domain", service.GetDomain())
+	return nil
+}
+
+// Note: No handleWebhookSourceService needed
+// Services are created explicitly via API, not discovered from webhooks
+// Only mailing lists (subgroups) and members can be webhook-adopted

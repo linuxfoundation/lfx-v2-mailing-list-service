@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -16,6 +17,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 
 	"github.com/google/uuid"
 	"goa.design/goa/v3/security"
@@ -628,7 +630,12 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 	}
 
 	// Process event synchronously with exponential backoff retries
-	err := service.RetryWithExponentialBackoff(ctx, service.DefaultRetryConfig(), func() error {
+	retryConfig := utils.NewRetryConfig(
+		constants.WebhookMaxRetries,
+		constants.WebhookRetryBaseDelay*time.Millisecond,
+		constants.WebhookRetryMaxDelay*time.Millisecond,
+	)
+	err := utils.RetryWithExponentialBackoff(ctx, retryConfig, func() error {
 		return s.grpsioWebhookProcessor.ProcessEvent(ctx, event.Action, bodyBytes)
 	})
 

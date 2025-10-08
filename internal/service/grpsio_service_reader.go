@@ -57,3 +57,27 @@ func (sr *grpsIOReaderOrchestrator) GetRevision(ctx context.Context, uid string)
 
 	return revision, nil
 }
+
+// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
+func (sr *grpsIOReaderOrchestrator) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "executing get services by group_id use case",
+		"group_id", groupID,
+	)
+
+	// Get services from storage
+	services, err := sr.grpsIOReader.GetServicesByGroupID(ctx, groupID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get services by group_id",
+			"error", err,
+			"group_id", groupID,
+		)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "services retrieved successfully by group_id",
+		"group_id", groupID,
+		"count", len(services),
+	)
+
+	return services, nil
+}

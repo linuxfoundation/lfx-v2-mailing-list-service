@@ -25,4 +25,9 @@ type GrpsIOMemberWriter interface {
 
 	// UniqueMember validates member email is unique within mailing list
 	UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error)
+
+	// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
+	// Returns keys created (for rollback) and error if index creation fails
+	// Pattern mirrors createMailingListSecondaryIndices
+	CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error)
 }

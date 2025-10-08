@@ -534,3 +534,13 @@ func GrpsIOMemberUpdateAttributes() {
 		dsl.Default("none")
 	})
 }
+
+// GroupsIOWebhookPayload is the DSL type for GroupsIO webhook event payload.
+var GroupsIOWebhookPayload = dsl.Type("groupsio-webhook-payload", func() {
+	dsl.Description("Webhook event payload from Groups.io with HMAC signature for verification")
+
+	dsl.Field(1, "signature", dsl.String, "HMAC-SHA1 signature from x-groupsio-signature header")
+	dsl.Field(2, "body", dsl.Bytes, "Raw webhook event body")
+
+	dsl.Required("signature", "body")
+})

@@ -25,7 +25,7 @@ type GrpsIOService struct {
 	Domain         string    `json:"domain"`
 	GroupID        *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
 	Status         string    `json:"status"`
-	SyncStatus     string    `json:"sync_status,omitempty"` // "pending", "synced", "failed"
+	Source         string    `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
 	GlobalOwners   []string  `json:"global_owners"`
 	Prefix         string    `json:"prefix"`
 	ProjectSlug    string    `json:"project_slug"`

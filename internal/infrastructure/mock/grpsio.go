@@ -466,6 +466,25 @@ func (w *MockGrpsIOWriter) DeleteGrpsIOMember(ctx context.Context, uid string, e
 	return nil
 }
 
+// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs (mock implementation)
+func (w *MockGrpsIOWriter) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+	slog.DebugContext(ctx, "mock member: creating secondary indices", "member_uid", member.UID)
+
+	// Mock implementation - return empty keys (indices not actually created in mock)
+	// In real implementation, these would create lookup/groupsio-member-memberid/123 -> member_uid
+	var keys []string
+
+	if member.GroupsIOMemberID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-memberid/%d/%s", *member.GroupsIOMemberID, member.UID))
+	}
+
+	if member.GroupsIOGroupID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-groupid/%d/%s", *member.GroupsIOGroupID, member.UID))
+	}
+
+	return keys, nil
+}
+
 // MockEntityAttributeReader implements EntityAttributeReader interface
 type MockEntityAttributeReader struct {
 	mock *MockRepository
@@ -812,6 +831,41 @@ func (m *MockRepository) GetRevision(ctx context.Context, uid string) (uint64, e
 	return 0, errors.NewNotFound("service not found")
 }
 
+// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
+// Returns empty slice if no services found (not an error)
+func (m *MockRepository) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "mock service: getting services by group_id", "group_id", groupID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetServicesByGroupID", fmt.Sprintf("%d", groupID)); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var services []*model.GrpsIOService
+
+	// Iterate through all services to find matches
+	for _, service := range m.services {
+		if service.GroupID != nil && uint64(*service.GroupID) == groupID {
+			// Return deep copy to avoid data races
+			serviceCopy := *service
+			serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
+			copy(serviceCopy.GlobalOwners, service.GlobalOwners)
+			serviceCopy.Writers = append([]string(nil), service.Writers...)
+			serviceCopy.Auditors = append([]string(nil), service.Auditors...)
+			services = append(services, &serviceCopy)
+		}
+	}
+
+	slog.DebugContext(ctx, "mock service: services retrieved by group_id",
+		"group_id", groupID,
+		"count", len(services))
+
+	return services, nil
+}
+
 // MockGrpsIOReaderWriter combines reader and writer functionality
 type MockGrpsIOReaderWriter struct {
 	port.GrpsIOReader
@@ -1143,6 +1197,43 @@ func (m *MockRepository) GetGrpsIOMailingListRevision(ctx context.Context, uid s
 	return revision, nil
 }
 
+// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
+// Returns NotFound error if mailing list doesn't exist
+func (m *MockRepository) GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error) {
+	slog.DebugContext(ctx, "mock mailing list: getting mailing list by group_id", "group_id", groupID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetMailingListByGroupID", fmt.Sprintf("%d", groupID)); err != nil {
+		return nil, 0, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Iterate through all mailing lists to find match
+	for uid, mailingList := range m.mailingLists {
+		if mailingList.SubgroupID != nil && uint64(*mailingList.SubgroupID) == groupID {
+			// Return deep copy to avoid data races
+			mailingListCopy := *mailingList
+			revision := m.mailingListRevisions[uid]
+			if revision == 0 {
+				revision = 1
+			}
+
+			slog.DebugContext(ctx, "found mailing list with matching group_id",
+				"mailing_list_uid", mailingListCopy.UID,
+				"group_name", mailingListCopy.GroupName,
+				"group_id", groupID,
+				"revision", revision)
+
+			return &mailingListCopy, revision, nil
+		}
+	}
+
+	slog.DebugContext(ctx, "mailing list not found by group_id", "group_id", groupID)
+	return nil, 0, errors.NewNotFound("mailing list not found")
+}
+
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {
 	slog.DebugContext(ctx, "mock mailing list: checking mailing list existence", "parent_id", parentID, "group_name", groupName)
@@ -1453,6 +1544,46 @@ func (m *MockRepository) GetMemberRevision(ctx context.Context, uid string) (uin
 	}
 
 	return 0, errors.NewNotFound("member not found")
+}
+
+// GetMemberByGroupsIOMemberID retrieves member by Groups.io member ID (interface implementation)
+func (m *MockRepository) GetMemberByGroupsIOMemberID(ctx context.Context, memberID uint64) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "mock member: getting member by Groups.io member ID", "member_id", memberID)
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Search through all members for matching Groups.io member ID
+	for uid, member := range m.members {
+		if member.GroupsIOMemberID != nil && uint64(*member.GroupsIOMemberID) == memberID {
+			memberCopy := *member
+			revision := m.memberRevisions[uid]
+			return &memberCopy, revision, nil
+		}
+	}
+
+	return nil, 0, errors.NewNotFound(fmt.Sprintf("member with Groups.io member ID %d not found", memberID))
+}
+
+// GetMemberByEmail retrieves member by email within mailing list (interface implementation)
+func (m *MockRepository) GetMemberByEmail(ctx context.Context, mailingListUID, email string) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "mock member: getting member by email",
+		"mailing_list_uid", mailingListUID,
+		"email", email)
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Search through all members for matching mailing list and email
+	for uid, member := range m.members {
+		if member.MailingListUID == mailingListUID && member.Email == email {
+			memberCopy := *member
+			revision := m.memberRevisions[uid]
+			return &memberCopy, revision, nil
+		}
+	}
+
+	return nil, 0, errors.NewNotFound(fmt.Sprintf("member with email %s not found in mailing list %s", email, mailingListUID))
 }
 
 // AddMember adds a member to the mock repository for testing

@@ -123,6 +123,11 @@ func (o *grpsIOWriterOrchestrator) UniqueMember(ctx context.Context, member *mod
 	return o.grpsIOWriter.UniqueMember(ctx, member)
 }
 
+// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
+func (o *grpsIOWriterOrchestrator) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+	return o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, member)
+}
+
 // Common methods implementation
 
 // deleteKeys removes keys by getting their revision and deleting them

@@ -34,6 +34,14 @@ type storage struct {
 	client *NATSClient
 }
 
+// IndexSpec defines a secondary index to create
+type IndexSpec struct {
+	Name      string  // Index name for logging
+	KeyFormat string  // Key format string with %d or %s placeholder for ID
+	Int64ID   *int64  // Pointer to int64 ID value, nil values are skipped
+	StringID  *string // Pointer to string ID value, nil/empty values are skipped
+}
+
 // GetGrpsIOService retrieves a single service by ID and returns ETag revision
 func (s *storage) GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: getting service",
@@ -145,6 +153,31 @@ func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIO
 	return service, rev, nil
 }
 
+// CreateServiceSecondaryIndices creates all secondary indices for the service (public interface)
+func (s *storage) CreateServiceSecondaryIndices(ctx context.Context, service *model.GrpsIOService) ([]string, error) {
+	return s.createServiceSecondaryIndices(ctx, service)
+}
+
+// createServiceSecondaryIndices creates all secondary indices for the service (internal implementation)
+func (s *storage) createServiceSecondaryIndices(ctx context.Context, service *model.GrpsIOService) ([]string, error) {
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOServices]
+	if !exists || kv == nil {
+		return nil, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	createdKeys, err := s.createSecondaryIndices(ctx, kv, service.UID, []IndexSpec{
+		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOServiceByGroupIDPrefix, Int64ID: service.GroupID},
+	})
+	if err != nil {
+		return createdKeys, err
+	}
+
+	slog.DebugContext(ctx, "service secondary indices created successfully",
+		"service_uid", service.UID,
+		"indices_created", createdKeys)
+	return createdKeys, nil
+}
+
 // UpdateGrpsIOService updates an existing service in NATS KV store with revision checking
 func (s *storage) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: updating service",
@@ -215,6 +248,109 @@ func (s *storage) DeleteGrpsIOService(ctx context.Context, uid string, expectedR
 		"service_uid", uid)
 
 	return nil
+}
+
+// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
+// A single parent group can have multiple services (1 primary + N formation/shared)
+// Returns empty slice if no services found (not an error)
+// Performance: O(1) indexed lookup using secondary index
+func (s *storage) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "nats storage: getting services by group_id (indexed)",
+		"group_id", groupID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOServices]
+	if !exists || kv == nil {
+		return nil, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	indexPrefix := fmt.Sprintf(constants.KVLookupGroupsIOServiceByGroupIDPrefix, groupID)
+
+	// Extract UIDs from secondary index using helper
+	uids, err := s.getUIDsFromSecondaryIndex(ctx, kv, indexPrefix, 0) // 0 = get all
+	if err != nil {
+		return nil, errs.NewServiceUnavailable("failed to list services")
+	}
+
+	if len(uids) == 0 {
+		slog.DebugContext(ctx, "no services found for group_id", "group_id", groupID)
+		return []*model.GrpsIOService{}, nil
+	}
+
+	// Fetch services sequentially (unchanged behavior)
+	var services []*model.GrpsIOService
+	for _, uid := range uids {
+		service, _, err := s.GetGrpsIOService(ctx, uid)
+		if err != nil {
+			slog.DebugContext(ctx, "failed to get service, skipping", "service_uid", uid, "error", err)
+			continue
+		}
+
+		services = append(services, service)
+		slog.DebugContext(ctx, "found service with matching group_id",
+			"service_uid", service.UID,
+			"service_type", service.Type,
+			"group_id", groupID)
+	}
+
+	slog.DebugContext(ctx, "nats storage: services retrieved by group_id (indexed)",
+		"group_id", groupID,
+		"count", len(services))
+
+	return services, nil
+}
+
+// getUIDsFromSecondaryIndex extracts entity UIDs from a secondary index
+// Returns empty slice if no matches found (not an error)
+//
+// Parameters:
+//   - ctx: Context for logging and cancellation
+//   - kv: NATS KV bucket containing the index
+//   - indexPrefix: Index key prefix (e.g., "idx:service:groupid:123456")
+//   - maxResults: 0 = return all UIDs, 1 = early exit after first match, N = stop after N matches
+//
+// Returns:
+//   - []string: UIDs extracted from matching index entries
+//   - error: Only returns error on kv.Keys() failure, logs and skips individual entry failures
+//
+// Performance: O(K) where K = total keys in bucket (NATS API limitation)
+func (s *storage) getUIDsFromSecondaryIndex(
+	ctx context.Context,
+	kv jetstream.KeyValue,
+	indexPrefix string,
+	maxResults int,
+) ([]string, error) {
+	keys, err := kv.Keys(ctx, jetstream.IgnoreDeletes())
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list index keys", "error", err, "prefix", indexPrefix)
+		return nil, err
+	}
+
+	var uids []string
+	for _, key := range keys {
+		// Filter by prefix
+		if !strings.HasPrefix(key, indexPrefix+"/") {
+			continue
+		}
+
+		// Get index entry to extract UID
+		entry, err := kv.Get(ctx, key)
+		if err != nil {
+			slog.DebugContext(ctx, "failed to get index entry, skipping", "key", key, "error", err)
+			continue
+		}
+
+		uid := string(entry.Value())
+		uids = append(uids, uid)
+
+		slog.DebugContext(ctx, "extracted UID from index", "uid", uid, "index_key", key)
+
+		// Early exit for single-item queries
+		if maxResults > 0 && len(uids) >= maxResults {
+			break
+		}
+	}
+
+	return uids, nil
 }
 
 // put stores a model in the NATS KV store by bucket and UID.
@@ -527,32 +663,16 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 		return nil, errs.NewServiceUnavailable("KV bucket not available")
 	}
 
-	var createdKeys []string
-	// Define indices to create
-	indices := []struct {
-		name   string
-		prefix string
-		id     string
-		skip   bool
-	}{
-		{"service", constants.KVLookupGroupsIOMailingListServicePrefix, mailingList.ServiceUID, false},
-		{"project", constants.KVLookupGroupsIOMailingListProjectPrefix, mailingList.ProjectUID, false},
-		{"committee", constants.KVLookupGroupsIOMailingListCommitteePrefix, mailingList.CommitteeUID, mailingList.CommitteeUID == ""},
+	createdKeys, err := s.createSecondaryIndices(ctx, kv, mailingList.UID, []IndexSpec{
+		{Name: "service", KeyFormat: constants.KVLookupGroupsIOMailingListServicePrefix, StringID: &mailingList.ServiceUID},
+		{Name: "project", KeyFormat: constants.KVLookupGroupsIOMailingListProjectPrefix, StringID: &mailingList.ProjectUID},
+		{Name: "committee", KeyFormat: constants.KVLookupGroupsIOMailingListCommitteePrefix, StringID: &mailingList.CommitteeUID},
+		{Name: "subgroupid", KeyFormat: constants.KVLookupGroupsIOMailingListBySubgroupIDPrefix, Int64ID: mailingList.SubgroupID},
+	})
+	if err != nil {
+		return createdKeys, err
 	}
-	// Create each index
-	for _, idx := range indices {
-		if idx.skip {
-			continue
-		}
-		key := fmt.Sprintf(idx.prefix, idx.id) + "/" + mailingList.UID
-		created, err := s.createOrSkipIndex(ctx, kv, key, mailingList.UID, idx.name)
-		if err != nil {
-			return createdKeys, err
-		}
-		if created {
-			createdKeys = append(createdKeys, key)
-		}
-	}
+
 	slog.DebugContext(ctx, "secondary indices created successfully",
 		"mailing_list_uid", mailingList.UID,
 		"indices_created", createdKeys)
@@ -576,6 +696,39 @@ func (s *storage) createOrSkipIndex(ctx context.Context, kv jetstream.KeyValue, 
 		return false, errs.NewServiceUnavailable(fmt.Sprintf("failed to create %s index", indexName))
 	}
 	return true, nil
+}
+
+// createSecondaryIndices creates multiple secondary indices with consistent error handling
+func (s *storage) createSecondaryIndices(
+	ctx context.Context,
+	kv jetstream.KeyValue,
+	entityUID string,
+	specs []IndexSpec,
+) ([]string, error) {
+	var createdKeys []string
+
+	for _, spec := range specs {
+		var key string
+
+		// Determine which ID type to use
+		if spec.Int64ID != nil {
+			key = fmt.Sprintf(spec.KeyFormat, *spec.Int64ID) + "/" + entityUID
+		} else if spec.StringID != nil && *spec.StringID != "" {
+			key = fmt.Sprintf(spec.KeyFormat, *spec.StringID) + "/" + entityUID
+		} else {
+			continue // Skip nil or empty indices
+		}
+
+		created, err := s.createOrSkipIndex(ctx, kv, key, entityUID, spec.Name)
+		if err != nil {
+			return createdKeys, err
+		}
+		if created {
+			createdKeys = append(createdKeys, key)
+		}
+	}
+
+	return createdKeys, nil
 }
 
 // UpdateGrpsIOMailingList updates an existing mailing list with optimistic concurrency control
@@ -716,6 +869,46 @@ func (s *storage) CheckMailingListExists(ctx context.Context, parentID, groupNam
 	return true, nil // Exists
 }
 
+// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
+// Returns NotFound error if mailing list doesn't exist
+// Performance: O(1) indexed lookup using secondary index
+func (s *storage) GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting mailing list by group_id (indexed)",
+		"group_id", groupID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMailingLists]
+	if !exists || kv == nil {
+		return nil, 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	indexPrefix := fmt.Sprintf(constants.KVLookupGroupsIOMailingListBySubgroupIDPrefix, groupID)
+
+	// Extract UIDs - maxResults=1 triggers early exit in helper
+	uids, err := s.getUIDsFromSecondaryIndex(ctx, kv, indexPrefix, 1)
+	if err != nil {
+		return nil, 0, errs.NewServiceUnavailable("failed to list mailing lists")
+	}
+
+	if len(uids) == 0 {
+		slog.DebugContext(ctx, "mailing list not found by group_id", "group_id", groupID)
+		return nil, 0, errs.NewNotFound("mailing list not found")
+	}
+
+	// Fetch the first (and only) mailing list
+	mailingList, rev, err := s.GetGrpsIOMailingList(ctx, uids[0])
+	if err != nil {
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "found mailing list with matching group_id",
+		"mailing_list_uid", mailingList.UID,
+		"group_name", mailingList.GroupName,
+		"group_id", groupID,
+		"revision", rev)
+
+	return mailingList, rev, nil
+}
+
 // ================== GrpsIOMember operations ==================
 
 // UniqueMember creates a unique constraint for member email within mailing list
@@ -748,6 +941,27 @@ func (s *storage) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMe
 		"revision", rev)
 
 	return member, rev, nil
+}
+
+// CreateMemberSecondaryIndices creates all secondary indices for the member
+func (s *storage) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMembers]
+	if !exists || kv == nil {
+		return nil, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	createdKeys, err := s.createSecondaryIndices(ctx, kv, member.UID, []IndexSpec{
+		{Name: "memberid", KeyFormat: constants.KVLookupGroupsIOMemberByMemberIDPrefix, Int64ID: member.GroupsIOMemberID},
+		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOMemberByGroupIDPrefix, Int64ID: member.GroupsIOGroupID},
+	})
+	if err != nil {
+		return createdKeys, err
+	}
+
+	slog.DebugContext(ctx, "member secondary indices created successfully",
+		"member_uid", member.UID,
+		"indices_created", createdKeys)
+	return createdKeys, nil
 }
 
 // GetGrpsIOMember retrieves a member by UID
@@ -852,6 +1066,94 @@ func (s *storage) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRe
 // GetMemberRevision retrieves only the revision for a given UID
 func (s *storage) GetMemberRevision(ctx context.Context, uid string) (uint64, error) {
 	return s.get(ctx, constants.KVBucketNameGroupsIOMembers, uid, &model.GrpsIOMember{}, true)
+}
+
+// GetMemberByGroupsIOMemberID retrieves member by Groups.io member ID using secondary index
+// Pattern mirrors GetMailingListByGroupID
+func (s *storage) GetMemberByGroupsIOMemberID(ctx context.Context, memberID uint64) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting member by Groups.io member ID",
+		"member_id", memberID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMembers]
+	if !exists || kv == nil {
+		return nil, 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	indexPrefix := fmt.Sprintf(constants.KVLookupGroupsIOMemberByMemberIDPrefix, memberID)
+
+	// Extract UIDs - maxResults=1 triggers early exit in helper
+	uids, err := s.getUIDsFromSecondaryIndex(ctx, kv, indexPrefix, 1)
+	if err != nil {
+		return nil, 0, errs.NewServiceUnavailable("failed to list members")
+	}
+
+	if len(uids) == 0 {
+		slog.DebugContext(ctx, "member not found by Groups.io member ID", "member_id", memberID)
+		return nil, 0, errs.NewNotFound("member not found")
+	}
+
+	// Fetch the first (and only) member
+	member, rev, err := s.GetGrpsIOMember(ctx, uids[0])
+	if err != nil {
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "found member with matching Groups.io member ID",
+		"member_uid", member.UID,
+		"email", redaction.RedactEmail(member.Email),
+		"member_id", memberID,
+		"revision", rev)
+
+	return member, rev, nil
+}
+
+// GetMemberByEmail retrieves member by email within mailing list
+// Uses unique constraint key (same as UniqueMember creates)
+func (s *storage) GetMemberByEmail(ctx context.Context, mailingListUID, email string) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting member by email",
+		"mailing_list_uid", mailingListUID,
+		"email", redaction.RedactEmail(email))
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMembers]
+	if !exists || kv == nil {
+		return nil, 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	// Build unique constraint key (same format as UniqueMember)
+	tempMember := &model.GrpsIOMember{
+		MailingListUID: mailingListUID,
+		Email:          email,
+	}
+	constraintKey := fmt.Sprintf(constants.KVLookupGroupsIOMemberConstraintPrefix,
+		tempMember.BuildIndexKey(context.Background()))
+
+	// Get the constraint entry (value is the member UID)
+	entry, err := kv.Get(ctx, constraintKey)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "member not found by email",
+				"mailing_list_uid", mailingListUID,
+				"email", redaction.RedactEmail(email))
+			return nil, 0, errs.NewNotFound("member not found")
+		}
+		slog.ErrorContext(ctx, "failed to get constraint key", "error", err, "key", constraintKey)
+		return nil, 0, errs.NewServiceUnavailable("failed to get member")
+	}
+
+	memberUID := string(entry.Value())
+
+	// Fetch the actual member
+	member, rev, err := s.GetGrpsIOMember(ctx, memberUID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "found member by email",
+		"member_uid", member.UID,
+		"mailing_list_uid", mailingListUID,
+		"revision", rev)
+
+	return member, rev, nil
 }
 
 func NewStorage(client *NATSClient) port.GrpsIOReaderWriter {

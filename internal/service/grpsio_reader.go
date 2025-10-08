@@ -23,6 +23,8 @@ type GrpsIOServiceReader interface {
 	GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error)
 	// GetRevision retrieves only the revision for a given UID
 	GetRevision(ctx context.Context, uid string) (uint64, error)
+	// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
+	GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error)
 }
 
 // GrpsIOMailingListReader defines the interface for mailing list read operations
@@ -31,6 +33,8 @@ type GrpsIOMailingListReader interface {
 	GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error)
 	// GetMailingListRevision retrieves only the revision for a given UID
 	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
+	// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
+	GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error)
 }
 
 // GrpsIOMemberReader defines the interface for member read operations

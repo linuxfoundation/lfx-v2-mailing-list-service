@@ -732,6 +732,14 @@ func (m *MockServiceReader) GetRevision(ctx context.Context, uid string) (uint64
 	return args.Get(0).(uint64), args.Error(1)
 }
 
+func (m *MockServiceReader) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
+	args := m.Called(ctx, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.GrpsIOService), args.Error(1)
+}
+
 func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 	ctx := context.Background()
 

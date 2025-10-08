@@ -31,9 +31,14 @@ func generateSignature(body []byte, secret string) string {
 
 // TestWebhook_ValidSignature tests webhook with valid HMAC-SHA1 signature
 func TestWebhook_ValidSignature(t *testing.T) {
-	// Create webhook service
+	// Create webhook service with mock dependencies
+	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := groupsio.NewGrpsIOWebhookValidator(testWebhookSecret)
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(mockRepo),
+		service.WithMailingListReader(mockRepo),
+		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -78,8 +83,13 @@ func TestWebhook_ValidSignature(t *testing.T) {
 
 // TestWebhook_InvalidSignature tests webhook with invalid signature
 func TestWebhook_InvalidSignature(t *testing.T) {
+	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := groupsio.NewGrpsIOWebhookValidator(testWebhookSecret)
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(mockRepo),
+		service.WithMailingListReader(mockRepo),
+		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -225,8 +235,13 @@ func TestWebhook_UnsupportedEventType(t *testing.T) {
 
 // TestWebhook_MockMode tests webhook in mock mode (always valid)
 func TestWebhook_MockMode(t *testing.T) {
+	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(mockRepo),
+		service.WithMailingListReader(mockRepo),
+		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -273,8 +288,15 @@ func TestWebhook_AllEventTypes(t *testing.T) {
 		"ban_members",
 	}
 
+	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(mockRepo),
+		service.WithMailingListReader(mockRepo),
+		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		service.WithMemberReader(mockRepo),
+		service.WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+	)
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -368,8 +390,15 @@ func TestWebhook_CreatedSubgroupMissingGroupInfo(t *testing.T) {
 
 // TestWebhook_MemberEventMissingMemberInfo tests member events with missing member info
 func TestWebhook_MemberEventMissingMemberInfo(t *testing.T) {
+	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(mockRepo),
+		service.WithMailingListReader(mockRepo),
+		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		service.WithMemberReader(mockRepo),
+		service.WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+	)
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),

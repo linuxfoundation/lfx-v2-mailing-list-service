@@ -472,11 +472,7 @@ var _ = dsl.Service("mailing-list", func() {
 
 		dsl.NoSecurity() // No JWT auth - validated via HMAC signature
 
-		dsl.Payload(func() {
-			dsl.Field(1, "signature", dsl.String, "HMAC-SHA1 signature from x-groupsio-signature header")
-			dsl.Field(2, "body", dsl.Bytes, "Raw webhook event body")
-			dsl.Required("signature", "body")
-		})
+		dsl.Payload(GroupsIOWebhookPayload)
 
 		dsl.Result(dsl.Empty) // 204 No Content has no response body
 
@@ -484,9 +480,9 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("Unauthorized", UnauthorizedError, "Invalid webhook signature")
 
 		dsl.HTTP(func() {
-			dsl.POST("/webhooks/groupsio")  // Plural webhooks, following meeting service pattern
+			dsl.POST("/webhooks/groupsio") // Plural webhooks, following meeting service pattern
 			dsl.Header("signature:x-groupsio-signature")
-			dsl.Response(dsl.StatusNoContent)        // 204 - GroupsIO expects this
+			dsl.Response(dsl.StatusNoContent) // 204 - GroupsIO expects this
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
 			dsl.Response("Unauthorized", dsl.StatusUnauthorized)
 		})

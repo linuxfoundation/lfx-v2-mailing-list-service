@@ -6,10 +6,9 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"testing"
-	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,12 @@ import (
 
 // TestProcessEvent_CreatedSubgroup tests created_subgroup event processing
 func TestProcessEvent_CreatedSubgroup(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	t.Run("valid created_subgroup event", func(t *testing.T) {
@@ -71,7 +75,12 @@ func TestProcessEvent_CreatedSubgroup(t *testing.T) {
 
 // TestProcessEvent_DeletedSubgroup tests deleted_subgroup event processing
 func TestProcessEvent_DeletedSubgroup(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	t.Run("valid deleted_subgroup event", func(t *testing.T) {
@@ -112,7 +121,14 @@ func TestProcessEvent_DeletedSubgroup(t *testing.T) {
 
 // TestProcessEvent_MemberAdded tests added_member event processing
 func TestProcessEvent_MemberAdded(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		WithMemberReader(mockRepo),
+		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	t.Run("valid added_member event", func(t *testing.T) {
@@ -164,7 +180,14 @@ func TestProcessEvent_MemberAdded(t *testing.T) {
 
 // TestProcessEvent_MemberRemoved tests removed_member event processing
 func TestProcessEvent_MemberRemoved(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		WithMemberReader(mockRepo),
+		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	t.Run("valid removed_member event", func(t *testing.T) {
@@ -201,7 +224,14 @@ func TestProcessEvent_MemberRemoved(t *testing.T) {
 
 // TestProcessEvent_MemberBanned tests ban_members event processing
 func TestProcessEvent_MemberBanned(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		WithMemberReader(mockRepo),
+		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	t.Run("valid ban_members event", func(t *testing.T) {
@@ -238,7 +268,12 @@ func TestProcessEvent_MemberBanned(t *testing.T) {
 
 // TestProcessEvent_UnknownEventType tests unknown event type handling
 func TestProcessEvent_UnknownEventType(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	event := map[string]interface{}{
@@ -253,7 +288,12 @@ func TestProcessEvent_UnknownEventType(t *testing.T) {
 
 // TestProcessEvent_InvalidJSON tests invalid JSON handling
 func TestProcessEvent_InvalidJSON(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 	ctx := context.Background()
 
 	invalidJSON := []byte("{invalid json")
@@ -263,157 +303,18 @@ func TestProcessEvent_InvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to unmarshal")
 }
 
-// TestRetryWithExponentialBackoff tests retry logic
-func TestRetryWithExponentialBackoff(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("succeeds on first attempt", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 3,
-			BaseDelay:   10 * time.Millisecond,
-			MaxDelay:    100 * time.Millisecond,
-		}
-
-		attempts := 0
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			return nil
-		})
-
-		assert.NoError(t, err)
-		assert.Equal(t, 1, attempts)
-	})
-
-	t.Run("succeeds on second attempt", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 3,
-			BaseDelay:   10 * time.Millisecond,
-			MaxDelay:    100 * time.Millisecond,
-		}
-
-		attempts := 0
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			if attempts < 2 {
-				return errors.New("transient error")
-			}
-			return nil
-		})
-
-		assert.NoError(t, err)
-		assert.Equal(t, 2, attempts)
-	})
-
-	t.Run("fails after max attempts", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 3,
-			BaseDelay:   10 * time.Millisecond,
-			MaxDelay:    100 * time.Millisecond,
-		}
-
-		attempts := 0
-		expectedErr := errors.New("persistent error")
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			return expectedErr
-		})
-
-		assert.Error(t, err)
-		assert.Equal(t, 3, attempts)
-		assert.Contains(t, err.Error(), "failed after 3 attempts")
-		assert.ErrorIs(t, err, expectedErr)
-	})
-
-	t.Run("respects context cancellation", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 10,
-			BaseDelay:   100 * time.Millisecond,
-			MaxDelay:    1000 * time.Millisecond,
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-		defer cancel()
-
-		attempts := 0
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			return errors.New("error")
-		})
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "retry cancelled")
-		assert.Less(t, attempts, 10) // Should not reach max attempts
-	})
-
-	t.Run("exponential backoff delay calculation", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 5,
-			BaseDelay:   100 * time.Millisecond,
-			MaxDelay:    500 * time.Millisecond,
-		}
-
-		attempts := 0
-		startTime := time.Now()
-
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			if attempts < 4 {
-				return errors.New("error")
-			}
-			return nil
-		})
-
-		elapsed := time.Since(startTime)
-
-		assert.NoError(t, err)
-		assert.Equal(t, 4, attempts)
-		// Expected delays: 100ms (1st retry), 200ms (2nd retry), 400ms (3rd retry)
-		// Total: ~700ms
-		assert.GreaterOrEqual(t, elapsed.Milliseconds(), int64(600))
-		assert.LessOrEqual(t, elapsed.Milliseconds(), int64(900))
-	})
-
-	t.Run("respects max delay cap", func(t *testing.T) {
-		config := RetryConfig{
-			MaxAttempts: 5,
-			BaseDelay:   100 * time.Millisecond,
-			MaxDelay:    150 * time.Millisecond, // Cap at 150ms
-		}
-
-		attempts := 0
-		startTime := time.Now()
-
-		err := RetryWithExponentialBackoff(ctx, config, func() error {
-			attempts++
-			if attempts < 4 {
-				return errors.New("error")
-			}
-			return nil
-		})
-
-		elapsed := time.Since(startTime)
-
-		assert.NoError(t, err)
-		assert.Equal(t, 4, attempts)
-		// Expected delays: 100ms, 150ms (capped), 150ms (capped)
-		// Total: ~400ms
-		assert.GreaterOrEqual(t, elapsed.Milliseconds(), int64(350))
-		assert.LessOrEqual(t, elapsed.Milliseconds(), int64(550))
-	})
-}
-
-// TestDefaultRetryConfig tests default retry configuration
-func TestDefaultRetryConfig(t *testing.T) {
-	config := DefaultRetryConfig()
-
-	assert.Equal(t, constants.WebhookMaxRetries, config.MaxAttempts)
-	assert.Equal(t, constants.WebhookRetryBaseDelay*time.Millisecond, config.BaseDelay)
-	assert.Equal(t, constants.WebhookRetryMaxDelay*time.Millisecond, config.MaxDelay)
-}
+// NOTE: Retry logic tests have been moved to pkg/utils/retry_test.go
+// The retry utilities (RetryConfig, RetryWithExponentialBackoff) are now
+// general-purpose utilities in the utils package.
 
 // TestNewGrpsIOWebhookProcessor tests processor creation
 func TestNewGrpsIOWebhookProcessor(t *testing.T) {
-	processor := NewGrpsIOWebhookProcessor()
+	mockRepo := mock.NewMockRepository()
+	processor := NewGrpsIOWebhookProcessor(
+		WithServiceReader(mockRepo),
+		WithMailingListReader(mockRepo),
+		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	)
 
 	assert.NotNil(t, processor)
 	assert.Implements(t, (*GrpsIOWebhookProcessor)(nil), processor)

@@ -11,8 +11,8 @@ type GrpsIOWebhookEvent struct {
 	Action     string      `json:"action"`
 	Group      *GroupInfo  `json:"group,omitempty"`
 	MemberInfo *MemberInfo `json:"member_info,omitempty"`
-	Extra      string      `json:"extra,omitempty"`      // Subgroup suffix
-	ExtraID    int         `json:"extra_id,omitempty"`   // Subgroup ID for deletion
+	Extra      string      `json:"extra,omitempty"`    // Subgroup suffix
+	ExtraID    int         `json:"extra_id,omitempty"` // Subgroup ID for deletion
 	ReceivedAt time.Time   `json:"received_at,omitempty"`
 }
 
