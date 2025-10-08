@@ -631,14 +631,24 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 	// Convert Group field if present (for subgroup events)
 	if p.Group != nil {
 		if groupMap, ok := p.Group.(map[string]any); ok {
-			event.Group = s.convertWebhookGroupInfo(groupMap)
+			convertedGroup, err := s.convertWebhookGroupInfo(groupMap)
+			if err != nil {
+				slog.ErrorContext(ctx, "invalid group data in webhook", "error", err)
+				return &mailinglistservice.BadRequestError{Message: fmt.Sprintf("invalid group data: %v", err)}
+			}
+			event.Group = convertedGroup
 		}
 	}
 
 	// Convert MemberInfo field if present (for member events)
 	if p.MemberInfo != nil {
 		if memberMap, ok := p.MemberInfo.(map[string]any); ok {
-			event.MemberInfo = s.convertWebhookMemberInfo(memberMap)
+			convertedMember, err := s.convertWebhookMemberInfo(memberMap)
+			if err != nil {
+				slog.ErrorContext(ctx, "invalid member data in webhook", "error", err)
+				return &mailinglistservice.BadRequestError{Message: fmt.Sprintf("invalid member data: %v", err)}
+			}
+			event.MemberInfo = convertedMember
 		}
 	}
 

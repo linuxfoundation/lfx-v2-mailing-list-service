@@ -39,10 +39,14 @@ func (ml *grpsIOWriterOrchestrator) ensureMailingListIdempotent(
 	// Check secondary index for existing record
 	existing, revision, err := ml.grpsIOReader.GetMailingListByGroupID(ctx, subgroupID)
 	if err != nil {
-		// Not found or error - let creation proceed
+		// Use helper to handle idempotency lookup errors consistently
+		shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "subgroup_id", fmt.Sprintf("%d", subgroupID))
+		if !shouldContinue {
+			return nil, 0, handledErr
+		}
+		// NotFound - proceed with normal creation
 		slog.DebugContext(ctx, "no existing mailing list found by subgroup_id, proceeding with creation",
-			"subgroup_id", subgroupID,
-			"error", err)
+			"subgroup_id", subgroupID)
 		return nil, 0, nil
 	}
 

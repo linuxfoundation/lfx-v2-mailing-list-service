@@ -21,14 +21,68 @@ import (
 )
 
 var (
-	natsStorageClient   port.GrpsIOReaderWriter
-	natsMessagingClient port.EntityAttributeReader
-	natsPublisherClient port.MessagePublisher
-	groupsIOClient      groupsio.ClientInterface
+	natsStorageClient      port.GrpsIOReaderWriter
+	natsMessagingClient    port.EntityAttributeReader
+	natsPublisherClient    port.MessagePublisher
+	groupsIOClient         groupsio.ClientInterface
+	grpsioWebhookValidator port.GrpsIOWebhookValidator
 
-	natsDoOnce         sync.Once
-	groupsIOClientOnce sync.Once
+	natsDoOnce                 sync.Once
+	groupsIOClientOnce         sync.Once
+	grpsioWebhookValidatorOnce sync.Once
 )
+
+// ValidateProviderConfiguration checks for configuration mismatches that could cause issues
+// Call this during application startup to fail fast on misconfiguration
+func ValidateProviderConfiguration(ctx context.Context) {
+	groupsioSource := os.Getenv("GROUPSIO_SOURCE")
+	if groupsioSource == "" {
+		groupsioSource = "groupsio"
+	}
+
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	authSource := os.Getenv("AUTH_SOURCE")
+	if authSource == "" {
+		authSource = "jwt"
+	}
+
+	slog.InfoContext(ctx, "provider configuration validation",
+		"auth_source", authSource,
+		"repository_source", repoSource,
+		"groupsio_source", groupsioSource,
+	)
+
+	// Warn about potentially dangerous mismatches
+	if groupsioSource == "mock" && repoSource != "mock" {
+		slog.WarnContext(ctx,
+			"CONFIGURATION MISMATCH: mock GroupsIO with real repository - mock validator will accept all webhooks into production storage!",
+			"groupsio_source", groupsioSource,
+			"repository_source", repoSource,
+		)
+	}
+
+	if authSource == "mock" && repoSource != "mock" {
+		slog.WarnContext(ctx,
+			"CONFIGURATION MISMATCH: mock auth with real repository - authentication is bypassed but data is stored in production!",
+			"auth_source", authSource,
+			"repository_source", repoSource,
+		)
+	}
+
+	// Validate webhook secret in production mode
+	if groupsioSource != "mock" {
+		webhookSecret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
+		if webhookSecret == "" {
+			slog.WarnContext(ctx, "GROUPSIO_WEBHOOK_SECRET not set - webhook validation will fail in production!")
+		}
+	}
+
+	slog.InfoContext(ctx, "provider configuration validation completed")
+}
 
 func natsInit(ctx context.Context) {
 	natsDoOnce.Do(func() {
@@ -280,25 +334,35 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 // GroupsIOClient initializes the GroupsIO client with singleton pattern
 func GroupsIOClient(ctx context.Context) groupsio.ClientInterface {
 	groupsIOClientOnce.Do(func() {
-		// Check if we should use mock
-		if os.Getenv("GROUPSIO_SOURCE") == "mock" {
-			slog.InfoContext(ctx, "using mock GroupsIO client")
-			groupsIOClient = infrastructure.NewMockGroupsIOClient()
-			return
+		var client groupsio.ClientInterface
+
+		// Repository implementation configuration
+		source := os.Getenv("GROUPSIO_SOURCE")
+		if source == "" {
+			source = "groupsio" // Default to production GroupsIO client
 		}
 
-		// Real client initialization - Groups.io integration
-		config := groupsio.NewConfigFromEnv()
+		switch source {
+		case "mock":
+			slog.InfoContext(ctx, "initializing mock groupsio client")
+			client = infrastructure.NewMockGroupsIOClient()
 
-		client, err := groupsio.NewClient(config)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to initialize GroupsIO client - this service requires Groups.io integration", "error", err)
-			// Don't fatal - service can run without GroupsIO for local development
-			return
+		case "groupsio":
+			slog.InfoContext(ctx, "initializing groupsio client")
+			config := groupsio.NewConfigFromEnv()
+
+			var err error
+			client, err = groupsio.NewClient(config)
+			if err != nil {
+				log.Fatalf("failed to initialize GroupsIO client - missing required configuration: %v", err)
+			}
+			slog.InfoContext(ctx, "groupsio client initialized successfully")
+
+		default:
+			log.Fatalf("unsupported groupsio client implementation: %s", source)
 		}
 
 		groupsIOClient = client
-		slog.InfoContext(ctx, "GroupsIO client initialized successfully")
 	})
 
 	return groupsIOClient
@@ -330,32 +394,44 @@ func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 	)
 }
 
-// GrpsIOWebhookValidator initializes the GroupsIO webhook validator with mock support
+// GrpsIOWebhookValidator initializes the GroupsIO webhook validator with mock support and singleton pattern
 func GrpsIOWebhookValidator(ctx context.Context) port.GrpsIOWebhookValidator {
-	var validator port.GrpsIOWebhookValidator
+	grpsioWebhookValidatorOnce.Do(func() {
+		var validator port.GrpsIOWebhookValidator
 
-	// Mock switching (matches GROUPSIO_SOURCE pattern)
-	if os.Getenv("GROUPSIO_SOURCE") == "mock" {
-		slog.InfoContext(ctx, "using mock groupsio webhook validator")
-		validator = infrastructure.NewMockGrpsIOWebhookValidator()
-		return validator
-	}
+		// Repository implementation configuration
+		source := os.Getenv("GROUPSIO_SOURCE")
+		if source == "" {
+			source = "groupsio" // Default to production GroupsIO webhook validation
+		}
 
-	// Real validator initialization
-	secret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
-	if secret == "" {
-		slog.WarnContext(ctx, "GROUPSIO_WEBHOOK_SECRET not set, webhook validation may fail")
-	}
+		switch source {
+		case "mock":
+			slog.InfoContext(ctx, "initializing mock groupsio webhook validator")
+			validator = infrastructure.NewMockGrpsIOWebhookValidator()
 
-	validator = groupsio.NewGrpsIOWebhookValidator(secret)
-	slog.InfoContext(ctx, "groupsio webhook validator initialized")
+		case "groupsio":
+			slog.InfoContext(ctx, "initializing groupsio webhook validator")
+			secret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
+			if secret == "" {
+				log.Fatalf("GROUPSIO_WEBHOOK_SECRET is required for groupsio webhook validation")
+			}
+			validator = groupsio.NewGrpsIOWebhookValidator(secret)
 
-	return validator
+		default:
+			log.Fatalf("unsupported groupsio webhook validator implementation: %s", source)
+		}
+
+		grpsioWebhookValidator = validator
+	})
+
+	return grpsioWebhookValidator
 }
 
-// GrpsIOWebhookProcessor creates GroupsIO webhook processor (SIMPLIFIED FOR MVP)
-// PR #2 will refactor to orchestrator pattern with dependencies
+// GrpsIOWebhookProcessor creates GroupsIO webhook processor with explicit dependency injection
 func GrpsIOWebhookProcessor(ctx context.Context) service.GrpsIOWebhookProcessor {
+	slog.InfoContext(ctx, "initializing groupsio webhook processor with dependency injection")
+
 	return service.NewGrpsIOWebhookProcessor(
 		service.WithServiceReader(GrpsIOReader(ctx)),
 		service.WithMailingListReader(GrpsIOReader(ctx)),

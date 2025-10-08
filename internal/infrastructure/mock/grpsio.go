@@ -294,11 +294,160 @@ func (w *MockGrpsIOMailingListWriter) Delete(ctx context.Context, key string, re
 	return nil
 }
 
+// MockGrpsIOMemberWriter implements GrpsIOMemberWriter interface
+type MockGrpsIOMemberWriter struct {
+	mock *MockRepository
+}
+
+// ================== MockGrpsIOMemberWriter implementation ==================
+
+// UniqueMember validates member email is unique within mailing list
+func (w *MockGrpsIOMemberWriter) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
+	constraintKey := fmt.Sprintf("lookup:member:constraint:%s:%s", member.MailingListUID, member.Email)
+	slog.DebugContext(ctx, "mock: validating unique member", "constraint_key", constraintKey)
+	return constraintKey, nil
+}
+
+// CreateGrpsIOMember creates a new member and returns it with revision
+func (w *MockGrpsIOMemberWriter) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "mock member: creating member", "member_uid", member.UID, "email", member.Email)
+
+	w.mock.mu.Lock()
+	defer w.mock.mu.Unlock()
+
+	// Check if member already exists
+	if _, exists := w.mock.members[member.UID]; exists {
+		return nil, 0, errors.NewConflict(fmt.Sprintf("member with ID %s already exists", member.UID))
+	}
+
+	// Set created/updated timestamps
+	now := time.Now()
+	member.CreatedAt = now
+	member.UpdatedAt = now
+
+	// Store member copy to avoid external modifications
+	memberCopy := *member
+
+	w.mock.members[member.UID] = &memberCopy
+	w.mock.memberRevisions[member.UID] = 1
+	w.mock.memberIndexKeys[member.BuildIndexKey(ctx)] = &memberCopy
+
+	// Return member copy
+	resultCopy := memberCopy
+
+	return &resultCopy, 1, nil
+}
+
+// UpdateGrpsIOMember updates an existing member with optimistic concurrency control
+func (w *MockGrpsIOMemberWriter) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
+	slog.DebugContext(ctx, "mock member: updating member", "member_uid", uid)
+
+	w.mock.mu.Lock()
+	defer w.mock.mu.Unlock()
+
+	// Check if member exists
+	existing, exists := w.mock.members[uid]
+	if !exists {
+		return nil, 0, errors.NewNotFound(fmt.Sprintf("member with UID %s not found", uid))
+	}
+
+	// Check revision for optimistic concurrency control
+	currentRevision := w.mock.memberRevisions[uid]
+	if expectedRevision != currentRevision {
+		return nil, 0, errors.NewConflict(fmt.Sprintf("revision mismatch: expected %d, got %d", expectedRevision, currentRevision))
+	}
+
+	// Update member while preserving immutable fields
+	memberCopy := *member
+	memberCopy.UID = existing.UID                       // Preserve UID
+	memberCopy.Email = existing.Email                   // Preserve email (immutable)
+	memberCopy.MailingListUID = existing.MailingListUID // Preserve mailing list UID (immutable)
+	memberCopy.CreatedAt = existing.CreatedAt           // Preserve created timestamp
+	memberCopy.UpdatedAt = time.Now()                   // Update timestamp
+
+	// Store updated member and increment revision
+	w.mock.members[uid] = &memberCopy
+	newRevision := currentRevision + 1
+	w.mock.memberRevisions[uid] = newRevision
+
+	// Update index if email or mailing list changed (though they shouldn't for immutable fields)
+	if w.mock.memberIndexKeys != nil {
+		w.mock.memberIndexKeys[memberCopy.BuildIndexKey(ctx)] = &memberCopy
+	}
+
+	// Return member copy
+	resultCopy := memberCopy
+
+	return &resultCopy, newRevision, nil
+}
+
+// DeleteGrpsIOMember deletes a member with optimistic concurrency control
+func (w *MockGrpsIOMemberWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
+	slog.DebugContext(ctx, "mock member: deleting member", "member_uid", uid)
+
+	w.mock.mu.Lock()
+	defer w.mock.mu.Unlock()
+
+	// Check if member exists
+	existing, exists := w.mock.members[uid]
+	if !exists {
+		return errors.NewNotFound(fmt.Sprintf("member with UID %s not found", uid))
+	}
+
+	// Check revision for optimistic concurrency control
+	currentRevision := w.mock.memberRevisions[uid]
+	if expectedRevision != currentRevision {
+		return errors.NewConflict(fmt.Sprintf("revision mismatch: expected %d, got %d", expectedRevision, currentRevision))
+	}
+
+	// Remove from index
+	if w.mock.memberIndexKeys != nil {
+		delete(w.mock.memberIndexKeys, existing.BuildIndexKey(ctx))
+	}
+
+	// Delete member and revision
+	delete(w.mock.members, uid)
+	delete(w.mock.memberRevisions, uid)
+
+	return nil
+}
+
+// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
+func (w *MockGrpsIOMemberWriter) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+	slog.DebugContext(ctx, "mock member: creating secondary indices", "member_uid", member.UID)
+
+	// Mock implementation - return mock keys for testing
+	var keys []string
+
+	if member.GroupsIOMemberID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-memberid/%d/%s", *member.GroupsIOMemberID, member.UID))
+	}
+
+	if member.GroupsIOGroupID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-groupid/%d/%s", *member.GroupsIOGroupID, member.UID))
+	}
+
+	return keys, nil
+}
+
+// GetKeyRevision retrieves the revision for a given key
+func (w *MockGrpsIOMemberWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
+	slog.DebugContext(ctx, "mock member: get key revision", "key", key)
+	return 1, nil
+}
+
+// Delete removes a key with the given revision
+func (w *MockGrpsIOMemberWriter) Delete(ctx context.Context, key string, revision uint64) error {
+	slog.DebugContext(ctx, "mock member: delete key", "key", key, "revision", revision)
+	return nil
+}
+
 // MockGrpsIOWriter combines both service and mailing list writers
 type MockGrpsIOWriter struct {
 	mock              *MockRepository
 	serviceWriter     *MockGrpsIOServiceWriter
 	mailingListWriter *MockGrpsIOMailingListWriter
+	memberWriter      *MockGrpsIOMemberWriter
 }
 
 // ================== MockGrpsIOWriter implementation (delegates to sub-writers) ==================
@@ -358,131 +507,25 @@ func (w *MockGrpsIOWriter) Delete(ctx context.Context, key string, revision uint
 	return w.serviceWriter.Delete(ctx, key, revision)
 }
 
-// Member operations
+// Member operations - delegate to member writer
 func (w *MockGrpsIOWriter) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
-	constraintKey := fmt.Sprintf("lookup:member:constraint:%s:%s", member.MailingListUID, member.Email)
-	slog.DebugContext(ctx, "mock: validating unique member", "constraint_key", constraintKey)
-	return constraintKey, nil
+	return w.memberWriter.UniqueMember(ctx, member)
 }
 
 func (w *MockGrpsIOWriter) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
-	slog.DebugContext(ctx, "mock member: creating member", "member_uid", member.UID, "email", member.Email)
-
-	w.mock.mu.Lock()
-	defer w.mock.mu.Unlock()
-
-	// Check if member already exists
-	if _, exists := w.mock.members[member.UID]; exists {
-		return nil, 0, errors.NewConflict(fmt.Sprintf("member with ID %s already exists", member.UID))
-	}
-
-	// Set created/updated timestamps
-	now := time.Now()
-	member.CreatedAt = now
-	member.UpdatedAt = now
-
-	// Store member copy to avoid external modifications
-	memberCopy := *member
-
-	w.mock.members[member.UID] = &memberCopy
-	w.mock.memberRevisions[member.UID] = 1
-	w.mock.memberIndexKeys[member.BuildIndexKey(ctx)] = &memberCopy
-
-	// Return member copy
-	resultCopy := memberCopy
-
-	return &resultCopy, 1, nil
+	return w.memberWriter.CreateGrpsIOMember(ctx, member)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
-	slog.DebugContext(ctx, "mock member: updating member", "member_uid", uid)
-
-	w.mock.mu.Lock()
-	defer w.mock.mu.Unlock()
-
-	// Check if member exists
-	existing, exists := w.mock.members[uid]
-	if !exists {
-		return nil, 0, errors.NewNotFound(fmt.Sprintf("member with UID %s not found", uid))
-	}
-
-	// Check revision for optimistic concurrency control
-	currentRevision := w.mock.memberRevisions[uid]
-	if expectedRevision != currentRevision {
-		return nil, 0, errors.NewConflict(fmt.Sprintf("revision mismatch: expected %d, got %d", expectedRevision, currentRevision))
-	}
-
-	// Update member while preserving immutable fields
-	memberCopy := *member
-	memberCopy.UID = existing.UID                       // Preserve UID
-	memberCopy.Email = existing.Email                   // Preserve email (immutable)
-	memberCopy.MailingListUID = existing.MailingListUID // Preserve mailing list UID (immutable)
-	memberCopy.CreatedAt = existing.CreatedAt           // Preserve created timestamp
-	memberCopy.UpdatedAt = time.Now()                   // Update timestamp
-
-	// Store updated member and increment revision
-	w.mock.members[uid] = &memberCopy
-	newRevision := currentRevision + 1
-	w.mock.memberRevisions[uid] = newRevision
-
-	// Update index if email or mailing list changed (though they shouldn't for immutable fields)
-	if w.mock.memberIndexKeys != nil {
-		w.mock.memberIndexKeys[memberCopy.BuildIndexKey(ctx)] = &memberCopy
-	}
-
-	// Return member copy
-	resultCopy := memberCopy
-
-	return &resultCopy, newRevision, nil
+	return w.memberWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
-	slog.DebugContext(ctx, "mock member: deleting member", "member_uid", uid)
-
-	w.mock.mu.Lock()
-	defer w.mock.mu.Unlock()
-
-	// Check if member exists
-	existing, exists := w.mock.members[uid]
-	if !exists {
-		return errors.NewNotFound(fmt.Sprintf("member with UID %s not found", uid))
-	}
-
-	// Check revision for optimistic concurrency control
-	currentRevision := w.mock.memberRevisions[uid]
-	if expectedRevision != currentRevision {
-		return errors.NewConflict(fmt.Sprintf("revision mismatch: expected %d, got %d", expectedRevision, currentRevision))
-	}
-
-	// Remove from index
-	if w.mock.memberIndexKeys != nil {
-		delete(w.mock.memberIndexKeys, existing.BuildIndexKey(ctx))
-	}
-
-	// Delete member and revision
-	delete(w.mock.members, uid)
-	delete(w.mock.memberRevisions, uid)
-
-	return nil
+	return w.memberWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
 }
 
-// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs (mock implementation)
 func (w *MockGrpsIOWriter) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
-	slog.DebugContext(ctx, "mock member: creating secondary indices", "member_uid", member.UID)
-
-	// Mock implementation - return empty keys (indices not actually created in mock)
-	// In real implementation, these would create lookup/groupsio-member-memberid/123 -> member_uid
-	var keys []string
-
-	if member.GroupsIOMemberID != nil {
-		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-memberid/%d/%s", *member.GroupsIOMemberID, member.UID))
-	}
-
-	if member.GroupsIOGroupID != nil {
-		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-groupid/%d/%s", *member.GroupsIOGroupID, member.UID))
-	}
-
-	return keys, nil
+	return w.memberWriter.CreateMemberSecondaryIndices(ctx, member)
 }
 
 // MockEntityAttributeReader implements EntityAttributeReader interface
@@ -895,6 +938,11 @@ func NewMockGrpsIOMailingListWriter(mock *MockRepository) port.GrpsIOMailingList
 	return &MockGrpsIOMailingListWriter{mock: mock}
 }
 
+// NewMockGrpsIOMemberWriter creates a mock grpsio member writer
+func NewMockGrpsIOMemberWriter(mock *MockRepository) port.GrpsIOMemberWriter {
+	return &MockGrpsIOMemberWriter{mock: mock}
+}
+
 // NewMockGrpsIOReader creates a mock grpsio reader
 func NewMockGrpsIOReader(mock *MockRepository) port.GrpsIOReader {
 	return mock
@@ -906,6 +954,7 @@ func NewMockGrpsIOWriter(mock *MockRepository) port.GrpsIOWriter {
 		mock:              mock,
 		serviceWriter:     &MockGrpsIOServiceWriter{mock: mock},
 		mailingListWriter: &MockGrpsIOMailingListWriter{mock: mock},
+		memberWriter:      &MockGrpsIOMemberWriter{mock: mock},
 	}
 }
 
@@ -917,6 +966,7 @@ func NewMockGrpsIOReaderWriter(mock *MockRepository) port.GrpsIOReaderWriter {
 			mock:              mock,
 			serviceWriter:     &MockGrpsIOServiceWriter{mock: mock},
 			mailingListWriter: &MockGrpsIOMailingListWriter{mock: mock},
+			memberWriter:      &MockGrpsIOMemberWriter{mock: mock},
 		},
 	}
 }

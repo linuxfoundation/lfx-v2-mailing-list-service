@@ -55,6 +55,9 @@ func main() {
 		"graceful-shutdown-seconds", gracefulShutdownSeconds,
 	)
 
+	// Validate provider configuration before initializing dependencies
+	service.ValidateProviderConfiguration(ctx)
+
 	// Initialize dependencies using provider pattern
 	storage := service.GrpsIOReaderWriter(ctx)
 	authService := service.AuthService(ctx)

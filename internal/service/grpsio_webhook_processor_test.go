@@ -113,7 +113,7 @@ func TestProcessEvent_MemberAdded(t *testing.T) {
 		WithMailingListReader(mockRepo),
 		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 		WithMemberReader(mockRepo),
-		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+		WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 	ctx := context.Background()
 
@@ -164,7 +164,7 @@ func TestProcessEvent_MemberRemoved(t *testing.T) {
 		WithMailingListReader(mockRepo),
 		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 		WithMemberReader(mockRepo),
-		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+		WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 	ctx := context.Background()
 
@@ -202,7 +202,7 @@ func TestProcessEvent_MemberBanned(t *testing.T) {
 		WithMailingListReader(mockRepo),
 		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 		WithMemberReader(mockRepo),
-		WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+		WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 	ctx := context.Background()
 

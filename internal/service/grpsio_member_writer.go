@@ -36,7 +36,15 @@ func (o *grpsIOWriterOrchestrator) ensureMemberIdempotent(
 			"source", member.Source)
 
 		existing, revision, err := o.grpsIOReader.GetMemberByGroupsIOMemberID(ctx, memberID)
-		if err == nil && existing != nil {
+		if err != nil {
+			// Use helper to handle idempotency lookup errors consistently
+			shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "member_id", fmt.Sprintf("%d", memberID))
+			if !shouldContinue {
+				return nil, 0, handledErr
+			}
+			// NotFound - fall through to Strategy 2 (email lookup)
+		} else if existing != nil {
+			// Found existing member - idempotent success
 			slog.InfoContext(ctx, "member already exists by Groups.io member ID (idempotent)",
 				"member_uid", existing.UID,
 				"member_id", memberID,
@@ -44,15 +52,23 @@ func (o *grpsIOWriterOrchestrator) ensureMemberIdempotent(
 				"request_source", member.Source)
 			return existing, revision, nil
 		}
-		// Not found by member ID - continue to email check
-		slog.DebugContext(ctx, "member not found by Groups.io member ID, checking email",
-			"member_id", memberID)
 	}
 
 	// Strategy 2: Lookup by email (API retry or webhook without member ID)
 	existing, revision, err := o.grpsIOReader.GetMemberByEmail(
 		ctx, member.MailingListUID, member.Email)
-	if err == nil && existing != nil {
+	if err != nil {
+		// Use helper to handle idempotency lookup errors consistently
+		shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "email", redaction.RedactEmail(member.Email))
+		if !shouldContinue {
+			return nil, 0, handledErr
+		}
+		// NotFound - proceed with creation
+		slog.DebugContext(ctx, "no existing member found, proceeding with creation")
+		return nil, 0, nil
+	}
+
+	if existing != nil {
 		slog.InfoContext(ctx, "member already exists by email (idempotent)",
 			"member_uid", existing.UID,
 			"email", redaction.RedactEmail(member.Email),
@@ -69,7 +85,7 @@ func (o *grpsIOWriterOrchestrator) ensureMemberIdempotent(
 // CreateGrpsIOMember creates a new member with transactional operations and rollback following service pattern
 func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "executing create member use case",
-		"member_email", member.Email,
+		"member_email", redaction.RedactEmail(member.Email),
 		"mailing_list_uid", member.MailingListUID,
 	)
 
@@ -152,16 +168,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		return nil, 0, err
 	}
 
-	// Step 7: Set default source if not provided (preserves existing behavior)
-	if member.Source == "" {
-		if o.groupsClient != nil && mailingList.SubgroupID != nil {
-			member.Source = constants.SourceAPI
-		} else {
-			member.Source = constants.SourceMock
-		}
-	}
-
-	// Validate source
+	// Step 7: Validate source
 	if err := constants.ValidateSource(member.Source); err != nil {
 		return nil, 0, err
 	}
@@ -207,7 +214,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
-			"member_email", member.Email,
+			"member_email", redaction.RedactEmail(member.Email),
 			"mailing_list_uid", member.MailingListUID,
 		)
 		rollbackRequired = true
@@ -593,7 +600,7 @@ func (o *grpsIOWriterOrchestrator) handleAPISourceMember(
 	// Guard: Skip if client not available or mailing list not synced (preserves existing logic)
 	if o.groupsClient == nil || mailingList.SubgroupID == nil {
 		slog.InfoContext(ctx, "source=api: Groups.io client unavailable or mailing list not synced, treating as mock",
-			"email", member.Email)
+			"email", redaction.RedactEmail(member.Email))
 		return nil, nil, false, nil
 	}
 
@@ -605,7 +612,7 @@ func (o *grpsIOWriterOrchestrator) handleAPISourceMember(
 	}
 
 	slog.InfoContext(ctx, "source=api: creating member in Groups.io",
-		"email", member.Email,
+		"email", redaction.RedactEmail(member.Email),
 		"subgroup_id", *mailingList.SubgroupID)
 
 	// Call existing createMemberInGroupsIO method (preserves all existing logic)
@@ -613,7 +620,7 @@ func (o *grpsIOWriterOrchestrator) handleAPISourceMember(
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member in Groups.io",
 			"error", err,
-			"email", member.Email)
+			"email", redaction.RedactEmail(member.Email))
 		return nil, nil, false, err
 	}
 
@@ -640,7 +647,7 @@ func (o *grpsIOWriterOrchestrator) handleWebhookSourceMember(
 
 	slog.InfoContext(ctx, "source=webhook: adopting webhook-provided member",
 		"member_id", *member.GroupsIOMemberID,
-		"email", member.Email)
+		"email", redaction.RedactEmail(member.Email))
 
 	return member.GroupsIOMemberID, member.GroupsIOGroupID, nil
 }
@@ -652,6 +659,6 @@ func (o *grpsIOWriterOrchestrator) handleMockSourceMember(
 	member *model.GrpsIOMember,
 ) (*int64, *int64) {
 	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
-		"email", member.Email)
+		"email", redaction.RedactEmail(member.Email))
 	return nil, nil
 }

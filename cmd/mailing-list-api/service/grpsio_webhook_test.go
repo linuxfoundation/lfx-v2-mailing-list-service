@@ -213,7 +213,9 @@ func TestWebhook_MalformedPayload(t *testing.T) {
 	// Malformed event: missing required 'action' field
 	event := map[string]interface{}{
 		"group": map[string]interface{}{
-			"id": float64(123),
+			"id":              float64(123),
+			"name":            "test-group",
+			"parent_group_id": float64(456),
 		},
 	}
 	bodyBytes, _ := json.Marshal(event)

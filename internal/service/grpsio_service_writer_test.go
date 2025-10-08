@@ -13,6 +13,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
@@ -41,6 +42,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				GroupName:    "test-project",
 				Public:       true,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
@@ -71,6 +73,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				GroupName:    "formation-project",
 				Public:       true,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
@@ -101,12 +104,13 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				GroupName:    "shared-project",
 				Public:       false,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "shared", result.Type)
-				assert.Equal(t, writerInt64Ptr(34567), result.GroupID)
+				assert.Nil(t, result.GroupID) // Mock source doesn't coordinate with Groups.io, so GroupID is nil
 				assert.False(t, result.Public)
 				assert.Equal(t, "project-3", result.ProjectUID)
 				assert.Equal(t, uint64(1), revision)
@@ -130,6 +134,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				GroupName:    "test-project",
 				Public:       true,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			},
 			expectedError: errs.NotFound{},
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
@@ -157,6 +162,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				GroupName:    "audit-project",
 				Public:       true,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
@@ -266,6 +272,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService_PublishingErrors(t *testin
 				GroupName:    "test-project",
 				Public:       true,
 				Status:       "created",
+				Source:       constants.SourceMock,
 			}
 
 			// Execute

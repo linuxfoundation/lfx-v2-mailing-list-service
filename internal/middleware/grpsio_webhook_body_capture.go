@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -24,7 +25,8 @@ func GrpsIOWebhookBodyCaptureMiddleware() func(http.Handler) http.Handler {
 
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
-					http.Error(w, "Failed to read request body", http.StatusBadRequest)
+					slog.ErrorContext(r.Context(), "failed to read webhook request body", "error", err)
+					http.Error(w, "Failed to read request body (max 10MB allowed)", http.StatusBadRequest)
 					return
 				}
 

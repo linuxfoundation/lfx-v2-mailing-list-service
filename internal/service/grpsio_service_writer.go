@@ -76,13 +76,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		keys = append(keys, constraintKey)
 	}
 
-	// Step 4: Set default source if not provided
-	if service.Source == "" {
-		// Default to API source if not specified (preserves existing behavior)
-		service.Source = constants.SourceAPI
-	}
-
-	// Validate source (Service only supports API and Mock, not webhook)
+	// Step 4: Validate source (Service only supports API and Mock, not webhook)
 	if service.Source != constants.SourceAPI && service.Source != constants.SourceMock {
 		return nil, 0, errors.NewValidation(
 			fmt.Sprintf("service only supports api or mock source, got: %s", service.Source))
@@ -428,13 +422,13 @@ func (sw *grpsIOWriterOrchestrator) validateAndPopulateProject(ctx context.Conte
 // reserveUniqueConstraints reserves unique constraints based on service type
 func (sw *grpsIOWriterOrchestrator) reserveUniqueConstraints(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	switch service.Type {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		// Primary service: unique by project only
 		return sw.grpsIOWriter.UniqueProjectType(ctx, service)
-	case "formation":
+	case constants.ServiceTypeFormation:
 		// Formation service: unique by project + prefix
 		return sw.grpsIOWriter.UniqueProjectPrefix(ctx, service)
-	case "shared":
+	case constants.ServiceTypeShared:
 		// Shared service: unique by project + group_id
 		return sw.grpsIOWriter.UniqueProjectGroupID(ctx, service)
 	default:

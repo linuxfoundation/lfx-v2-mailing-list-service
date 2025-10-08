@@ -746,3 +746,326 @@ func stringPtr(s string) *string {
 func int64Ptr(i int64) *int64 {
 	return &i
 }
+
+// TestMailingListService_convertWebhookGroupInfo tests the webhook group info converter
+func TestMailingListService_convertWebhookGroupInfo(t *testing.T) {
+	s := &mailingListService{}
+
+	tests := []struct {
+		name        string
+		input       map[string]any
+		expected    *model.GroupInfo
+		expectError bool
+	}{
+		{
+			name: "valid group info with all fields",
+			input: map[string]any{
+				"id":              float64(12345),
+				"name":            "test-group",
+				"parent_group_id": float64(67890),
+			},
+			expected: &model.GroupInfo{
+				ID:            12345,
+				Name:          "test-group",
+				ParentGroupID: 67890,
+			},
+			expectError: false,
+		},
+		{
+			name:        "nil input",
+			input:       nil,
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing id field",
+			input: map[string]any{
+				"name":            "test-group",
+				"parent_group_id": float64(67890),
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid id type",
+			input: map[string]any{
+				"id":              "not-a-number",
+				"name":            "test-group",
+				"parent_group_id": float64(67890),
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing name field",
+			input: map[string]any{
+				"id":              float64(12345),
+				"parent_group_id": float64(67890),
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid name type",
+			input: map[string]any{
+				"id":              float64(12345),
+				"name":            12345,
+				"parent_group_id": float64(67890),
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing parent_group_id field",
+			input: map[string]any{
+				"id":   float64(12345),
+				"name": "test-group",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid parent_group_id type",
+			input: map[string]any{
+				"id":              float64(12345),
+				"name":            "test-group",
+				"parent_group_id": "not-a-number",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "zero values are valid",
+			input: map[string]any{
+				"id":              float64(0),
+				"name":            "",
+				"parent_group_id": float64(0),
+			},
+			expected: &model.GroupInfo{
+				ID:            0,
+				Name:          "",
+				ParentGroupID: 0,
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := s.convertWebhookGroupInfo(tt.input)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestMailingListService_convertWebhookMemberInfo tests the webhook member info converter
+func TestMailingListService_convertWebhookMemberInfo(t *testing.T) {
+	s := &mailingListService{}
+
+	tests := []struct {
+		name        string
+		input       map[string]any
+		expected    *model.MemberInfo
+		expectError bool
+	}{
+		{
+			name: "valid member info with all required fields",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": float64(456),
+				"email":    "test@example.com",
+				"status":   "active",
+			},
+			expected: &model.MemberInfo{
+				ID:      123,
+				GroupID: 456,
+				Email:   "test@example.com",
+				Status:  "active",
+			},
+			expectError: false,
+		},
+		{
+			name: "valid member info with optional fields",
+			input: map[string]any{
+				"id":         float64(123),
+				"user_id":    float64(789),
+				"group_id":   float64(456),
+				"group_name": "test-group",
+				"email":      "test@example.com",
+				"status":     "pending",
+			},
+			expected: &model.MemberInfo{
+				ID:        123,
+				UserID:    789,
+				GroupID:   456,
+				GroupName: "test-group",
+				Email:     "test@example.com",
+				Status:    "pending",
+			},
+			expectError: false,
+		},
+		{
+			name:        "nil input",
+			input:       nil,
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing id field",
+			input: map[string]any{
+				"group_id": float64(456),
+				"email":    "test@example.com",
+				"status":   "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid id type",
+			input: map[string]any{
+				"id":       "not-a-number",
+				"group_id": float64(456),
+				"email":    "test@example.com",
+				"status":   "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing group_id field",
+			input: map[string]any{
+				"id":     float64(123),
+				"email":  "test@example.com",
+				"status": "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid group_id type",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": "not-a-number",
+				"email":    "test@example.com",
+				"status":   "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing email field",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": float64(456),
+				"status":   "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid email type",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": float64(456),
+				"email":    12345,
+				"status":   "active",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "missing status field",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": float64(456),
+				"email":    "test@example.com",
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "invalid status type",
+			input: map[string]any{
+				"id":       float64(123),
+				"group_id": float64(456),
+				"email":    "test@example.com",
+				"status":   12345,
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "optional user_id with wrong type is ignored",
+			input: map[string]any{
+				"id":       float64(123),
+				"user_id":  "not-a-number",
+				"group_id": float64(456),
+				"email":    "test@example.com",
+				"status":   "active",
+			},
+			expected: &model.MemberInfo{
+				ID:      123,
+				UserID:  0, // Optional field, wrong type means zero value
+				GroupID: 456,
+				Email:   "test@example.com",
+				Status:  "active",
+			},
+			expectError: false,
+		},
+		{
+			name: "optional group_name with wrong type is ignored",
+			input: map[string]any{
+				"id":         float64(123),
+				"group_id":   float64(456),
+				"group_name": 12345,
+				"email":      "test@example.com",
+				"status":     "active",
+			},
+			expected: &model.MemberInfo{
+				ID:        123,
+				GroupID:   456,
+				GroupName: "", // Optional field, wrong type means zero value
+				Email:     "test@example.com",
+				Status:    "active",
+			},
+			expectError: false,
+		},
+		{
+			name: "zero values are valid for required fields",
+			input: map[string]any{
+				"id":       float64(0),
+				"group_id": float64(0),
+				"email":    "",
+				"status":   "",
+			},
+			expected: &model.MemberInfo{
+				ID:      0,
+				GroupID: 0,
+				Email:   "",
+				Status:  "",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := s.convertWebhookMemberInfo(tt.input)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}

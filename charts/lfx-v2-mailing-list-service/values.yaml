@@ -135,9 +135,15 @@ app:
   # audience is the intended audience for the JWT token
   audience: lfx-v2-mailing-list-service
 
+  # Repository implementation source (nats or mock)
+  # Production should use 'nats', local development should use 'mock'
+  repositorySource: nats
+
   # GroupsIO integration configuration
   groupsio:
     # source determines the GroupsIO implementation (groupsio or mock)
+    # Use 'groupsio' for production, 'mock' for testing/local development
+    # Empty string defaults to production in code
     source: groupsio
     # baseUrl is the Groups.io API base URL
     baseUrl: "https://groups.io/api"
@@ -153,3 +159,7 @@ app:
     maxRetries: 3
     # retryDelay is the delay between retry attempts
     retryDelay: "1s"
+
+  # Webhook secret for GroupsIO webhook validation
+  # Do not commit actual credentials to this file will be set by Kubernetes secrets
+  groupsioWebhookSecret: ""

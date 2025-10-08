@@ -17,6 +17,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // GrpsIOWebhookProcessor handles GroupsIO webhook event processing
@@ -243,7 +244,7 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 	slog.InfoContext(ctx, "received added_member event",
 		"member_id", memberID,
 		"group_id", groupID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 		"status", status)
 
 	// Step 1: Find mailing list by group_id
@@ -254,7 +255,7 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 		if stderrors.As(err, &notFoundErr) {
 			slog.WarnContext(ctx, "mailing list not found for parent group_id - member will not be adopted",
 				"group_id", groupID,
-				"email", email)
+				"email", redaction.RedactEmail(email))
 			return nil // Not an error - member just won't be adopted
 		}
 		slog.ErrorContext(ctx, "failed to get mailing list by group_id",
@@ -291,7 +292,7 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
-			"email", email,
+			"email", redaction.RedactEmail(email),
 			"mailing_list_uid", mailingList.UID)
 		return fmt.Errorf("failed to create member: %w", err)
 	}
@@ -299,7 +300,7 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 	slog.InfoContext(ctx, "successfully adopted member",
 		"member_uid", createdMember.UID,
 		"mailing_list_uid", mailingList.UID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 		"member_id", memberID)
 
 	return nil
@@ -315,7 +316,7 @@ func (p *grpsIOWebhookProcessor) handleMemberRemoved(ctx context.Context, event 
 
 	slog.InfoContext(ctx, "received removed_member event",
 		"member_id", memberID,
-		"email", email)
+		"email", redaction.RedactEmail(email))
 
 	// Step 1: Find member by Groups.io member ID
 	// Pattern: Same as handleSubGroupDeleted finds mailing list by subgroup_id
@@ -335,7 +336,7 @@ func (p *grpsIOWebhookProcessor) handleMemberRemoved(ctx context.Context, event 
 
 	slog.InfoContext(ctx, "found member for deletion",
 		"member_uid", member.UID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 		"revision", revision)
 
 	// Step 2: Delete member with optimistic concurrency control
@@ -347,7 +348,7 @@ func (p *grpsIOWebhookProcessor) handleMemberRemoved(ctx context.Context, event 
 
 	slog.InfoContext(ctx, "successfully deleted member",
 		"member_uid", member.UID,
-		"email", email,
+		"email", redaction.RedactEmail(email),
 		"member_id", memberID)
 
 	return nil
@@ -360,7 +361,7 @@ func (p *grpsIOWebhookProcessor) handleMemberBanned(ctx context.Context, event *
 
 	slog.InfoContext(ctx, "received ban_members event",
 		"member_id", event.MemberInfo.ID,
-		"email", event.MemberInfo.Email)
+		"email", redaction.RedactEmail(event.MemberInfo.Email))
 
 	// Banning is equivalent to removal - reuse removal logic
 	slog.InfoContext(ctx, "treating banned member as removed")
@@ -373,8 +374,8 @@ func (p *grpsIOWebhookProcessor) handleMemberBanned(ctx context.Context, event *
 func parseNameFromEmail(email string) (firstName, lastName string) {
 	// Split on @ to get local part
 	parts := strings.Split(email, "@")
-	if len(parts) == 0 {
-		return "Unknown", "User"
+	if len(parts) < 2 || parts[0] == "" {
+		return "Unknown", ""
 	}
 
 	localPart := parts[0]
@@ -393,7 +394,8 @@ func parseNameFromEmail(email string) (firstName, lastName string) {
 		return caser.String(nameParts[0]), ""
 	}
 
-	return email, "" // Fallback
+	// Fallback: use local part but don't leak full email
+	return caser.String(localPart), ""
 }
 
 // Helper methods

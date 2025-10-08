@@ -14,6 +14,7 @@ import (
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
@@ -75,14 +76,15 @@ func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServic
 	serviceType := payload.Type
 
 	switch serviceType {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		return validatePrimaryRules(payload)
-	case "formation":
+	case constants.ServiceTypeFormation:
 		return validateFormationRules(payload)
-	case "shared":
+	case constants.ServiceTypeShared:
 		return validateSharedRules(payload)
 	default:
-		return errors.NewValidation(fmt.Sprintf("invalid service type: %s. Must be one of: primary, formation, shared", serviceType))
+		return errors.NewValidation(fmt.Sprintf("invalid service type: %s. Must be one of: %s, %s, %s",
+			serviceType, constants.ServiceTypePrimary, constants.ServiceTypeFormation, constants.ServiceTypeShared))
 	}
 }
 

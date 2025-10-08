@@ -37,6 +37,9 @@ spec:
               value: {{.Values.app.authSource}}
             - name: JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL
               value: {{.Values.app.jwtAuthDisabledMockLocalPrincipal}}
+            # Repository configuration
+            - name: REPOSITORY_SOURCE
+              value: {{.Values.app.repositorySource | default "nats"}}
             # GroupsIO configuration
             - name: GROUPSIO_SOURCE
               value: {{.Values.app.groupsio.source}}
