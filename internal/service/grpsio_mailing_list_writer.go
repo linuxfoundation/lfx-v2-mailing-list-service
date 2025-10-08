@@ -15,6 +15,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
@@ -158,7 +159,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 			if existing, revision, checkErr := ml.ensureMailingListIdempotent(ctx, request); checkErr == nil && existing != nil {
 				slog.InfoContext(ctx, "constraint conflict resolved - returning existing record (race condition)",
 					"mailing_list_uid", existing.UID,
-					"subgroup_id", request.SubgroupID)
+					"subgroup_id", log.LogOptionalInt64(request.SubgroupID))
 				return existing, revision, nil
 			}
 		}
@@ -236,7 +237,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"mailing_list_uid", createdMailingList.UID,
 		"group_name", createdMailingList.GroupName,
 		"source", createdMailingList.Source,
-		"subgroup_id", createdMailingList.SubgroupID,
+		"subgroup_id", log.LogOptionalInt64(createdMailingList.SubgroupID),
 		"parent_uid", createdMailingList.ServiceUID,
 		"public", createdMailingList.Public,
 		"committee_based", createdMailingList.IsCommitteeBased())

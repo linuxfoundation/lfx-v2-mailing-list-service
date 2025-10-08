@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -671,11 +672,26 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 	})
 
 	if err != nil {
-		slog.ErrorContext(ctx, "webhook processing failed after retries", "error", err)
-		// Note: Still return nil (204) to prevent Groups.io from retrying
+		// Check if this is a validation error (malformed data)
+		var validationErr errors.Validation
+		if stderrors.As(err, &validationErr) {
+			// Validation errors should not trigger retries - log and return success
+			slog.ErrorContext(ctx, "webhook validation failed - returning success to prevent retries",
+				"error", err,
+				"action", p.Action)
+			return nil // Return 204 to prevent GroupsIO from retrying
+		}
+
+		// For other errors (transient failures), return error to trigger GroupsIO retry
+		slog.ErrorContext(ctx, "webhook processing failed after retries",
+			"error", err,
+			"action", p.Action,
+			"retries", constants.WebhookMaxRetries)
+		return &mailinglistservice.InternalServerError{Message: "webhook processing failed"}
 	}
 
-	return nil // Always return nil for 204 No Content
+	// Success - return 204 No Content
+	return nil
 }
 
 // Helper functions

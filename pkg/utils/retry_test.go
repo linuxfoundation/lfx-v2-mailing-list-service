@@ -151,11 +151,11 @@ func TestRetryWithExponentialBackoff_ExponentialDelay(t *testing.T) {
 	assert.GreaterOrEqual(t, delay3, 40*time.Millisecond)
 
 	// Verify each delay is approximately double the previous
-	// Allow for some timing variance (within 2x range)
-	assert.LessOrEqual(t, delay1, 2*delay1)
+	// Allow for some timing variance (within ~2x range)
 	assert.GreaterOrEqual(t, delay2, delay1)
-	assert.LessOrEqual(t, delay2, 4*delay1)
+	assert.LessOrEqual(t, delay2, 2*delay1)
 	assert.GreaterOrEqual(t, delay3, delay2)
+	assert.LessOrEqual(t, delay3, 2*delay2)
 }
 
 func TestRetryWithExponentialBackoff_MaxDelayRespected(t *testing.T) {

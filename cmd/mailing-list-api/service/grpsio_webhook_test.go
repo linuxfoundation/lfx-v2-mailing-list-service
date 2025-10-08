@@ -330,7 +330,7 @@ func TestWebhook_AllEventTypes(t *testing.T) {
 		service.WithMailingListReader(mockRepo),
 		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 		service.WithMemberReader(mockRepo),
-		service.WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+		service.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -428,7 +428,7 @@ func TestWebhook_MemberEventMissingMemberInfo(t *testing.T) {
 		service.WithMailingListReader(mockRepo),
 		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 		service.WithMemberReader(mockRepo),
-		service.WithMemberWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+		service.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(

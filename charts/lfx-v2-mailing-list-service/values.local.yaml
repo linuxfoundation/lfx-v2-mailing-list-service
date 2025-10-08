@@ -13,10 +13,10 @@ app:
   jwtAuthDisabledMockLocalPrincipal: "test-super-admin"
   # Enable debug logging for local development
   logLevel: debug
-  
+
   # Use mock repository for local testing
   repositorySource: mock
-  
+
   # Use mock GroupsIO integration for local testing
   groupsio:
     source: mock

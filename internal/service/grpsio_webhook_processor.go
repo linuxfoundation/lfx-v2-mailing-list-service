@@ -108,7 +108,7 @@ func (p *grpsIOWebhookProcessor) ProcessEvent(ctx context.Context, event *model.
 
 func (p *grpsIOWebhookProcessor) handleSubGroupCreated(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
 	if event.Group == nil {
-		return fmt.Errorf("missing group information in created_subgroup event")
+		return errors.NewValidation("missing group information in created_subgroup event")
 	}
 
 	parentGroupID := uint64(event.Group.ParentGroupID)
@@ -233,7 +233,7 @@ func (p *grpsIOWebhookProcessor) handleSubGroupDeleted(ctx context.Context, even
 
 func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
 	if event.MemberInfo == nil {
-		return fmt.Errorf("missing member info in added_member event")
+		return errors.NewValidation("missing member info in added_member event")
 	}
 
 	memberID := int64(event.MemberInfo.ID)
@@ -308,7 +308,7 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 
 func (p *grpsIOWebhookProcessor) handleMemberRemoved(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
 	if event.MemberInfo == nil {
-		return fmt.Errorf("missing member info in removed_member event")
+		return errors.NewValidation("missing member info in removed_member event")
 	}
 
 	memberID := uint64(event.MemberInfo.ID)
@@ -356,7 +356,7 @@ func (p *grpsIOWebhookProcessor) handleMemberRemoved(ctx context.Context, event 
 
 func (p *grpsIOWebhookProcessor) handleMemberBanned(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
 	if event.MemberInfo == nil {
-		return fmt.Errorf("missing member info in ban_members event")
+		return errors.NewValidation("missing member info in ban_members event")
 	}
 
 	slog.InfoContext(ctx, "received ban_members event",
