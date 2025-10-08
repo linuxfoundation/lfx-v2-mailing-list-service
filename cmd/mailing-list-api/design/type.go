@@ -535,12 +535,34 @@ func GrpsIOMemberUpdateAttributes() {
 	})
 }
 
-// GroupsIOWebhookPayload is the DSL type for GroupsIO webhook event payload.
+// GroupsIOWebhookPayload represents the webhook event payload from Groups.io
 var GroupsIOWebhookPayload = dsl.Type("groupsio-webhook-payload", func() {
-	dsl.Description("Webhook event payload from Groups.io with HMAC signature for verification")
+	dsl.Description("Webhook event payload from Groups.io")
 
-	dsl.Field(1, "signature", dsl.String, "HMAC-SHA1 signature from x-groupsio-signature header")
-	dsl.Field(2, "body", dsl.Bytes, "Raw webhook event body")
+	// Event type - matches production event names
+	dsl.Attribute("action", dsl.String, "The type of webhook event", func() {
+		dsl.Example("created_subgroup")
+		dsl.Enum(
+			"created_subgroup",
+			"deleted_subgroup",
+			"added_member",
+			"removed_member",
+			"ban_members",
+		)
+	})
 
-	dsl.Required("signature", "body")
+	// Event-specific data - matches production payload structure
+	dsl.Attribute("group", dsl.Any, "Group information for subgroup events", func() {
+		dsl.Description("Contains subgroup data from Groups.io")
+	})
+	dsl.Attribute("member_info", dsl.Any, "Member information for member events", func() {
+		dsl.Description("Contains member data from Groups.io")
+	})
+	dsl.Attribute("extra", dsl.String, "Extra data field (subgroup suffix)")
+	dsl.Attribute("extra_id", dsl.Int, "Extra ID field (subgroup ID for deletion)")
+
+	// Signature from header
+	dsl.Attribute("signature", dsl.String, "HMAC-SHA1 base64 signature for verification")
+
+	dsl.Required("action", "signature")
 })

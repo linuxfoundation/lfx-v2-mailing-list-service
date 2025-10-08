@@ -5,7 +5,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	stderrors "errors"
 	"fmt"
 	"log/slog"
@@ -22,7 +21,7 @@ import (
 
 // GrpsIOWebhookProcessor handles GroupsIO webhook event processing
 type GrpsIOWebhookProcessor interface {
-	ProcessEvent(ctx context.Context, eventType string, data []byte) error
+	ProcessEvent(ctx context.Context, event *model.GrpsIOWebhookEvent) error
 }
 
 // grpsIOWebhookProcessor orchestrates webhook event processing with required dependencies
@@ -84,28 +83,22 @@ func NewGrpsIOWebhookProcessor(opts ...WebhookProcessorOption) GrpsIOWebhookProc
 }
 
 // ProcessEvent routes webhook events to appropriate handlers
-func (p *grpsIOWebhookProcessor) ProcessEvent(ctx context.Context, eventType string, data []byte) error {
-	slog.InfoContext(ctx, "processing groupsio webhook event", "event_type", eventType)
+func (p *grpsIOWebhookProcessor) ProcessEvent(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
+	slog.InfoContext(ctx, "processing groupsio webhook event", "event_type", event.Action)
 
-	var event model.GrpsIOWebhookEvent
-	if err := json.Unmarshal(data, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal groupsio webhook event: %w", err)
-	}
-	event.Action = eventType
-
-	switch eventType {
+	switch event.Action {
 	case constants.SubGroupCreatedEvent:
-		return p.handleSubGroupCreated(ctx, &event)
+		return p.handleSubGroupCreated(ctx, event)
 	case constants.SubGroupDeletedEvent:
-		return p.handleSubGroupDeleted(ctx, &event)
+		return p.handleSubGroupDeleted(ctx, event)
 	case constants.SubGroupMemberAddedEvent:
-		return p.handleMemberAdded(ctx, &event)
+		return p.handleMemberAdded(ctx, event)
 	case constants.SubGroupMemberRemovedEvent:
-		return p.handleMemberRemoved(ctx, &event)
+		return p.handleMemberRemoved(ctx, event)
 	case constants.SubGroupMemberBannedEvent:
-		return p.handleMemberBanned(ctx, &event)
+		return p.handleMemberBanned(ctx, event)
 	default:
-		slog.WarnContext(ctx, "unknown groupsio webhook event type", "event_type", eventType)
+		slog.WarnContext(ctx, "unknown groupsio webhook event type", "event_type", event.Action)
 		return nil // Ignore unknown events
 	}
 }
@@ -228,9 +221,11 @@ func (p *grpsIOWebhookProcessor) handleSubGroupDeleted(ctx context.Context, even
 		"service_uid", mailingList.ServiceUID,
 		"subgroup_id", subgroupID)
 
-	// Note: Checking if this was the last subgroup for EnabledServices event
-	// will be implemented in PR #3 (NATS Publishing)
-	// It would call: p.mailingListReader.ListMailingListsByServiceUID(ctx, mailingList.ServiceUID)
+	// TODO: NATS Publishing PR #3
+	// 1. Check if this was the last subgroup for EnabledServices event
+	//    Call: p.mailingListReader.ListMailingListsByServiceUID(ctx, mailingList.ServiceUID)
+	// 2. Publish member events to NATS using full MemberInfo (see model/grpsio_webhook_event.go TODOs)
+	// 3. Ensure downstream consumers (Zoom, Query Service) receive all required fields
 
 	return nil
 }

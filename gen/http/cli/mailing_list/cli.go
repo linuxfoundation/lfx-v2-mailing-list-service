@@ -555,7 +555,7 @@ Create a new member for a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list create-grpsio-mailing-list-member --body '{
-      "delivery_mode": "none",
+      "delivery_mode": "digest",
       "email": "john.doe@example.com",
       "first_name": "John",
       "job_title": "Software Engineer",
@@ -601,7 +601,7 @@ Example:
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "moderator",
+      "mod_status": "none",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -632,7 +632,11 @@ Handle GroupsIO webhook events for subgroup and member changes
 
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
-      "body": "UXVvIGVuaW0gYWIgcmF0aW9uZSBxdWFzaS4="
-   }' --signature "Est odit quis sed nesciunt."
+      "action": "created_subgroup",
+      "extra": "Sapiente quo eveniet iusto sit aperiam neque.",
+      "extra_id": 5841507716260392508,
+      "group": "Repudiandae aliquid eius quis.",
+      "member_info": "Porro aliquam esse odit nemo."
+   }' --signature "Hic repellendus."
 `, os.Args[0])
 }

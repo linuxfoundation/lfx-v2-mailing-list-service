@@ -6,7 +6,7 @@ package groupsio
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 
@@ -33,10 +33,10 @@ func (v *GrpsIOWebhookValidator) ValidateSignature(body []byte, signature string
 		return fmt.Errorf("missing webhook signature")
 	}
 
-	// Calculate HMAC-SHA1 (GroupsIO algorithm)
+	// Calculate HMAC-SHA1 with base64 encoding (GroupsIO algorithm)
 	mac := hmac.New(sha1.New, []byte(v.Secret))
 	mac.Write(body)
-	expectedSignature := hex.EncodeToString(mac.Sum(nil))
+	expectedSignature := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
 	// Constant-time comparison to prevent timing attacks
 	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {

@@ -182,8 +182,16 @@ type UpdateGrpsioMailingListMemberRequestBody struct {
 // GroupsioWebhookRequestBody is the type of the "mailing-list" service
 // "groupsio-webhook" endpoint HTTP request body.
 type GroupsioWebhookRequestBody struct {
-	// Raw webhook event body
-	Body []byte `form:"body,omitempty" json:"body,omitempty" xml:"body,omitempty"`
+	// The type of webhook event
+	Action *string `form:"action,omitempty" json:"action,omitempty" xml:"action,omitempty"`
+	// Contains subgroup data from Groups.io
+	Group any `form:"group,omitempty" json:"group,omitempty" xml:"group,omitempty"`
+	// Contains member data from Groups.io
+	MemberInfo any `form:"member_info,omitempty" json:"member_info,omitempty" xml:"member_info,omitempty"`
+	// Extra data field (subgroup suffix)
+	Extra *string `form:"extra,omitempty" json:"extra,omitempty" xml:"extra,omitempty"`
+	// Extra ID field (subgroup ID for deletion)
+	ExtraID *int `form:"extra_id,omitempty" json:"extra_id,omitempty" xml:"extra_id,omitempty"`
 }
 
 // CreateGrpsioServiceResponseBody is the type of the "mailing-list" service
@@ -2432,7 +2440,11 @@ func NewDeleteGrpsioMailingListMemberPayload(uid string, memberUID string, versi
 // endpoint payload.
 func NewGroupsioWebhookPayload(body *GroupsioWebhookRequestBody, signature string) *mailinglist.GroupsioWebhookPayload {
 	v := &mailinglist.GroupsioWebhookPayload{
-		Body: body.Body,
+		Action:     *body.Action,
+		Group:      body.Group,
+		MemberInfo: body.MemberInfo,
+		Extra:      body.Extra,
+		ExtraID:    body.ExtraID,
 	}
 	v.Signature = signature
 
@@ -2778,8 +2790,13 @@ func ValidateUpdateGrpsioMailingListMemberRequestBody(body *UpdateGrpsioMailingL
 // ValidateGroupsioWebhookRequestBody runs the validations defined on
 // Groupsio-WebhookRequestBody
 func ValidateGroupsioWebhookRequestBody(body *GroupsioWebhookRequestBody) (err error) {
-	if body.Body == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("body", "body"))
+	if body.Action == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("action", "body"))
+	}
+	if body.Action != nil {
+		if !(*body.Action == "created_subgroup" || *body.Action == "deleted_subgroup" || *body.Action == "added_member" || *body.Action == "removed_member" || *body.Action == "ban_members") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.action", *body.Action, []any{"created_subgroup", "deleted_subgroup", "added_member", "removed_member", "ban_members"}))
+		}
 	}
 	return
 }

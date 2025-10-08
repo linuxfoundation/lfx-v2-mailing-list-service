@@ -6,12 +6,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -614,19 +614,40 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 		return &mailinglistservice.UnauthorizedError{Message: "invalid webhook signature"}
 	}
 
-	// Parse event type
-	var event struct {
-		Action string `json:"action"`
-	}
-	if err := json.Unmarshal(bodyBytes, &event); err != nil {
-		slog.ErrorContext(ctx, "failed to parse webhook event", "error", err)
-		return &mailinglistservice.BadRequestError{Message: "invalid event format"}
-	}
+	// GOA already parsed the action field - use it directly
+	slog.InfoContext(ctx, "processing groupsio webhook event", "event_type", p.Action)
 
 	// Validate event type
-	if !s.grpsioWebhookValidator.IsValidEvent(event.Action) {
-		slog.WarnContext(ctx, "unsupported event type", "event_type", event.Action)
-		return &mailinglistservice.BadRequestError{Message: fmt.Sprintf("unsupported event type: %s", event.Action)}
+	if !s.grpsioWebhookValidator.IsValidEvent(p.Action) {
+		slog.WarnContext(ctx, "unsupported event type", "event_type", p.Action)
+		return &mailinglistservice.BadRequestError{Message: fmt.Sprintf("unsupported event type: %s", p.Action)}
+	}
+
+	// Convert GOA payload to domain model
+	event := &model.GrpsIOWebhookEvent{
+		Action: p.Action,
+	}
+
+	// Convert Group field if present (for subgroup events)
+	if p.Group != nil {
+		if groupMap, ok := p.Group.(map[string]any); ok {
+			event.Group = s.convertWebhookGroupInfo(groupMap)
+		}
+	}
+
+	// Convert MemberInfo field if present (for member events)
+	if p.MemberInfo != nil {
+		if memberMap, ok := p.MemberInfo.(map[string]any); ok {
+			event.MemberInfo = s.convertWebhookMemberInfo(memberMap)
+		}
+	}
+
+	// Map extra fields
+	if p.Extra != nil {
+		event.Extra = *p.Extra
+	}
+	if p.ExtraID != nil {
+		event.ExtraID = *p.ExtraID
 	}
 
 	// Process event synchronously with exponential backoff retries
@@ -636,7 +657,7 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 		constants.WebhookRetryMaxDelay*time.Millisecond,
 	)
 	err := utils.RetryWithExponentialBackoff(ctx, retryConfig, func() error {
-		return s.grpsioWebhookProcessor.ProcessEvent(ctx, event.Action, bodyBytes)
+		return s.grpsioWebhookProcessor.ProcessEvent(ctx, event)
 	})
 
 	if err != nil {

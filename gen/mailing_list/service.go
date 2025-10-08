@@ -275,10 +275,18 @@ type GetGrpsioServiceResult struct {
 // GroupsioWebhookPayload is the payload type of the mailing-list service
 // groupsio-webhook method.
 type GroupsioWebhookPayload struct {
-	// HMAC-SHA1 signature from x-groupsio-signature header
+	// The type of webhook event
+	Action string
+	// Contains subgroup data from Groups.io
+	Group any
+	// Contains member data from Groups.io
+	MemberInfo any
+	// Extra data field (subgroup suffix)
+	Extra *string
+	// Extra ID field (subgroup ID for deletion)
+	ExtraID *int
+	// HMAC-SHA1 base64 signature for verification
 	Signature string
-	// Raw webhook event body
-	Body []byte
 }
 
 // GrpsIoMailingListFull is the result type of the mailing-list service

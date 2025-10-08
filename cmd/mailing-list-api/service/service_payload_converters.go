@@ -200,3 +200,48 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 		UpdatedAt:    time.Now().UTC(),
 	}
 }
+
+// convertWebhookGroupInfo converts webhook group data to domain model
+func (s *mailingListService) convertWebhookGroupInfo(m map[string]any) *model.GroupInfo {
+	if m == nil {
+		return nil
+	}
+
+	group := &model.GroupInfo{}
+
+	if id, ok := m["id"].(float64); ok {
+		group.ID = int(id)
+	}
+	if parentGroupID, ok := m["parent_group_id"].(float64); ok {
+		group.ParentGroupID = int(parentGroupID)
+	}
+	if name, ok := m["name"].(string); ok {
+		group.Name = name
+	}
+
+	return group
+}
+
+// convertWebhookMemberInfo converts webhook member data to domain model
+func (s *mailingListService) convertWebhookMemberInfo(m map[string]any) *model.MemberInfo {
+	if m == nil {
+		return nil
+	}
+
+	member := &model.MemberInfo{}
+
+	if id, ok := m["id"].(float64); ok {
+		member.ID = int(id)
+	}
+	if groupID, ok := m["group_id"].(float64); ok {
+		member.GroupID = uint64(groupID)
+	}
+	if email, ok := m["email"].(string); ok {
+		member.Email = email
+	}
+	if status, ok := m["status"].(string); ok {
+		member.Status = status
+	}
+
+	return member
+}

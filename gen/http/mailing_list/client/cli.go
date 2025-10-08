@@ -595,7 +595,7 @@ func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"none\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -758,7 +758,7 @@ func BuildUpdateGrpsioMailingListMemberPayload(mailingListUpdateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"none\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -925,10 +925,10 @@ func BuildGroupsioWebhookPayload(mailingListGroupsioWebhookBody string, mailingL
 	{
 		err = json.Unmarshal([]byte(mailingListGroupsioWebhookBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"body\": \"UXVvIGVuaW0gYWIgcmF0aW9uZSBxdWFzaS4=\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"action\": \"created_subgroup\",\n      \"extra\": \"Sapiente quo eveniet iusto sit aperiam neque.\",\n      \"extra_id\": 5841507716260392508,\n      \"group\": \"Repudiandae aliquid eius quis.\",\n      \"member_info\": \"Porro aliquam esse odit nemo.\"\n   }'")
 		}
-		if body.Body == nil {
-			err = goa.MergeErrors(err, goa.MissingFieldError("body", "body"))
+		if !(body.Action == "created_subgroup" || body.Action == "deleted_subgroup" || body.Action == "added_member" || body.Action == "removed_member" || body.Action == "ban_members") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.action", body.Action, []any{"created_subgroup", "deleted_subgroup", "added_member", "removed_member", "ban_members"}))
 		}
 		if err != nil {
 			return nil, err
@@ -939,7 +939,11 @@ func BuildGroupsioWebhookPayload(mailingListGroupsioWebhookBody string, mailingL
 		signature = mailingListGroupsioWebhookSignature
 	}
 	v := &mailinglist.GroupsioWebhookPayload{
-		Body: body.Body,
+		Action:     body.Action,
+		Group:      body.Group,
+		MemberInfo: body.MemberInfo,
+		Extra:      body.Extra,
+		ExtraID:    body.ExtraID,
 	}
 	v.Signature = signature
 

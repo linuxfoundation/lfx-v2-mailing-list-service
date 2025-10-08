@@ -5,13 +5,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestProcessEvent_CreatedSubgroup tests created_subgroup event processing
@@ -25,50 +24,43 @@ func TestProcessEvent_CreatedSubgroup(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("valid created_subgroup event", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "created_subgroup",
-			"group": map[string]interface{}{
-				"id":              123,
-				"name":            "test-group",
-				"parent_group_id": 456,
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupCreatedEvent,
+			Group: &model.GroupInfo{
+				ID:            123,
+				Name:          "test-group",
+				ParentGroupID: 456,
 			},
-			"extra": "developers",
+			Extra: "developers",
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupCreatedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("created_subgroup event with missing group info", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "created_subgroup",
-			"extra":  "developers",
-			// Missing group field
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupCreatedEvent,
+			Extra:  "developers",
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupCreatedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "missing group information")
 	})
 
 	t.Run("created_subgroup event with empty extra", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "created_subgroup",
-			"group": map[string]interface{}{
-				"id":              123,
-				"name":            "test-group",
-				"parent_group_id": 456,
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupCreatedEvent,
+			Group: &model.GroupInfo{
+				ID:            123,
+				Name:          "test-group",
+				ParentGroupID: 456,
 			},
-			"extra": "",
+			Extra: "",
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupCreatedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 }
@@ -84,37 +76,31 @@ func TestProcessEvent_DeletedSubgroup(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("valid deleted_subgroup event", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action":   "deleted_subgroup",
-			"extra_id": 789,
+		event := &model.GrpsIOWebhookEvent{
+			Action:  constants.SubGroupDeletedEvent,
+			ExtraID: 789,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupDeletedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("deleted_subgroup event with zero extra_id", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action":   "deleted_subgroup",
-			"extra_id": 0,
+		event := &model.GrpsIOWebhookEvent{
+			Action:  constants.SubGroupDeletedEvent,
+			ExtraID: 0,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupDeletedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("deleted_subgroup event with missing extra_id", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "deleted_subgroup",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupDeletedEvent,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupDeletedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err) // extra_id defaults to 0
 	})
 }
@@ -132,48 +118,40 @@ func TestProcessEvent_MemberAdded(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("valid added_member event", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "added_member",
-			"member_info": map[string]interface{}{
-				"id":         1,
-				"user_id":    2,
-				"group_id":   123,
-				"group_name": "test-group",
-				"email":      "test@example.com",
-				"status":     "approved",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberAddedEvent,
+			MemberInfo: &model.MemberInfo{
+				ID:      1,
+				GroupID: 123,
+				Email:   "test@example.com",
+				Status:  "approved",
 			},
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberAddedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("added_member event with missing member_info", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "added_member",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberAddedEvent,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberAddedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "missing member info")
 	})
 
 	t.Run("added_member event with partial member_info", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "added_member",
-			"member_info": map[string]interface{}{
-				"email": "test@example.com",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberAddedEvent,
+			MemberInfo: &model.MemberInfo{
+				Email: "test@example.com",
 				// Missing other fields
 			},
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberAddedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err) // Partial info is allowed
 	})
 }
@@ -191,32 +169,26 @@ func TestProcessEvent_MemberRemoved(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("valid removed_member event", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "removed_member",
-			"member_info": map[string]interface{}{
-				"id":         1,
-				"user_id":    2,
-				"group_id":   123,
-				"group_name": "test-group",
-				"email":      "test@example.com",
-				"status":     "approved",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberRemovedEvent,
+			MemberInfo: &model.MemberInfo{
+				ID:      1,
+				GroupID: 123,
+				Email:   "test@example.com",
+				Status:  "approved",
 			},
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberRemovedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("removed_member event with missing member_info", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "removed_member",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberRemovedEvent,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberRemovedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "missing member info")
 	})
@@ -235,32 +207,26 @@ func TestProcessEvent_MemberBanned(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("valid ban_members event", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "ban_members",
-			"member_info": map[string]interface{}{
-				"id":         1,
-				"user_id":    2,
-				"group_id":   123,
-				"group_name": "test-group",
-				"email":      "test@example.com",
-				"status":     "banned",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberBannedEvent,
+			MemberInfo: &model.MemberInfo{
+				ID:      1,
+				GroupID: 123,
+				Email:   "test@example.com",
+				Status:  "banned",
 			},
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberBannedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.NoError(t, err)
 	})
 
 	t.Run("ban_members event with missing member_info", func(t *testing.T) {
-		event := map[string]interface{}{
-			"action": "ban_members",
+		event := &model.GrpsIOWebhookEvent{
+			Action: constants.SubGroupMemberBannedEvent,
 		}
-		data, err := json.Marshal(event)
-		require.NoError(t, err)
 
-		err = processor.ProcessEvent(ctx, constants.SubGroupMemberBannedEvent, data)
+		err := processor.ProcessEvent(ctx, event)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "missing member info")
 	})
@@ -276,31 +242,12 @@ func TestProcessEvent_UnknownEventType(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	event := map[string]interface{}{
-		"action": "unknown_event_type",
+	event := &model.GrpsIOWebhookEvent{
+		Action: "unknown_event_type",
 	}
-	data, err := json.Marshal(event)
-	require.NoError(t, err)
 
-	err = processor.ProcessEvent(ctx, "unknown_event_type", data)
+	err := processor.ProcessEvent(ctx, event)
 	assert.NoError(t, err) // Unknown events are ignored, not errors
-}
-
-// TestProcessEvent_InvalidJSON tests invalid JSON handling
-func TestProcessEvent_InvalidJSON(t *testing.T) {
-	mockRepo := mock.NewMockRepository()
-	processor := NewGrpsIOWebhookProcessor(
-		WithServiceReader(mockRepo),
-		WithMailingListReader(mockRepo),
-		WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
-	)
-	ctx := context.Background()
-
-	invalidJSON := []byte("{invalid json")
-
-	err := processor.ProcessEvent(ctx, constants.SubGroupCreatedEvent, invalidJSON)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unmarshal")
 }
 
 // NOTE: Retry logic tests have been moved to pkg/utils/retry_test.go

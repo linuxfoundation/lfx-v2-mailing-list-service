@@ -182,8 +182,16 @@ type UpdateGrpsioMailingListMemberRequestBody struct {
 // GroupsioWebhookRequestBody is the type of the "mailing-list" service
 // "groupsio-webhook" endpoint HTTP request body.
 type GroupsioWebhookRequestBody struct {
-	// Raw webhook event body
-	Body []byte `form:"body" json:"body" xml:"body"`
+	// The type of webhook event
+	Action string `form:"action" json:"action" xml:"action"`
+	// Contains subgroup data from Groups.io
+	Group any `form:"group,omitempty" json:"group,omitempty" xml:"group,omitempty"`
+	// Contains member data from Groups.io
+	MemberInfo any `form:"member_info,omitempty" json:"member_info,omitempty" xml:"member_info,omitempty"`
+	// Extra data field (subgroup suffix)
+	Extra *string `form:"extra,omitempty" json:"extra,omitempty" xml:"extra,omitempty"`
+	// Extra ID field (subgroup ID for deletion)
+	ExtraID *int `form:"extra_id,omitempty" json:"extra_id,omitempty" xml:"extra_id,omitempty"`
 }
 
 // CreateGrpsioServiceResponseBody is the type of the "mailing-list" service
@@ -1304,7 +1312,11 @@ func NewUpdateGrpsioMailingListMemberRequestBody(p *mailinglist.UpdateGrpsioMail
 // of the "groupsio-webhook" endpoint of the "mailing-list" service.
 func NewGroupsioWebhookRequestBody(p *mailinglist.GroupsioWebhookPayload) *GroupsioWebhookRequestBody {
 	body := &GroupsioWebhookRequestBody{
-		Body: p.Body,
+		Action:     p.Action,
+		Group:      p.Group,
+		MemberInfo: p.MemberInfo,
+		Extra:      p.Extra,
+		ExtraID:    p.ExtraID,
 	}
 	return body
 }

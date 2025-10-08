@@ -356,5 +356,11 @@ func GrpsIOWebhookValidator(ctx context.Context) port.GrpsIOWebhookValidator {
 // GrpsIOWebhookProcessor creates GroupsIO webhook processor (SIMPLIFIED FOR MVP)
 // PR #2 will refactor to orchestrator pattern with dependencies
 func GrpsIOWebhookProcessor(ctx context.Context) service.GrpsIOWebhookProcessor {
-	return service.NewGrpsIOWebhookProcessor()
+	return service.NewGrpsIOWebhookProcessor(
+		service.WithServiceReader(GrpsIOReader(ctx)),
+		service.WithMailingListReader(GrpsIOReader(ctx)),
+		service.WithMailingListWriter(GrpsIOWriter(ctx)),
+		service.WithMemberReader(GrpsIOReader(ctx)),
+		service.WithMemberWriter(GrpsIOWriter(ctx)),
+	)
 }
