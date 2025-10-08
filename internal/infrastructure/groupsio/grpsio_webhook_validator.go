@@ -11,21 +11,22 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
 // GrpsIOWebhookValidator handles validation of GroupsIO webhook signatures
 type GrpsIOWebhookValidator struct {
-	Secret string
+	secret string
 }
 
 // NewGrpsIOWebhookValidator creates a new GroupsIO webhook validator
 func NewGrpsIOWebhookValidator(secret string) port.GrpsIOWebhookValidator {
-	return &GrpsIOWebhookValidator{Secret: secret}
+	return &GrpsIOWebhookValidator{secret: secret}
 }
 
 // ValidateSignature validates the GroupsIO HMAC-SHA1 signature
 func (v *GrpsIOWebhookValidator) ValidateSignature(body []byte, signature string) error {
-	if v.Secret == "" {
+	if v.secret == "" {
 		return fmt.Errorf("webhook secret not configured")
 	}
 
@@ -34,7 +35,7 @@ func (v *GrpsIOWebhookValidator) ValidateSignature(body []byte, signature string
 	}
 
 	// Calculate HMAC-SHA1 with base64 encoding (GroupsIO algorithm)
-	mac := hmac.New(sha1.New, []byte(v.Secret))
+	mac := hmac.New(sha1.New, []byte(v.secret))
 	mac.Write(body)
 	expectedSignature := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
@@ -50,11 +51,11 @@ func (v *GrpsIOWebhookValidator) ValidateSignature(body []byte, signature string
 // IsValidEvent checks if the event type is supported by GroupsIO
 func (v *GrpsIOWebhookValidator) IsValidEvent(eventType string) bool {
 	validEvents := map[string]bool{
-		"created_subgroup": true,
-		"deleted_subgroup": true,
-		"added_member":     true,
-		"removed_member":   true,
-		"ban_members":      true,
+		constants.SubGroupCreatedEvent:       true,
+		constants.SubGroupDeletedEvent:       true,
+		constants.SubGroupMemberAddedEvent:   true,
+		constants.SubGroupMemberRemovedEvent: true,
+		constants.SubGroupMemberBannedEvent:  true,
 	}
 	return validEvents[eventType]
 }

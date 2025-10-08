@@ -19,6 +19,9 @@ func GrpsIOWebhookBodyCaptureMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Only capture body for GroupsIO webhook endpoints
 			if r.URL.Path == "/webhooks/groupsio" {
+				// Limit body size to prevent memory exhaustion (e.g., 10MB)
+				r.Body = http.MaxBytesReader(w, r.Body, 10*1024*1024)
+
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					http.Error(w, "Failed to read request body", http.StatusBadRequest)
