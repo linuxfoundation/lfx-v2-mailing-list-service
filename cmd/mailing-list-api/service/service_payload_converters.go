@@ -8,6 +8,8 @@ import (
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
 // convertGrpsIOServiceCreatePayloadToDomain converts GOA payload to domain model
@@ -33,6 +35,7 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 		Public:       p.Public,
 		Writers:      p.Writers,
 		Auditors:     p.Auditors,
+		Source:       constants.SourceAPI, // API operations always use api source
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
@@ -59,6 +62,7 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 		SubjectTag:       payloadStringValue(p.SubjectTag),
 		ServiceUID:       p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
+		Source:    constants.SourceAPI, // API operations always use api source
 		Writers:   p.Writers,
 		Auditors:  p.Auditors,
 		CreatedAt: now,
@@ -141,6 +145,7 @@ func (s *mailingListService) convertGrpsIOMemberPayloadToDomain(payload *mailing
 		DeliveryMode:   payload.DeliveryMode,
 		ModStatus:      payload.ModStatus,
 		Status:         "normal",
+		Source:         constants.SourceAPI, // API operations always use api source
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -199,4 +204,83 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 		ModStatus:    payload.ModStatus,                        // Direct (always has value)
 		UpdatedAt:    time.Now().UTC(),
 	}
+}
+
+// convertWebhookGroupInfo converts webhook group data to domain model
+func (s *mailingListService) convertWebhookGroupInfo(m map[string]any) (*model.GroupInfo, error) {
+	if m == nil {
+		return nil, errors.NewValidation("group info is nil")
+	}
+
+	group := &model.GroupInfo{}
+
+	// Required field: ID
+	if id, ok := m["id"].(float64); ok {
+		group.ID = int(id)
+	} else {
+		return nil, errors.NewValidation("group id is missing or invalid")
+	}
+
+	// Required field: Name
+	if name, ok := m["name"].(string); ok {
+		group.Name = name
+	} else {
+		return nil, errors.NewValidation("group name is missing or invalid")
+	}
+
+	// Required field: ParentGroupID
+	if parentGroupID, ok := m["parent_group_id"].(float64); ok {
+		group.ParentGroupID = int(parentGroupID)
+	} else {
+		return nil, errors.NewValidation("parent_group_id is missing or invalid")
+	}
+
+	return group, nil
+}
+
+// convertWebhookMemberInfo converts webhook member data to domain model
+func (s *mailingListService) convertWebhookMemberInfo(m map[string]any) (*model.MemberInfo, error) {
+	if m == nil {
+		return nil, errors.NewValidation("member info is nil")
+	}
+
+	member := &model.MemberInfo{}
+
+	// Required field: ID
+	if id, ok := m["id"].(float64); ok {
+		member.ID = int(id)
+	} else {
+		return nil, errors.NewValidation("member id is missing or invalid")
+	}
+
+	// Required field: GroupID
+	if groupID, ok := m["group_id"].(float64); ok {
+		member.GroupID = uint64(groupID)
+	} else {
+		return nil, errors.NewValidation("group_id is missing or invalid")
+	}
+
+	// Required field: Email
+	if email, ok := m["email"].(string); ok {
+		member.Email = email
+	} else {
+		return nil, errors.NewValidation("email is missing or invalid")
+	}
+
+	// Required field: Status
+	if status, ok := m["status"].(string); ok {
+		member.Status = status
+	} else {
+		return nil, errors.NewValidation("status is missing or invalid")
+	}
+
+	// Optional fields: UserID, GroupName
+	if userID, ok := m["user_id"].(float64); ok {
+		member.UserID = int(userID)
+	}
+	if groupName, ok := m["group_name"].(string); ok {
+		member.GroupName = groupName
+	}
+
+	return member, nil
 }

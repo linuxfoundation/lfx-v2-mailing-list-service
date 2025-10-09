@@ -17,4 +17,14 @@ type GrpsIOMemberReader interface {
 
 	// GetMemberRevision retrieves only the revision for a given UID
 	GetMemberRevision(ctx context.Context, uid string) (uint64, error)
+
+	// GetMemberByGroupsIOMemberID retrieves member by Groups.io member ID using secondary index
+	// Returns NotFound if no member has this Groups.io ID
+	// Used by webhook handlers to find existing members
+	GetMemberByGroupsIOMemberID(ctx context.Context, memberID uint64) (*model.GrpsIOMember, uint64, error)
+
+	// GetMemberByEmail retrieves member by email within mailing list
+	// Returns NotFound if no member with this email exists in the mailing list
+	// Used by orchestrator for idempotency checks
+	GetMemberByEmail(ctx context.Context, mailingListUID, email string) (*model.GrpsIOMember, uint64, error)
 }

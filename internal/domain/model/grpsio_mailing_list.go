@@ -18,24 +18,17 @@ import (
 )
 
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
-// Sync status constants for GroupsIO integration
-const (
-	SyncStatusPending = "pending" // Initial state, waiting for Groups.io sync
-	SyncStatusSynced  = "synced"  // Successfully synced with Groups.io
-	SyncStatusFailed  = "failed"  // Sync failed, requires reconciliation
-)
-
 type GrpsIOMailingList struct {
 	UID              string   `json:"uid"`
 	SubgroupID       *int64   `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
 	GroupName        string   `json:"group_name"`
-	Public           bool     `json:"public"`                // Whether the mailing list is publicly accessible
-	SyncStatus       string   `json:"sync_status,omitempty"` // "pending", "synced", "failed"
-	Type             string   `json:"type"`                  // "announcement" | "discussion_moderated" | "discussion_open"
-	CommitteeUID     string   `json:"committee_uid"`         // Committee UUID (optional)
-	CommitteeName    string   `json:"committee_name"`        // Committee name (optional)
-	CommitteeFilters []string `json:"committee_filters"`     // Committee member filters (optional)
-	Description      string   `json:"description"`           // Minimum 11 characters
+	Public           bool     `json:"public"`            // Whether the mailing list is publicly accessible
+	Source           string   `json:"source"`            // "api", "webhook", or "mock" - tracks origin for business logic
+	Type             string   `json:"type"`              // "announcement" | "discussion_moderated" | "discussion_open"
+	CommitteeUID     string   `json:"committee_uid"`     // Committee UUID (optional)
+	CommitteeName    string   `json:"committee_name"`    // Committee name (optional)
+	CommitteeFilters []string `json:"committee_filters"` // Committee member filters (optional)
+	Description      string   `json:"description"`       // Minimum 11 characters
 	Title            string   `json:"title"`
 	SubjectTag       string   `json:"subject_tag"`  // Optional
 	ServiceUID       string   `json:"service_uid"`  // Service UUID (required)

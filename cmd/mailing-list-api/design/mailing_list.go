@@ -466,6 +466,28 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	// Webhook endpoint for GroupsIO events
+	dsl.Method("groupsio-webhook", func() {
+		dsl.Description("Handle GroupsIO webhook events for subgroup and member changes")
+
+		dsl.NoSecurity() // No JWT auth - validated via HMAC signature
+
+		dsl.Payload(GroupsIOWebhookPayload)
+
+		dsl.Result(dsl.Empty) // 204 No Content has no response body
+
+		dsl.Error("BadRequest", BadRequestError, "Invalid webhook payload or signature")
+		dsl.Error("Unauthorized", UnauthorizedError, "Invalid webhook signature")
+
+		dsl.HTTP(func() {
+			dsl.POST("/webhooks/groupsio") // Plural webhooks, following meeting service pattern
+			dsl.Header("signature:x-groupsio-signature")
+			dsl.Response(dsl.StatusNoContent) // 204 - GroupsIO expects this
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("Unauthorized", dsl.StatusUnauthorized)
+		})
+	})
+
 	// Serve the file gen/http/openapi3.json for requests sent to /openapi.json.
 	dsl.Files("/openapi.json", "gen/http/openapi3.json")
 })

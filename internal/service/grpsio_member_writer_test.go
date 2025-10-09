@@ -14,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
@@ -55,6 +56,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				DeliveryMode:     "individual",
 				ModStatus:        "none",
 				Status:           "normal",
+				Source:           constants.SourceWebhook, // Webhook source preserves pre-provided IDs
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -96,6 +98,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				LastName:       "Member",
 				Email:          "direct.member@example.com",
 				MemberType:     "direct",
+				Source:         constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -134,6 +137,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				Email:          "servergen@example.com",
 				MemberType:     "committee",
 				Status:         "normal",
+				Source:         constants.SourceMock,
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -216,6 +220,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				Status:           "normal",
 				LastReviewedAt:   writerStringPtr("2024-01-01T00:00:00Z"),
 				LastReviewedBy:   writerStringPtr("reviewer-uid"),
+				Source:           constants.SourceWebhook, // Webhook source preserves pre-provided IDs
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
@@ -489,6 +494,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_DuplicateEmail(t *testing.T
 			Email:          sharedEmail,
 			MemberType:     "committee",
 			Status:         "normal",
+			Source:         constants.SourceMock,
 		}
 
 		result1, revision1, err1 := writer.CreateGrpsIOMember(ctx, member1)
@@ -496,7 +502,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_DuplicateEmail(t *testing.T
 		assert.NotEmpty(t, result1.UID)
 		assert.Equal(t, uint64(1), revision1)
 
-		// Create second member with same email (should succeed in mock)
+		// Create second member with same email (should return existing member - idempotent)
 		member2 := &model.GrpsIOMember{
 			MailingListUID: "test-mailing-list",
 			FirstName:      "Second",
@@ -504,14 +510,15 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_DuplicateEmail(t *testing.T
 			Email:          sharedEmail,
 			MemberType:     "direct",
 			Status:         "pending",
+			Source:         constants.SourceMock,
 		}
 
 		result2, revision2, err2 := writer.CreateGrpsIOMember(ctx, member2)
-		require.NoError(t, err2) // Mock allows duplicate for testing
+		require.NoError(t, err2) // Idempotent - returns existing member
 		assert.NotEmpty(t, result2.UID)
-		assert.NotEqual(t, result1.UID, result2.UID) // Different UIDs
+		assert.Equal(t, result1.UID, result2.UID) // Same UID (idempotent)
 		assert.Equal(t, uint64(1), revision2)
-		assert.Equal(t, 2, mockRepo.GetMemberCount()) // Both members stored
+		assert.Equal(t, 1, mockRepo.GetMemberCount()) // Only one member stored (idempotent)
 	})
 }
 
@@ -547,6 +554,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_ValidationScenarios(t *test
 				LastName:       "Member",
 				Email:          "valid@example.com",
 				MemberType:     "committee",
+				Source:         constants.SourceMock,
 			},
 			expectedError: false,
 			validateResult: func(t *testing.T, result *model.GrpsIOMember, revision uint64) {
@@ -578,6 +586,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_ValidationScenarios(t *test
 				Email:          "messaging@example.com",
 				MemberType:     "committee",
 				Status:         "normal",
+				Source:         constants.SourceMock,
 			},
 			expectedError: false,
 			validateResult: func(t *testing.T, result *model.GrpsIOMember, revision uint64) {
@@ -663,6 +672,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_MemberTypes(t *testing.T) {
 				LastName:       "Test",
 				Email:          "type.test@example.com",
 				MemberType:     mt.memberType,
+				Source:         constants.SourceMock,
 			}
 
 			result, revision, err := writer.CreateGrpsIOMember(ctx, member)

@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"log/slog"
 
@@ -12,8 +13,46 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
+
+// handleIdempotencyLookupError processes errors from idempotency lookups and determines the appropriate action
+// Returns true if the error was handled (caller should continue), false if it should be propagated
+//
+// This helper handles distributed systems challenges with NATS KV + Database:
+// - NotFound: Expected during idempotency checks - safe to continue
+// - ServiceUnavailable: NATS/storage unavailable - fail operation to prevent duplicates
+// - Other errors: Unexpected errors - propagate for investigation
+func handleIdempotencyLookupError(ctx context.Context, err error, lookupType, identifier string) (bool, error) {
+	var notFoundErr errs.NotFound
+	var unavailableErr errs.ServiceUnavailable
+
+	if stderrors.As(err, &notFoundErr) {
+		// NotFound is expected during idempotency checks - safe to continue
+		slog.DebugContext(ctx, "not found during idempotency check, will continue",
+			"lookup_type", lookupType,
+			"identifier", identifier)
+		return true, nil
+	}
+
+	if stderrors.As(err, &unavailableErr) {
+		// Storage unavailable - cannot verify idempotency safely
+		// Fail operation to prevent potential duplicates
+		slog.ErrorContext(ctx, "storage unavailable during idempotency check, cannot verify if entity exists",
+			"error", err,
+			"lookup_type", lookupType,
+			"identifier", identifier)
+		return false, err // Propagate ServiceUnavailable → HTTP 503 → client retry
+	}
+
+	// Unexpected error (data corruption, permission denied, etc.) - propagate
+	slog.ErrorContext(ctx, "unexpected error during idempotency check",
+		"error", err,
+		"lookup_type", lookupType,
+		"identifier", identifier)
+	return false, fmt.Errorf("idempotency check failed: %w", err)
+}
 
 // GrpsIOWriter defines the composite interface that combines writers
 type GrpsIOWriter interface {
@@ -121,6 +160,11 @@ func (o *grpsIOWriterOrchestrator) Delete(ctx context.Context, key string, revis
 // UniqueMember validates member email is unique within mailing list
 func (o *grpsIOWriterOrchestrator) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
 	return o.grpsIOWriter.UniqueMember(ctx, member)
+}
+
+// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
+func (o *grpsIOWriterOrchestrator) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+	return o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, member)
 }
 
 // Common methods implementation

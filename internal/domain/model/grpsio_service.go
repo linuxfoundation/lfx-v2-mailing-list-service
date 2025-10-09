@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
@@ -25,7 +26,7 @@ type GrpsIOService struct {
 	Domain         string    `json:"domain"`
 	GroupID        *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
 	Status         string    `json:"status"`
-	SyncStatus     string    `json:"sync_status,omitempty"` // "pending", "synced", "failed"
+	Source         string    `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
 	GlobalOwners   []string  `json:"global_owners"`
 	Prefix         string    `json:"prefix"`
 	ProjectSlug    string    `json:"project_slug"`
@@ -50,13 +51,13 @@ func (s *GrpsIOService) BuildIndexKey(ctx context.Context) string {
 	// Combine project_uid and service type/identifier with a delimiter
 	var data string
 	switch s.Type {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		// Primary service: unique by project only
 		data = fmt.Sprintf("%s|%s", s.ProjectUID, s.Type)
-	case "formation":
+	case constants.ServiceTypeFormation:
 		// Formation service: unique by project + prefix
 		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.Prefix)
-	case "shared":
+	case constants.ServiceTypeShared:
 		// Shared service: unique by project + group_name (decoupled from GroupID)
 		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.GroupName)
 	default:
@@ -137,11 +138,11 @@ func (s *GrpsIOService) GetGroupName() string {
 	}
 
 	switch s.Type {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		return s.ProjectSlug
-	case "formation":
+	case constants.ServiceTypeFormation:
 		return fmt.Sprintf("%s-formation", s.ProjectSlug)
-	case "shared":
+	case constants.ServiceTypeShared:
 		return s.ProjectSlug // fallback for shared services
 	default:
 		return s.ProjectUID // fallback for unknown types

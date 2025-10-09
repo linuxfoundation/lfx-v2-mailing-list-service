@@ -58,3 +58,29 @@ func (mlr *grpsIOReaderOrchestrator) GetMailingListRevision(ctx context.Context,
 
 	return revision, nil
 }
+
+// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
+func (mlr *grpsIOReaderOrchestrator) GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error) {
+	slog.DebugContext(ctx, "executing get mailing list by group_id use case",
+		"group_id", groupID,
+	)
+
+	// Get mailing list from storage
+	mailingList, revision, err := mlr.grpsIOReader.GetMailingListByGroupID(ctx, groupID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list by group_id",
+			"error", err,
+			"group_id", groupID,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "mailing list retrieved successfully by group_id",
+		"mailing_list_uid", mailingList.UID,
+		"group_name", mailingList.GroupName,
+		"group_id", groupID,
+		"revision", revision,
+	)
+
+	return mailingList, revision, nil
+}

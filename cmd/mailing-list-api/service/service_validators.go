@@ -14,6 +14,7 @@ import (
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
@@ -75,14 +76,15 @@ func validateServiceCreationRules(payload *mailinglistservice.CreateGrpsioServic
 	serviceType := payload.Type
 
 	switch serviceType {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		return validatePrimaryRules(payload)
-	case "formation":
+	case constants.ServiceTypeFormation:
 		return validateFormationRules(payload)
-	case "shared":
+	case constants.ServiceTypeShared:
 		return validateSharedRules(payload)
 	default:
-		return errors.NewValidation(fmt.Sprintf("invalid service type: %s. Must be one of: primary, formation, shared", serviceType))
+		return errors.NewValidation(fmt.Sprintf("invalid service type: %s. Must be one of: %s, %s, %s",
+			serviceType, constants.ServiceTypePrimary, constants.ServiceTypeFormation, constants.ServiceTypeShared))
 	}
 }
 
@@ -199,7 +201,7 @@ func validateUpdateImmutabilityConstraints(existing *model.GrpsIOService, payloa
 
 	// Validate global_owners email addresses if being updated
 	// Primary services MUST always have at least one owner - critical business rule
-	if existing.Type == "primary" {
+	if existing.Type == constants.ServiceTypePrimary {
 		if len(payload.GlobalOwners) == 0 {
 			return errors.NewValidation("global_owners must contain at least one email address for primary service type")
 		}
@@ -221,14 +223,14 @@ func validateDeleteProtectionRules(service *model.GrpsIOService) error {
 	// - formation/shared services: Can be deleted by owner only (TODO: implement owner check)
 
 	switch service.Type {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		return errors.NewValidation("Primary services cannot be deleted as they are critical infrastructure components")
-	case "formation":
+	case constants.ServiceTypeFormation:
 		// TODO: Add owner permission check when OpenFGA integration is complete
 		// For now, allow deletion of formation services
 		slog.Debug("Allowing deletion of formation service", "service_id", service.UID, "type", service.Type)
 		return nil
-	case "shared":
+	case constants.ServiceTypeShared:
 		// TODO: Add owner permission check when OpenFGA integration is complete
 		// For now, allow deletion of shared services
 		slog.Debug("Allowing deletion of shared service", "service_id", service.UID, "type", service.Type)
@@ -436,9 +438,9 @@ func contains(slice []string, item string) bool {
 // isMainGroupForService determines if a list is the "main" group for its parent.
 func isMainGroupForService(ml *model.GrpsIOMailingList, svc *model.GrpsIOService) bool {
 	switch svc.Type {
-	case "primary":
+	case constants.ServiceTypePrimary:
 		return ml.GroupName == svc.GroupName
-	case "formation", "shared":
+	case constants.ServiceTypeFormation, constants.ServiceTypeShared:
 		return ml.GroupName == svc.Prefix
 	default:
 		return false
@@ -550,7 +552,7 @@ func validateMemberDeleteProtection(member *model.GrpsIOMember) error {
 func validateServiceBusinessRules(service *model.GrpsIOService) error {
 	// Primary services MUST have GlobalOwners (critical business rule)
 	// This prevents clearing GlobalOwners via PUT from making primary services invalid
-	if service.Type == "primary" && len(service.GlobalOwners) == 0 {
+	if service.Type == constants.ServiceTypePrimary && len(service.GlobalOwners) == 0 {
 		return errors.NewValidation("primary services must have at least one global owner")
 	}
 

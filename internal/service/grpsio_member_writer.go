@@ -19,12 +19,83 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
+// ensureMemberIdempotent checks if member already exists by Groups.io member ID or email
+// Returns existing entity if found, nil if not found, error on failure
+// Pattern mirrors ensureMailingListIdempotent
+func (o *grpsIOWriterOrchestrator) ensureMemberIdempotent(
+	ctx context.Context,
+	member *model.GrpsIOMember,
+) (*model.GrpsIOMember, uint64, error) {
+
+	// Strategy 1: Lookup by Groups.io member ID (webhook path)
+	if member.GroupsIOMemberID != nil {
+		memberID := uint64(*member.GroupsIOMemberID)
+
+		slog.DebugContext(ctx, "checking idempotency by Groups.io member ID",
+			"member_id", memberID,
+			"source", member.Source)
+
+		existing, revision, err := o.grpsIOReader.GetMemberByGroupsIOMemberID(ctx, memberID)
+		if err != nil {
+			// Use helper to handle idempotency lookup errors consistently
+			shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "member_id", fmt.Sprintf("%d", memberID))
+			if !shouldContinue {
+				return nil, 0, handledErr
+			}
+			// NotFound - fall through to Strategy 2 (email lookup)
+		} else if existing != nil {
+			// Found existing member - idempotent success
+			slog.InfoContext(ctx, "member already exists by Groups.io member ID (idempotent)",
+				"member_uid", existing.UID,
+				"member_id", memberID,
+				"existing_source", existing.Source,
+				"request_source", member.Source)
+			return existing, revision, nil
+		}
+	}
+
+	// Strategy 2: Lookup by email (API retry or webhook without member ID)
+	existing, revision, err := o.grpsIOReader.GetMemberByEmail(
+		ctx, member.MailingListUID, member.Email)
+	if err != nil {
+		// Use helper to handle idempotency lookup errors consistently
+		shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "email", redaction.RedactEmail(member.Email))
+		if !shouldContinue {
+			return nil, 0, handledErr
+		}
+		// NotFound - proceed with creation
+		slog.DebugContext(ctx, "no existing member found, proceeding with creation")
+		return nil, 0, nil
+	}
+
+	if existing != nil {
+		slog.InfoContext(ctx, "member already exists by email (idempotent)",
+			"member_uid", existing.UID,
+			"email", redaction.RedactEmail(member.Email),
+			"existing_source", existing.Source,
+			"request_source", member.Source)
+		return existing, revision, nil
+	}
+
+	// Not found - proceed with creation
+	slog.DebugContext(ctx, "no existing member found, proceeding with creation")
+	return nil, 0, nil
+}
+
 // CreateGrpsIOMember creates a new member with transactional operations and rollback following service pattern
 func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "executing create member use case",
-		"member_email", member.Email,
+		"member_email", redaction.RedactEmail(member.Email),
 		"mailing_list_uid", member.MailingListUID,
 	)
+
+	// LAYER 1: Early idempotency check (prevents wasted work)
+	// Pattern matches: ensureMailingListIdempotent in CreateGrpsIOMailingList
+	if existing, revision, err := o.ensureMemberIdempotent(ctx, member); err != nil {
+		return nil, 0, err
+	} else if existing != nil {
+		return existing, revision, nil // Already exists - idempotent success
+	}
 
 	// Step 1: Validate timestamps
 	if err := member.ValidateLastReviewedAt(); err != nil {
@@ -89,7 +160,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		keys = append(keys, constraintKey)
 	}
 
-	// Step 6: Create in Groups.io FIRST (if enabled)
+	// Step 6: Get mailing list (needed for all sources)
 	mailingList, _, err := o.grpsIOReader.GetGrpsIOMailingList(ctx, member.MailingListUID)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to get mailing list for Groups.io sync", "error", err, "mailing_list_uid", member.MailingListUID)
@@ -97,43 +168,53 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		return nil, 0, err
 	}
 
-	if o.groupsClient != nil && mailingList.SubgroupID != nil {
-		// Get parent service domain
-		parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
-			rollbackRequired = true
-			return nil, 0, err
-		}
-
-		memberID, groupID, err := o.createMemberInGroupsIO(ctx, member, mailingList, parentService)
-		if err != nil {
-			rollbackRequired = true
-			return nil, 0, err
-		}
-
-		// Groups.io creation successful - track for rollback cleanup
-		if memberID != nil {
-			rollbackMemberID = utils.Int64PtrToUint64Ptr(memberID)
-			rollbackGroupsIODomain = parentService.Domain
-		}
-
-		// Set Groups.io IDs on member before storage creation
-		member.GroupsIOMemberID = memberID
-		member.GroupsIOGroupID = groupID
-		member.SyncStatus = "synced"
-	} else {
-		// Mock/disabled mode or mailing list not synced - set appropriate status
-		member.SyncStatus = "pending"
-		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - member will be in pending state")
+	// Step 7: Validate source
+	if err := constants.ValidateSource(member.Source); err != nil {
+		return nil, 0, err
 	}
 
-	// Step 7: Create member in storage (with Groups.io IDs already set)
+	// Step 8: Source-based strategy dispatch
+	var (
+		memberID        *int64
+		groupID         *int64
+		requiresCleanup bool
+	)
+
+	switch member.Source {
+	case constants.SourceAPI:
+		memberID, groupID, requiresCleanup, err = o.handleAPISourceMember(ctx, member, mailingList)
+		if err != nil {
+			rollbackRequired = true
+			return nil, 0, err
+		}
+		if requiresCleanup {
+			rollbackMemberID = utils.Int64PtrToUint64Ptr(memberID)
+			// Get parent service domain for rollback (only when needed)
+			parentService, _, svcErr := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+			if svcErr == nil {
+				rollbackGroupsIODomain = parentService.Domain
+			}
+		}
+
+	case constants.SourceWebhook:
+		memberID, groupID, err = o.handleWebhookSourceMember(ctx, member)
+		if err != nil {
+			return nil, 0, err
+		}
+
+	case constants.SourceMock:
+		memberID, groupID = o.handleMockSourceMember(ctx, member)
+	}
+
+	member.GroupsIOMemberID = memberID
+	member.GroupsIOGroupID = groupID
+
+	// Step 9: Create member in storage (with Groups.io IDs already set)
 	createdMember, revision, err := o.grpsIOWriter.CreateGrpsIOMember(ctx, member)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
-			"member_email", member.Email,
+			"member_email", redaction.RedactEmail(member.Email),
 			"mailing_list_uid", member.MailingListUID,
 		)
 		rollbackRequired = true
@@ -146,7 +227,27 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		"revision", revision,
 	)
 
-	// Step 8: Publish messages (indexer and access control)
+	// Step 9.5: Create secondary indices for Groups.io ID lookups
+	// Only create if member has Groups.io IDs (skip for mock/pending members)
+	// Pattern matches: createMailingListSecondaryIndices in CreateGrpsIOMailingList
+	if createdMember.GroupsIOMemberID != nil || createdMember.GroupsIOGroupID != nil {
+		secondaryKeys, err := o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, createdMember)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to create member secondary indices",
+				"error", err,
+				"member_uid", createdMember.UID,
+			)
+			rollbackRequired = true
+			return nil, 0, err
+		}
+		keys = append(keys, secondaryKeys...)
+
+		slog.DebugContext(ctx, "member secondary indices created",
+			"member_uid", createdMember.UID,
+			"indices_count", len(secondaryKeys))
+	}
+
+	// Step 10: Publish messages (indexer and access control)
 	if o.publisher != nil {
 		if err := o.publishMemberMessages(ctx, createdMember, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish member messages", "error", err)
@@ -487,4 +588,77 @@ func (o *grpsIOWriterOrchestrator) syncMemberToGroupsIO(ctx context.Context, mem
 		slog.InfoContext(ctx, "Groups.io member updated successfully",
 			"member_id", *member.GroupsIOMemberID, "domain", domain)
 	}
+}
+
+// handleAPISourceMember handles API-initiated member creation
+// Preserves existing logic: calls createMemberInGroupsIO with proper guards
+func (o *grpsIOWriterOrchestrator) handleAPISourceMember(
+	ctx context.Context,
+	member *model.GrpsIOMember,
+	mailingList *model.GrpsIOMailingList,
+) (*int64, *int64, bool, error) {
+	// Guard: Skip if client not available or mailing list not synced (preserves existing logic)
+	if o.groupsClient == nil || mailingList.SubgroupID == nil {
+		slog.InfoContext(ctx, "source=api: Groups.io client unavailable or mailing list not synced, treating as mock",
+			"email", redaction.RedactEmail(member.Email))
+		return nil, nil, false, nil
+	}
+
+	// Get parent service domain (only when needed for API source)
+	parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
+		return nil, nil, false, err
+	}
+
+	slog.InfoContext(ctx, "source=api: creating member in Groups.io",
+		"email", redaction.RedactEmail(member.Email),
+		"subgroup_id", *mailingList.SubgroupID)
+
+	// Call existing createMemberInGroupsIO method (preserves all existing logic)
+	memberID, groupID, err := o.createMemberInGroupsIO(ctx, member, mailingList, parentService)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create member in Groups.io",
+			"error", err,
+			"email", redaction.RedactEmail(member.Email))
+		return nil, nil, false, err
+	}
+
+	// Determine if cleanup is required (preserves existing rollback logic)
+	requiresCleanup := memberID != nil && parentService.Domain != ""
+
+	if memberID != nil {
+		slog.InfoContext(ctx, "member created successfully in Groups.io",
+			"member_id", *memberID)
+	}
+
+	return memberID, groupID, requiresCleanup, nil
+}
+
+// handleWebhookSourceMember handles webhook-initiated member adoption
+// New functionality: allows adopting existing Groups.io members from webhooks
+func (o *grpsIOWriterOrchestrator) handleWebhookSourceMember(
+	ctx context.Context,
+	member *model.GrpsIOMember,
+) (*int64, *int64, error) {
+	if member.GroupsIOMemberID == nil {
+		return nil, nil, errs.NewValidation("webhook source requires GroupsIOMemberID to be provided")
+	}
+
+	slog.InfoContext(ctx, "source=webhook: adopting webhook-provided member",
+		"member_id", *member.GroupsIOMemberID,
+		"email", redaction.RedactEmail(member.Email))
+
+	return member.GroupsIOMemberID, member.GroupsIOGroupID, nil
+}
+
+// handleMockSourceMember handles mock/test mode member creation
+// Preserves existing logic: returns nil for IDs
+func (o *grpsIOWriterOrchestrator) handleMockSourceMember(
+	ctx context.Context,
+	member *model.GrpsIOMember,
+) (*int64, *int64) {
+	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
+		"email", redaction.RedactEmail(member.Email))
+	return nil, nil
 }

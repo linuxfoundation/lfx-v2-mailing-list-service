@@ -30,10 +30,11 @@ type Client struct {
 	GetGrpsioMailingListMemberEndpoint    goa.Endpoint
 	UpdateGrpsioMailingListMemberEndpoint goa.Endpoint
 	DeleteGrpsioMailingListMemberEndpoint goa.Endpoint
+	GroupsioWebhookEndpoint               goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                         livez,
 		ReadyzEndpoint:                        readyz,
@@ -49,6 +50,7 @@ func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsi
 		GetGrpsioMailingListMemberEndpoint:    getGrpsioMailingListMember,
 		UpdateGrpsioMailingListMemberEndpoint: updateGrpsioMailingListMember,
 		DeleteGrpsioMailingListMemberEndpoint: deleteGrpsioMailingListMember,
+		GroupsioWebhookEndpoint:               groupsioWebhook,
 	}
 }
 
@@ -273,5 +275,16 @@ func (c *Client) UpdateGrpsioMailingListMember(ctx context.Context, p *UpdateGrp
 //   - error: internal error
 func (c *Client) DeleteGrpsioMailingListMember(ctx context.Context, p *DeleteGrpsioMailingListMemberPayload) (err error) {
 	_, err = c.DeleteGrpsioMailingListMemberEndpoint(ctx, p)
+	return
+}
+
+// GroupsioWebhook calls the "groupsio-webhook" endpoint of the "mailing-list"
+// service.
+// GroupsioWebhook may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Invalid webhook payload or signature
+//   - "Unauthorized" (type *UnauthorizedError): Invalid webhook signature
+//   - error: internal error
+func (c *Client) GroupsioWebhook(ctx context.Context, p *GroupsioWebhookPayload) (err error) {
+	_, err = c.GroupsioWebhookEndpoint(ctx, p)
 	return
 }

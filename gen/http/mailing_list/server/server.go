@@ -35,6 +35,7 @@ type Server struct {
 	GetGrpsioMailingListMember    http.Handler
 	UpdateGrpsioMailingListMember http.Handler
 	DeleteGrpsioMailingListMember http.Handler
+	GroupsioWebhook               http.Handler
 	GenHTTPOpenapi3JSON           http.Handler
 }
 
@@ -84,6 +85,7 @@ func New(
 			{"GetGrpsioMailingListMember", "GET", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
 			{"UpdateGrpsioMailingListMember", "PUT", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
 			{"DeleteGrpsioMailingListMember", "DELETE", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
+			{"GroupsioWebhook", "POST", "/webhooks/groupsio"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
 		Livez:                         NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
@@ -100,6 +102,7 @@ func New(
 		GetGrpsioMailingListMember:    NewGetGrpsioMailingListMemberHandler(e.GetGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
 		UpdateGrpsioMailingListMember: NewUpdateGrpsioMailingListMemberHandler(e.UpdateGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
 		DeleteGrpsioMailingListMember: NewDeleteGrpsioMailingListMemberHandler(e.DeleteGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
+		GroupsioWebhook:               NewGroupsioWebhookHandler(e.GroupsioWebhook, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON:           http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -123,6 +126,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetGrpsioMailingListMember = m(s.GetGrpsioMailingListMember)
 	s.UpdateGrpsioMailingListMember = m(s.UpdateGrpsioMailingListMember)
 	s.DeleteGrpsioMailingListMember = m(s.DeleteGrpsioMailingListMember)
+	s.GroupsioWebhook = m(s.GroupsioWebhook)
 }
 
 // MethodNames returns the methods served.
@@ -144,6 +148,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetGrpsioMailingListMemberHandler(mux, h.GetGrpsioMailingListMember)
 	MountUpdateGrpsioMailingListMemberHandler(mux, h.UpdateGrpsioMailingListMember)
 	MountDeleteGrpsioMailingListMemberHandler(mux, h.DeleteGrpsioMailingListMember)
+	MountGroupsioWebhookHandler(mux, h.GroupsioWebhook)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
@@ -868,6 +873,59 @@ func NewDeleteGrpsioMailingListMemberHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "delete-grpsio-mailing-list-member")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGroupsioWebhookHandler configures the mux to serve the "mailing-list"
+// service "groupsio-webhook" endpoint.
+func MountGroupsioWebhookHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/webhooks/groupsio", f)
+}
+
+// NewGroupsioWebhookHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "groupsio-webhook" endpoint.
+func NewGroupsioWebhookHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGroupsioWebhookRequest(mux, decoder)
+		encodeResponse = EncodeGroupsioWebhookResponse(encoder)
+		encodeError    = EncodeGroupsioWebhookError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "groupsio-webhook")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {

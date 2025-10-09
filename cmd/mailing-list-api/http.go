@@ -63,6 +63,8 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 	var handler http.Handler = mux
 	// Add RequestID middleware first
 	handler = middleware.RequestIDMiddleware()(handler)
+	// Add GroupsIO webhook body capture middleware
+	handler = middleware.GrpsIOWebhookBodyCaptureMiddleware()(handler)
 	// Add Authorization middleware
 	handler = middleware.AuthorizationMiddleware()(handler)
 	if dbg {

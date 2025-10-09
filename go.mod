@@ -15,6 +15,7 @@ require (
 	goa.design/clue v1.2.2
 	goa.design/goa/v3 v3.21.5
 	golang.org/x/sync v0.16.0
+	golang.org/x/text v0.27.0
 )
 
 require (
@@ -39,7 +40,6 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/term v0.33.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
 	google.golang.org/grpc v1.74.2 // indirect

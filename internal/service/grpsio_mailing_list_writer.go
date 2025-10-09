@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	stdErrors "errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -14,15 +15,70 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
+
+// ensureMailingListIdempotent checks if mailing list with SubgroupID already exists
+// Returns existing entity if found, nil if not found, error on failure
+// This provides early-exit idempotency for all sources (API retries, webhooks, etc.)
+func (ml *grpsIOWriterOrchestrator) ensureMailingListIdempotent(
+	ctx context.Context,
+	request *model.GrpsIOMailingList,
+) (*model.GrpsIOMailingList, uint64, error) {
+	// Only check if SubgroupID is provided (webhook or API retry after Groups.io creation)
+	if request.SubgroupID == nil {
+		return nil, 0, nil // No SubgroupID, proceed with normal creation
+	}
+
+	subgroupID := uint64(*request.SubgroupID)
+
+	slog.DebugContext(ctx, "checking idempotency by subgroup_id",
+		"subgroup_id", subgroupID,
+		"source", request.Source)
+
+	// Check secondary index for existing record
+	existing, revision, err := ml.grpsIOReader.GetMailingListByGroupID(ctx, subgroupID)
+	if err != nil {
+		// Use helper to handle idempotency lookup errors consistently
+		shouldContinue, handledErr := handleIdempotencyLookupError(ctx, err, "subgroup_id", fmt.Sprintf("%d", subgroupID))
+		if !shouldContinue {
+			return nil, 0, handledErr
+		}
+		// NotFound - proceed with normal creation
+		slog.DebugContext(ctx, "no existing mailing list found by subgroup_id, proceeding with creation",
+			"subgroup_id", subgroupID)
+		return nil, 0, nil
+	}
+
+	if existing != nil {
+		// Found existing record - idempotent success
+		slog.InfoContext(ctx, "mailing list already exists, returning existing record (idempotent)",
+			"mailing_list_uid", existing.UID,
+			"subgroup_id", subgroupID,
+			"existing_source", existing.Source,
+			"request_source", request.Source)
+		return existing, revision, nil
+	}
+
+	return nil, 0, nil
+}
 
 // CreateGrpsIOMailingList creates a new mailing list with comprehensive validation and messaging
 func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "orchestrator: creating mailing list",
 		"group_name", request.GroupName,
 		"parent_uid", request.ServiceUID,
-		"committee_uid", request.CommitteeUID)
+		"committee_uid", request.CommitteeUID,
+		"source", request.Source,
+		"subgroup_id", request.SubgroupID)
+
+	// LAYER 1: Early idempotency check (prevents wasted work)
+	if existing, revision, err := ml.ensureMailingListIdempotent(ctx, request); err != nil {
+		return nil, 0, err
+	} else if existing != nil {
+		return existing, revision, nil // Already exists - idempotent success
+	}
 
 	// For rollback purposes
 	var (
@@ -35,10 +91,14 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		if err := recover(); err != nil || rollbackRequired {
 			ml.deleteKeys(ctx, keys, true)
 
-			// Clean up GroupsIO subgroup if created
-			if rollbackSubgroupID != nil && ml.groupsClient != nil {
-				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, rollbackGroupsIODomain, utils.Int64PtrToUint64(rollbackSubgroupID)); deleteErr != nil {
-					slog.WarnContext(ctx, "failed to cleanup GroupsIO subgroup during rollback", "error", deleteErr, "subgroup_id", *rollbackSubgroupID)
+			// Clean up Groups.io subgroup ONLY if we created it (not webhook)
+			if rollbackSubgroupID != nil &&
+				ml.groupsClient != nil &&
+				request.Source == constants.SourceAPI {
+				if deleteErr := ml.groupsClient.DeleteSubgroup(ctx, rollbackGroupsIODomain,
+					utils.Int64PtrToUint64(rollbackSubgroupID)); deleteErr != nil {
+					slog.WarnContext(ctx, "failed to cleanup GroupsIO subgroup during rollback",
+						"error", deleteErr, "subgroup_id", *rollbackSubgroupID)
 				}
 			}
 		}
@@ -88,9 +148,22 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 8: Reserve unique constraints
+	// Step 8: Reserve unique constraints (LAYER 3: Catches duplicates by name)
 	constraintKey, err := ml.reserveMailingListConstraints(ctx, request)
 	if err != nil {
+		// LAYER 3.1: Graceful conflict handling for webhook race condition
+		var conflictErr errors.Conflict
+		if request.Source == constants.SourceWebhook && stdErrors.As(err, &conflictErr) {
+			// Webhook arrived while API was in-flight
+			// Check if existing record has same SubgroupID
+			if existing, revision, checkErr := ml.ensureMailingListIdempotent(ctx, request); checkErr == nil && existing != nil {
+				slog.InfoContext(ctx, "constraint conflict resolved - returning existing record (race condition)",
+					"mailing_list_uid", existing.UID,
+					"subgroup_id", log.LogOptionalInt64(request.SubgroupID))
+				return existing, revision, nil
+			}
+		}
+		// Genuine conflict or other error
 		rollbackRequired = true
 		return nil, 0, err
 	}
@@ -98,25 +171,41 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		keys = append(keys, constraintKey)
 	}
 
-	// Step 9: Create in Groups.io FIRST (if enabled)
-	subgroupID, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
-	if err != nil {
-		rollbackRequired = true
+	// LAYER 2: Validate source
+	if err := constants.ValidateSource(request.Source); err != nil {
 		return nil, 0, err
 	}
 
-	if subgroupID != nil {
-		// Groups.io creation successful - track for rollback cleanup
-		rollbackSubgroupID = subgroupID
-		rollbackGroupsIODomain = parentService.Domain
+	// LAYER 3: Source-based strategy dispatch for SubgroupID resolution
+	var (
+		subgroupID      *int64
+		requiresCleanup bool
+	)
 
-		request.SubgroupID = subgroupID
-		request.SyncStatus = "synced"
-	} else {
-		// Mock/disabled mode or parent service has no GroupID - set appropriate status
-		request.SyncStatus = "pending"
-		slog.InfoContext(ctx, "Groups.io integration disabled or parent service not synced - mailing list will be in pending state")
+	switch request.Source {
+	case constants.SourceAPI:
+		subgroupID, requiresCleanup, err = ml.handleAPISourceMailingList(ctx, request, parentService)
+		if err != nil {
+			rollbackRequired = true
+			return nil, 0, err
+		}
+		if requiresCleanup {
+			rollbackSubgroupID = subgroupID
+			rollbackGroupsIODomain = parentService.Domain
+		}
+
+	case constants.SourceWebhook:
+		subgroupID, err = ml.handleWebhookSourceMailingList(ctx, request)
+		if err != nil {
+			return nil, 0, err
+		}
+
+	case constants.SourceMock:
+		subgroupID = ml.handleMockSourceMailingList(ctx, request)
 	}
+
+	// Set SubgroupID from strategy result
+	request.SubgroupID = subgroupID
 
 	// Step 10: Create mailing list in storage (with Groups.io ID already set)
 	createdMailingList, revision, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
@@ -147,6 +236,8 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	slog.InfoContext(ctx, "mailing list created successfully",
 		"mailing_list_uid", createdMailingList.UID,
 		"group_name", createdMailingList.GroupName,
+		"source", createdMailingList.Source,
+		"subgroup_id", log.LogOptionalInt64(createdMailingList.SubgroupID),
 		"parent_uid", createdMailingList.ServiceUID,
 		"public", createdMailingList.Public,
 		"committee_based", createdMailingList.IsCommitteeBased())
@@ -619,4 +710,63 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 		slog.InfoContext(ctx, "Groups.io mailing list updated successfully",
 			"subgroup_id", *mailingList.SubgroupID, "domain", domain)
 	}
+}
+
+// handleAPISourceMailingList handles API-initiated mailing list creation
+// Preserves existing logic: calls createMailingListInGroupsIO and returns cleanup flag
+func (ml *grpsIOWriterOrchestrator) handleAPISourceMailingList(
+	ctx context.Context,
+	request *model.GrpsIOMailingList,
+	parentService *model.GrpsIOService,
+) (*int64, bool, error) {
+	slog.InfoContext(ctx, "source=api: creating subgroup in Groups.io",
+		"group_name", request.GroupName,
+		"parent_uid", parentService.UID)
+
+	// Call existing createMailingListInGroupsIO method (preserves all existing logic)
+	subgroupID, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create subgroup in Groups.io",
+			"error", err,
+			"group_name", request.GroupName)
+		return nil, false, err
+	}
+
+	// Determine if cleanup is required (preserves existing rollback logic)
+	requiresCleanup := subgroupID != nil && parentService.Domain != ""
+
+	if subgroupID != nil {
+		slog.InfoContext(ctx, "subgroup created successfully in Groups.io",
+			"subgroup_id", *subgroupID)
+	}
+
+	return subgroupID, requiresCleanup, nil
+}
+
+// handleWebhookSourceMailingList handles webhook-initiated mailing list adoption
+// Preserves existing logic: validates SubgroupID and returns it
+func (ml *grpsIOWriterOrchestrator) handleWebhookSourceMailingList(
+	ctx context.Context,
+	request *model.GrpsIOMailingList,
+) (*int64, error) {
+	if request.SubgroupID == nil {
+		return nil, errors.NewValidation("webhook source requires SubgroupID to be provided")
+	}
+
+	slog.InfoContext(ctx, "source=webhook: adopting webhook-provided subgroup",
+		"subgroup_id", *request.SubgroupID,
+		"group_name", request.GroupName)
+
+	return request.SubgroupID, nil
+}
+
+// handleMockSourceMailingList handles mock/test mode mailing list creation
+// Preserves existing logic: returns nil for subgroupID
+func (ml *grpsIOWriterOrchestrator) handleMockSourceMailingList(
+	ctx context.Context,
+	request *model.GrpsIOMailingList,
+) *int64 {
+	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
+		"group_name", request.GroupName)
+	return nil
 }

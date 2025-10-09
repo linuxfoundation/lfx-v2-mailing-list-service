@@ -936,6 +936,43 @@ paths:
                             - message
             schemes:
                 - http
+    /webhooks/groupsio:
+        post:
+            tags:
+                - mailing-list
+            summary: groupsio-webhook mailing-list
+            description: Handle GroupsIO webhook events for subgroup and member changes
+            operationId: mailing-list#groupsio-webhook
+            parameters:
+                - name: x-groupsio-signature
+                  in: header
+                  description: HMAC-SHA1 base64 signature for verification
+                  required: true
+                  type: string
+                - name: Groupsio-WebhookRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/GroupsioWebhookPayload'
+                    required:
+                        - action
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
+            schemes:
+                - http
 definitions:
     BadRequestError:
         title: BadRequestError
@@ -963,6 +1000,43 @@ definitions:
             message: The resource already exists.
         required:
             - message
+    GroupsioWebhookPayload:
+        title: GroupsioWebhookPayload
+        type: object
+        properties:
+            action:
+                type: string
+                description: The type of webhook event
+                example: created_subgroup
+                enum:
+                    - created_subgroup
+                    - deleted_subgroup
+                    - added_member
+                    - removed_member
+                    - ban_members
+            extra:
+                type: string
+                description: Extra data field (subgroup suffix)
+                example: Corrupti quis aut voluptatem aut.
+            extra_id:
+                type: integer
+                description: Extra ID field (subgroup ID for deletion)
+                example: 7098653019585474488
+                format: int64
+            group:
+                description: Contains subgroup data from Groups.io
+                example: Ut rerum quam repellat eum.
+            member_info:
+                description: Contains member data from Groups.io
+                example: Voluptatem voluptate vitae saepe mollitia.
+        example:
+            action: created_subgroup
+            extra: Consequuntur velit rerum ea.
+            extra_id: 7211270697616219187
+            group: Aliquid aliquid.
+            member_info: Voluptatibus corporis.
+        required:
+            - action
     GrpsIoMailingListFull:
         title: GrpsIoMailingListFull
         type: object
@@ -971,7 +1045,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eos sed nihil provident illum omnis.
+                    example: Libero voluptatem.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -980,7 +1054,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Voting Rep
+                    example: Emeritus
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -1081,7 +1155,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Rem aperiam.
+                    example: Alias amet aspernatur ut nihil.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1120,7 +1194,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sed earum rerum corporis quae.
+                    example: Quos laudantium eligendi ut quod.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1129,7 +1203,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Emeritus
+                    example: None
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -1221,7 +1295,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Temporibus assumenda error.
+                    example: Eum qui ex magnam.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1259,7 +1333,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolorum quia alias amet aspernatur ut nihil.
+                    example: Ad aut saepe.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1336,7 +1410,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: moderator
+                example: owner
                 enum:
                     - none
                     - moderator
@@ -1369,7 +1443,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Possimus et et.
+                    example: Sint accusamus.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1379,7 +1453,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: digest
+            delivery_mode: normal
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1389,7 +1463,7 @@ definitions:
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            member_type: direct
+            member_type: committee
             mod_status: owner
             organization: Example Corp
             status: pending
@@ -1419,7 +1493,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sint quos laudantium eligendi.
+                    example: Sequi nemo quia facilis sapiente incidunt perferendis.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1433,7 +1507,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: none
+                example: digest
                 enum:
                     - normal
                     - digest
@@ -1496,7 +1570,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: none
+                example: moderator
                 enum:
                     - none
                     - moderator
@@ -1529,7 +1603,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Nihil consectetur dolorem quas eum qui ex.
+                    example: Sed corporis dolorem possimus ipsam delectus aliquam.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1540,7 +1614,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: digest
+            delivery_mode: none
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1551,7 +1625,7 @@ definitions:
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             member_type: committee
-            mod_status: owner
+            mod_status: none
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1568,7 +1642,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sit et.
+                    example: Qui aut atque neque.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1586,7 +1660,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: virginia_barrows@schusterwehner.com
+                    example: angie.orn@fadel.com
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1673,7 +1747,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ut id laboriosam aut aut eos sequi.
+                    example: Quia hic eos eos et quas.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1716,7 +1790,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Unde quis amet.
+                    example: Repellat dignissimos sit enim quis iure.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1734,7 +1808,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: dannie_weimann@greenfelder.biz
+                    example: alec@lindgren.org
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1821,7 +1895,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Non cupiditate et quasi modi quas eum.
+                    example: Dolorem dolorum at.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1926,7 +2000,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: owner
+                example: none
                 enum:
                     - none
                     - moderator
@@ -1942,15 +2016,15 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: none
+            delivery_mode: digest
             email: john.doe@example.com
             first_name: John
             job_title: Software Engineer
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
-            member_type: committee
-            mod_status: none
+            member_type: direct
+            mod_status: owner
             organization: Example Corp
             username: jdoe
         required:
@@ -1963,7 +2037,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Occaecati dignissimos facere doloremque.
+                    example: Soluta veritatis veniam consectetur magni nihil consectetur.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1972,7 +2046,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Alternate Voting Rep
+                    example: Voting Rep
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -2034,7 +2108,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Numquam deserunt.
+                    example: Autem molestias.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2072,7 +2146,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolor cupiditate sit debitis assumenda.
+                    example: Blanditiis culpa iusto enim distinctio.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2085,7 +2159,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: princess@hayes.net
+                    example: louvenia@cremin.com
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2140,7 +2214,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Aut deserunt.
+                    example: Est quis quibusdam nemo animi est.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2184,7 +2258,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: digest
+                example: none
                 enum:
                     - normal
                     - digest
@@ -2226,11 +2300,11 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: none
+            delivery_mode: digest
             first_name: John
             job_title: Software Engineer
             last_name: Doe
-            mod_status: moderator
+            mod_status: none
             organization: Example Corp
             username: jdoe
     MailingListUpdateGrpsioMailingListRequestBody:
@@ -2241,7 +2315,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Voluptas asperiores suscipit.
+                    example: Autem vero vel repudiandae nisi.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2250,7 +2324,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Alternate Voting Rep
+                    example: Observer
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -2312,7 +2386,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Non minus aspernatur eius vero.
+                    example: Et velit dolore.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2350,7 +2424,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Occaecati nam.
+                    example: Dolore possimus et et qui.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2363,7 +2437,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: scot.mayer@abshire.net
+                    example: lauryn.cummings@bogisich.org
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2418,7 +2492,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Tempora voluptas nam eaque et quas voluptatem.
+                    example: Suscipit quia placeat.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2469,6 +2543,19 @@ definitions:
         description: Service unavailable
         example:
             message: The service is unavailable.
+        required:
+            - message
+    UnauthorizedError:
+        title: UnauthorizedError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: Unauthorized access.
+        description: Invalid webhook signature
+        example:
+            message: Unauthorized access.
         required:
             - message
 securityDefinitions:

@@ -20,4 +20,9 @@ type GrpsIOMailingListReader interface {
 
 	// CheckMailingListExists checks if a mailing list with the given name exists in parent service
 	CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error)
+
+	// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
+	// Returns NotFound error if mailing list doesn't exist
+	// Used by webhook processor to find mailing list for deletion
+	GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error)
 }

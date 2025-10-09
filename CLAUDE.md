@@ -160,7 +160,7 @@ if o.groupsClient != nil {
 ```
 
 #### Mock Configuration
-- **Production**: `GROUPSIO_SOURCE=real` - Uses actual Groups.io API client
+- **Production**: `GROUPSIO_SOURCE=groupsio` - Uses actual Groups.io API client
 - **Testing**: `GROUPSIO_SOURCE=mock` - Returns nil client, enables pure domain testing
 - **Domain Logic**: All business logic flows through `MockRepository` in `internal/infrastructure/mock/grpsio.go`
 - **Error Simulation**: Comprehensive error testing available through domain mock

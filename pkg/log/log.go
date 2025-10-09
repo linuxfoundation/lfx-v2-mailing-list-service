@@ -117,3 +117,22 @@ func Priority(level string) slog.Attr {
 func PriorityCritical() slog.Attr {
 	return Priority(priorityCritical)
 }
+
+// LogOptionalInt64 creates an slog.Value for optional int64 pointers.
+// Returns nil value if pointer is nil, otherwise logs the dereferenced value.
+// This helper ensures consistent logging of nullable int64 fields like IDs or timestamps.
+//
+// Example usage:
+//
+//	slog.InfoContext(ctx, "operation completed",
+//	    "subgroup_id", log.LogOptionalInt64(record.SubgroupID))
+//
+// Logs:
+//   - When SubgroupID is nil: "subgroup_id": null
+//   - When SubgroupID is &123: "subgroup_id": 123
+func LogOptionalInt64(val *int64) slog.Value {
+	if val == nil {
+		return slog.AnyValue(nil)
+	}
+	return slog.Int64Value(*val)
+}

@@ -13,8 +13,16 @@ app:
   jwtAuthDisabledMockLocalPrincipal: "test-super-admin"
   # Enable debug logging for local development
   logLevel: debug
+
+  # Use mock repository for local testing
+  repositorySource: mock
+
   # Use mock GroupsIO integration for local testing
-  groupsioSource: mock
+  groupsio:
+    source: mock
+
+  # Webhook secret for local testing (NOT FOR PRODUCTION)
+  groupsioWebhookSecret: "local-test-webhook-secret-not-for-production"
 
 
 # Disable OpenFGA authorization for local testing

@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member)
+	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
 `
 }
 
@@ -121,6 +121,10 @@ func ParseEndpoint(
 		mailingListDeleteGrpsioMailingListMemberVersionFlag     = mailingListDeleteGrpsioMailingListMemberFlags.String("version", "REQUIRED", "")
 		mailingListDeleteGrpsioMailingListMemberBearerTokenFlag = mailingListDeleteGrpsioMailingListMemberFlags.String("bearer-token", "REQUIRED", "")
 		mailingListDeleteGrpsioMailingListMemberIfMatchFlag     = mailingListDeleteGrpsioMailingListMemberFlags.String("if-match", "REQUIRED", "")
+
+		mailingListGroupsioWebhookFlags         = flag.NewFlagSet("groupsio-webhook", flag.ExitOnError)
+		mailingListGroupsioWebhookBodyFlag      = mailingListGroupsioWebhookFlags.String("body", "REQUIRED", "")
+		mailingListGroupsioWebhookSignatureFlag = mailingListGroupsioWebhookFlags.String("signature", "REQUIRED", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
 	mailingListLivezFlags.Usage = mailingListLivezUsage
@@ -137,6 +141,7 @@ func ParseEndpoint(
 	mailingListGetGrpsioMailingListMemberFlags.Usage = mailingListGetGrpsioMailingListMemberUsage
 	mailingListUpdateGrpsioMailingListMemberFlags.Usage = mailingListUpdateGrpsioMailingListMemberUsage
 	mailingListDeleteGrpsioMailingListMemberFlags.Usage = mailingListDeleteGrpsioMailingListMemberUsage
+	mailingListGroupsioWebhookFlags.Usage = mailingListGroupsioWebhookUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -214,6 +219,9 @@ func ParseEndpoint(
 			case "delete-grpsio-mailing-list-member":
 				epf = mailingListDeleteGrpsioMailingListMemberFlags
 
+			case "groupsio-webhook":
+				epf = mailingListGroupsioWebhookFlags
+
 			}
 
 		}
@@ -279,6 +287,9 @@ func ParseEndpoint(
 			case "delete-grpsio-mailing-list-member":
 				endpoint = c.DeleteGrpsioMailingListMember()
 				data, err = mailinglistc.BuildDeleteGrpsioMailingListMemberPayload(*mailingListDeleteGrpsioMailingListMemberUIDFlag, *mailingListDeleteGrpsioMailingListMemberMemberUIDFlag, *mailingListDeleteGrpsioMailingListMemberVersionFlag, *mailingListDeleteGrpsioMailingListMemberBearerTokenFlag, *mailingListDeleteGrpsioMailingListMemberIfMatchFlag)
+			case "groupsio-webhook":
+				endpoint = c.GroupsioWebhook()
+				data, err = mailinglistc.BuildGroupsioWebhookPayload(*mailingListGroupsioWebhookBodyFlag, *mailingListGroupsioWebhookSignatureFlag)
 			}
 		}
 	}
@@ -311,6 +322,7 @@ COMMAND:
     get-grpsio-mailing-list-member: Get a member of a GroupsIO mailing list by UID
     update-grpsio-mailing-list-member: Update a member of a GroupsIO mailing list
     delete-grpsio-mailing-list-member: Delete a member from a GroupsIO mailing list
+    groupsio-webhook: Handle GroupsIO webhook events for subgroup and member changes
 
 Additional help:
     %[1]s mailing-list COMMAND --help
@@ -543,14 +555,14 @@ Create a new member for a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list create-grpsio-mailing-list-member --body '{
-      "delivery_mode": "normal",
+      "delivery_mode": "digest",
       "email": "john.doe@example.com",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
-      "member_type": "committee",
+      "member_type": "direct",
       "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
@@ -585,11 +597,11 @@ Update a member of a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "normal",
+      "delivery_mode": "digest",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "owner",
+      "mod_status": "none",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -608,5 +620,23 @@ Delete a member from a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list delete-grpsio-mailing-list-member --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+`, os.Args[0])
+}
+
+func mailingListGroupsioWebhookUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list groupsio-webhook -body JSON -signature STRING
+
+Handle GroupsIO webhook events for subgroup and member changes
+    -body JSON: 
+    -signature STRING: 
+
+Example:
+    %[1]s mailing-list groupsio-webhook --body '{
+      "action": "created_subgroup",
+      "extra": "Sapiente quo eveniet iusto sit aperiam neque.",
+      "extra_id": 5841507716260392508,
+      "group": "Repudiandae aliquid eius quis.",
+      "member_info": "Porro aliquam esse odit nemo."
+   }' --signature "Hic repellendus."
 `, os.Args[0])
 }

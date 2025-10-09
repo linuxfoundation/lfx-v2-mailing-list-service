@@ -72,6 +72,10 @@ type Client struct {
 	// to the delete-grpsio-mailing-list-member endpoint.
 	DeleteGrpsioMailingListMemberDoer goahttp.Doer
 
+	// GroupsioWebhook Doer is the HTTP client used to make requests to the
+	// groupsio-webhook endpoint.
+	GroupsioWebhookDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -106,6 +110,7 @@ func NewClient(
 		GetGrpsioMailingListMemberDoer:    doer,
 		UpdateGrpsioMailingListMemberDoer: doer,
 		DeleteGrpsioMailingListMemberDoer: doer,
+		GroupsioWebhookDoer:               doer,
 		RestoreResponseBody:               restoreBody,
 		scheme:                            scheme,
 		host:                              host,
@@ -435,6 +440,30 @@ func (c *Client) DeleteGrpsioMailingListMember() goa.Endpoint {
 		resp, err := c.DeleteGrpsioMailingListMemberDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GroupsioWebhook returns an endpoint that makes HTTP requests to the
+// mailing-list service groupsio-webhook server.
+func (c *Client) GroupsioWebhook() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGroupsioWebhookRequest(c.encoder)
+		decodeResponse = DecodeGroupsioWebhookResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGroupsioWebhookRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GroupsioWebhookDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "groupsio-webhook", err)
 		}
 		return decodeResponse(resp)
 	}

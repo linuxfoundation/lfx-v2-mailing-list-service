@@ -44,6 +44,8 @@ type Service interface {
 	UpdateGrpsioMailingListMember(context.Context, *UpdateGrpsioMailingListMemberPayload) (res *GrpsIoMemberWithReadonlyAttributes, err error)
 	// Delete a member from a GroupsIO mailing list
 	DeleteGrpsioMailingListMember(context.Context, *DeleteGrpsioMailingListMemberPayload) (err error)
+	// Handle GroupsIO webhook events for subgroup and member changes
+	GroupsioWebhook(context.Context, *GroupsioWebhookPayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -66,7 +68,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [14]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member"}
+var MethodNames = [15]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member", "groupsio-webhook"}
 
 // CreateGrpsioMailingListMemberPayload is the payload type of the mailing-list
 // service create-grpsio-mailing-list-member method.
@@ -268,6 +270,23 @@ type GetGrpsioServiceResult struct {
 	Etag *string
 	// Version of the API
 	Version string
+}
+
+// GroupsioWebhookPayload is the payload type of the mailing-list service
+// groupsio-webhook method.
+type GroupsioWebhookPayload struct {
+	// The type of webhook event
+	Action string
+	// Contains subgroup data from Groups.io
+	Group any
+	// Contains member data from Groups.io
+	MemberInfo any
+	// Extra data field (subgroup suffix)
+	Extra *string
+	// Extra ID field (subgroup ID for deletion)
+	ExtraID *int
+	// HMAC-SHA1 base64 signature for verification
+	Signature string
 }
 
 // GrpsIoMailingListFull is the result type of the mailing-list service
@@ -667,6 +686,11 @@ type ServiceUnavailableError struct {
 	Message string
 }
 
+type UnauthorizedError struct {
+	// Error message
+	Message string
+}
+
 // Error returns an error description.
 func (e *BadRequestError) Error() string {
 	return ""
@@ -750,4 +774,21 @@ func (e *ServiceUnavailableError) ErrorName() string {
 // GoaErrorName returns "service-unavailable-error".
 func (e *ServiceUnavailableError) GoaErrorName() string {
 	return "ServiceUnavailable"
+}
+
+// Error returns an error description.
+func (e *UnauthorizedError) Error() string {
+	return ""
+}
+
+// ErrorName returns "unauthorized-error".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *UnauthorizedError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "unauthorized-error".
+func (e *UnauthorizedError) GoaErrorName() string {
+	return "Unauthorized"
 }

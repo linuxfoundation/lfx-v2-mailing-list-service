@@ -220,6 +220,14 @@ var NotFoundError = dsl.Type("not-found-error", func() {
 	dsl.Required("message")
 })
 
+// UnauthorizedError is the DSL type for an unauthorized error.
+var UnauthorizedError = dsl.Type("unauthorized-error", func() {
+	dsl.Attribute("message", dsl.String, "Error message", func() {
+		dsl.Example("Unauthorized access.")
+	})
+	dsl.Required("message")
+})
+
 // ConflictError is the DSL type for a conflict error.
 var ConflictError = dsl.Type("conflict-error", func() {
 	dsl.Attribute("message", dsl.String, "Error message", func() {
@@ -526,3 +534,35 @@ func GrpsIOMemberUpdateAttributes() {
 		dsl.Default("none")
 	})
 }
+
+// GroupsIOWebhookPayload represents the webhook event payload from Groups.io
+var GroupsIOWebhookPayload = dsl.Type("groupsio-webhook-payload", func() {
+	dsl.Description("Webhook event payload from Groups.io")
+
+	// Event type - matches production event names
+	dsl.Attribute("action", dsl.String, "The type of webhook event", func() {
+		dsl.Example("created_subgroup")
+		dsl.Enum(
+			"created_subgroup",
+			"deleted_subgroup",
+			"added_member",
+			"removed_member",
+			"ban_members",
+		)
+	})
+
+	// Event-specific data - matches production payload structure
+	dsl.Attribute("group", dsl.Any, "Group information for subgroup events", func() {
+		dsl.Description("Contains subgroup data from Groups.io")
+	})
+	dsl.Attribute("member_info", dsl.Any, "Member information for member events", func() {
+		dsl.Description("Contains member data from Groups.io")
+	})
+	dsl.Attribute("extra", dsl.String, "Extra data field (subgroup suffix)")
+	dsl.Attribute("extra_id", dsl.Int, "Extra ID field (subgroup ID for deletion)")
+
+	// Signature from header
+	dsl.Attribute("signature", dsl.String, "HMAC-SHA1 base64 signature for verification")
+
+	dsl.Required("action", "signature")
+})

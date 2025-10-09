@@ -31,6 +31,7 @@ type Endpoints struct {
 	GetGrpsioMailingListMember    goa.Endpoint
 	UpdateGrpsioMailingListMember goa.Endpoint
 	DeleteGrpsioMailingListMember goa.Endpoint
+	GroupsioWebhook               goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -52,6 +53,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetGrpsioMailingListMember:    NewGetGrpsioMailingListMemberEndpoint(s, a.JWTAuth),
 		UpdateGrpsioMailingListMember: NewUpdateGrpsioMailingListMemberEndpoint(s, a.JWTAuth),
 		DeleteGrpsioMailingListMember: NewDeleteGrpsioMailingListMemberEndpoint(s, a.JWTAuth),
+		GroupsioWebhook:               NewGroupsioWebhookEndpoint(s),
 	}
 }
 
@@ -71,6 +73,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetGrpsioMailingListMember = m(e.GetGrpsioMailingListMember)
 	e.UpdateGrpsioMailingListMember = m(e.UpdateGrpsioMailingListMember)
 	e.DeleteGrpsioMailingListMember = m(e.DeleteGrpsioMailingListMember)
+	e.GroupsioWebhook = m(e.GroupsioWebhook)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -349,5 +352,14 @@ func NewDeleteGrpsioMailingListMemberEndpoint(s Service, authJWTFn security.Auth
 			return nil, err
 		}
 		return nil, s.DeleteGrpsioMailingListMember(ctx, p)
+	}
+}
+
+// NewGroupsioWebhookEndpoint returns an endpoint function that calls the
+// method "groupsio-webhook" of service "mailing-list".
+func NewGroupsioWebhookEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GroupsioWebhookPayload)
+		return nil, s.GroupsioWebhook(ctx, p)
 	}
 }
