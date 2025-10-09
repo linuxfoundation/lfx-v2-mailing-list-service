@@ -31,11 +31,11 @@ func generateSignature(body []byte, secret string) string {
 }
 
 // createProductionWebhookPayload simulates production GroupsIO payload structure after GOA decoding
-func createProductionWebhookPayload(bodyBytes []byte, signature string) *mailinglistservice.GroupsioWebhookPayload {
+func createProductionWebhookPayload(t *testing.T, bodyBytes []byte, signature string) *mailinglistservice.GroupsioWebhookPayload {
+	t.Helper()
 	var eventJSON map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &eventJSON); err != nil {
-		panic(fmt.Sprintf("failed to unmarshal webhook payload in test helper: %v", err))
-	}
+	err := json.Unmarshal(bodyBytes, &eventJSON)
+	require.NoError(t, err, "failed to unmarshal webhook payload in test helper")
 
 	payload := &mailinglistservice.GroupsioWebhookPayload{
 		Signature: signature,
@@ -107,13 +107,16 @@ func TestWebhook_ValidSignature(t *testing.T) {
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
 	// Create payload with GOA-style populated fields (not Body field)
-	payload := createProductionWebhookPayload(bodyBytes, signature)
+	payload := createProductionWebhookPayload(t, bodyBytes, signature)
 
-	// Call webhook handler
+	// Call webhook handler and verify success (204 No Content)
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
+	require.NoError(t, err, "webhook handler should succeed")
 
-	// Verify 204 No Content (nil error)
-	assert.NoError(t, err)
+	// Note: In this test, the subgroup won't actually be created in the mock repository
+	// because there's no parent service configured. The webhook succeeds but logs a warning.
+	// For full end-to-end testing with state verification, see other tests that set up
+	// the complete service hierarchy.
 }
 
 // TestWebhook_InvalidSignature tests webhook with invalid signature
@@ -154,7 +157,7 @@ func TestWebhook_InvalidSignature(t *testing.T) {
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
 	// Create payload with populated fields
-	payload := createProductionWebhookPayload(bodyBytes, invalidSignature)
+	payload := createProductionWebhookPayload(t, bodyBytes, invalidSignature)
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -188,7 +191,7 @@ func TestWebhook_MissingBody(t *testing.T) {
 	}
 	bodyBytes, _ := json.Marshal(event)
 
-	payload := createProductionWebhookPayload(bodyBytes, "some-signature")
+	payload := createProductionWebhookPayload(t, bodyBytes, "some-signature")
 
 	err := svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -262,7 +265,7 @@ func TestWebhook_UnsupportedEventType(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-	payload := createProductionWebhookPayload(bodyBytes, signature)
+	payload := createProductionWebhookPayload(t, bodyBytes, signature)
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -308,7 +311,7 @@ func TestWebhook_MockMode(t *testing.T) {
 	// No signature needed in mock mode
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-	payload := createProductionWebhookPayload(bodyBytes, "any-signature-works-in-mock")
+	payload := createProductionWebhookPayload(t, bodyBytes, "any-signature-works-in-mock")
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -380,7 +383,7 @@ func TestWebhook_AllEventTypes(t *testing.T) {
 
 			ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-			payload := createProductionWebhookPayload(bodyBytes, "mock-signature")
+			payload := createProductionWebhookPayload(t, bodyBytes, "mock-signature")
 
 			err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -414,7 +417,7 @@ func TestWebhook_CreatedSubgroupMissingGroupInfo(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-	payload := createProductionWebhookPayload(bodyBytes, "mock-signature")
+	payload := createProductionWebhookPayload(t, bodyBytes, "mock-signature")
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -452,7 +455,7 @@ func TestWebhook_MemberEventMissingMemberInfo(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-	payload := createProductionWebhookPayload(bodyBytes, "mock-signature")
+	payload := createProductionWebhookPayload(t, bodyBytes, "mock-signature")
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 
@@ -493,7 +496,7 @@ func TestWebhook_TransientErrorRetriesExhausted(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
 
-	payload := createProductionWebhookPayload(bodyBytes, "mock-signature")
+	payload := createProductionWebhookPayload(t, bodyBytes, "mock-signature")
 
 	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
 

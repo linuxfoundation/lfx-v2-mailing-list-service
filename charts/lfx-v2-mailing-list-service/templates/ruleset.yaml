@@ -42,8 +42,8 @@ spec:
         {{- if .Values.app.use_oidc_contextualizer }}
         - contextualizer: oidc_contextualizer
         {{- end }}
-        # Allow all requests on the zoom webhook endpoint because the endpoint does validation
-        # of the request to check that it is coming from Zoom.
+        # Allow all requests on the groups.io webhook endpoint because the handler validates
+        # the HMAC signature to ensure the request originated from Groups.io.
         - authorizer: allow_all
         - finalizer: create_jwt
           config:

@@ -181,6 +181,10 @@ func (p *grpsIOWebhookProcessor) handleSubGroupCreated(ctx context.Context, even
 
 func (p *grpsIOWebhookProcessor) handleSubGroupDeleted(ctx context.Context, event *model.GrpsIOWebhookEvent) error {
 	subgroupID := uint64(event.ExtraID)
+	if subgroupID == 0 {
+		slog.WarnContext(ctx, "deleted_subgroup event missing subgroup_id; ignoring")
+		return nil
+	}
 
 	slog.InfoContext(ctx, "received deleted_subgroup event",
 		"subgroup_id", subgroupID)
