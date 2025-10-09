@@ -156,7 +156,7 @@ app:
     # timeout is the HTTP client timeout for Groups.io requests
     timeout: "30s"
     # maxRetries is the maximum number of retry attempts for failed requests
-    maxRetries: 3
+    maxRetries: "3"
     # retryDelay is the delay between retry attempts
     retryDelay: "1s"
 

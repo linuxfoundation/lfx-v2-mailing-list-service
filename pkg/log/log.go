@@ -125,7 +125,7 @@ func PriorityCritical() slog.Attr {
 // Example usage:
 //
 //	slog.InfoContext(ctx, "operation completed",
-//	    "subgroup_id", utils.LogOptionalInt64(record.SubgroupID))
+//	    "subgroup_id", log.LogOptionalInt64(record.SubgroupID))
 //
 // Logs:
 //   - When SubgroupID is nil: "subgroup_id": null

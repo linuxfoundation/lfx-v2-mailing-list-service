@@ -626,7 +626,8 @@ func (s *mailingListService) GroupsioWebhook(ctx context.Context, p *mailinglist
 
 	// Convert GOA payload to domain model
 	event := &model.GrpsIOWebhookEvent{
-		Action: p.Action,
+		Action:     p.Action,
+		ReceivedAt: time.Now(),
 	}
 
 	// Convert Group field if present (for subgroup events)

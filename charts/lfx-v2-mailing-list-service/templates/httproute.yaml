@@ -21,6 +21,12 @@ spec:
         - path:
             type: PathPrefix
             value: /groupsio/
+        - path:
+            type: PathPrefix
+            value: /webhooks/
+        - path:
+            type: PathPrefix
+            value: /_groupsio/
       {{- if .Values.heimdall.enabled }}
       filters:
         - type: ExtensionRef

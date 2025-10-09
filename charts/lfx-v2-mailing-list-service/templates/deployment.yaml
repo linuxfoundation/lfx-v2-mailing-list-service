@@ -52,7 +52,7 @@ spec:
             - name: GROUPSIO_TIMEOUT
               value: {{.Values.app.groupsio.timeout}}
             - name: GROUPSIO_MAX_RETRIES
-              value: {{.Values.app.groupsio.maxRetries | quote}}
+              value: {{.Values.app.groupsio.maxRetries}}
             - name: GROUPSIO_RETRY_DELAY
               value: {{.Values.app.groupsio.retryDelay}}
             # Webhook configuration

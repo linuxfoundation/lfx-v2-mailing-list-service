@@ -9,12 +9,13 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
+	svcinternal "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,9 @@ func generateSignature(body []byte, secret string) string {
 // createProductionWebhookPayload simulates production GroupsIO payload structure after GOA decoding
 func createProductionWebhookPayload(bodyBytes []byte, signature string) *mailinglistservice.GroupsioWebhookPayload {
 	var eventJSON map[string]interface{}
-	json.Unmarshal(bodyBytes, &eventJSON)
+	if err := json.Unmarshal(bodyBytes, &eventJSON); err != nil {
+		panic(fmt.Sprintf("failed to unmarshal webhook payload in test helper: %v", err))
+	}
 
 	payload := &mailinglistservice.GroupsioWebhookPayload{
 		Signature: signature,
@@ -66,10 +69,10 @@ func TestWebhook_ValidSignature(t *testing.T) {
 	// Create webhook service with mock dependencies
 	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := groupsio.NewGrpsIOWebhookValidator(testWebhookSecret)
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(mockRepo),
-		service.WithMailingListReader(mockRepo),
-		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor(
+		svcinternal.WithServiceReader(mockRepo),
+		svcinternal.WithMailingListReader(mockRepo),
+		svcinternal.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -117,10 +120,10 @@ func TestWebhook_ValidSignature(t *testing.T) {
 func TestWebhook_InvalidSignature(t *testing.T) {
 	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := groupsio.NewGrpsIOWebhookValidator(testWebhookSecret)
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(mockRepo),
-		service.WithMailingListReader(mockRepo),
-		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor(
+		svcinternal.WithServiceReader(mockRepo),
+		svcinternal.WithMailingListReader(mockRepo),
+		svcinternal.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -165,7 +168,7 @@ func TestWebhook_InvalidSignature(t *testing.T) {
 // TestWebhook_MissingBody tests webhook without body in context
 func TestWebhook_MissingBody(t *testing.T) {
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor()
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -199,7 +202,7 @@ func TestWebhook_MissingBody(t *testing.T) {
 // TestWebhook_MalformedPayload tests webhook with malformed event (missing action field)
 func TestWebhook_MalformedPayload(t *testing.T) {
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor()
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -238,7 +241,7 @@ func TestWebhook_MalformedPayload(t *testing.T) {
 // TestWebhook_UnsupportedEventType tests webhook with unsupported event type
 func TestWebhook_UnsupportedEventType(t *testing.T) {
 	grpsioWebhookValidator := groupsio.NewGrpsIOWebhookValidator(testWebhookSecret)
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor()
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -274,10 +277,10 @@ func TestWebhook_UnsupportedEventType(t *testing.T) {
 func TestWebhook_MockMode(t *testing.T) {
 	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(mockRepo),
-		service.WithMailingListReader(mockRepo),
-		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor(
+		svcinternal.WithServiceReader(mockRepo),
+		svcinternal.WithMailingListReader(mockRepo),
+		svcinternal.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -325,12 +328,12 @@ func TestWebhook_AllEventTypes(t *testing.T) {
 
 	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(mockRepo),
-		service.WithMailingListReader(mockRepo),
-		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
-		service.WithMemberReader(mockRepo),
-		service.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor(
+		svcinternal.WithServiceReader(mockRepo),
+		svcinternal.WithMailingListReader(mockRepo),
+		svcinternal.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		svcinternal.WithMemberReader(mockRepo),
+		svcinternal.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -390,7 +393,7 @@ func TestWebhook_AllEventTypes(t *testing.T) {
 // TestWebhook_CreatedSubgroupMissingGroupInfo tests created_subgroup with missing group info
 func TestWebhook_CreatedSubgroupMissingGroupInfo(t *testing.T) {
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor()
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor()
 
 	svc := NewMailingList(
 		mock.NewMockAuthService(),
@@ -423,12 +426,12 @@ func TestWebhook_CreatedSubgroupMissingGroupInfo(t *testing.T) {
 func TestWebhook_MemberEventMissingMemberInfo(t *testing.T) {
 	mockRepo := mock.NewMockRepository()
 	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
-	grpsioWebhookProcessor := service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(mockRepo),
-		service.WithMailingListReader(mockRepo),
-		service.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
-		service.WithMemberReader(mockRepo),
-		service.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
+	grpsioWebhookProcessor := svcinternal.NewGrpsIOWebhookProcessor(
+		svcinternal.WithServiceReader(mockRepo),
+		svcinternal.WithMailingListReader(mockRepo),
+		svcinternal.WithMailingListWriter(mock.NewMockGrpsIOMailingListWriter(mockRepo)),
+		svcinternal.WithMemberReader(mockRepo),
+		svcinternal.WithMemberWriter(mock.NewMockGrpsIOMemberWriter(mockRepo)),
 	)
 
 	svc := NewMailingList(
@@ -455,4 +458,48 @@ func TestWebhook_MemberEventMissingMemberInfo(t *testing.T) {
 
 	// Should still return 204 (logged error, but always returns nil to prevent retries)
 	assert.NoError(t, err)
+}
+
+// TestWebhook_TransientErrorRetriesExhausted tests that transient errors (non-validation)
+// result in 500 InternalServerError after retries are exhausted
+func TestWebhook_TransientErrorRetriesExhausted(t *testing.T) {
+	grpsioWebhookValidator := mock.NewMockGrpsIOWebhookValidator()
+
+	// Create a processor that always returns a transient (non-validation) error
+	grpsioWebhookProcessor := mock.NewMockGrpsIOWebhookProcessorWithError(
+		fmt.Errorf("database connection timeout"), // Transient error
+	)
+
+	svc := NewMailingList(
+		mock.NewMockAuthService(),
+		nil,
+		nil,
+		nil,
+		grpsioWebhookValidator,
+		grpsioWebhookProcessor,
+	)
+
+	event := map[string]interface{}{
+		"action": "created_subgroup",
+		"group": map[string]interface{}{
+			"id":              float64(142630),
+			"name":            "lfx-test-1759227480",
+			"parent_group_id": float64(141234),
+		},
+		"extra": "developers",
+	}
+	bodyBytes, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	ctx := context.WithValue(context.Background(), constants.GrpsIOWebhookBodyContextKey, bodyBytes)
+
+	payload := createProductionWebhookPayload(bodyBytes, "mock-signature")
+
+	err = svc.(*mailingListService).GroupsioWebhook(ctx, payload)
+
+	// Should return 500 InternalServerError after retries exhausted
+	require.Error(t, err)
+	internalServerErr, ok := err.(*mailinglistservice.InternalServerError)
+	assert.True(t, ok, "Expected InternalServerError, got %T", err)
+	assert.Contains(t, internalServerErr.Message, "webhook processing failed")
 }
