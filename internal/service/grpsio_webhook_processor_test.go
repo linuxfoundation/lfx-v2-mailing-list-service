@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/stretchr/testify/assert"
@@ -264,5 +265,5 @@ func TestNewGrpsIOWebhookProcessor(t *testing.T) {
 	)
 
 	assert.NotNil(t, processor)
-	assert.Implements(t, (*GrpsIOWebhookProcessor)(nil), processor)
+	assert.Implements(t, (*port.GrpsIOWebhookProcessor)(nil), processor)
 }

@@ -20,11 +20,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
-// GrpsIOWebhookProcessor handles GroupsIO webhook event processing
-type GrpsIOWebhookProcessor interface {
-	ProcessEvent(ctx context.Context, event *model.GrpsIOWebhookEvent) error
-}
-
 // grpsIOWebhookProcessor orchestrates webhook event processing with required dependencies
 type grpsIOWebhookProcessor struct {
 	serviceReader     port.GrpsIOServiceReader
@@ -73,7 +68,7 @@ func WithMemberWriter(writer port.GrpsIOMemberWriter) WebhookProcessorOption {
 }
 
 // NewGrpsIOWebhookProcessor creates a new GroupsIO webhook processor with dependencies
-func NewGrpsIOWebhookProcessor(opts ...WebhookProcessorOption) GrpsIOWebhookProcessor {
+func NewGrpsIOWebhookProcessor(opts ...WebhookProcessorOption) port.GrpsIOWebhookProcessor {
 	processor := &grpsIOWebhookProcessor{}
 
 	for _, opt := range opts {

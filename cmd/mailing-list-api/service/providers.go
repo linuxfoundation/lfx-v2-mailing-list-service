@@ -429,7 +429,7 @@ func GrpsIOWebhookValidator(ctx context.Context) port.GrpsIOWebhookValidator {
 }
 
 // GrpsIOWebhookProcessor creates GroupsIO webhook processor with explicit dependency injection
-func GrpsIOWebhookProcessor(ctx context.Context) service.GrpsIOWebhookProcessor {
+func GrpsIOWebhookProcessor(ctx context.Context) port.GrpsIOWebhookProcessor {
 	slog.InfoContext(ctx, "initializing groupsio webhook processor with dependency injection")
 
 	return service.NewGrpsIOWebhookProcessor(

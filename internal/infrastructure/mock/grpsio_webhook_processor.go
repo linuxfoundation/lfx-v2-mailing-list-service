@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
 
 // MockGrpsIOWebhookProcessorWithError implements GrpsIOWebhookProcessor for testing error scenarios
@@ -16,7 +16,7 @@ type MockGrpsIOWebhookProcessorWithError struct {
 }
 
 // NewMockGrpsIOWebhookProcessorWithError creates a webhook processor that always returns the given error
-func NewMockGrpsIOWebhookProcessorWithError(err error) service.GrpsIOWebhookProcessor {
+func NewMockGrpsIOWebhookProcessorWithError(err error) port.GrpsIOWebhookProcessor {
 	return &MockGrpsIOWebhookProcessorWithError{
 		err: err,
 	}

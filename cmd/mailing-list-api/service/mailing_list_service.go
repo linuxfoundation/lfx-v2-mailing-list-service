@@ -33,7 +33,7 @@ type mailingListService struct {
 
 	// GroupsIO Webhook dependencies
 	grpsioWebhookValidator port.GrpsIOWebhookValidator
-	grpsioWebhookProcessor service.GrpsIOWebhookProcessor
+	grpsioWebhookProcessor port.GrpsIOWebhookProcessor
 }
 
 // NewMailingList returns the mailing list service implementation.
@@ -43,7 +43,7 @@ func NewMailingList(
 	grpsIOWriterOrchestrator service.GrpsIOWriter,
 	storage port.GrpsIOReaderWriter,
 	grpsioWebhookValidator port.GrpsIOWebhookValidator,
-	grpsioWebhookProcessor service.GrpsIOWebhookProcessor,
+	grpsioWebhookProcessor port.GrpsIOWebhookProcessor,
 ) mailinglistservice.Service {
 	return &mailingListService{
 		auth:                     auth,
