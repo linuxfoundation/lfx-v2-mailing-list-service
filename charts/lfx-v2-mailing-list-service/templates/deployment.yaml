@@ -16,48 +16,26 @@ spec:
       labels:
         app: {{.Chart.Name}}
     spec:
+      # Use the configured service account for pod identity
+      serviceAccountName: {{ .Values.serviceAccount.name | default .Chart.Name }}
       containers:
         - name: app
-          image: "{{.Values.image.repository}}:{{.Values.image.tag | default .Chart.AppVersion}}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           securityContext:
             allowPrivilegeEscalation: false
-          imagePullPolicy: {{.Values.image.pullPolicy}}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Environment variables from values.yaml app.environment
+          # Supports both direct values and valueFrom for secret references
           env:
-            - name: NATS_URL
-              value: {{.Values.nats.url}}
-            - name: LOG_LEVEL
-              value: {{.Values.app.logLevel}}
-            - name: LOG_ADD_SOURCE
-              value: {{.Values.app.logAddSource | quote}}
-            - name: JWKS_URL
-              value: {{.Values.heimdall.jwksUrl}}
-            - name: JWT_AUDIENCE
-              value: {{.Values.app.audience}}
-            - name: AUTH_SOURCE
-              value: {{.Values.app.authSource}}
-            - name: JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL
-              value: {{.Values.app.jwtAuthDisabledMockLocalPrincipal}}
-            # Repository configuration
-            - name: REPOSITORY_SOURCE
-              value: {{.Values.app.repositorySource | default "nats"}}
-            # GroupsIO configuration
-            - name: GROUPSIO_SOURCE
-              value: {{.Values.app.groupsio.source}}
-            - name: GROUPSIO_BASE_URL
-              value: {{.Values.app.groupsio.baseUrl}}
-            - name: GROUPSIO_EMAIL
-              value: {{.Values.app.groupsio.email}}
-            - name: GROUPSIO_PASSWORD
-              value: {{.Values.app.groupsio.password}}
-            - name: GROUPSIO_TIMEOUT
-              value: {{.Values.app.groupsio.timeout}}
-            - name: GROUPSIO_MAX_RETRIES
-              value: {{.Values.app.groupsio.maxRetries}}
-            - name: GROUPSIO_RETRY_DELAY
-              value: {{.Values.app.groupsio.retryDelay}}
-            # Webhook configuration
-            - name: GROUPSIO_WEBHOOK_SECRET
-              value: {{.Values.app.groupsioWebhookSecret | default "" | quote}}
+            {{- range $name, $config := .Values.app.environment }}
+            - name: {{ $name }}
+              {{- if $config.value }}
+              value: {{ $config.value | quote }}
+              {{- else if $config.valueFrom }}
+              valueFrom:
+                {{- toYaml $config.valueFrom | nindent 16 }}
+              {{- end }}
+            {{- end }}
           ports:
             - containerPort: {{.Values.service.port}}
               name: web

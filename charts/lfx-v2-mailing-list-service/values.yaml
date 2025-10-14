@@ -31,6 +31,18 @@ service:
   # port is the service port
   port: 8080
 
+# serviceAccount is the configuration for the Kubernetes service account
+serviceAccount:
+  # create specifies whether a service account should be created
+  create: true
+  # name is the name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # annotations to add to the service account
+  annotations: {}
+  # automountServiceAccountToken is a boolean to determine if the service account token should be automatically mounted
+  automountServiceAccountToken: true
+
 # nats is the configuration for the NATS server
 nats:
   # url is the URL of the NATS server
@@ -121,45 +133,82 @@ authelia:
 
 # app is the configuration for the application
 app:
-  # logLevel is the log level (debug, info, warn, error)
-  logLevel: debug
-  # logAddSource is a boolean to determine if the log source should be added
-  logAddSource: true
-  # authSource is the authentication source (jwt or mock)
-  authSource: jwt
-  # jwtAuthDisabledMockLocalPrincipal is used for local development to bypass JWT validation
-  jwtAuthDisabledMockLocalPrincipal: ""
+  # audience is the JWT audience required for authentication with this app
+  audience: lfx-v2-mailing-list-service
   # use_oidc_contextualizer is a boolean to determine if the OIDC contextualizer should be used
   use_oidc_contextualizer: true
-  # jwt is the configuration for JWT authentication
-  # audience is the intended audience for the JWT token
-  audience: lfx-v2-mailing-list-service
 
-  # Repository implementation source (nats or mock)
-  # Production should use 'nats', local development should use 'mock'
-  repositorySource: nats
+  # environment contains all application environment variables
+  # Each variable can have either a 'value' (for direct values) or 'valueFrom' (for secret references)
+  environment:
+    # NATS_URL is the URL of the NATS server (required)
+    NATS_URL:
+      value: nats://lfx-platform-nats.lfx.svc.cluster.local:4222
 
-  # GroupsIO integration configuration
-  groupsio:
-    # source determines the GroupsIO implementation (groupsio or mock)
-    # Use 'groupsio' for production, 'mock' for testing/local development
-    # Empty string defaults to production in code
-    source: groupsio
-    # baseUrl is the Groups.io API base URL
-    baseUrl: "https://groups.io/api"
-    # email is the Groups.io account email for authentication
-    # Do not commit actual credentials to this file will be set by Kubernetes secrets
-    email: ""
-    # password is the Groups.io account password for authentication
-    # Do not commit actual credentials to this file will be set by Kubernetes secrets
-    password: ""
-    # timeout is the HTTP client timeout for Groups.io requests
-    timeout: "30s"
-    # maxRetries is the maximum number of retry attempts for failed requests
-    maxRetries: "3"
-    # retryDelay is the delay between retry attempts
-    retryDelay: "1s"
+    # LOG_LEVEL is the log level (debug, info, warn, error) - optional, defaults to info
+    LOG_LEVEL:
+      value: info
 
-  # Webhook secret for GroupsIO webhook validation
-  # Do not commit actual credentials to this file will be set by Kubernetes secrets
-  groupsioWebhookSecret: ""
+    # LOG_ADD_SOURCE determines if log source should be added - optional, defaults to true
+    LOG_ADD_SOURCE:
+      value: true
+
+    # JWKS_URL is the URL to the JSON Web Key Set endpoint for JWT validation
+    # Required unless JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL is set
+    JWKS_URL:
+      value: http://lfx-platform-heimdall.lfx.svc.cluster.local:4457/.well-known/jwks
+
+    # JWT_AUDIENCE is the intended audience for the JWT token (required)
+    JWT_AUDIENCE:
+      value: lfx-v2-mailing-list-service
+
+    # JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL is used for local development to bypass JWT validation
+    # Optional, local dev only. Set to a principal name to enable mock authentication
+    JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL:
+      value: ''
+
+    # AUTH_SOURCE is the authentication source: 'jwt' for production, 'mock' for local dev (optional, defaults to jwt)
+    AUTH_SOURCE:
+      value: jwt
+
+    # REPOSITORY_SOURCE is the repository implementation: 'nats' for production, 'mock' for local dev
+    # Optional, defaults to nats. Production should use 'nats', local development should use 'mock'
+    REPOSITORY_SOURCE:
+      value: nats
+
+    # GroupsIO Integration Configuration
+    # GROUPSIO_SOURCE determines the GroupsIO implementation: 'groupsio' for production, 'mock' for testing
+    # Use 'groupsio' for production, 'mock' for testing. Empty string defaults to production in code.
+    GROUPSIO_SOURCE:
+      value: groupsio
+
+    # GROUPSIO_BASE_URL is the Groups.io API base URL
+    GROUPSIO_BASE_URL:
+      value: "https://groups.io/api"
+
+    # GROUPSIO_EMAIL is the Groups.io account email for authentication
+    # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
+    GROUPSIO_EMAIL:
+      value: null
+
+    # GROUPSIO_PASSWORD is the Groups.io account password for authentication
+    # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
+    GROUPSIO_PASSWORD:
+      value: null
+
+    # GROUPSIO_TIMEOUT is the HTTP client timeout for Groups.io requests (e.g., "30s", "1m")
+    GROUPSIO_TIMEOUT:
+      value: "30s"
+
+    # GROUPSIO_MAX_RETRIES is the maximum number of retry attempts for failed requests
+    GROUPSIO_MAX_RETRIES:
+      value: "3"
+
+    # GROUPSIO_RETRY_DELAY is the delay between retry attempts (e.g., "1s", "500ms")
+    GROUPSIO_RETRY_DELAY:
+      value: "1s"
+
+    # GROUPSIO_WEBHOOK_SECRET is the secret for GroupsIO webhook validation
+    # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
+    GROUPSIO_WEBHOOK_SECRET:
+      value: null

@@ -1,29 +1,57 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
 ---
-# Local development values override
+# Local development overrides for lfx-v2-mailing-list-service
+# Use with: helm install -f values.local.yaml or make helm-install-local
 # This file configures the service for local testing with mock authentication
 # DO NOT USE IN PRODUCTION
 
-# app is the configuration for the application
+# Local development domain
+lfx:
+  domain: "k8s.orb.local"
+
+# Use latest image with always pull policy for local development
+image:
+  tag: "latest"
+  pullPolicy: Always
+
+# Application configuration for local development
 app:
-  # Use mock authentication for local testing
-  authSource: mock
-  # Mock principal for local development - bypasses JWT validation
-  jwtAuthDisabledMockLocalPrincipal: "test-super-admin"
-  # Enable debug logging for local development
-  logLevel: debug
+  # Disable OIDC contextualizer for local testing
+  use_oidc_contextualizer: false
 
-  # Use mock repository for local testing
-  repositorySource: mock
+  environment:
+    # Enable debug logging for local development
+    LOG_LEVEL:
+      value: debug
+    LOG_ADD_SOURCE:
+      value: true
 
-  # Use mock GroupsIO integration for local testing
-  groupsio:
-    source: mock
+    # Use mock authentication for local testing
+    AUTH_SOURCE:
+      value: mock
 
-  # Webhook secret for local testing (NOT FOR PRODUCTION)
-  groupsioWebhookSecret: "local-test-webhook-secret-not-for-production"
+    # Mock principal for local development - bypasses JWT validation
+    JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL:
+      value: "test-super-admin"
 
+    # Use mock repository for local testing
+    REPOSITORY_SOURCE:
+      value: mock
+
+    # Use mock GroupsIO integration for local testing
+    GROUPSIO_SOURCE:
+      value: mock
+
+    # Empty credentials for mock mode (not used in mock mode)
+    GROUPSIO_EMAIL:
+      value: ""
+    GROUPSIO_PASSWORD:
+      value: ""
+
+    # Webhook secret for local testing (NOT FOR PRODUCTION)
+    GROUPSIO_WEBHOOK_SECRET:
+      value: ""
 
 # Disable OpenFGA authorization for local testing
 openfga:
@@ -36,3 +64,8 @@ heimdall:
 # Disable Authelia authentication for local testing
 authelia:
   enabled: false
+
+# Service account configuration for local development
+serviceAccount:
+  create: true
+  name: ""
