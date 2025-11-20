@@ -10,6 +10,18 @@ image:
   # pullPolicy is the image pull policy
   pullPolicy: IfNotPresent
 
+# replicaCount is the number of replicas for the deployment
+replicaCount: 3
+
+# resources is the configuration for resource requests and limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
 # traefik is the configuration for Traefik Gateway API routing
 traefik:
   # gateway specifies the platform Gateway to attach to
