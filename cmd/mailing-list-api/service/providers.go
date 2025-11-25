@@ -440,3 +440,15 @@ func GrpsIOWebhookProcessor(ctx context.Context) port.GrpsIOWebhookProcessor {
 		service.WithMemberWriter(GrpsIOWriter(ctx)),
 	)
 }
+
+// GetNATSClient returns the initialized NATS client for subscriptions
+func GetNATSClient(ctx context.Context) *nats.NATSClient {
+	natsInit(ctx)
+	// Access the client through storage adapter
+	storageImpl, ok := natsStorageClient.(interface{ Client() *nats.NATSClient })
+	if !ok {
+		slog.ErrorContext(ctx, "NATS storage does not implement Client() method")
+		panic("NATS storage implementation error")
+	}
+	return storageImpl.Client()
+}

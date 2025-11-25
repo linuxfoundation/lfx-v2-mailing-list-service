@@ -1284,6 +1284,46 @@ func (m *MockRepository) GetMailingListByGroupID(ctx context.Context, groupID ui
 	return nil, 0, errors.NewNotFound("mailing list not found")
 }
 
+// GetMailingListsByCommittee retrieves all mailing lists for a committee
+func (m *MockRepository) GetMailingListsByCommittee(ctx context.Context, committeeUID string) ([]*model.GrpsIOMailingList, error) {
+	slog.DebugContext(ctx, "mock mailing list: getting mailing lists by committee", "committee_uid", committeeUID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetMailingListsByCommittee", committeeUID); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var result []*model.GrpsIOMailingList
+
+	// Iterate through all mailing lists to find matches
+	for _, mailingList := range m.mailingLists {
+		if mailingList.CommitteeUID == committeeUID {
+			// Return deep copy to avoid data races
+			mailingListCopy := *mailingList
+			result = append(result, &mailingListCopy)
+
+			slog.DebugContext(ctx, "found mailing list for committee",
+				"mailing_list_uid", mailingListCopy.UID,
+				"group_name", mailingListCopy.GroupName,
+				"committee_uid", committeeUID)
+		}
+	}
+
+	if len(result) == 0 {
+		slog.DebugContext(ctx, "no mailing lists found for committee", "committee_uid", committeeUID)
+		return []*model.GrpsIOMailingList{}, nil
+	}
+
+	slog.DebugContext(ctx, "mailing lists retrieved by committee",
+		"committee_uid", committeeUID,
+		"count", len(result))
+
+	return result, nil
+}
+
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {
 	slog.DebugContext(ctx, "mock mailing list: checking mailing list existence", "parent_id", parentID, "group_name", groupName)
@@ -1634,6 +1674,21 @@ func (m *MockRepository) GetMemberByEmail(ctx context.Context, mailingListUID, e
 	}
 
 	return nil, 0, errors.NewNotFound(fmt.Sprintf("member with email %s not found in mailing list %s", email, mailingListUID))
+}
+
+// GetMembersForMailingList returns all members for a given mailing list (test helper)
+func (m *MockRepository) GetMembersForMailingList(mailingListUID string) []*model.GrpsIOMember {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var result []*model.GrpsIOMember
+	for _, member := range m.members {
+		if member.MailingListUID == mailingListUID {
+			memberCopy := *member
+			result = append(result, &memberCopy)
+		}
+	}
+	return result
 }
 
 // AddMember adds a member to the mock repository for testing

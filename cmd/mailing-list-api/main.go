@@ -108,6 +108,12 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
+	// Start committee sync (mirrors handleHTTPServer pattern)
+	if err := handleCommitteeSync(ctx, &wg); err != nil {
+		slog.ErrorContext(ctx, "failed to start committee sync", "error", err)
+		// Log but don't fail - committee sync is optional feature
+	}
+
 	// Wait for signal.
 	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
 		"signal", <-errc,

@@ -9,3 +9,6 @@ const (
 	ServiceTypeFormation = "formation"
 	ServiceTypeShared    = "shared"
 )
+
+// MailingListAPIQueue is the NATS queue group for mailing list service subscriptions
+const MailingListAPIQueue = "lfx-v2-mailing-list-api"

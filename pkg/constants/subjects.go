@@ -16,4 +16,9 @@ const (
 
 	UpdateAccessGroupsIOMailingListSubject    = "lfx.update_access.groupsio_mailing_list"
 	DeleteAllAccessGroupsIOMailingListSubject = "lfx.delete_all_access.groupsio_mailing_list"
+
+	// Committee event subjects from committee-api
+	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"
+	CommitteeMemberDeletedSubject = "lfx.committee-api.committee_member.deleted"
+	CommitteeMemberUpdatedSubject = "lfx.committee-api.committee_member.updated"
 )

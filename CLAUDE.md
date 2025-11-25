@@ -42,7 +42,12 @@ The codebase follows hexagonal/clean architecture principles:
 
 **Application Layer**:
 - `cmd/mailing-list-api/service/` - GOA service implementations
-- `internal/service/` - Domain service implementations (grpsio service reader)
+- `internal/service/` - Domain service implementations
+  - `grpsio_service_reader.go`, `grpsio_service_writer.go` - GroupsIO service orchestrators
+  - `grpsio_mailing_list_reader.go`, `grpsio_mailing_list_writer.go` - Mailing list orchestrators
+  - `grpsio_member_reader.go`, `grpsio_member_writer.go` - Member orchestrators
+  - `grpsio_webhook_processor.go` - Webhook event processor
+  - `committee_sync_service.go` - Committee member synchronization to mailing lists
 
 **Middleware Layer** (`internal/middleware/`):
 - `authorization.go` - JWT-based authorization middleware
@@ -55,10 +60,25 @@ The codebase follows hexagonal/clean architecture principles:
 - Context-based principal propagation using `constants.PrincipalContextID`
 
 ### NATS Integration
-- JetStream for message streaming and key-value storage
-- Connection management with reconnection handling
-- Readiness checks for service health
-- Key-value stores accessed by bucket name
+- **JetStream Storage**: Key-value storage for services, mailing lists, and members
+- **Message Publishing**: Publishes indexing and access control events
+- **Event Subscriptions**: Subscribes to committee member events for automatic synchronization
+- **Connection Management**: Reconnection handling and readiness checks
+- **Queue Groups**: Uses `lfx-v2-mailing-list-api` queue for load balancing
+
+#### NATS Subjects (Publishing)
+- `lfx.index.groupsio_service` - Service indexing
+- `lfx.index.groupsio_mailing_list` - Mailing list indexing
+- `lfx.index.groupsio_member` - Member indexing
+- `lfx.update_access.groupsio_service` - Service access control
+- `lfx.delete_all_access.groupsio_service` - Service access deletion
+- `lfx.update_access.groupsio_mailing_list` - Mailing list access control
+- `lfx.delete_all_access.groupsio_mailing_list` - Mailing list access deletion
+
+#### NATS Subjects (Subscriptions)
+- `lfx.committee-api.committee_member.created` - Committee member creation events
+- `lfx.committee-api.committee_member.updated` - Committee member update events
+- `lfx.committee-api.committee_member.deleted` - Committee member deletion events
 
 ### Error Handling
 Custom error types in `pkg/errors/`:
@@ -72,6 +92,18 @@ Request-scoped data flows through context.Context:
 - Principal from JWT auth
 - Context keys defined in `pkg/constants/context.go`
 - Storage constants defined in `pkg/constants/storage.go`
+
+### Committee Integration
+The service automatically synchronizes committee members to mailing lists:
+- **Event-Driven**: Listens to committee-api events via NATS subscriptions
+- **Filter-Based Membership**: Mailing lists can specify `committee_filters` (voting status values)
+- **Member Types**:
+  - `committee` - Members added via committee sync (automatic)
+  - `direct` - Members added directly via API (manual)
+- **Removal Behavior**:
+  - Public lists: Committee members converted to `direct` type when removed from committee
+  - Private lists: Committee members fully deleted when removed from committee
+- **Idempotency**: Duplicate events are safely handled
 
 ## Development Notes
 
@@ -93,9 +125,19 @@ Request-scoped data flows through context.Context:
 
 ### Configuration
 Environment-based configuration for:
-- NATS_URL for messaging service connectivity  
-- JWT_AUDIENCE and JWKS_URL for authentication
+- `NATS_URL` - NATS server connection (default: `nats://lfx-platform-nats.lfx.svc.cluster.local:4222`)
+- `JWT_AUDIENCE` and `JWKS_URL` - Authentication configuration
+- `GROUPSIO_SOURCE` - Set to `mock` to bypass Groups.io API calls
+- `AUTH_SOURCE` - Set to `mock` to bypass JWT authentication
+- `REPOSITORY_SOURCE` - Set to `mock` to use in-memory storage
 - Service runs on port 8080 by default
+
+### Key Files to Understand
+- [`cmd/mailing-list-api/main.go`](cmd/mailing-list-api/main.go) - Application entry point, service initialization
+- [`cmd/mailing-list-api/committee.go`](cmd/mailing-list-api/committee.go) - Committee event subscription setup
+- [`internal/service/committee_sync_service.go`](internal/service/committee_sync_service.go) - Committee synchronization logic
+- [`internal/domain/model/committee_events.go`](internal/domain/model/committee_events.go) - Committee event structures
+- [`pkg/constants/subjects.go`](pkg/constants/subjects.go) - NATS subject definitions
 
 ### Local Development & Testing
 
@@ -170,3 +212,33 @@ if o.groupsClient != nil {
 2. **Nil-Safe**: Orchestrator gracefully handles disabled Groups.io integration
 3. **Testable**: Domain logic fully tested without external API dependencies
 4. **Configurable**: Easy switching between mock and real modes
+
+### Testing Committee Synchronization
+To test committee member synchronization locally:
+
+1. **Start the service with mock mode**:
+   ```bash
+   export NATS_URL=nats://localhost:4222
+   export AUTH_SOURCE=mock
+   export REPOSITORY_SOURCE=mock
+   export GROUPSIO_SOURCE=mock
+   export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-user"
+   make run
+   ```
+
+2. **Publish test committee events** to NATS:
+   - Use `nats pub` command or NATS client to publish to:
+     - `lfx.committee-api.committee_member.created`
+     - `lfx.committee-api.committee_member.updated`
+     - `lfx.committee-api.committee_member.deleted`
+   - Event payloads defined in [`internal/domain/model/committee_events.go`](internal/domain/model/committee_events.go)
+
+3. **Verify synchronization**:
+   - Check logs for "processing committee member created/updated/deleted event"
+   - Query mailing list members to verify additions/removals
+   - Verify member types (`committee` vs `direct`)
+
+4. **Run unit tests**:
+   ```bash
+   go test -v ./internal/service/committee_sync_service_test.go
+   ```
