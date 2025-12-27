@@ -685,21 +685,42 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 }
 
 // committeesChanged checks if committees have changed between existing and updated
+// This includes changes to UIDs and Filters to ensure member sync is triggered
 func (ml *grpsIOWriterOrchestrator) committeesChanged(existing []model.Committee, updated []model.Committee) bool {
 	if len(existing) != len(updated) {
 		return true
 	}
 
-	// Build map of existing committee UIDs
-	existingUIDs := make(map[string]bool)
+	// Build map of existing committees by UID for comparison
+	existingMap := make(map[string]model.Committee)
 	for _, c := range existing {
-		existingUIDs[c.UID] = true
+		existingMap[c.UID] = c
 	}
 
-	// Check if any updated committee is not in existing
-	for _, c := range updated {
-		if !existingUIDs[c.UID] {
+	// Check if any updated committee has changed UID or Filters
+	for _, updatedCommittee := range updated {
+		existingCommittee, exists := existingMap[updatedCommittee.UID]
+		if !exists {
+			// Committee UID not found in existing
 			return true
+		}
+
+		// Compare filters - both length and content
+		if len(existingCommittee.Filters) != len(updatedCommittee.Filters) {
+			return true
+		}
+
+		// Build filter set for comparison
+		existingFilters := make(map[string]bool)
+		for _, f := range existingCommittee.Filters {
+			existingFilters[f] = true
+		}
+
+		// Check if any updated filter is missing from existing
+		for _, f := range updatedCommittee.Filters {
+			if !existingFilters[f] {
+				return true
+			}
 		}
 	}
 
@@ -723,19 +744,10 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 	}
 
 	// Build update options from mailing list model
-	// Extract committee UIDs for Groups.io sync
-	var committeeUIDs []string
-	for _, c := range mailingList.Committees {
-		if c.UID != "" {
-			committeeUIDs = append(committeeUIDs, c.UID)
-		}
-	}
-
 	updates := groupsio.SubgroupUpdateOptions{
 		Title:       mailingList.Title,
 		Description: mailingList.Description,
 		SubjectTag:  mailingList.SubjectTag,
-		Committees:  committeeUIDs,
 	}
 
 	// Perform Groups.io mailing list update

@@ -456,25 +456,47 @@ func isMainGroupForService(ml *model.GrpsIOMailingList, svc *model.GrpsIOService
 }
 
 // committeesChanged detects if committees have changed between existing domain model and payload
+// This includes changes to UIDs and Filters to ensure proper validation
 func committeesChanged(existing []model.Committee, payload []*mailinglistservice.Committee) bool {
 	// Different number of committees means changed
 	if len(existing) != len(payload) {
 		return true
 	}
 
-	// Build a map of existing committee UIDs for quick lookup
-	existingUIDs := make(map[string]bool)
+	// Build a map of existing committees by UID for detailed comparison
+	existingMap := make(map[string]model.Committee)
 	for _, c := range existing {
-		existingUIDs[c.UID] = true
+		existingMap[c.UID] = c
 	}
 
-	// Check if all payload committees exist in existing
-	for _, c := range payload {
-		if c == nil {
+	// Check if any payload committee has changed UID or Filters
+	for _, payloadCommittee := range payload {
+		if payloadCommittee == nil {
 			continue
 		}
-		if !existingUIDs[c.UID] {
+
+		existingCommittee, exists := existingMap[payloadCommittee.UID]
+		if !exists {
+			// Committee UID not found in existing
 			return true
+		}
+
+		// Compare filters - both length and content
+		if len(existingCommittee.Filters) != len(payloadCommittee.Filters) {
+			return true
+		}
+
+		// Build filter set for comparison
+		existingFilters := make(map[string]bool)
+		for _, f := range existingCommittee.Filters {
+			existingFilters[f] = true
+		}
+
+		// Check if any payload filter is missing from existing
+		for _, f := range payloadCommittee.Filters {
+			if !existingFilters[f] {
+				return true
+			}
 		}
 	}
 

@@ -130,10 +130,9 @@ type GroupUpdateOptions struct {
 
 // SubgroupUpdateOptions represents options for updating a Groups.io subgroup/mailing list
 type SubgroupUpdateOptions struct {
-	Title       string   `url:"title,omitempty"`
-	Description string   `url:"description,omitempty"`
-	SubjectTag  string   `url:"subject_tag,omitempty"`
-	Committees  []string `url:"committees,omitempty"`
+	Title       string `url:"title,omitempty"`
+	Description string `url:"description,omitempty"`
+	SubjectTag  string `url:"subject_tag,omitempty"`
 }
 
 // TokenCache represents a cached authentication token
