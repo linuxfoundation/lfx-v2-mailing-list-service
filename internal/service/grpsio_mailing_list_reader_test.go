@@ -24,26 +24,26 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 	// Setup test data
 	testMailingListUID := uuid.New().String()
 	testMailingList := &model.GrpsIOMailingList{
-		UID:              testMailingListUID,
-		GroupName:        "dev",
-		Public:           true,
-		Type:             "discussion_open",
-		CommitteeUID:     "committee-1",
-		CommitteeName:    "Technical Advisory Committee",
-		CommitteeFilters: []string{"Voting Rep", "Observer"},
-		Description:      "Development discussions and technical matters for the project",
-		Title:            "Development List",
-		SubjectTag:       "[DEV]",
-		ServiceUID:       "service-1",
-		ProjectUID:       "test-project-uid",
-		ProjectName:      "Test Project",
-		ProjectSlug:      "test-project",
-		LastReviewedAt:   mailingListStringPtr("2024-01-01T00:00:00Z"),
-		LastReviewedBy:   mailingListStringPtr("reviewer-uid"),
-		Writers:          []string{"dev-admin@testproject.org"},
-		Auditors:         []string{"auditor@testproject.org"},
-		CreatedAt:        time.Now().Add(-18 * time.Hour),
-		UpdatedAt:        time.Now().Add(-2 * time.Hour),
+		UID:       testMailingListUID,
+		GroupName: "dev",
+		Public:    true,
+		Type:      "discussion_open",
+		Committees: []model.Committee{
+			{UID: "committee-1", Name: "Technical Advisory Committee", Filters: []string{"Voting Rep", "Observer"}},
+		},
+		Description:    "Development discussions and technical matters for the project",
+		Title:          "Development List",
+		SubjectTag:     "[DEV]",
+		ServiceUID:     "service-1",
+		ProjectUID:     "test-project-uid",
+		ProjectName:    "Test Project",
+		ProjectSlug:    "test-project",
+		LastReviewedAt: mailingListStringPtr("2024-01-01T00:00:00Z"),
+		LastReviewedBy: mailingListStringPtr("reviewer-uid"),
+		Writers:        []string{"dev-admin@testproject.org"},
+		Auditors:       []string{"auditor@testproject.org"},
+		CreatedAt:      time.Now().Add(-18 * time.Hour),
+		UpdatedAt:      time.Now().Add(-2 * time.Hour),
 	}
 
 	tests := []struct {
@@ -69,9 +69,10 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 				assert.Equal(t, "dev", mailingList.GroupName)
 				assert.True(t, mailingList.Public)
 				assert.Equal(t, "discussion_open", mailingList.Type)
-				assert.Equal(t, "committee-1", mailingList.CommitteeUID)
-				assert.Equal(t, "Technical Advisory Committee", mailingList.CommitteeName)
-				assert.Equal(t, []string{"Voting Rep", "Observer"}, mailingList.CommitteeFilters)
+				require.Len(t, mailingList.Committees, 1)
+				assert.Equal(t, "committee-1", mailingList.Committees[0].UID)
+				assert.Equal(t, "Technical Advisory Committee", mailingList.Committees[0].Name)
+				assert.Equal(t, []string{"Voting Rep", "Observer"}, mailingList.Committees[0].Filters)
 				assert.Equal(t, "Development discussions and technical matters for the project", mailingList.Description)
 				assert.Equal(t, "Development List", mailingList.Title)
 				assert.Equal(t, "[DEV]", mailingList.SubjectTag)
@@ -156,26 +157,26 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 
 	testMailingLists := []*model.GrpsIOMailingList{
 		{
-			UID:              "integration-mailing-list-1",
-			GroupName:        "integration-dev",
-			Public:           true,
-			Type:             "discussion_open",
-			CommitteeUID:     committeeUID,
-			CommitteeName:    "Integration Technical Committee",
-			CommitteeFilters: []string{"Voting Rep", "Observer"},
-			Description:      "Integration development discussions and technical matters",
-			Title:            "Integration Development List",
-			SubjectTag:       "[INTEGRATION-DEV]",
-			ServiceUID:       parentServiceUID,
-			ProjectUID:       projectUID,
-			ProjectName:      "Integration Test Project",
-			ProjectSlug:      "integration-test-project",
-			LastReviewedAt:   mailingListStringPtr("2024-03-01T15:00:00Z"),
-			LastReviewedBy:   mailingListStringPtr("integration-reviewer"),
-			Writers:          []string{"integration-dev-admin@testproject.org", "integration-lead@testproject.org"},
-			Auditors:         []string{"integration-auditor1@testproject.org", "integration-auditor2@testproject.org"},
-			CreatedAt:        time.Now().Add(-48 * time.Hour),
-			UpdatedAt:        time.Now().Add(-3 * time.Hour),
+			UID:       "integration-mailing-list-1",
+			GroupName: "integration-dev",
+			Public:    true,
+			Type:      "discussion_open",
+			Committees: []model.Committee{
+				{UID: committeeUID, Name: "Integration Technical Committee", Filters: []string{"Voting Rep", "Observer"}},
+			},
+			Description:    "Integration development discussions and technical matters",
+			Title:          "Integration Development List",
+			SubjectTag:     "[INTEGRATION-DEV]",
+			ServiceUID:     parentServiceUID,
+			ProjectUID:     projectUID,
+			ProjectName:    "Integration Test Project",
+			ProjectSlug:    "integration-test-project",
+			LastReviewedAt: mailingListStringPtr("2024-03-01T15:00:00Z"),
+			LastReviewedBy: mailingListStringPtr("integration-reviewer"),
+			Writers:        []string{"integration-dev-admin@testproject.org", "integration-lead@testproject.org"},
+			Auditors:       []string{"integration-auditor1@testproject.org", "integration-auditor2@testproject.org"},
+			CreatedAt:      time.Now().Add(-48 * time.Hour),
+			UpdatedAt:      time.Now().Add(-3 * time.Hour),
 		},
 		{
 			UID:            "integration-mailing-list-2",
@@ -229,9 +230,10 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 		assert.Equal(t, projectUID, ml2.ProjectUID)
 
 		// Validate committee-based mailing list
-		assert.Equal(t, committeeUID, ml1.CommitteeUID)
-		assert.Equal(t, "Integration Technical Committee", ml1.CommitteeName)
-		assert.Equal(t, []string{"Voting Rep", "Observer"}, ml1.CommitteeFilters)
+		require.Len(t, ml1.Committees, 1)
+		assert.Equal(t, committeeUID, ml1.Committees[0].UID)
+		assert.Equal(t, "Integration Technical Committee", ml1.Committees[0].Name)
+		assert.Equal(t, []string{"Voting Rep", "Observer"}, ml1.Committees[0].Filters)
 
 		// Validate project details
 		assert.Equal(t, "Integration Test Project", ml1.ProjectName)

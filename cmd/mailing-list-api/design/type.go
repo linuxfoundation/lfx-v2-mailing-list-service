@@ -252,6 +252,25 @@ var ServiceUnavailableError = dsl.Type("service-unavailable-error", func() {
 	dsl.Required("message")
 })
 
+// Committee represents a committee associated with a mailing list.
+// Multiple committees can be associated with a single mailing list,
+// with OR logic for access control (any committee grants access).
+var Committee = dsl.Type("Committee", func() {
+	dsl.Description("Committee associated with a mailing list")
+	dsl.Attribute("uid", dsl.String, "Committee UUID", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("name", dsl.String, "Committee name (read-only, populated by server)")
+	dsl.Attribute("filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
+		dsl.Elem(func() {
+			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
+		})
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
+	dsl.Required("uid") // Only uid is required on input; name is server-populated
+})
+
 // GrpsIOMailingListBaseAttributes defines attributes for mailing list requests (CREATE/UPDATE) - excludes project_uid.
 func GrpsIOMailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
@@ -271,16 +290,7 @@ func GrpsIOMailingListBaseAttributes() {
 		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
 		dsl.Example("discussion_moderated")
 	})
-	dsl.Attribute("committee_uid", dsl.String, "Committee UUID for committee-based mailing lists", func() {
-		dsl.Format(dsl.FormatUUID)
-		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
-	})
-	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
-		dsl.Elem(func() {
-			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
-		})
-		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
-	})
+	dsl.Attribute("committees", dsl.ArrayOf(Committee), "Committees associated with this mailing list (OR logic for access control)")
 	dsl.Attribute("description", dsl.String, "Mailing list description (11-500 characters)", func() {
 		dsl.MinLength(11)
 		dsl.MaxLength(500)

@@ -88,10 +88,8 @@ type CreateGrpsioMailingListRequestBody struct {
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
 	Type string `form:"type" json:"type" xml:"type"`
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
-	// Committee member filters
-	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*CommitteeRequestBody `form:"committees,omitempty" json:"committees,omitempty" xml:"committees,omitempty"`
 	// Mailing list description (11-500 characters)
 	Description string `form:"description" json:"description" xml:"description"`
 	// Mailing list title
@@ -115,10 +113,8 @@ type UpdateGrpsioMailingListRequestBody struct {
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
 	Type string `form:"type" json:"type" xml:"type"`
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
-	// Committee member filters
-	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*CommitteeRequestBody `form:"committees,omitempty" json:"committees,omitempty" xml:"committees,omitempty"`
 	// Mailing list description (11-500 characters)
 	Description string `form:"description" json:"description" xml:"description"`
 	// Mailing list title
@@ -305,10 +301,8 @@ type CreateGrpsioMailingListResponseBody struct {
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
-	// Committee member filters
-	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*CommitteeResponseBody `form:"committees,omitempty" json:"committees,omitempty" xml:"committees,omitempty"`
 	// Mailing list description (11-500 characters)
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Mailing list title
@@ -352,10 +346,8 @@ type UpdateGrpsioMailingListResponseBody struct {
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
-	// Committee member filters
-	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*CommitteeResponseBody `form:"committees,omitempty" json:"committees,omitempty" xml:"committees,omitempty"`
 	// Mailing list description (11-500 characters)
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Mailing list title
@@ -1002,6 +994,26 @@ type GrpsIoServiceWithReadonlyAttributesResponseBody struct {
 	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
+// CommitteeRequestBody is used to define fields on request body types.
+type CommitteeRequestBody struct {
+	// Committee UUID
+	UID string `form:"uid" json:"uid" xml:"uid"`
+	// Committee name (read-only, populated by server)
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Committee member filters
+	Filters []string `form:"filters,omitempty" json:"filters,omitempty" xml:"filters,omitempty"`
+}
+
+// CommitteeResponseBody is used to define fields on response body types.
+type CommitteeResponseBody struct {
+	// Committee UUID
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
+	// Committee name (read-only, populated by server)
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Committee member filters
+	Filters []string `form:"filters,omitempty" json:"filters,omitempty" xml:"filters,omitempty"`
+}
+
 // GrpsIoMailingListWithReadonlyAttributesResponseBody is used to define fields
 // on response body types.
 type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
@@ -1013,10 +1025,8 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
-	// Committee member filters
-	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*CommitteeResponseBody `form:"committees,omitempty" json:"committees,omitempty" xml:"committees,omitempty"`
 	// Mailing list description (11-500 characters)
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// Mailing list title
@@ -1177,19 +1187,18 @@ func NewUpdateGrpsioServiceRequestBody(p *mailinglist.UpdateGrpsioServicePayload
 // service.
 func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingListPayload) *CreateGrpsioMailingListRequestBody {
 	body := &CreateGrpsioMailingListRequestBody{
-		GroupName:    p.GroupName,
-		Public:       p.Public,
-		Type:         p.Type,
-		CommitteeUID: p.CommitteeUID,
-		Description:  p.Description,
-		Title:        p.Title,
-		SubjectTag:   p.SubjectTag,
-		ServiceUID:   p.ServiceUID,
+		GroupName:   p.GroupName,
+		Public:      p.Public,
+		Type:        p.Type,
+		Description: p.Description,
+		Title:       p.Title,
+		SubjectTag:  p.SubjectTag,
+		ServiceUID:  p.ServiceUID,
 	}
-	if p.CommitteeFilters != nil {
-		body.CommitteeFilters = make([]string, len(p.CommitteeFilters))
-		for i, val := range p.CommitteeFilters {
-			body.CommitteeFilters[i] = val
+	if p.Committees != nil {
+		body.Committees = make([]*CommitteeRequestBody, len(p.Committees))
+		for i, val := range p.Committees {
+			body.Committees[i] = marshalMailinglistCommitteeToCommitteeRequestBody(val)
 		}
 	}
 	if p.Writers != nil {
@@ -1212,19 +1221,18 @@ func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingLis
 // service.
 func NewUpdateGrpsioMailingListRequestBody(p *mailinglist.UpdateGrpsioMailingListPayload) *UpdateGrpsioMailingListRequestBody {
 	body := &UpdateGrpsioMailingListRequestBody{
-		GroupName:    p.GroupName,
-		Public:       p.Public,
-		Type:         p.Type,
-		CommitteeUID: p.CommitteeUID,
-		Description:  p.Description,
-		Title:        p.Title,
-		SubjectTag:   p.SubjectTag,
-		ServiceUID:   p.ServiceUID,
+		GroupName:   p.GroupName,
+		Public:      p.Public,
+		Type:        p.Type,
+		Description: p.Description,
+		Title:       p.Title,
+		SubjectTag:  p.SubjectTag,
+		ServiceUID:  p.ServiceUID,
 	}
-	if p.CommitteeFilters != nil {
-		body.CommitteeFilters = make([]string, len(p.CommitteeFilters))
-		for i, val := range p.CommitteeFilters {
-			body.CommitteeFilters[i] = val
+	if p.Committees != nil {
+		body.Committees = make([]*CommitteeRequestBody, len(p.Committees))
+		for i, val := range p.Committees {
+			body.Committees[i] = marshalMailinglistCommitteeToCommitteeRequestBody(val)
 		}
 	}
 	if p.Writers != nil {
@@ -1685,7 +1693,6 @@ func NewCreateGrpsioMailingListGrpsIoMailingListFullCreated(body *CreateGrpsioMa
 		UID:            body.UID,
 		GroupName:      body.GroupName,
 		Type:           body.Type,
-		CommitteeUID:   body.CommitteeUID,
 		Description:    body.Description,
 		Title:          body.Title,
 		SubjectTag:     body.SubjectTag,
@@ -1704,10 +1711,10 @@ func NewCreateGrpsioMailingListGrpsIoMailingListFullCreated(body *CreateGrpsioMa
 	if body.Public == nil {
 		v.Public = false
 	}
-	if body.CommitteeFilters != nil {
-		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
-		for i, val := range body.CommitteeFilters {
-			v.CommitteeFilters[i] = val
+	if body.Committees != nil {
+		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
+		for i, val := range body.Committees {
+			v.Committees[i] = unmarshalCommitteeResponseBodyToMailinglistCommittee(val)
 		}
 	}
 	if body.Writers != nil {
@@ -1780,19 +1787,18 @@ func NewCreateGrpsioMailingListServiceUnavailable(body *CreateGrpsioMailingListS
 // "get-grpsio-mailing-list" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioMailingListResultOK(body *GetGrpsioMailingListResponseBody, etag *string) *mailinglist.GetGrpsioMailingListResult {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:          body.UID,
-		GroupName:    body.GroupName,
-		Type:         body.Type,
-		CommitteeUID: body.CommitteeUID,
-		Description:  body.Description,
-		Title:        body.Title,
-		SubjectTag:   body.SubjectTag,
-		ServiceUID:   body.ServiceUID,
-		ProjectUID:   body.ProjectUID,
-		ProjectName:  body.ProjectName,
-		ProjectSlug:  body.ProjectSlug,
-		CreatedAt:    body.CreatedAt,
-		UpdatedAt:    body.UpdatedAt,
+		UID:         body.UID,
+		GroupName:   body.GroupName,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
+		ProjectUID:  body.ProjectUID,
+		ProjectName: body.ProjectName,
+		ProjectSlug: body.ProjectSlug,
+		CreatedAt:   body.CreatedAt,
+		UpdatedAt:   body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -1800,10 +1806,10 @@ func NewGetGrpsioMailingListResultOK(body *GetGrpsioMailingListResponseBody, eta
 	if body.Public == nil {
 		v.Public = false
 	}
-	if body.CommitteeFilters != nil {
-		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
-		for i, val := range body.CommitteeFilters {
-			v.CommitteeFilters[i] = val
+	if body.Committees != nil {
+		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
+		for i, val := range body.Committees {
+			v.Committees[i] = unmarshalCommitteeResponseBodyToMailinglistCommittee(val)
 		}
 	}
 	if body.Writers != nil {
@@ -1871,19 +1877,18 @@ func NewGetGrpsioMailingListServiceUnavailable(body *GetGrpsioMailingListService
 // HTTP "OK" response.
 func NewUpdateGrpsioMailingListGrpsIoMailingListWithReadonlyAttributesOK(body *UpdateGrpsioMailingListResponseBody) *mailinglist.GrpsIoMailingListWithReadonlyAttributes {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:          body.UID,
-		GroupName:    body.GroupName,
-		Type:         body.Type,
-		CommitteeUID: body.CommitteeUID,
-		Description:  body.Description,
-		Title:        body.Title,
-		SubjectTag:   body.SubjectTag,
-		ServiceUID:   body.ServiceUID,
-		ProjectUID:   body.ProjectUID,
-		ProjectName:  body.ProjectName,
-		ProjectSlug:  body.ProjectSlug,
-		CreatedAt:    body.CreatedAt,
-		UpdatedAt:    body.UpdatedAt,
+		UID:         body.UID,
+		GroupName:   body.GroupName,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
+		ProjectUID:  body.ProjectUID,
+		ProjectName: body.ProjectName,
+		ProjectSlug: body.ProjectSlug,
+		CreatedAt:   body.CreatedAt,
+		UpdatedAt:   body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -1891,10 +1896,10 @@ func NewUpdateGrpsioMailingListGrpsIoMailingListWithReadonlyAttributesOK(body *U
 	if body.Public == nil {
 		v.Public = false
 	}
-	if body.CommitteeFilters != nil {
-		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
-		for i, val := range body.CommitteeFilters {
-			v.CommitteeFilters[i] = val
+	if body.Committees != nil {
+		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
+		for i, val := range body.Committees {
+			v.Committees[i] = unmarshalCommitteeResponseBodyToMailinglistCommittee(val)
 		}
 	}
 	if body.Writers != nil {
@@ -2541,12 +2546,11 @@ func ValidateCreateGrpsioMailingListResponseBody(body *CreateGrpsioMailingListRe
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
 	}
-	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-	}
-	for _, e := range body.CommitteeFilters {
-		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+	for _, e := range body.Committees {
+		if e != nil {
+			if err2 := ValidateCommitteeResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	if body.Description != nil {
@@ -2622,12 +2626,11 @@ func ValidateGetGrpsioMailingListResponseBody(body *GetGrpsioMailingListResponse
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
 	}
-	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-	}
-	for _, e := range body.CommitteeFilters {
-		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+	for _, e := range body.Committees {
+		if e != nil {
+			if err2 := ValidateCommitteeResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	if body.Description != nil {
@@ -2700,12 +2703,11 @@ func ValidateUpdateGrpsioMailingListResponseBody(body *UpdateGrpsioMailingListRe
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
 	}
-	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-	}
-	for _, e := range body.CommitteeFilters {
-		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+	for _, e := range body.Committees {
+		if e != nil {
+			if err2 := ValidateCommitteeResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	if body.Description != nil {
@@ -3625,6 +3627,35 @@ func ValidateGrpsIoServiceWithReadonlyAttributesResponseBody(body *GrpsIoService
 	return
 }
 
+// ValidateCommitteeRequestBody runs the validations defined on
+// CommitteeRequestBody
+func ValidateCommitteeRequestBody(body *CommitteeRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", body.UID, goa.FormatUUID))
+	for _, e := range body.Filters {
+		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+		}
+	}
+	return
+}
+
+// ValidateCommitteeResponseBody runs the validations defined on
+// CommitteeResponseBody
+func ValidateCommitteeResponseBody(body *CommitteeResponseBody) (err error) {
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
+	}
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
+	}
+	for _, e := range body.Filters {
+		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+		}
+	}
+	return
+}
+
 // ValidateGrpsIoMailingListWithReadonlyAttributesResponseBody runs the
 // validations defined on
 // grps-io-mailing-list-with-readonly-attributesResponseBody
@@ -3650,12 +3681,11 @@ func ValidateGrpsIoMailingListWithReadonlyAttributesResponseBody(body *GrpsIoMai
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
 	}
-	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-	}
-	for _, e := range body.CommitteeFilters {
-		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+	for _, e := range body.Committees {
+		if e != nil {
+			if err2 := ValidateCommitteeResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	if body.Description != nil {

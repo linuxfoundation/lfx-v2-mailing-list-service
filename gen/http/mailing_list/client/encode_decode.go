@@ -2217,3 +2217,63 @@ func DecodeGroupsioWebhookResponse(decoder func(*http.Response) goahttp.Decoder,
 		}
 	}
 }
+
+// marshalMailinglistCommitteeToCommitteeRequestBody builds a value of type
+// *CommitteeRequestBody from a value of type *mailinglist.Committee.
+func marshalMailinglistCommitteeToCommitteeRequestBody(v *mailinglist.Committee) *CommitteeRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &CommitteeRequestBody{
+		UID:  v.UID,
+		Name: v.Name,
+	}
+	if v.Filters != nil {
+		res.Filters = make([]string, len(v.Filters))
+		for i, val := range v.Filters {
+			res.Filters[i] = val
+		}
+	}
+
+	return res
+}
+
+// marshalCommitteeRequestBodyToMailinglistCommittee builds a value of type
+// *mailinglist.Committee from a value of type *CommitteeRequestBody.
+func marshalCommitteeRequestBodyToMailinglistCommittee(v *CommitteeRequestBody) *mailinglist.Committee {
+	if v == nil {
+		return nil
+	}
+	res := &mailinglist.Committee{
+		UID:  v.UID,
+		Name: v.Name,
+	}
+	if v.Filters != nil {
+		res.Filters = make([]string, len(v.Filters))
+		for i, val := range v.Filters {
+			res.Filters[i] = val
+		}
+	}
+
+	return res
+}
+
+// unmarshalCommitteeResponseBodyToMailinglistCommittee builds a value of type
+// *mailinglist.Committee from a value of type *CommitteeResponseBody.
+func unmarshalCommitteeResponseBodyToMailinglistCommittee(v *CommitteeResponseBody) *mailinglist.Committee {
+	if v == nil {
+		return nil
+	}
+	res := &mailinglist.Committee{
+		UID:  *v.UID,
+		Name: v.Name,
+	}
+	if v.Filters != nil {
+		res.Filters = make([]string, len(v.Filters))
+		for i, val := range v.Filters {
+			res.Filters[i] = val
+		}
+	}
+
+	return res
+}

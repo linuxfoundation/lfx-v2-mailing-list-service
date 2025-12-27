@@ -461,11 +461,24 @@ Example:
          "auditor_user_id1",
          "auditor_user_id2"
       ],
-      "committee_filters": [
-         "Voting Rep",
-         "Alternate Voting Rep"
+      "committees": [
+         {
+            "filters": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "filters": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         }
       ],
-      "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "description": "Technical steering committee discussions",
       "group_name": "technical-steering-committee",
       "public": false,
@@ -510,11 +523,24 @@ Example:
          "auditor_user_id1",
          "auditor_user_id2"
       ],
-      "committee_filters": [
-         "Voting Rep",
-         "Alternate Voting Rep"
+      "committees": [
+         {
+            "filters": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "filters": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         }
       ],
-      "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "description": "Technical steering committee discussions",
       "group_name": "technical-steering-committee",
       "public": false,
@@ -563,7 +589,7 @@ Example:
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
       "member_type": "direct",
-      "mod_status": "owner",
+      "mod_status": "none",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
@@ -597,11 +623,11 @@ Update a member of a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "digest",
+      "delivery_mode": "normal",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "none",
+      "mod_status": "moderator",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -633,10 +659,10 @@ Handle GroupsIO webhook events for subgroup and member changes
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
       "action": "created_subgroup",
-      "extra": "Sapiente quo eveniet iusto sit aperiam neque.",
-      "extra_id": 5841507716260392508,
-      "group": "Repudiandae aliquid eius quis.",
-      "member_info": "Porro aliquam esse odit nemo."
-   }' --signature "Hic repellendus."
+      "extra": "Ut id laboriosam aut aut eos sequi.",
+      "extra_id": 2981127877810673139,
+      "group": "Hic repellendus.",
+      "member_info": "Adipisci quia laudantium qui aut sunt."
+   }' --signature "Et commodi quo."
 `, os.Args[0])
 }

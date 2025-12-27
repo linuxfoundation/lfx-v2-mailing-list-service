@@ -33,11 +33,11 @@ app:
 
     # Mock principal for local development - bypasses JWT validation
     JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL:
-      value: "test-super-admin"
+      value: "project_super_admin"
 
-    # Use mock repository for local testing
+    # Use NATS repository to connect to real projects from local k8s or mock for local testing
     REPOSITORY_SOURCE:
-      value: mock
+      value: nats
 
     # Use mock GroupsIO integration for local testing
     GROUPSIO_SOURCE:

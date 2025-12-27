@@ -217,8 +217,9 @@ func TestGrpsIOMailingList_ValidateCommitteeFields(t *testing.T) {
 			name: "valid committee with filters",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+					Committees: []Committee{
+						{UID: "committee-123", Filters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver}},
+					},
 				}
 			},
 			expectError: false,
@@ -227,8 +228,9 @@ func TestGrpsIOMailingList_ValidateCommitteeFields(t *testing.T) {
 			name: "valid committee without filters",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{},
+					Committees: []Committee{
+						{UID: "committee-123", Filters: []string{}},
+					},
 				}
 			},
 			expectError: false,
@@ -237,45 +239,62 @@ func TestGrpsIOMailingList_ValidateCommitteeFields(t *testing.T) {
 			name: "no committee no filters",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "",
-					CommitteeFilters: []string{},
+					Committees: []Committee{},
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "filters without committee",
+			name: "filters without committee UID",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "",
-					CommitteeFilters: []string{CommitteeFilterVotingRep},
+					Committees: []Committee{
+						{UID: "", Filters: []string{CommitteeFilterVotingRep}},
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "committee must not be empty if committee_filters is non-empty",
+			errorMsg:    "committees[0].uid is required",
 		},
 		{
 			name: "invalid committee filter",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{CommitteeFilterVotingRep, "invalid_filter"},
+					Committees: []Committee{
+						{UID: "committee-123", Filters: []string{CommitteeFilterVotingRep, "invalid_filter"}},
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "invalid committee_filter: invalid_filter",
+			errorMsg:    "invalid committees[0].filters value: invalid_filter",
 		},
 		{
 			name: "all valid committee filters",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID: "committee-123",
-					CommitteeFilters: []string{
-						CommitteeFilterVotingRep,
-						CommitteeFilterAltVotingRep,
-						CommitteeFilterObserver,
-						CommitteeFilterEmeritus,
-						CommitteeFilterNone,
+					Committees: []Committee{
+						{
+							UID: "committee-123",
+							Filters: []string{
+								CommitteeFilterVotingRep,
+								CommitteeFilterAltVotingRep,
+								CommitteeFilterObserver,
+								CommitteeFilterEmeritus,
+								CommitteeFilterNone,
+							},
+						},
+					},
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "multiple valid committees",
+			mailingList: func() *GrpsIOMailingList {
+				return &GrpsIOMailingList{
+					Committees: []Committee{
+						{UID: "committee-1", Filters: []string{CommitteeFilterVotingRep}},
+						{UID: "committee-2", Filters: []string{CommitteeFilterObserver}},
 					},
 				}
 			},
@@ -390,42 +409,44 @@ func TestGrpsIOMailingList_IsCommitteeBased(t *testing.T) {
 		expected    bool
 	}{
 		{
-			name: "committee UID provided",
+			name: "single committee without filters",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{},
+				Committees: []Committee{
+					{UID: "committee-123", Filters: []string{}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "committee filters provided",
+			name: "single committee with filters",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: []string{CommitteeFilterVotingRep},
+				Committees: []Committee{
+					{UID: "committee-123", Filters: []string{CommitteeFilterVotingRep}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "both committee UID and filters provided",
+			name: "multiple committees",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{CommitteeFilterVotingRep},
+				Committees: []Committee{
+					{UID: "committee-1", Filters: []string{CommitteeFilterVotingRep}},
+					{UID: "committee-2", Filters: []string{CommitteeFilterObserver}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "neither committee UID nor filters provided",
+			name: "empty committees array",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: []string{},
+				Committees: []Committee{},
 			},
 			expected: false,
 		},
 		{
-			name: "nil committee filters",
+			name: "nil committees",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: nil,
+				Committees: nil,
 			},
 			expected: false,
 		},
@@ -513,13 +534,14 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 		{
 			name: "complete mailing list",
 			mailingList: &GrpsIOMailingList{
-				UID:              "ml-123",
-				ProjectUID:       "project-456",
-				ServiceUID:       "service-789",
-				Type:             TypeDiscussionOpen,
-				Public:           true,
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+				UID:        "ml-123",
+				ProjectUID: "project-456",
+				ServiceUID: "service-789",
+				Type:       TypeDiscussionOpen,
+				Public:     true,
+				Committees: []Committee{
+					{UID: "committee-123", Filters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver}},
+				},
 			},
 			expectedTags: []string{
 				"project_uid:project-456",
@@ -679,13 +701,14 @@ func BenchmarkGrpsIOMailingList_BuildIndexKey(b *testing.B) {
 
 func BenchmarkGrpsIOMailingList_Tags(b *testing.B) {
 	ml := &GrpsIOMailingList{
-		UID:              "ml-" + uuid.New().String(),
-		ProjectUID:       "project-" + uuid.New().String(),
-		ServiceUID:       "service-" + uuid.New().String(),
-		Type:             TypeDiscussionOpen,
-		Public:           true,
-		CommitteeUID:     "committee-" + uuid.New().String(),
-		CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+		UID:        "ml-" + uuid.New().String(),
+		ProjectUID: "project-" + uuid.New().String(),
+		ServiceUID: "service-" + uuid.New().String(),
+		Type:       TypeDiscussionOpen,
+		Public:     true,
+		Committees: []Committee{
+			{UID: "committee-" + uuid.New().String(), Filters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver}},
+		},
 	}
 
 	b.ResetTimer()

@@ -393,9 +393,11 @@ func TestValidateMailingListDeleteProtection(t *testing.T) {
 		{
 			name: "valid delete - committee-based list (with debug log)",
 			mailingList: &model.GrpsIOMailingList{
-				UID:          "ml-123",
-				GroupName:    "committee-group",
-				CommitteeUID: "committee-456",
+				UID:       "ml-123",
+				GroupName: "committee-group",
+				Committees: []model.Committee{
+					{UID: "committee-456"},
+				},
 			},
 			parentService: &model.GrpsIOService{
 				Type:      "formation",

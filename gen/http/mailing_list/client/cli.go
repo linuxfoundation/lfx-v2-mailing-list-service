@@ -300,7 +300,7 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committees\": [\n         {\n            \"filters\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"filters\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -312,12 +312,11 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
-		if body.CommitteeUID != nil {
-			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-		}
-		for _, e := range body.CommitteeFilters {
-			if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+		for _, e := range body.Committees {
+			if e != nil {
+				if err2 := ValidateCommitteeRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
 			}
 		}
 		if utf8.RuneCountInString(body.Description) < 11 {
@@ -359,19 +358,18 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 		}
 	}
 	v := &mailinglist.CreateGrpsioMailingListPayload{
-		GroupName:    body.GroupName,
-		Public:       body.Public,
-		Type:         body.Type,
-		CommitteeUID: body.CommitteeUID,
-		Description:  body.Description,
-		Title:        body.Title,
-		SubjectTag:   body.SubjectTag,
-		ServiceUID:   body.ServiceUID,
+		GroupName:   body.GroupName,
+		Public:      body.Public,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
 	}
-	if body.CommitteeFilters != nil {
-		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
-		for i, val := range body.CommitteeFilters {
-			v.CommitteeFilters[i] = val
+	if body.Committees != nil {
+		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
+		for i, val := range body.Committees {
+			v.Committees[i] = marshalCommitteeRequestBodyToMailinglistCommittee(val)
 		}
 	}
 	if body.Writers != nil {
@@ -434,7 +432,7 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committees\": [\n         {\n            \"filters\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"filters\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -446,12 +444,11 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
-		if body.CommitteeUID != nil {
-			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
-		}
-		for _, e := range body.CommitteeFilters {
-			if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+		for _, e := range body.Committees {
+			if e != nil {
+				if err2 := ValidateCommitteeRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
 			}
 		}
 		if utf8.RuneCountInString(body.Description) < 11 {
@@ -507,19 +504,18 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 		}
 	}
 	v := &mailinglist.UpdateGrpsioMailingListPayload{
-		GroupName:    body.GroupName,
-		Public:       body.Public,
-		Type:         body.Type,
-		CommitteeUID: body.CommitteeUID,
-		Description:  body.Description,
-		Title:        body.Title,
-		SubjectTag:   body.SubjectTag,
-		ServiceUID:   body.ServiceUID,
+		GroupName:   body.GroupName,
+		Public:      body.Public,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
 	}
-	if body.CommitteeFilters != nil {
-		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
-		for i, val := range body.CommitteeFilters {
-			v.CommitteeFilters[i] = val
+	if body.Committees != nil {
+		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
+		for i, val := range body.Committees {
+			v.Committees[i] = marshalCommitteeRequestBodyToMailinglistCommittee(val)
 		}
 	}
 	if body.Writers != nil {
@@ -595,7 +591,7 @@ func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"none\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -758,7 +754,7 @@ func BuildUpdateGrpsioMailingListMemberPayload(mailingListUpdateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"none\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"normal\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -925,7 +921,7 @@ func BuildGroupsioWebhookPayload(mailingListGroupsioWebhookBody string, mailingL
 	{
 		err = json.Unmarshal([]byte(mailingListGroupsioWebhookBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"action\": \"created_subgroup\",\n      \"extra\": \"Sapiente quo eveniet iusto sit aperiam neque.\",\n      \"extra_id\": 5841507716260392508,\n      \"group\": \"Repudiandae aliquid eius quis.\",\n      \"member_info\": \"Porro aliquam esse odit nemo.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"action\": \"created_subgroup\",\n      \"extra\": \"Ut id laboriosam aut aut eos sequi.\",\n      \"extra_id\": 2981127877810673139,\n      \"group\": \"Hic repellendus.\",\n      \"member_info\": \"Adipisci quia laudantium qui aut sunt.\"\n   }'")
 		}
 		if !(body.Action == "created_subgroup" || body.Action == "deleted_subgroup" || body.Action == "added_member" || body.Action == "removed_member" || body.Action == "ban_members") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.action", body.Action, []any{"created_subgroup", "deleted_subgroup", "added_member", "removed_member", "ban_members"}))
