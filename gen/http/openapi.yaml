@@ -1041,6 +1041,15 @@ definitions:
         title: GrpsIoMailingListFull
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
@@ -1161,6 +1170,7 @@ definitions:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
@@ -1190,6 +1200,15 @@ definitions:
         title: GrpsIoMailingListWithReadonlyAttributes
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
@@ -1302,6 +1321,7 @@ definitions:
                     - manager_user_id2
         description: A representation of GroupsIO mailing lists with readonly attributes.
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
@@ -2033,6 +2053,15 @@ definitions:
         title: MailingListCreateGrpsioMailingListRequestBody
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
@@ -2114,6 +2143,7 @@ definitions:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
@@ -2311,6 +2341,15 @@ definitions:
         title: MailingListUpdateGrpsioMailingListRequestBody
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
@@ -2392,6 +2431,7 @@ definitions:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2

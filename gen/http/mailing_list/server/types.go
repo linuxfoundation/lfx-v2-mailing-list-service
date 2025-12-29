@@ -88,6 +88,9 @@ type CreateGrpsioMailingListRequestBody struct {
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
@@ -115,6 +118,9 @@ type UpdateGrpsioMailingListRequestBody struct {
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
@@ -305,6 +311,9 @@ type CreateGrpsioMailingListResponseBody struct {
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string `form:"audience_access" json:"audience_access" xml:"audience_access"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
@@ -352,6 +361,9 @@ type UpdateGrpsioMailingListResponseBody struct {
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string `form:"audience_access" json:"audience_access" xml:"audience_access"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
@@ -1013,6 +1025,9 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string `form:"audience_access" json:"audience_access" xml:"audience_access"`
 	// Committee UUID for committee-based mailing lists
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee member filters
@@ -1245,6 +1260,7 @@ func NewCreateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListFu
 		GroupName:      res.GroupName,
 		Public:         res.Public,
 		Type:           res.Type,
+		AudienceAccess: res.AudienceAccess,
 		CommitteeUID:   res.CommitteeUID,
 		Description:    res.Description,
 		Title:          res.Title,
@@ -1262,6 +1278,12 @@ func NewCreateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListFu
 		var zero bool
 		if body.Public == zero {
 			body.Public = false
+		}
+	}
+	{
+		var zero string
+		if body.AudienceAccess == zero {
+			body.AudienceAccess = "public"
 		}
 	}
 	if res.CommitteeFilters != nil {
@@ -1290,25 +1312,32 @@ func NewCreateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListFu
 // service.
 func NewGetGrpsioMailingListResponseBody(res *mailinglist.GetGrpsioMailingListResult) *GetGrpsioMailingListResponseBody {
 	body := &GetGrpsioMailingListResponseBody{
-		UID:          res.MailingList.UID,
-		GroupName:    res.MailingList.GroupName,
-		Public:       res.MailingList.Public,
-		Type:         res.MailingList.Type,
-		CommitteeUID: res.MailingList.CommitteeUID,
-		Description:  res.MailingList.Description,
-		Title:        res.MailingList.Title,
-		SubjectTag:   res.MailingList.SubjectTag,
-		ServiceUID:   res.MailingList.ServiceUID,
-		ProjectUID:   res.MailingList.ProjectUID,
-		ProjectName:  res.MailingList.ProjectName,
-		ProjectSlug:  res.MailingList.ProjectSlug,
-		CreatedAt:    res.MailingList.CreatedAt,
-		UpdatedAt:    res.MailingList.UpdatedAt,
+		UID:            res.MailingList.UID,
+		GroupName:      res.MailingList.GroupName,
+		Public:         res.MailingList.Public,
+		Type:           res.MailingList.Type,
+		AudienceAccess: res.MailingList.AudienceAccess,
+		CommitteeUID:   res.MailingList.CommitteeUID,
+		Description:    res.MailingList.Description,
+		Title:          res.MailingList.Title,
+		SubjectTag:     res.MailingList.SubjectTag,
+		ServiceUID:     res.MailingList.ServiceUID,
+		ProjectUID:     res.MailingList.ProjectUID,
+		ProjectName:    res.MailingList.ProjectName,
+		ProjectSlug:    res.MailingList.ProjectSlug,
+		CreatedAt:      res.MailingList.CreatedAt,
+		UpdatedAt:      res.MailingList.UpdatedAt,
 	}
 	{
 		var zero bool
 		if body.Public == zero {
 			body.Public = false
+		}
+	}
+	{
+		var zero string
+		if body.AudienceAccess == zero {
+			body.AudienceAccess = "public"
 		}
 	}
 	if res.MailingList.CommitteeFilters != nil {
@@ -1337,25 +1366,32 @@ func NewGetGrpsioMailingListResponseBody(res *mailinglist.GetGrpsioMailingListRe
 // "mailing-list" service.
 func NewUpdateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListWithReadonlyAttributes) *UpdateGrpsioMailingListResponseBody {
 	body := &UpdateGrpsioMailingListResponseBody{
-		UID:          res.UID,
-		GroupName:    res.GroupName,
-		Public:       res.Public,
-		Type:         res.Type,
-		CommitteeUID: res.CommitteeUID,
-		Description:  res.Description,
-		Title:        res.Title,
-		SubjectTag:   res.SubjectTag,
-		ServiceUID:   res.ServiceUID,
-		ProjectUID:   res.ProjectUID,
-		ProjectName:  res.ProjectName,
-		ProjectSlug:  res.ProjectSlug,
-		CreatedAt:    res.CreatedAt,
-		UpdatedAt:    res.UpdatedAt,
+		UID:            res.UID,
+		GroupName:      res.GroupName,
+		Public:         res.Public,
+		Type:           res.Type,
+		AudienceAccess: res.AudienceAccess,
+		CommitteeUID:   res.CommitteeUID,
+		Description:    res.Description,
+		Title:          res.Title,
+		SubjectTag:     res.SubjectTag,
+		ServiceUID:     res.ServiceUID,
+		ProjectUID:     res.ProjectUID,
+		ProjectName:    res.ProjectName,
+		ProjectSlug:    res.ProjectSlug,
+		CreatedAt:      res.CreatedAt,
+		UpdatedAt:      res.UpdatedAt,
 	}
 	{
 		var zero bool
 		if body.Public == zero {
 			body.Public = false
+		}
+	}
+	{
+		var zero string
+		if body.AudienceAccess == zero {
+			body.AudienceAccess = "public"
 		}
 	}
 	if res.CommitteeFilters != nil {
@@ -2256,6 +2292,12 @@ func NewCreateGrpsioMailingListPayload(body *CreateGrpsioMailingListRequestBody,
 		SubjectTag:   body.SubjectTag,
 		ServiceUID:   *body.ServiceUID,
 	}
+	if body.AudienceAccess != nil {
+		v.AudienceAccess = *body.AudienceAccess
+	}
+	if body.AudienceAccess == nil {
+		v.AudienceAccess = "public"
+	}
 	if body.CommitteeFilters != nil {
 		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
 		for i, val := range body.CommitteeFilters {
@@ -2303,6 +2345,12 @@ func NewUpdateGrpsioMailingListPayload(body *UpdateGrpsioMailingListRequestBody,
 		Title:        *body.Title,
 		SubjectTag:   body.SubjectTag,
 		ServiceUID:   *body.ServiceUID,
+	}
+	if body.AudienceAccess != nil {
+		v.AudienceAccess = *body.AudienceAccess
+	}
+	if body.AudienceAccess == nil {
+		v.AudienceAccess = "public"
 	}
 	if body.CommitteeFilters != nil {
 		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
@@ -2554,6 +2602,11 @@ func ValidateCreateGrpsioMailingListRequestBody(body *CreateGrpsioMailingListReq
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
 		}
 	}
+	if body.AudienceAccess != nil {
+		if !(*body.AudienceAccess == "public" || *body.AudienceAccess == "approval_required" || *body.AudienceAccess == "invite_only") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.audience_access", *body.AudienceAccess, []any{"public", "approval_required", "invite_only"}))
+		}
+	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
@@ -2630,6 +2683,11 @@ func ValidateUpdateGrpsioMailingListRequestBody(body *UpdateGrpsioMailingListReq
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
+		}
+	}
+	if body.AudienceAccess != nil {
+		if !(*body.AudienceAccess == "public" || *body.AudienceAccess == "approval_required" || *body.AudienceAccess == "invite_only") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.audience_access", *body.AudienceAccess, []any{"public", "approval_required", "invite_only"}))
 		}
 	}
 	if body.CommitteeUID != nil {

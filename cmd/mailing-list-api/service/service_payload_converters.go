@@ -54,6 +54,7 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 	mailingList := &model.GrpsIOMailingList{
 		GroupName:        p.GroupName,
 		Public:           p.Public,
+		AudienceAccess:   p.AudienceAccess,
 		Type:             p.Type,
 		CommitteeUID:     payloadStringValue(p.CommitteeUID),
 		CommitteeFilters: p.CommitteeFilters,
@@ -121,16 +122,17 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
-		Public:           payload.Public,                           // Direct assignment
-		Type:             payload.Type,                             // Direct assignment
-		Description:      payload.Description,                      // Direct assignment
-		Title:            payload.Title,                            // Direct assignment
-		ServiceUID:       payload.ServiceUID,                       // Direct assignment
-		CommitteeUID:     payloadStringValue(payload.CommitteeUID), // nil → ""
-		SubjectTag:       payloadStringValue(payload.SubjectTag),   // nil → ""
-		CommitteeFilters: payload.CommitteeFilters,                 // nil → nil
-		Writers:          payload.Writers,                          // nil → nil
-		Auditors:         payload.Auditors,                         // nil → nil
+		Public:           payload.Public,          // Direct assignment
+		AudienceAccess:   payload.AudienceAccess,  // Direct assignment
+		Type:             payload.Type,            // Direct assignment
+		Description:      payload.Description,                          // Direct assignment
+		Title:            payload.Title,                                // Direct assignment
+		ServiceUID:       payload.ServiceUID,                           // Direct assignment
+		CommitteeUID:     payloadStringValue(payload.CommitteeUID),     // nil → ""
+		SubjectTag:       payloadStringValue(payload.SubjectTag),       // nil → ""
+		CommitteeFilters: payload.CommitteeFilters,                     // nil → nil
+		Writers:          payload.Writers,                              // nil → nil
+		Auditors:         payload.Auditors,                             // nil → nil
 		UpdatedAt:        time.Now().UTC(),
 	}
 }
