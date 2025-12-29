@@ -57,23 +57,23 @@ const (
 	TypeCustom              = "custom" // TODO: Verify if Groups.io actually supports custom type
 )
 
-// Valid committee filters
+// Valid committee voting statuses
 const (
-	CommitteeFilterVotingRep    = "Voting Rep"
-	CommitteeFilterAltVotingRep = "Alternate Voting Rep"
-	CommitteeFilterObserver     = "Observer"
-	CommitteeFilterEmeritus     = "Emeritus"
-	CommitteeFilterNone         = "None"
+	CommitteeVotingStatusVotingRep    = "Voting Rep"
+	CommitteeVotingStatusAltVotingRep = "Alternate Voting Rep"
+	CommitteeVotingStatusObserver     = "Observer"
+	CommitteeVotingStatusEmeritus     = "Emeritus"
+	CommitteeVotingStatusNone         = "None"
 )
 
-// ValidCommitteeFilters returns all valid committee filter values
-func ValidCommitteeFilters() []string {
+// ValidCommitteeVotingStatuses returns all valid committee voting status values
+func ValidCommitteeVotingStatuses() []string {
 	return []string{
-		CommitteeFilterVotingRep,
-		CommitteeFilterAltVotingRep,
-		CommitteeFilterObserver,
-		CommitteeFilterEmeritus,
-		CommitteeFilterNone,
+		CommitteeVotingStatusVotingRep,
+		CommitteeVotingStatusAltVotingRep,
+		CommitteeVotingStatusObserver,
+		CommitteeVotingStatusEmeritus,
+		CommitteeVotingStatusNone,
 	}
 }
 
@@ -134,7 +134,7 @@ func (ml *GrpsIOMailingList) ValidateCommitteeFields() error {
 		return nil // No committees is valid
 	}
 
-	validFilters := ValidCommitteeFilters()
+	validVotingStatuses := ValidCommitteeVotingStatuses()
 
 	for i, committee := range ml.Committees {
 		// Each committee must have a UID
@@ -142,10 +142,10 @@ func (ml *GrpsIOMailingList) ValidateCommitteeFields() error {
 			return errors.NewValidation(fmt.Sprintf("committees[%d].uid is required", i))
 		}
 
-		// Validate each filter value if filters are specified
-		for _, filter := range committee.Filters {
-			if !contains(validFilters, filter) {
-				return errors.NewValidation(fmt.Sprintf("invalid committees[%d].filters value: %s. Valid values: %v", i, filter, validFilters))
+		// Validate each voting status value if specified
+		for _, status := range committee.AllowedVotingStatuses {
+			if !contains(validVotingStatuses, status) {
+				return errors.NewValidation(fmt.Sprintf("invalid committees[%d].allowed_voting_statuses value: %s. Valid values: %v", i, status, validVotingStatuses))
 			}
 		}
 	}
@@ -221,9 +221,9 @@ func (ml *GrpsIOMailingList) Tags() []string {
 		if committee.UID != "" {
 			tags = append(tags, fmt.Sprintf("committee_uid:%s", committee.UID))
 		}
-		// Add filter tags for each committee
-		for _, filter := range committee.Filters {
-			tags = append(tags, fmt.Sprintf("committee_filter:%s", filter))
+		// Add voting status tags for each committee
+		for _, status := range committee.AllowedVotingStatuses {
+			tags = append(tags, fmt.Sprintf("committee_voting_status:%s", status))
 		}
 	}
 

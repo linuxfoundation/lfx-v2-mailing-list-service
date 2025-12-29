@@ -236,7 +236,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				Public:    true,
 				Type:      "discussion_open",
 				Committees: []model.Committee{
-					{UID: "committee-123", Name: "Test Committee", Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-123", Name: "Test Committee", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description:    "This is a comprehensive test mailing list",
 				Title:          "Test Mailing List",
@@ -258,7 +258,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				Public:    true,
 				Type:      stringPtr("discussion_open"),
 				Committees: []*mailinglistservice.Committee{
-					{UID: "committee-123", Name: stringPtr("Test Committee"), Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-123", Name: stringPtr("Test Committee"), AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description:    stringPtr("This is a comprehensive test mailing list"),
 				Title:          stringPtr("Test Mailing List"),

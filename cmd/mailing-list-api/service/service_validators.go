@@ -456,7 +456,7 @@ func isMainGroupForService(ml *model.GrpsIOMailingList, svc *model.GrpsIOService
 }
 
 // committeesChanged detects if committees have changed between existing domain model and payload
-// This includes changes to UIDs and Filters to ensure proper validation
+// This includes changes to UIDs and AllowedVotingStatuses to ensure proper validation
 func committeesChanged(existing []model.Committee, payload []*mailinglistservice.Committee) bool {
 	// Different number of committees means changed
 	if len(existing) != len(payload) {
@@ -469,7 +469,7 @@ func committeesChanged(existing []model.Committee, payload []*mailinglistservice
 		existingMap[c.UID] = c
 	}
 
-	// Check if any payload committee has changed UID or Filters
+	// Check if any payload committee has changed UID or AllowedVotingStatuses
 	for _, payloadCommittee := range payload {
 		if payloadCommittee == nil {
 			continue
@@ -481,20 +481,20 @@ func committeesChanged(existing []model.Committee, payload []*mailinglistservice
 			return true
 		}
 
-		// Compare filters - both length and content
-		if len(existingCommittee.Filters) != len(payloadCommittee.Filters) {
+		// Compare allowed voting statuses - both length and content
+		if len(existingCommittee.AllowedVotingStatuses) != len(payloadCommittee.AllowedVotingStatuses) {
 			return true
 		}
 
-		// Build filter set for comparison
-		existingFilters := make(map[string]bool)
-		for _, f := range existingCommittee.Filters {
-			existingFilters[f] = true
+		// Build status set for comparison
+		existingStatuses := make(map[string]bool)
+		for _, s := range existingCommittee.AllowedVotingStatuses {
+			existingStatuses[s] = true
 		}
 
-		// Check if any payload filter is missing from existing
-		for _, f := range payloadCommittee.Filters {
-			if !existingFilters[f] {
+		// Check if any payload status is missing from existing
+		for _, s := range payloadCommittee.AllowedVotingStatuses {
+			if !existingStatuses[s] {
 				return true
 			}
 		}

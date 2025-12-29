@@ -481,8 +481,8 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 3.3: Refresh committee names if committees changed
-	if ml.committeesChanged(existing.Committees, mailingList.Committees) {
+	// Always refresh committee names to pick up any name changes in committee-service
+	if len(mailingList.Committees) > 0 {
 		if err := ml.validateAndPopulateCommittees(ctx, mailingList); err != nil {
 			return nil, 0, err
 		}
@@ -667,14 +667,6 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 	updated.ServiceUID = existing.ServiceUID   // Parent reference is immutable
 	updated.GroupName = existing.GroupName     // Group name is immutable due to unique constraint
 
-	// Committees name handling: preserve names for unchanged UIDs
-	// Names will be refreshed by validateAndPopulateCommittees if committees changed
-	if !ml.committeesChanged(existing.Committees, updated.Committees) {
-		// No change, preserve existing committees with their names
-		updated.Committees = existing.Committees
-	}
-	// If committees changed, names will be populated by validateAndPopulateCommittees
-
 	// Update timestamp
 	updated.UpdatedAt = time.Now()
 
@@ -682,49 +674,6 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 		"mailing_list_uid", existing.UID,
 		"mutable_fields", []string{"public", "type", "description", "title", "committees", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
 	)
-}
-
-// committeesChanged checks if committees have changed between existing and updated
-// This includes changes to UIDs and Filters to ensure member sync is triggered
-func (ml *grpsIOWriterOrchestrator) committeesChanged(existing []model.Committee, updated []model.Committee) bool {
-	if len(existing) != len(updated) {
-		return true
-	}
-
-	// Build map of existing committees by UID for comparison
-	existingMap := make(map[string]model.Committee)
-	for _, c := range existing {
-		existingMap[c.UID] = c
-	}
-
-	// Check if any updated committee has changed UID or Filters
-	for _, updatedCommittee := range updated {
-		existingCommittee, exists := existingMap[updatedCommittee.UID]
-		if !exists {
-			// Committee UID not found in existing
-			return true
-		}
-
-		// Compare filters - both length and content
-		if len(existingCommittee.Filters) != len(updatedCommittee.Filters) {
-			return true
-		}
-
-		// Build filter set for comparison
-		existingFilters := make(map[string]bool)
-		for _, f := range existingCommittee.Filters {
-			existingFilters[f] = true
-		}
-
-		// Check if any updated filter is missing from existing
-		for _, f := range updatedCommittee.Filters {
-			if !existingFilters[f] {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 // syncMailingListToGroupsIO handles Groups.io mailing list update with proper error handling

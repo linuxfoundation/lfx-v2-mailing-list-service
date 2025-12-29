@@ -11,3 +11,6 @@ revive.log
 .vscode/settings.json
 coverage.html
 .serena/
+
+# Helm local override files
+charts/*/values.local.yaml

@@ -185,7 +185,7 @@ func NewMockRepository() *MockRepository {
 				Public:    true,
 				Type:      "discussion_open",
 				Committees: []model.Committee{
-					{UID: "committee-1", Name: "Technical Advisory Committee", Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-1", Name: "Technical Advisory Committee", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description: "Development discussions and technical matters for the project",
 				Title:       "Development List",
@@ -218,7 +218,7 @@ func NewMockRepository() *MockRepository {
 				Public:    false,
 				Type:      "discussion_moderated",
 				Committees: []model.Committee{
-					{UID: "committee-2", Name: "Security Committee", Filters: []string{"Voting Rep"}},
+					{UID: "committee-2", Name: "Security Committee", AllowedVotingStatuses: []string{"Voting Rep"}},
 				},
 				Description: "Private security discussions for committee members only",
 				Title:       "Formation Security List",
@@ -1220,7 +1220,7 @@ func (m *MockRepository) GetGrpsIOMailingListWithRevision(ctx context.Context, u
 		mailingListCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
@@ -1337,7 +1337,7 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 		mailingListCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
@@ -1354,7 +1354,7 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 		resultCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)
@@ -1396,7 +1396,7 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 		mailingListCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
@@ -1414,7 +1414,7 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 		resultCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)
@@ -1458,7 +1458,7 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 		mailingListCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
@@ -1476,7 +1476,7 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 		resultCopy.Committees[i] = model.Committee{
 			UID:     c.UID,
 			Name:    c.Name,
-			Filters: append([]string(nil), c.Filters...),
+			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
 	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)

@@ -123,7 +123,7 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				Public:    true,
 				Type:      "discussion_open",
 				Committees: []*mailinglistservice.Committee{
-					{UID: "committee-123", Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description: "This is a test mailing list description",
 				Title:       "Test Mailing List",
@@ -137,7 +137,7 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				Public:    true,
 				Type:      "discussion_open",
 				Committees: []model.Committee{
-					{UID: "committee-123", Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description: "This is a test mailing list description",
 				Title:       "Test Mailing List",
@@ -189,7 +189,7 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 			assert.Equal(t, len(tt.expected.Committees), len(result.Committees))
 			for i := range tt.expected.Committees {
 				assert.Equal(t, tt.expected.Committees[i].UID, result.Committees[i].UID)
-				assert.Equal(t, tt.expected.Committees[i].Filters, result.Committees[i].Filters)
+				assert.Equal(t, tt.expected.Committees[i].AllowedVotingStatuses, result.Committees[i].AllowedVotingStatuses)
 			}
 			assert.Equal(t, tt.expected.Description, result.Description)
 			assert.Equal(t, tt.expected.Title, result.Title)

@@ -29,7 +29,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 		Public:    true,
 		Type:      "discussion_open",
 		Committees: []model.Committee{
-			{UID: "committee-1", Name: "Technical Advisory Committee", Filters: []string{"Voting Rep", "Observer"}},
+			{UID: "committee-1", Name: "Technical Advisory Committee", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 		},
 		Description:    "Development discussions and technical matters for the project",
 		Title:          "Development List",
@@ -72,7 +72,7 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 				require.Len(t, mailingList.Committees, 1)
 				assert.Equal(t, "committee-1", mailingList.Committees[0].UID)
 				assert.Equal(t, "Technical Advisory Committee", mailingList.Committees[0].Name)
-				assert.Equal(t, []string{"Voting Rep", "Observer"}, mailingList.Committees[0].Filters)
+				assert.Equal(t, []string{"Voting Rep", "Observer"}, mailingList.Committees[0].AllowedVotingStatuses)
 				assert.Equal(t, "Development discussions and technical matters for the project", mailingList.Description)
 				assert.Equal(t, "Development List", mailingList.Title)
 				assert.Equal(t, "[DEV]", mailingList.SubjectTag)
@@ -162,7 +162,7 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 			Public:    true,
 			Type:      "discussion_open",
 			Committees: []model.Committee{
-				{UID: committeeUID, Name: "Integration Technical Committee", Filters: []string{"Voting Rep", "Observer"}},
+				{UID: committeeUID, Name: "Integration Technical Committee", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 			},
 			Description:    "Integration development discussions and technical matters",
 			Title:          "Integration Development List",
@@ -233,7 +233,7 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 		require.Len(t, ml1.Committees, 1)
 		assert.Equal(t, committeeUID, ml1.Committees[0].UID)
 		assert.Equal(t, "Integration Technical Committee", ml1.Committees[0].Name)
-		assert.Equal(t, []string{"Voting Rep", "Observer"}, ml1.Committees[0].Filters)
+		assert.Equal(t, []string{"Voting Rep", "Observer"}, ml1.Committees[0].AllowedVotingStatuses)
 
 		// Validate project details
 		assert.Equal(t, "Integration Test Project", ml1.ProjectName)

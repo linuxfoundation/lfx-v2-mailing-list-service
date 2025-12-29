@@ -463,7 +463,7 @@ Example:
       ],
       "committees": [
          {
-            "filters": [
+            "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
@@ -471,7 +471,7 @@ Example:
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
-            "filters": [
+            "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
@@ -525,7 +525,7 @@ Example:
       ],
       "committees": [
          {
-            "filters": [
+            "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
@@ -533,7 +533,7 @@ Example:
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
-            "filters": [
+            "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],

@@ -1885,10 +1885,10 @@ func unmarshalCommitteeRequestBodyToMailinglistCommittee(v *CommitteeRequestBody
 		UID:  *v.UID,
 		Name: v.Name,
 	}
-	if v.Filters != nil {
-		res.Filters = make([]string, len(v.Filters))
-		for i, val := range v.Filters {
-			res.Filters[i] = val
+	if v.AllowedVotingStatuses != nil {
+		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
+		for i, val := range v.AllowedVotingStatuses {
+			res.AllowedVotingStatuses[i] = val
 		}
 	}
 
@@ -1905,10 +1905,10 @@ func marshalMailinglistCommitteeToCommitteeResponseBody(v *mailinglist.Committee
 		UID:  v.UID,
 		Name: v.Name,
 	}
-	if v.Filters != nil {
-		res.Filters = make([]string, len(v.Filters))
-		for i, val := range v.Filters {
-			res.Filters[i] = val
+	if v.AllowedVotingStatuses != nil {
+		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
+		for i, val := range v.AllowedVotingStatuses {
+			res.AllowedVotingStatuses[i] = val
 		}
 	}
 

@@ -991,7 +991,7 @@ definitions:
         title: Committee
         type: object
         properties:
-            filters:
+            allowed_voting_statuses:
                 type: array
                 items:
                     type: string
@@ -1002,7 +1002,7 @@ definitions:
                         - Observer
                         - Emeritus
                         - None
-                description: Committee member filters
+                description: Committee member voting statuses that determine which members are synced
                 example:
                     - Voting Rep
                     - Alternate Voting Rep
@@ -1017,7 +1017,7 @@ definitions:
                 format: uuid
         description: Committee associated with a mailing list
         example:
-            filters:
+            allowed_voting_statuses:
                 - Voting Rep
                 - Alternate Voting Rep
             name: Dolorem quas eum qui.
@@ -1093,12 +1093,12 @@ definitions:
                     $ref: '#/definitions/Committee'
                 description: Committees associated with this mailing list (OR logic for access control)
                 example:
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Itaque repudiandae.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Itaque repudiandae.
@@ -1198,12 +1198,12 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committees:
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
@@ -1245,12 +1245,12 @@ definitions:
                     $ref: '#/definitions/Committee'
                 description: Committees associated with this mailing list (OR logic for access control)
                 example:
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Itaque repudiandae.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Itaque repudiandae.
@@ -1342,22 +1342,22 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committees:
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Itaque repudiandae.
@@ -2101,17 +2101,17 @@ definitions:
                     $ref: '#/definitions/Committee'
                 description: Committees associated with this mailing list (OR logic for access control)
                 example:
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
@@ -2172,22 +2172,22 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committees:
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
@@ -2397,17 +2397,17 @@ definitions:
                     $ref: '#/definitions/Committee'
                 description: Committees associated with this mailing list (OR logic for access control)
                 example:
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - filters:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
                       name: Odit quis sed nesciunt incidunt quia ut.
@@ -2468,17 +2468,17 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             committees:
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - filters:
+                - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
                   name: Odit quis sed nesciunt incidunt quia ut.

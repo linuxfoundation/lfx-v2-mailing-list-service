@@ -83,9 +83,9 @@ func convertCommitteesToDomain(committees []*mailinglistservice.Committee) []mod
 			continue
 		}
 		result = append(result, model.Committee{
-			UID:     c.UID,
-			Name:    payloadStringValue(c.Name), // Name is read-only, but may be passed through
-			Filters: c.Filters,
+			UID:                   c.UID,
+			Name:                  payloadStringValue(c.Name), // Name is read-only, but may be passed through
+			AllowedVotingStatuses: c.AllowedVotingStatuses,
 		})
 	}
 	return result

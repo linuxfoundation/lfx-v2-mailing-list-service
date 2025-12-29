@@ -143,9 +143,9 @@ func convertCommitteesToResponse(committees []model.Committee) []*mailinglistser
 	result := make([]*mailinglistservice.Committee, 0, len(committees))
 	for _, c := range committees {
 		result = append(result, &mailinglistservice.Committee{
-			UID:     c.UID,
-			Name:    stringToPointer(c.Name),
-			Filters: c.Filters,
+			UID:                   c.UID,
+			Name:                  stringToPointer(c.Name),
+			AllowedVotingStatuses: c.AllowedVotingStatuses,
 		})
 	}
 	return result

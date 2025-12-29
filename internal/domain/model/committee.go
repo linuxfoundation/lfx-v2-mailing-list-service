@@ -13,7 +13,7 @@ type Committee struct {
 	// Name is the display name of the committee (read-only, populated by server).
 	Name string `json:"name,omitempty"`
 
-	// Filters are the committee member filters that determine which members
+	// AllowedVotingStatuses are the committee member voting statuses that determine which members
 	// are synced to the mailing list (e.g., "Voting Rep", "Alternate Voting Rep").
-	Filters []string `json:"filters,omitempty"`
+	AllowedVotingStatuses []string `json:"allowed_voting_statuses,omitempty"`
 }

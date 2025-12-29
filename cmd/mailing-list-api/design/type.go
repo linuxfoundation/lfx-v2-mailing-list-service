@@ -262,7 +262,7 @@ var Committee = dsl.Type("Committee", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("name", dsl.String, "Committee name (read-only, populated by server)")
-	dsl.Attribute("filters", dsl.ArrayOf(dsl.String), "Committee member filters", func() {
+	dsl.Attribute("allowed_voting_statuses", dsl.ArrayOf(dsl.String), "Committee member voting statuses that determine which members are synced", func() {
 		dsl.Elem(func() {
 			dsl.Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None")
 		})

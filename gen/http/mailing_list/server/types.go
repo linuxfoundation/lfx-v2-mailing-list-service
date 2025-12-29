@@ -1000,8 +1000,8 @@ type CommitteeResponseBody struct {
 	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Committee name (read-only, populated by server)
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Committee member filters
-	Filters []string `form:"filters,omitempty" json:"filters,omitempty" xml:"filters,omitempty"`
+	// Committee member voting statuses that determine which members are synced
+	AllowedVotingStatuses []string `form:"allowed_voting_statuses,omitempty" json:"allowed_voting_statuses,omitempty" xml:"allowed_voting_statuses,omitempty"`
 }
 
 // GrpsIoMailingListWithReadonlyAttributesResponseBody is used to define fields
@@ -1092,8 +1092,8 @@ type CommitteeRequestBody struct {
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Committee name (read-only, populated by server)
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Committee member filters
-	Filters []string `form:"filters,omitempty" json:"filters,omitempty" xml:"filters,omitempty"`
+	// Committee member voting statuses that determine which members are synced
+	AllowedVotingStatuses []string `form:"allowed_voting_statuses,omitempty" json:"allowed_voting_statuses,omitempty" xml:"allowed_voting_statuses,omitempty"`
 }
 
 // NewCreateGrpsioServiceResponseBody builds the HTTP response body from the
@@ -2813,9 +2813,9 @@ func ValidateCommitteeRequestBody(body *CommitteeRequestBody) (err error) {
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
-	for _, e := range body.Filters {
+	for _, e := range body.AllowedVotingStatuses {
 		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus" || e == "None") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.allowed_voting_statuses[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus", "None"}))
 		}
 	}
 	return

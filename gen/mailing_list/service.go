@@ -76,8 +76,8 @@ type Committee struct {
 	UID string
 	// Committee name (read-only, populated by server)
 	Name *string
-	// Committee member filters
-	Filters []string
+	// Committee member voting statuses that determine which members are synced
+	AllowedVotingStatuses []string
 }
 
 // CreateGrpsioMailingListMemberPayload is the payload type of the mailing-list

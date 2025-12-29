@@ -616,7 +616,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				GroupName: "committee-list",
 				Type:      "discussion_moderated",
 				Committees: []*mailinglistservice.Committee{
-					{UID: "committee-123", Filters: []string{"Voting Rep", "Observer"}},
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
 				Description: "Committee-based mailing list",
 				Title:       "Committee List",
@@ -636,7 +636,7 @@ func TestValidateMailingListCreation(t *testing.T) {
 				GroupName: "invalid-list",
 				Type:      "discussion_open",
 				Committees: []*mailinglistservice.Committee{
-					{UID: "", Filters: []string{"Voting Rep"}}, // Empty UID with filters
+					{UID: "", AllowedVotingStatuses: []string{"Voting Rep"}}, // Empty UID with filters
 				},
 				Description: "Invalid committee setup",
 				Title:       "Invalid List",
