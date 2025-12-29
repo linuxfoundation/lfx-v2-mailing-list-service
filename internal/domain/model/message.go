@@ -84,5 +84,5 @@ type AccessMessage struct {
 	Relations map[string][]string `json:"relations"`
 	// References are used to store the references of the object,
 	// e.g. "project" and its value is the project UID for inheritance
-	References map[string]string `json:"references"`
+	References map[string][]string `json:"references"`
 }

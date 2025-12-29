@@ -36,9 +36,9 @@ type SubgroupObject struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Public      bool   `json:"public"`
-	Restricted  bool   `json:"restricted"`   // If true, users must request to join and be approved
-	InviteOnly  bool   `json:"invite_only"`  // If true, only invited users can join
-	Type        string `json:"type"`         // announcement, discussion_moderated, discussion_open
+	Restricted  bool   `json:"restricted"`  // If true, users must request to join and be approved
+	InviteOnly  bool   `json:"invite_only"` // If true, only invited users can join
+	Type        string `json:"type"`        // announcement, discussion_moderated, discussion_open
 	CreatedAt   string `json:"created"`
 	UpdatedAt   string `json:"updated"`
 }
@@ -92,12 +92,12 @@ type GroupCreateOptions struct {
 // SubgroupCreateOptions represents options for creating a subgroup (matches production go-groupsio)
 type SubgroupCreateOptions struct {
 	// Subgroup options (production field names)
-	ParentGroupID   uint64 `url:"group_id,omitempty"`   // Parent group ID
-	ParentGroupName string `url:"group_name,omitempty"` // Parent group name
-	GroupName       string `url:"sub_group_name"`       // REQUIRED by Groups.io API: must be "sub_group_name" not "subgroup_name" per API spec
-	Desc            string `url:"desc"`                 // REQUIRED by Groups.io API: must be "desc" not "description" per API spec
-	Privacy         string `url:"privacy,omitempty"`    // Privacy setting (optional - may inherit from parent)
-	Restricted      *bool  `url:"restricted,omitempty"` // If true, users must request to join and be approved
+	ParentGroupID   uint64 `url:"group_id,omitempty"`    // Parent group ID
+	ParentGroupName string `url:"group_name,omitempty"`  // Parent group name
+	GroupName       string `url:"sub_group_name"`        // REQUIRED by Groups.io API: must be "sub_group_name" not "subgroup_name" per API spec
+	Desc            string `url:"desc"`                  // REQUIRED by Groups.io API: must be "desc" not "description" per API spec
+	Privacy         string `url:"privacy,omitempty"`     // Privacy setting (optional - may inherit from parent)
+	Restricted      *bool  `url:"restricted,omitempty"`  // If true, users must request to join and be approved
 	InviteOnly      *bool  `url:"invite_only,omitempty"` // If true, only invited users can join
 
 	// Creator subscription options (from production)
@@ -137,7 +137,6 @@ type SubgroupUpdateOptions struct {
 	Title       string `url:"title,omitempty"`
 	Description string `url:"description,omitempty"`
 	SubjectTag  string `url:"subject_tag,omitempty"`
-	Committee   string `url:"committee,omitempty"`
 	Restricted  *bool  `url:"restricted,omitempty"`  // If true, users must request to join and be approved
 	InviteOnly  *bool  `url:"invite_only,omitempty"` // If true, only invited users can join
 }

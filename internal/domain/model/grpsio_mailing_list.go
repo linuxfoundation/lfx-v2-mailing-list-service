@@ -19,23 +19,24 @@ import (
 
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
 type GrpsIOMailingList struct {
-	UID              string   `json:"uid"`
-	SubgroupID       *int64   `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
-	GroupName        string   `json:"group_name"`
-	Public           bool     `json:"public"`            // Whether the mailing list is publicly accessible
-	AudienceAccess   string   `json:"audience_access"`   // "public" | "approval_required" | "invite_only"
-	Source           string   `json:"source"`            // "api", "webhook", or "mock" - tracks origin for business logic
-	Type             string   `json:"type"`              // "announcement" | "discussion_moderated" | "discussion_open"
-	CommitteeUID     string   `json:"committee_uid"`     // Committee UUID (optional)
-	CommitteeName    string   `json:"committee_name"`    // Committee name (optional)
-	CommitteeFilters []string `json:"committee_filters"` // Committee member filters (optional)
-	Description      string   `json:"description"`       // Minimum 11 characters
-	Title            string   `json:"title"`
-	SubjectTag       string   `json:"subject_tag"`  // Optional
-	ServiceUID       string   `json:"service_uid"`  // Service UUID (required)
-	ProjectUID       string   `json:"project_uid"`  // Inherited from parent service
-	ProjectName      string   `json:"project_name"` // Inherited from parent service
-	ProjectSlug      string   `json:"project_slug"` // Inherited from parent service
+	UID            string `json:"uid"`
+	SubgroupID     *int64 `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
+	GroupName      string `json:"group_name"`
+	Public         bool   `json:"public"`          // Whether the mailing list is publicly accessible
+	AudienceAccess string `json:"audience_access"` // "public" | "approval_required" | "invite_only"
+	Source         string `json:"source"`          // "api", "webhook", or "mock" - tracks origin for business logic
+	Type           string `json:"type"`            // "announcement" | "discussion_moderated" | "discussion_open"
+
+	// Committee association - supports multiple committees with OR logic for access control
+	Committees []Committee `json:"committees,omitempty"`
+
+	Description string `json:"description"` // Minimum 11 characters
+	Title       string `json:"title"`
+	SubjectTag  string `json:"subject_tag"`  // Optional
+	ServiceUID  string `json:"service_uid"`  // Service UUID (required)
+	ProjectUID  string `json:"project_uid"`  // Inherited from parent service
+	ProjectName string `json:"project_name"` // Inherited from parent service
+	ProjectSlug string `json:"project_slug"` // Inherited from parent service
 
 	// Audit trail fields (following GrpsIOService pattern)
 	LastReviewedAt *string  `json:"last_reviewed_at"` // Nullable timestamp
@@ -64,23 +65,23 @@ const (
 	AudienceAccessInviteOnly       = "invite_only"       // Only invited users can join
 )
 
-// Valid committee filters
+// Valid committee voting statuses
 const (
-	CommitteeFilterVotingRep    = "Voting Rep"
-	CommitteeFilterAltVotingRep = "Alternate Voting Rep"
-	CommitteeFilterObserver     = "Observer"
-	CommitteeFilterEmeritus     = "Emeritus"
-	CommitteeFilterNone         = "None"
+	CommitteeVotingStatusVotingRep    = "Voting Rep"
+	CommitteeVotingStatusAltVotingRep = "Alternate Voting Rep"
+	CommitteeVotingStatusObserver     = "Observer"
+	CommitteeVotingStatusEmeritus     = "Emeritus"
+	CommitteeVotingStatusNone         = "None"
 )
 
-// ValidCommitteeFilters returns all valid committee filter values
-func ValidCommitteeFilters() []string {
+// ValidCommitteeVotingStatuses returns all valid committee voting status values
+func ValidCommitteeVotingStatuses() []string {
 	return []string{
-		CommitteeFilterVotingRep,
-		CommitteeFilterAltVotingRep,
-		CommitteeFilterObserver,
-		CommitteeFilterEmeritus,
-		CommitteeFilterNone,
+		CommitteeVotingStatusVotingRep,
+		CommitteeVotingStatusAltVotingRep,
+		CommitteeVotingStatusObserver,
+		CommitteeVotingStatusEmeritus,
+		CommitteeVotingStatusNone,
 	}
 }
 
@@ -154,25 +155,24 @@ func (ml *GrpsIOMailingList) ValidateBasicFields() error {
 
 // ValidateCommitteeFields validates committee-related fields
 func (ml *GrpsIOMailingList) ValidateCommitteeFields() error {
-	// Committee filters validation
-	if len(ml.CommitteeFilters) > 0 {
-		// If filters are specified, committee must be provided
-		if ml.CommitteeUID == "" {
-			return errors.NewValidation("committee must not be empty if committee_filters is non-empty")
-		}
-
-		// Validate each filter value
-		validFilters := ValidCommitteeFilters()
-		for _, filter := range ml.CommitteeFilters {
-			if !contains(validFilters, filter) {
-				return errors.NewValidation(fmt.Sprintf("invalid committee_filter: %s. Valid values: %v", filter, validFilters))
-			}
-		}
+	if len(ml.Committees) == 0 {
+		return nil // No committees is valid
 	}
 
-	// If committee is empty, filters must also be empty
-	if ml.CommitteeUID == "" && len(ml.CommitteeFilters) > 0 {
-		return errors.NewValidation("committee_filters must be empty if committee is not specified")
+	validVotingStatuses := ValidCommitteeVotingStatuses()
+
+	for i, committee := range ml.Committees {
+		// Each committee must have a UID
+		if committee.UID == "" {
+			return errors.NewValidation(fmt.Sprintf("committees[%d].uid is required", i))
+		}
+
+		// Validate each voting status value if specified
+		for _, status := range committee.AllowedVotingStatuses {
+			if !contains(validVotingStatuses, status) {
+				return errors.NewValidation(fmt.Sprintf("invalid committees[%d].allowed_voting_statuses value: %s. Valid values: %v", i, status, validVotingStatuses))
+			}
+		}
 	}
 
 	return nil
@@ -194,7 +194,7 @@ func (ml *GrpsIOMailingList) ValidateGroupNamePrefix(parentServiceType, parentSe
 
 // IsCommitteeBased returns true if this mailing list is committee-based
 func (ml *GrpsIOMailingList) IsCommitteeBased() bool {
-	return ml.CommitteeUID != "" || len(ml.CommitteeFilters) > 0
+	return len(ml.Committees) > 0
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
@@ -246,14 +246,15 @@ func (ml *GrpsIOMailingList) Tags() []string {
 		tags = append(tags, fmt.Sprintf("audience_access:%s", ml.AudienceAccess))
 	}
 
-	// Add committee tag if committee-based
-	if ml.CommitteeUID != "" {
-		tags = append(tags, fmt.Sprintf("committee_uid:%s", ml.CommitteeUID))
-	}
-
-	// Add committee filter tags
-	for _, filter := range ml.CommitteeFilters {
-		tags = append(tags, fmt.Sprintf("committee_filter:%s", filter))
+	// Add committee tags for all associated committees
+	for _, committee := range ml.Committees {
+		if committee.UID != "" {
+			tags = append(tags, fmt.Sprintf("committee_uid:%s", committee.UID))
+		}
+		// Add voting status tags for each committee
+		for _, status := range committee.AllowedVotingStatuses {
+			tags = append(tags, fmt.Sprintf("committee_voting_status:%s", status))
+		}
 	}
 
 	if ml.UID != "" {

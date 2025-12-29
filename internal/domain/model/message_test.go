@@ -257,7 +257,7 @@ func TestAccessMessage_Struct(t *testing.T) {
 		ObjectType: constants.ObjectTypeGroupsIOService,
 		Public:     true,
 		Relations:  map[string][]string{"admin": {"user123"}},
-		References: map[string]string{"project": "project-456"},
+		References: map[string][]string{"project": {"project-456"}},
 	}
 
 	// Test JSON marshaling

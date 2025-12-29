@@ -70,6 +70,16 @@ const ServiceName = "mailing-list"
 // MethodKey key.
 var MethodNames = [15]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member", "groupsio-webhook"}
 
+// Committee associated with a mailing list
+type Committee struct {
+	// Committee UUID
+	UID string
+	// Committee name (read-only, populated by server)
+	Name *string
+	// Committee member voting statuses that determine which members are synced
+	AllowedVotingStatuses []string
+}
+
 // CreateGrpsioMailingListMemberPayload is the payload type of the mailing-list
 // service create-grpsio-mailing-list-member method.
 type CreateGrpsioMailingListMemberPayload struct {
@@ -119,10 +129,8 @@ type CreateGrpsioMailingListPayload struct {
 	// public: Anyone can join. approval_required: Users must request to join and
 	// be approved. invite_only: Only invited users can join.
 	AudienceAccess string
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string
-	// Committee member filters
-	CommitteeFilters []string
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*Committee
 	// Mailing list description (11-500 characters)
 	Description string
 	// Mailing list title
@@ -306,10 +314,8 @@ type GrpsIoMailingListFull struct {
 	// public: Anyone can join. approval_required: Users must request to join and
 	// be approved. invite_only: Only invited users can join.
 	AudienceAccess string
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string
-	// Committee member filters
-	CommitteeFilters []string
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*Committee
 	// Mailing list description (11-500 characters)
 	Description *string
 	// Mailing list title
@@ -352,10 +358,8 @@ type GrpsIoMailingListWithReadonlyAttributes struct {
 	// public: Anyone can join. approval_required: Users must request to join and
 	// be approved. invite_only: Only invited users can join.
 	AudienceAccess string
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string
-	// Committee member filters
-	CommitteeFilters []string
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*Committee
 	// Mailing list description (11-500 characters)
 	Description *string
 	// Mailing list title
@@ -615,10 +619,8 @@ type UpdateGrpsioMailingListPayload struct {
 	// public: Anyone can join. approval_required: Users must request to join and
 	// be approved. invite_only: Only invited users can join.
 	AudienceAccess string
-	// Committee UUID for committee-based mailing lists
-	CommitteeUID *string
-	// Committee member filters
-	CommitteeFilters []string
+	// Committees associated with this mailing list (OR logic for access control)
+	Committees []*Committee
 	// Mailing list description (11-500 characters)
 	Description string
 	// Mailing list title

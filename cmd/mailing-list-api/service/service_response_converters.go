@@ -101,22 +101,21 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 	}
 
 	result := &mailinglistservice.GrpsIoMailingListFull{
-		UID:              &ml.UID,
-		GroupName:        &ml.GroupName,
-		Public:           ml.Public,
-		AudienceAccess:   ml.AudienceAccess,
-		Type:             &ml.Type,
-		CommitteeUID:     stringToPointer(ml.CommitteeUID),
-		CommitteeFilters: ml.CommitteeFilters,
-		Description:      &ml.Description,
-		Title:            &ml.Title,
-		SubjectTag:       stringToPointer(ml.SubjectTag),
-		ServiceUID:       &ml.ServiceUID,
-		ProjectUID:       &ml.ProjectUID,  // This is inherited from parent in orchestrator
-		ProjectName:      &ml.ProjectName, // Inherited from parent service
-		ProjectSlug:      &ml.ProjectSlug, // Inherited from parent service
-		Writers:          ml.Writers,
-		Auditors:         ml.Auditors,
+		UID:            &ml.UID,
+		GroupName:      &ml.GroupName,
+		Public:         ml.Public,
+		AudienceAccess: ml.AudienceAccess,
+		Type:           &ml.Type,
+		Committees:     convertCommitteesToResponse(ml.Committees),
+		Description:    &ml.Description,
+		Title:          &ml.Title,
+		SubjectTag:     stringToPointer(ml.SubjectTag),
+		ServiceUID:     &ml.ServiceUID,
+		ProjectUID:     &ml.ProjectUID,  // This is inherited from parent in orchestrator
+		ProjectName:    &ml.ProjectName, // Inherited from parent service
+		ProjectSlug:    &ml.ProjectSlug, // Inherited from parent service
+		Writers:        ml.Writers,
+		Auditors:       ml.Auditors,
 	}
 
 	// Handle timestamps
@@ -136,6 +135,23 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 	return result
 }
 
+// convertCommitteesToResponse converts domain Committee array to GOA Committee array
+func convertCommitteesToResponse(committees []model.Committee) []*mailinglistservice.Committee {
+	if committees == nil {
+		return nil
+	}
+
+	result := make([]*mailinglistservice.Committee, 0, len(committees))
+	for _, c := range committees {
+		result = append(result, &mailinglistservice.Committee{
+			UID:                   c.UID,
+			Name:                  stringToPointer(c.Name),
+			AllowedVotingStatuses: c.AllowedVotingStatuses,
+		})
+	}
+	return result
+}
+
 // convertGrpsIOMailingListDomainToStandardResponse converts a domain mailing list to GOA standard response type
 func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(mailingList *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListWithReadonlyAttributes {
 	if mailingList == nil {
@@ -143,22 +159,21 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(ma
 	}
 
 	response := &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{
-		UID:              &mailingList.UID,
-		GroupName:        &mailingList.GroupName,
-		Public:           mailingList.Public,
-		AudienceAccess:   mailingList.AudienceAccess,
-		Type:             &mailingList.Type,
-		CommitteeUID:     stringToPointer(mailingList.CommitteeUID),
-		CommitteeFilters: mailingList.CommitteeFilters,
-		Description:      &mailingList.Description,
-		Title:            &mailingList.Title,
-		SubjectTag:       stringToPointer(mailingList.SubjectTag),
-		ServiceUID:       &mailingList.ServiceUID,
-		ProjectUID:       stringToPointer(mailingList.ProjectUID),
-		ProjectName:      stringToPointer(mailingList.ProjectName),
-		ProjectSlug:      stringToPointer(mailingList.ProjectSlug),
-		Writers:          mailingList.Writers,
-		Auditors:         mailingList.Auditors,
+		UID:            &mailingList.UID,
+		GroupName:      &mailingList.GroupName,
+		Public:         mailingList.Public,
+		AudienceAccess: mailingList.AudienceAccess,
+		Type:           &mailingList.Type,
+		Committees:     convertCommitteesToResponse(mailingList.Committees),
+		Description:    &mailingList.Description,
+		Title:          &mailingList.Title,
+		SubjectTag:     stringToPointer(mailingList.SubjectTag),
+		ServiceUID:     &mailingList.ServiceUID,
+		ProjectUID:     stringToPointer(mailingList.ProjectUID),
+		ProjectName:    stringToPointer(mailingList.ProjectName),
+		ProjectSlug:    stringToPointer(mailingList.ProjectSlug),
+		Writers:        mailingList.Writers,
+		Auditors:       mailingList.Auditors,
 	}
 
 	// Convert timestamps

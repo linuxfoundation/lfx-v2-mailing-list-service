@@ -1874,3 +1874,43 @@ func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWrite
 		}
 	}
 }
+
+// unmarshalCommitteeRequestBodyToMailinglistCommittee builds a value of type
+// *mailinglist.Committee from a value of type *CommitteeRequestBody.
+func unmarshalCommitteeRequestBodyToMailinglistCommittee(v *CommitteeRequestBody) *mailinglist.Committee {
+	if v == nil {
+		return nil
+	}
+	res := &mailinglist.Committee{
+		UID:  *v.UID,
+		Name: v.Name,
+	}
+	if v.AllowedVotingStatuses != nil {
+		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
+		for i, val := range v.AllowedVotingStatuses {
+			res.AllowedVotingStatuses[i] = val
+		}
+	}
+
+	return res
+}
+
+// marshalMailinglistCommitteeToCommitteeResponseBody builds a value of type
+// *CommitteeResponseBody from a value of type *mailinglist.Committee.
+func marshalMailinglistCommitteeToCommitteeResponseBody(v *mailinglist.Committee) *CommitteeResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &CommitteeResponseBody{
+		UID:  v.UID,
+		Name: v.Name,
+	}
+	if v.AllowedVotingStatuses != nil {
+		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
+		for i, val := range v.AllowedVotingStatuses {
+			res.AllowedVotingStatuses[i] = val
+		}
+	}
+
+	return res
+}

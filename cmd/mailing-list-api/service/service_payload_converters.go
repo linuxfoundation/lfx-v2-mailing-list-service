@@ -52,16 +52,15 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 
 	now := time.Now()
 	mailingList := &model.GrpsIOMailingList{
-		GroupName:        p.GroupName,
-		Public:           p.Public,
-		AudienceAccess:   p.AudienceAccess,
-		Type:             p.Type,
-		CommitteeUID:     payloadStringValue(p.CommitteeUID),
-		CommitteeFilters: p.CommitteeFilters,
-		Description:      p.Description,
-		Title:            p.Title,
-		SubjectTag:       payloadStringValue(p.SubjectTag),
-		ServiceUID:       p.ServiceUID,
+		GroupName:      p.GroupName,
+		Public:         p.Public,
+		Type:           p.Type,
+		AudienceAccess: p.AudienceAccess,
+		Committees:     convertCommitteesToDomain(p.Committees),
+		Description:    p.Description,
+		Title:          p.Title,
+		SubjectTag:     payloadStringValue(p.SubjectTag),
+		ServiceUID:     p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
 		Source:    constants.SourceAPI, // API operations always use api source
 		Writers:   p.Writers,
@@ -71,6 +70,26 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 	}
 
 	return mailingList
+}
+
+// convertCommitteesToDomain converts GOA Committee array to domain model Committee array
+func convertCommitteesToDomain(committees []*mailinglistservice.Committee) []model.Committee {
+	if committees == nil {
+		return nil
+	}
+
+	result := make([]model.Committee, 0, len(committees))
+	for _, c := range committees {
+		if c == nil {
+			continue
+		}
+		result = append(result, model.Committee{
+			UID:                   c.UID,
+			Name:                  payloadStringValue(c.Name), // Name is read-only, but may be passed through
+			AllowedVotingStatuses: c.AllowedVotingStatuses,
+		})
+	}
+	return result
 }
 
 // convertGrpsIOServiceUpdatePayloadToDomain converts GOA update payload to domain model
@@ -122,18 +141,17 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
-		Public:           payload.Public,          // Direct assignment
-		AudienceAccess:   payload.AudienceAccess,  // Direct assignment
-		Type:             payload.Type,            // Direct assignment
-		Description:      payload.Description,                          // Direct assignment
-		Title:            payload.Title,                                // Direct assignment
-		ServiceUID:       payload.ServiceUID,                           // Direct assignment
-		CommitteeUID:     payloadStringValue(payload.CommitteeUID),     // nil → ""
-		SubjectTag:       payloadStringValue(payload.SubjectTag),       // nil → ""
-		CommitteeFilters: payload.CommitteeFilters,                     // nil → nil
-		Writers:          payload.Writers,                              // nil → nil
-		Auditors:         payload.Auditors,                             // nil → nil
-		UpdatedAt:        time.Now().UTC(),
+		Public:         payload.Public,                                // Direct assignment
+		AudienceAccess: payload.AudienceAccess,                        // Direct assignment
+		Type:           payload.Type,                                  // Direct assignment
+		Description:    payload.Description,                           // Direct assignment
+		Title:          payload.Title,                                 // Direct assignment
+		ServiceUID:     payload.ServiceUID,                            // Direct assignment
+		Committees:     convertCommitteesToDomain(payload.Committees), // nil → nil
+		SubjectTag:     payloadStringValue(payload.SubjectTag),        // nil → ""
+		Writers:        payload.Writers,                               // nil → nil
+		Auditors:       payload.Auditors,                              // nil → nil
+		UpdatedAt:      time.Now().UTC(),
 	}
 }
 

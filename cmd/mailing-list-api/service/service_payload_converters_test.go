@@ -119,30 +119,32 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 		{
 			name: "complete mailing list payload conversion",
 			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
-				GroupName:        "test-mailing-list",
-				Public:           true,
-				Type:             "discussion_open",
-				CommitteeUID:     stringPtr("committee-123"),
-				CommitteeFilters: []string{"Voting Rep", "Observer"},
-				Description:      "This is a test mailing list description",
-				Title:            "Test Mailing List",
-				SubjectTag:       stringPtr("[TEST]"),
-				ServiceUID:       "parent-service-456",
-				Writers:          []string{"writer1", "writer2"},
-				Auditors:         []string{"auditor1", "auditor2"},
+				GroupName: "test-mailing-list",
+				Public:    true,
+				Type:      "discussion_open",
+				Committees: []*mailinglistservice.Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
+				},
+				Description: "This is a test mailing list description",
+				Title:       "Test Mailing List",
+				SubjectTag:  stringPtr("[TEST]"),
+				ServiceUID:  "parent-service-456",
+				Writers:     []string{"writer1", "writer2"},
+				Auditors:    []string{"auditor1", "auditor2"},
 			},
 			expected: &model.GrpsIOMailingList{
-				GroupName:        "test-mailing-list",
-				Public:           true,
-				Type:             "discussion_open",
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{"Voting Rep", "Observer"},
-				Description:      "This is a test mailing list description",
-				Title:            "Test Mailing List",
-				SubjectTag:       "[TEST]",
-				ServiceUID:       "parent-service-456",
-				Writers:          []string{"writer1", "writer2"},
-				Auditors:         []string{"auditor1", "auditor2"},
+				GroupName: "test-mailing-list",
+				Public:    true,
+				Type:      "discussion_open",
+				Committees: []model.Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
+				},
+				Description: "This is a test mailing list description",
+				Title:       "Test Mailing List",
+				SubjectTag:  "[TEST]",
+				ServiceUID:  "parent-service-456",
+				Writers:     []string{"writer1", "writer2"},
+				Auditors:    []string{"auditor1", "auditor2"},
 			},
 		},
 		{
@@ -156,17 +158,16 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				ServiceUID:  "parent-789",
 			},
 			expected: &model.GrpsIOMailingList{
-				GroupName:        "minimal-list",
-				Public:           false,
-				Type:             "announcement",
-				CommitteeUID:     "",
-				CommitteeFilters: nil,
-				Description:      "Minimal description for testing",
-				Title:            "Minimal List",
-				SubjectTag:       "",
-				ServiceUID:       "parent-789",
-				Writers:          nil,
-				Auditors:         nil,
+				GroupName:   "minimal-list",
+				Public:      false,
+				Type:        "announcement",
+				Committees:  nil,
+				Description: "Minimal description for testing",
+				Title:       "Minimal List",
+				SubjectTag:  "",
+				ServiceUID:  "parent-789",
+				Writers:     nil,
+				Auditors:    nil,
 			},
 		},
 		{
@@ -185,8 +186,11 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.GroupName, result.GroupName)
 			assert.Equal(t, tt.expected.Public, result.Public)
 			assert.Equal(t, tt.expected.Type, result.Type)
-			assert.Equal(t, tt.expected.CommitteeUID, result.CommitteeUID)
-			assert.Equal(t, tt.expected.CommitteeFilters, result.CommitteeFilters)
+			assert.Equal(t, len(tt.expected.Committees), len(result.Committees))
+			for i := range tt.expected.Committees {
+				assert.Equal(t, tt.expected.Committees[i].UID, result.Committees[i].UID)
+				assert.Equal(t, tt.expected.Committees[i].AllowedVotingStatuses, result.Committees[i].AllowedVotingStatuses)
+			}
 			assert.Equal(t, tt.expected.Description, result.Description)
 			assert.Equal(t, tt.expected.Title, result.Title)
 			assert.Equal(t, tt.expected.SubjectTag, result.SubjectTag)
