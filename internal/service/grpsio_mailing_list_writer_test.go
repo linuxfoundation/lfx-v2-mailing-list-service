@@ -673,8 +673,8 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     true,
 				Relations:  map[string][]string{},
-				References: map[string]string{
-					constants.RelationGroupsIOService: "service-1",
+				References: map[string][]string{
+					constants.RelationGroupsIOService: {"service-1"},
 				},
 			},
 		},
@@ -694,9 +694,9 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     false,
 				Relations:  map[string][]string{},
-				References: map[string]string{
-					"committee:committee-1":           "committee-1",
-					constants.RelationGroupsIOService: "service-2",
+				References: map[string][]string{
+					constants.RelationCommittee:       {"committee-1"},
+					constants.RelationGroupsIOService: {"service-2"},
 				},
 			},
 		},
@@ -716,8 +716,8 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Relations: map[string][]string{
 					constants.RelationWriter: {"user1", "user2"},
 				},
-				References: map[string]string{
-					constants.RelationGroupsIOService: "service-3",
+				References: map[string][]string{
+					constants.RelationGroupsIOService: {"service-3"},
 				},
 			},
 		},

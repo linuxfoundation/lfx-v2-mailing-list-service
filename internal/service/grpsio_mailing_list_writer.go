@@ -416,15 +416,15 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.C
 
 // buildMailingListAccessControlMessage builds an access control message for OpenFGA
 func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailingList *model.GrpsIOMailingList) *model.AccessMessage {
-	references := map[string]string{
-		constants.RelationGroupsIOService: mailingList.ServiceUID, // Required for service-level permission inheritance (project inherited through service)
+	references := map[string][]string{
+		constants.RelationGroupsIOService: {mailingList.ServiceUID}, // Required for service-level permission inheritance (project inherited through service)
 	}
 
 	// Add committee references for committee-based lists (enables committee-level authorization)
 	// Each committee gets its own reference key for OR logic (any committee grants access)
 	for _, committee := range mailingList.Committees {
 		if committee.UID != "" {
-			references[constants.RelationCommittee+":"+committee.UID] = committee.UID
+			references[constants.RelationCommittee] = append(references[constants.RelationCommittee], committee.UID)
 		}
 	}
 
