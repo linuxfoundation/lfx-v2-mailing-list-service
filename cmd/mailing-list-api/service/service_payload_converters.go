@@ -52,14 +52,15 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 
 	now := time.Now()
 	mailingList := &model.GrpsIOMailingList{
-		GroupName:   p.GroupName,
-		Public:      p.Public,
-		Type:        p.Type,
-		Committees:  convertCommitteesToDomain(p.Committees),
-		Description: p.Description,
-		Title:       p.Title,
-		SubjectTag:  payloadStringValue(p.SubjectTag),
-		ServiceUID:  p.ServiceUID,
+		GroupName:      p.GroupName,
+		Public:         p.Public,
+		Type:           p.Type,
+		AudienceAccess: p.AudienceAccess,
+		Committees:     convertCommitteesToDomain(p.Committees),
+		Description:    p.Description,
+		Title:          p.Title,
+		SubjectTag:     payloadStringValue(p.SubjectTag),
+		ServiceUID:     p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
 		Source:    constants.SourceAPI, // API operations always use api source
 		Writers:   p.Writers,
@@ -140,16 +141,17 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
-		Public:      payload.Public,                              // Direct assignment
-		Type:        payload.Type,                                // Direct assignment
-		Description: payload.Description,                         // Direct assignment
-		Title:       payload.Title,                               // Direct assignment
-		ServiceUID:  payload.ServiceUID,                          // Direct assignment
-		Committees:  convertCommitteesToDomain(payload.Committees), // nil → nil
-		SubjectTag:  payloadStringValue(payload.SubjectTag),      // nil → ""
-		Writers:     payload.Writers,                             // nil → nil
-		Auditors:    payload.Auditors,                            // nil → nil
-		UpdatedAt:   time.Now().UTC(),
+		Public:         payload.Public,                                // Direct assignment
+		AudienceAccess: payload.AudienceAccess,                        // Direct assignment
+		Type:           payload.Type,                                  // Direct assignment
+		Description:    payload.Description,                           // Direct assignment
+		Title:          payload.Title,                                 // Direct assignment
+		ServiceUID:     payload.ServiceUID,                            // Direct assignment
+		Committees:     convertCommitteesToDomain(payload.Committees), // nil → nil
+		SubjectTag:     payloadStringValue(payload.SubjectTag),        // nil → ""
+		Writers:        payload.Writers,                               // nil → nil
+		Auditors:       payload.Auditors,                              // nil → nil
+		UpdatedAt:      time.Now().UTC(),
 	}
 }
 

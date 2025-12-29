@@ -245,6 +245,24 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	return createdMailingList, revision, nil
 }
 
+// audienceAccessToGroupsIO converts audience_access enum to Groups.io restricted/invite_only flags
+func audienceAccessToGroupsIO(audienceAccess string) (restricted, inviteOnly *bool) {
+	falseVal := false
+	trueVal := true
+
+	switch audienceAccess {
+	case model.AudienceAccessApprovalRequired:
+		// Users must request to join and be approved by moderator
+		return &trueVal, &falseVal
+	case model.AudienceAccessInviteOnly:
+		// Only invited users can join
+		return &falseVal, &trueVal
+	default: // public
+		// Anyone can join
+		return &falseVal, &falseVal
+	}
+}
+
 // createMailingListInGroupsIO handles Groups.io subgroup creation and returns the ID
 func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, error) {
 	if ml.groupsClient == nil || parentService.GroupID == nil {
@@ -255,12 +273,18 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 		"domain", parentService.Domain,
 		"parent_group_id", *parentService.GroupID,
 		"subgroup_name", mailingList.GroupName,
+		"audience_access", mailingList.AudienceAccess,
 	)
+
+	// Convert audience_access to Groups.io fields
+	restricted, inviteOnly := audienceAccessToGroupsIO(mailingList.AudienceAccess)
 
 	subgroupOptions := groupsio.SubgroupCreateOptions{
 		ParentGroupID: utils.Int64PtrToUint64(parentService.GroupID),                                             // Production field
 		GroupName:     mailingList.GroupName,                                                                     // Fixed: was SubgroupName
 		Desc:          fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName), // Fixed: was Description
+		Restricted:    restricted,                                                                                // Audience access: approval_required
+		InviteOnly:    inviteOnly,                                                                                // Audience access: invite_only
 		// Privacy: leave empty to inherit from parent group (production pattern)
 	}
 
@@ -672,7 +696,7 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 
 	slog.DebugContext(ctx, "mailing list data merged",
 		"mailing_list_uid", existing.UID,
-		"mutable_fields", []string{"public", "type", "description", "title", "committees", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
+		"mutable_fields", []string{"public", "audience_access", "type", "description", "title", "committees", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
 	)
 }
 
@@ -692,11 +716,16 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 		return
 	}
 
+	// Convert audience_access to Groups.io fields
+	restricted, inviteOnly := audienceAccessToGroupsIO(mailingList.AudienceAccess)
+
 	// Build update options from mailing list model
 	updates := groupsio.SubgroupUpdateOptions{
 		Title:       mailingList.Title,
 		Description: mailingList.Description,
 		SubjectTag:  mailingList.SubjectTag,
+		Restricted:  restricted,
+		InviteOnly:  inviteOnly,
 	}
 
 	// Perform Groups.io mailing list update

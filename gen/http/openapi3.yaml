@@ -34,6 +34,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
                         example:
+                            audience_access: public
                             auditors:
                                 - auditor_user_id1
                                 - auditor_user_id2
@@ -66,6 +67,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListFull'
                             example:
+                                audience_access: public
                                 auditors:
                                     - auditor_user_id1
                                     - auditor_user_id2
@@ -268,6 +270,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                audience_access: public
                                 auditors:
                                     - auditor_user_id1
                                     - auditor_user_id2
@@ -377,6 +380,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
                         example:
+                            audience_access: public
                             auditors:
                                 - auditor_user_id1
                                 - auditor_user_id2
@@ -409,6 +413,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                audience_access: public
                                 auditors:
                                     - auditor_user_id1
                                     - auditor_user_id2
@@ -1641,6 +1646,15 @@ components:
         CreateGrpsioMailingListRequestBody:
             type: object
             properties:
+                audience_access:
+                    type: string
+                    description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                    default: public
+                    example: public
+                    enum:
+                        - public
+                        - approval_required
+                        - invite_only
                 auditors:
                     type: array
                     items:
@@ -1728,6 +1742,7 @@ components:
                         - manager_user_id1
                         - manager_user_id2
             example:
+                audience_access: public
                 auditors:
                     - auditor_user_id1
                     - auditor_user_id2
@@ -1943,6 +1958,15 @@ components:
         GrpsIoMailingListFull:
             type: object
             properties:
+                audience_access:
+                    type: string
+                    description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                    default: public
+                    example: public
+                    enum:
+                        - public
+                        - approval_required
+                        - invite_only
                 auditors:
                     type: array
                     items:
@@ -2065,6 +2089,7 @@ components:
                         - manager_user_id2
             description: A complete representation of GroupsIO mailing lists with all attributes including access control and audit trail.
             example:
+                audience_access: public
                 auditors:
                     - auditor_user_id1
                     - auditor_user_id2
@@ -2105,6 +2130,15 @@ components:
         GrpsIoMailingListWithReadonlyAttributes:
             type: object
             properties:
+                audience_access:
+                    type: string
+                    description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                    default: public
+                    example: public
+                    enum:
+                        - public
+                        - approval_required
+                        - invite_only
                 auditors:
                     type: array
                     items:
@@ -2218,6 +2252,7 @@ components:
                         - manager_user_id2
             description: A representation of GroupsIO mailing lists with readonly attributes.
             example:
+                audience_access: public
                 auditors:
                     - auditor_user_id1
                     - auditor_user_id2

@@ -1082,4 +1082,56 @@ func TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO(t *testing.T) {
 	}
 }
 
+func TestAudienceAccessToGroupsIO(t *testing.T) {
+	tests := []struct {
+		name               string
+		audienceAccess     string
+		expectedRestricted bool
+		expectedInviteOnly bool
+	}{
+		{
+			name:               "public - anyone can join",
+			audienceAccess:     model.AudienceAccessPublic,
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "approval_required - restricted membership",
+			audienceAccess:     model.AudienceAccessApprovalRequired,
+			expectedRestricted: true,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "invite_only - only invited users can join",
+			audienceAccess:     model.AudienceAccessInviteOnly,
+			expectedRestricted: false,
+			expectedInviteOnly: true,
+		},
+		{
+			name:               "empty string defaults to public",
+			audienceAccess:     "",
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "unknown value defaults to public",
+			audienceAccess:     "unknown_value",
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			restricted, inviteOnly := audienceAccessToGroupsIO(tt.audienceAccess)
+
+			require.NotNil(t, restricted, "restricted should not be nil")
+			require.NotNil(t, inviteOnly, "inviteOnly should not be nil")
+
+			assert.Equal(t, tt.expectedRestricted, *restricted, "restricted flag mismatch")
+			assert.Equal(t, tt.expectedInviteOnly, *inviteOnly, "inviteOnly flag mismatch")
+		})
+	}
+}
+
 // Helper functions (if needed in future)

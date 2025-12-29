@@ -290,6 +290,12 @@ func GrpsIOMailingListBaseAttributes() {
 		dsl.Enum("announcement", "discussion_moderated", "discussion_open")
 		dsl.Example("discussion_moderated")
 	})
+	dsl.Attribute("audience_access", dsl.String, "Controls who can discover and join this mailing list", func() {
+		dsl.Enum("public", "approval_required", "invite_only")
+		dsl.Default("public")
+		dsl.Example("public")
+		dsl.Description("public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.")
+	})
 	dsl.Attribute("committees", dsl.ArrayOf(Committee), "Committees associated with this mailing list (OR logic for access control)")
 	dsl.Attribute("description", dsl.String, "Mailing list description (11-500 characters)", func() {
 		dsl.MinLength(11)

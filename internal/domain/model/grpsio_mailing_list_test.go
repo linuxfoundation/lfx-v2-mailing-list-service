@@ -534,11 +534,12 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 		{
 			name: "complete mailing list",
 			mailingList: &GrpsIOMailingList{
-				UID:        "ml-123",
-				ProjectUID: "project-456",
-				ServiceUID: "service-789",
-				Type:       TypeDiscussionOpen,
-				Public:     true,
+				UID:            "ml-123",
+				ProjectUID:     "project-456",
+				ServiceUID:     "service-789",
+				Type:           TypeDiscussionOpen,
+				Public:         true,
+				AudienceAccess: AudienceAccessApprovalRequired,
 				Committees: []Committee{
 					{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
 				},
@@ -548,6 +549,7 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 				"service_uid:service-789",
 				"type:discussion_open",
 				"public:true",
+				"audience_access:approval_required",
 				"committee_uid:committee-123",
 				"committee_voting_status:Voting Rep",
 				"committee_voting_status:Observer",
@@ -599,6 +601,107 @@ func TestValidCommitteeVotingStatuses(t *testing.T) {
 
 	assert.Equal(t, expectedVotingStatuses, votingStatuses)
 	assert.Len(t, votingStatuses, 5, "Should return 5 valid committee voting statuses")
+}
+
+func TestValidAudienceAccessValues(t *testing.T) {
+	values := ValidAudienceAccessValues()
+
+	expectedValues := []string{
+		AudienceAccessPublic,
+		AudienceAccessApprovalRequired,
+		AudienceAccessInviteOnly,
+	}
+
+	assert.Equal(t, expectedValues, values)
+	assert.Len(t, values, 3, "Should return 3 valid audience access values")
+}
+
+func TestIsValidAudienceAccess(t *testing.T) {
+	tests := []struct {
+		name     string
+		access   string
+		expected bool
+	}{
+		{"valid public", AudienceAccessPublic, true},
+		{"valid approval_required", AudienceAccessApprovalRequired, true},
+		{"valid invite_only", AudienceAccessInviteOnly, true},
+		{"invalid type", "invalid_access", false},
+		{"empty type", "", false},
+		{"uppercase type", "PUBLIC", false},
+		{"mixed case", "Public", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidAudienceAccess(tt.access)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGrpsIOMailingList_ValidateBasicFields_AudienceAccess(t *testing.T) {
+	tests := []struct {
+		name                   string
+		audienceAccess         string
+		expectError            bool
+		errorMsg               string
+		expectedAudienceAccess string
+	}{
+		{
+			name:                   "empty audience_access defaults to public",
+			audienceAccess:         "",
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessPublic,
+		},
+		{
+			name:                   "valid public",
+			audienceAccess:         AudienceAccessPublic,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessPublic,
+		},
+		{
+			name:                   "valid approval_required",
+			audienceAccess:         AudienceAccessApprovalRequired,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessApprovalRequired,
+		},
+		{
+			name:                   "valid invite_only",
+			audienceAccess:         AudienceAccessInviteOnly,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessInviteOnly,
+		},
+		{
+			name:           "invalid audience_access value",
+			audienceAccess: "invalid_value",
+			expectError:    true,
+			errorMsg:       "audience_access must be one of",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ml := &GrpsIOMailingList{
+				GroupName:      "dev-team",
+				Type:           TypeDiscussionOpen,
+				Description:    "Development team discussions and updates",
+				Title:          "Development Team",
+				ServiceUID:     "service-123",
+				AudienceAccess: tt.audienceAccess,
+			}
+
+			err := ml.ValidateBasicFields()
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+				assert.IsType(t, errors.Validation{}, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedAudienceAccess, ml.AudienceAccess, "AudienceAccess should be set correctly")
+			}
+		})
+	}
 }
 
 func TestIsValidGroupName(t *testing.T) {

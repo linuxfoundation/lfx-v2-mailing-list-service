@@ -126,6 +126,9 @@ type CreateGrpsioMailingListPayload struct {
 	Public bool
 	// Mailing list type
 	Type string
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string
 	// Committees associated with this mailing list (OR logic for access control)
 	Committees []*Committee
 	// Mailing list description (11-500 characters)
@@ -308,6 +311,9 @@ type GrpsIoMailingListFull struct {
 	Public bool
 	// Mailing list type
 	Type *string
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string
 	// Committees associated with this mailing list (OR logic for access control)
 	Committees []*Committee
 	// Mailing list description (11-500 characters)
@@ -349,6 +355,9 @@ type GrpsIoMailingListWithReadonlyAttributes struct {
 	Public bool
 	// Mailing list type
 	Type *string
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string
 	// Committees associated with this mailing list (OR logic for access control)
 	Committees []*Committee
 	// Mailing list description (11-500 characters)
@@ -607,6 +616,9 @@ type UpdateGrpsioMailingListPayload struct {
 	Public bool
 	// Mailing list type
 	Type string
+	// public: Anyone can join. approval_required: Users must request to join and
+	// be approved. invite_only: Only invited users can join.
+	AudienceAccess string
 	// Committees associated with this mailing list (OR logic for access control)
 	Committees []*Committee
 	// Mailing list description (11-500 characters)
