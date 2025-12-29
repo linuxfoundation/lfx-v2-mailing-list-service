@@ -457,6 +457,7 @@ Create GroupsIO mailing list/subgroup with comprehensive validation
 
 Example:
     %[1]s mailing-list create-grpsio-mailing-list --body '{
+      "audience_access": "public",
       "auditors": [
          "auditor_user_id1",
          "auditor_user_id2"
@@ -506,6 +507,7 @@ Update GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list --body '{
+      "audience_access": "public",
       "auditors": [
          "auditor_user_id1",
          "auditor_user_id2"

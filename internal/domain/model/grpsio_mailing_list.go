@@ -23,6 +23,7 @@ type GrpsIOMailingList struct {
 	SubgroupID       *int64   `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
 	GroupName        string   `json:"group_name"`
 	Public           bool     `json:"public"`            // Whether the mailing list is publicly accessible
+	AudienceAccess   string   `json:"audience_access"`   // "public" | "approval_required" | "invite_only"
 	Source           string   `json:"source"`            // "api", "webhook", or "mock" - tracks origin for business logic
 	Type             string   `json:"type"`              // "announcement" | "discussion_moderated" | "discussion_open"
 	CommitteeUID     string   `json:"committee_uid"`     // Committee UUID (optional)
@@ -56,6 +57,13 @@ const (
 	TypeCustom              = "custom" // TODO: Verify if Groups.io actually supports custom type
 )
 
+// Audience access constants - controls who can join the mailing list
+const (
+	AudienceAccessPublic           = "public"            // Anyone can join
+	AudienceAccessApprovalRequired = "approval_required" // Users must request to join and be approved
+	AudienceAccessInviteOnly       = "invite_only"       // Only invited users can join
+)
+
 // Valid committee filters
 const (
 	CommitteeFilterVotingRep    = "Voting Rep"
@@ -73,6 +81,15 @@ func ValidCommitteeFilters() []string {
 		CommitteeFilterObserver,
 		CommitteeFilterEmeritus,
 		CommitteeFilterNone,
+	}
+}
+
+// ValidAudienceAccessValues returns all valid audience access values
+func ValidAudienceAccessValues() []string {
+	return []string{
+		AudienceAccessPublic,
+		AudienceAccessApprovalRequired,
+		AudienceAccessInviteOnly,
 	}
 }
 
@@ -97,6 +114,14 @@ func (ml *GrpsIOMailingList) ValidateBasicFields() error {
 	}
 
 	// Public field is boolean, no validation needed
+
+	// Audience access validation - default to public if empty
+	if ml.AudienceAccess == "" {
+		ml.AudienceAccess = AudienceAccessPublic
+	}
+	if !isValidAudienceAccess(ml.AudienceAccess) {
+		return errors.NewValidation(fmt.Sprintf("audience_access must be one of: %v", ValidAudienceAccessValues()))
+	}
 
 	// Type validation
 	if ml.Type == "" {
@@ -216,6 +241,11 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	tag := fmt.Sprintf("public:%t", ml.Public)
 	tags = append(tags, tag)
 
+	// Add audience_access tag
+	if ml.AudienceAccess != "" {
+		tags = append(tags, fmt.Sprintf("audience_access:%s", ml.AudienceAccess))
+	}
+
 	// Add committee tag if committee-based
 	if ml.CommitteeUID != "" {
 		tags = append(tags, fmt.Sprintf("committee_uid:%s", ml.CommitteeUID))
@@ -284,6 +314,10 @@ func isValidGroupName(groupName string) bool {
 
 func isValidMailingListType(mlType string) bool {
 	return contains(ValidMailingListTypes(), mlType)
+}
+
+func isValidAudienceAccess(access string) bool {
+	return contains(ValidAudienceAccessValues(), access)
 }
 
 func contains(slice []string, item string) bool {
