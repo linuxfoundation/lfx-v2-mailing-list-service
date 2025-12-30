@@ -26,6 +26,7 @@ type CommitteeSyncService struct {
 	mailingListReader port.GrpsIOMailingListReader
 	memberWriter      port.GrpsIOMemberWriter
 	memberReader      port.GrpsIOMemberReader
+	entityReader      port.EntityAttributeReader // For querying committee-api
 }
 
 // NewCommitteeSyncService creates a new committee sync service
@@ -33,11 +34,13 @@ func NewCommitteeSyncService(
 	mailingListReader port.GrpsIOMailingListReader,
 	memberWriter port.GrpsIOMemberWriter,
 	memberReader port.GrpsIOMemberReader,
+	entityReader port.EntityAttributeReader,
 ) *CommitteeSyncService {
 	return &CommitteeSyncService{
 		mailingListReader: mailingListReader,
 		memberWriter:      memberWriter,
 		memberReader:      memberReader,
+		entityReader:      entityReader,
 	}
 }
 
@@ -457,4 +460,154 @@ func matchesFilter(votingStatus string, filters []string) bool {
 		return false // No filters means no committee members
 	}
 	return slices.Contains(filters, votingStatus)
+}
+
+// Public methods for use by MailingListSyncService and other services
+
+// SyncCommitteeMembersToMailingList queries committee members and adds matching ones to mailing list
+// This is a public method that can be called by other services like MailingListSyncService
+func (s *CommitteeSyncService) SyncCommitteeMembersToMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList, committee model.Committee) error {
+	slog.InfoContext(ctx, "syncing committee members to mailing list",
+		"mailing_list_uid", mailingList.UID,
+		"committee_uid", committee.UID,
+		"committee_name", committee.Name,
+		"filters", committee.AllowedVotingStatuses)
+
+	// Query committee members from committee-api
+	members, err := s.entityReader.ListMembers(ctx, committee.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list committee members",
+			"error", err,
+			"committee_uid", committee.UID)
+		return fmt.Errorf("failed to list committee members: %w", err)
+	}
+
+	if len(members) == 0 {
+		slog.InfoContext(ctx, "committee has no members",
+			"committee_uid", committee.UID)
+		return nil
+	}
+
+	// Add matching members to mailing list
+	addedCount := 0
+	for _, member := range members {
+		// Check if member's voting status matches the committee's filters
+		if matchesFilter(member.Voting.Status, committee.AllowedVotingStatuses) {
+			// Convert CommitteeMember to CommitteeMemberEventData for addMemberToList
+			memberData := model.CommitteeMemberEventData{
+				Email:        member.Email,
+				FirstName:    member.FirstName,
+				LastName:     member.LastName,
+				Username:     member.Username,
+				VotingStatus: member.Voting.Status,
+				Organization: model.Organization{Name: member.Organization.Name},
+				JobTitle:     member.JobTitle,
+			}
+
+			if err := s.addMemberToList(ctx, mailingList, memberData); err != nil {
+				slog.ErrorContext(ctx, "failed to add member to mailing list",
+					"error", err,
+					"email", redaction.RedactEmail(member.Email))
+				// Continue with other members
+				continue
+			}
+			addedCount++
+		}
+	}
+
+	slog.InfoContext(ctx, "committee members synced to mailing list",
+		"mailing_list_uid", mailingList.UID,
+		"committee_uid", committee.UID,
+		"total_members", len(members),
+		"added_count", addedCount)
+
+	return nil
+}
+
+// RemoveCommitteeMembersFromMailingList removes all committee members for a specific committee from the mailing list
+func (s *CommitteeSyncService) RemoveCommitteeMembersFromMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList, committee model.Committee) error {
+	slog.InfoContext(ctx, "removing committee members from mailing list",
+		"mailing_list_uid", mailingList.UID,
+		"committee_uid", committee.UID)
+
+	// Query committee members to know which emails to remove
+	members, err := s.entityReader.ListMembers(ctx, committee.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list committee members for removal",
+			"error", err,
+			"committee_uid", committee.UID)
+		return fmt.Errorf("failed to list committee members: %w", err)
+	}
+
+	removedCount := 0
+	for _, member := range members {
+		if err := s.removeMemberFromList(ctx, mailingList, member.Email); err != nil {
+			slog.ErrorContext(ctx, "failed to remove member from mailing list",
+				"error", err,
+				"email", redaction.RedactEmail(member.Email))
+			continue
+		}
+		removedCount++
+	}
+
+	slog.InfoContext(ctx, "committee members removed from mailing list",
+		"mailing_list_uid", mailingList.UID,
+		"committee_uid", committee.UID,
+		"removed_count", removedCount)
+
+	return nil
+}
+
+// ResyncCommitteeMembersForMailingList handles changes to committee filters by removing non-matching and adding matching members
+func (s *CommitteeSyncService) ResyncCommitteeMembersForMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList, oldCommittee, newCommittee model.Committee) error {
+	slog.InfoContext(ctx, "resyncing committee members due to filter changes",
+		"mailing_list_uid", mailingList.UID,
+		"committee_uid", newCommittee.UID,
+		"old_filters", oldCommittee.AllowedVotingStatuses,
+		"new_filters", newCommittee.AllowedVotingStatuses)
+
+	// Query committee members
+	members, err := s.entityReader.ListMembers(ctx, newCommittee.UID)
+	if err != nil {
+		return fmt.Errorf("failed to list committee members: %w", err)
+	}
+
+	for _, member := range members {
+		oldMatch := matchesFilter(member.Voting.Status, oldCommittee.AllowedVotingStatuses)
+		newMatch := matchesFilter(member.Voting.Status, newCommittee.AllowedVotingStatuses)
+
+		// Member no longer matches - remove
+		if oldMatch && !newMatch {
+			if err := s.removeMemberFromList(ctx, mailingList, member.Email); err != nil {
+				slog.ErrorContext(ctx, "failed to remove member",
+					"error", err,
+					"email", redaction.RedactEmail(member.Email))
+				continue
+			}
+		}
+
+		// Member now matches - add
+		if !oldMatch && newMatch {
+			memberData := model.CommitteeMemberEventData{
+				Email:        member.Email,
+				FirstName:    member.FirstName,
+				LastName:     member.LastName,
+				Username:     member.Username,
+				VotingStatus: member.Voting.Status,
+				Organization: model.Organization{Name: member.Organization.Name},
+				JobTitle:     member.JobTitle,
+			}
+
+			if err := s.addMemberToList(ctx, mailingList, memberData); err != nil {
+				slog.ErrorContext(ctx, "failed to add member",
+					"error", err,
+					"email", redaction.RedactEmail(member.Email))
+				continue
+			}
+		}
+
+		// Member matched before and after - no action needed
+	}
+
+	return nil
 }

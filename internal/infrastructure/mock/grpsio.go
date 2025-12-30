@@ -579,6 +579,13 @@ func (r *MockEntityAttributeReader) CommitteeName(ctx context.Context, uid strin
 	return name, nil
 }
 
+// ListMembers returns an empty list for testing (can be customized per test)
+func (r *MockEntityAttributeReader) ListMembers(ctx context.Context, committeeUID string) ([]model.CommitteeMember, error) {
+	slog.DebugContext(ctx, "mock entity attribute reader: listing committee members", "committee_uid", committeeUID)
+	// Return empty list by default - tests can customize this behavior
+	return []model.CommitteeMember{}, nil
+}
+
 // Error configuration methods for testing
 
 // SetErrorForService configures the mock to return an error for a specific service UID
@@ -1048,6 +1055,15 @@ func (p *MockGrpsIOMessagePublisher) Access(ctx context.Context, subject string,
 	slog.InfoContext(ctx, "mock publisher: access message published",
 		"subject", subject,
 		"message_type", "access",
+	)
+	return nil
+}
+
+// Internal simulates publishing an internal service event
+func (p *MockGrpsIOMessagePublisher) Internal(ctx context.Context, subject string, message any) error {
+	slog.InfoContext(ctx, "mock publisher: internal event published",
+		"subject", subject,
+		"message_type", "internal",
 	)
 	return nil
 }

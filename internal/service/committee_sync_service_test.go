@@ -25,9 +25,10 @@ func TestCommitteeSyncService_HandleMessage(t *testing.T) {
 	mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 	memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 	memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+	entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
 	// Create service
-	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 	require.NotNil(t, service)
 
 	t.Run("handles created event", func(t *testing.T) {
@@ -194,8 +195,9 @@ func TestCommitteeSyncService_AddMemberToList(t *testing.T) {
 	mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 	memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 	memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+	entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 	mailingList := &model.GrpsIOMailingList{
 		UID:       "list-123",
@@ -236,8 +238,9 @@ func TestCommitteeSyncService_RemoveMemberFromList(t *testing.T) {
 	mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 	memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 	memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+	entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+	service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 	t.Run("handles member not found (idempotent)", func(t *testing.T) {
 		mailingList := &model.GrpsIOMailingList{
@@ -276,8 +279,9 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 		memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 		memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+		entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 		event := model.CommitteeMemberCreatedEvent{
 			MemberUID:    "member-123",
@@ -334,8 +338,9 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 		memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 		memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+		entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 		event := model.CommitteeMemberCreatedEvent{
 			MemberUID:    "member-456",
@@ -399,8 +404,9 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 		memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 		memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+		entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 		// First create a member in both lists
 		memberData := model.CommitteeMemberEventData{
@@ -465,8 +471,9 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mailingListReader := mock.NewMockGrpsIOReader(mockRepo)
 		memberWriter := mock.NewMockGrpsIOMemberWriter(mockRepo)
 		memberReader := mock.NewMockGrpsIOMemberReader(mockRepo)
+		entityReader := mock.NewMockEntityAttributeReader(mockRepo)
 
-		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader)
+		service := NewCommitteeSyncService(mailingListReader, memberWriter, memberReader, entityReader)
 
 		// Update event: Observer -> Voting Rep (should add)
 		updateEvent := model.CommitteeMemberUpdatedEvent{

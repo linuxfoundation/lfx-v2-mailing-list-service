@@ -16,31 +16,35 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// handleCommitteeSync sets up and starts committee event subscriptions
-// Pattern: mirrors handleHTTPServer - does both setup and start in one function
-func handleCommitteeSync(ctx context.Context, wg *sync.WaitGroup) error {
-	slog.InfoContext(ctx, "starting committee sync")
+// handleMailingListSync sets up and starts mailing list event subscriptions
+// Pattern: mirrors handleCommitteeSync - does both setup and start in one function
+func handleMailingListSync(ctx context.Context, wg *sync.WaitGroup) error {
+	slog.InfoContext(ctx, "starting mailing list sync")
 
-	// Get dependencies (all inside function - mirrors handleHTTPServer)
+	// Get dependencies
 	mailingListReader := service.GrpsIOReader(ctx)
 	memberWriter := service.GrpsIOWriterOrchestrator(ctx) // Use orchestrator for message publishing
 	memberReader := service.GrpsIOReader(ctx)
 	entityReader := service.EntityAttributeRetriever(ctx)
 	natsClient := service.GetNATSClient(ctx)
 
-	// Create committee sync service
-	syncService := internalService.NewCommitteeSyncService(
+	// Create committee sync service (used by mailing list sync)
+	committeeSyncService := internalService.NewCommitteeSyncService(
 		mailingListReader,
 		memberWriter,
 		memberReader,
 		entityReader,
 	)
 
-	// Subscribe to all committee event subjects
+	// Create mailing list sync service
+	syncService := internalService.NewMailingListSyncService(
+		committeeSyncService,
+	)
+
+	// Subscribe to mailing list event subjects
 	subjects := []string{
-		constants.CommitteeMemberCreatedSubject,
-		constants.CommitteeMemberDeletedSubject,
-		constants.CommitteeMemberUpdatedSubject,
+		constants.MailingListCreatedSubject,
+		constants.MailingListUpdatedSubject,
 	}
 
 	for _, subject := range subjects {
@@ -53,8 +57,10 @@ func handleCommitteeSync(ctx context.Context, wg *sync.WaitGroup) error {
 				case <-ctx.Done():
 					slog.InfoContext(ctx, "rejecting message - service shutting down",
 						"subject", msg.Subject)
-					if err := msg.Nak(); err != nil {
-						slog.ErrorContext(ctx, "failed to nak message during shutdown", "error", err)
+					if msg.Reply != "" {
+						if err := msg.Nak(); err != nil {
+							slog.ErrorContext(ctx, "failed to nak message during shutdown", "error", err)
+						}
 					}
 					return
 				default:
@@ -68,13 +74,15 @@ func handleCommitteeSync(ctx context.Context, wg *sync.WaitGroup) error {
 
 				// Process message with proper error handling and acknowledgment
 				if err := syncService.HandleMessage(msgCtx, msg); err != nil {
-					slog.ErrorContext(msgCtx, "failed to process committee event, will retry",
+					slog.ErrorContext(msgCtx, "failed to process mailing list event, will retry",
 						"error", err,
 						"subject", msg.Subject)
-					if err := msg.Nak(); err != nil {
-						slog.ErrorContext(msgCtx, "failed to nak message", "error", err)
+					if msg.Reply != "" {
+						if err := msg.Nak(); err != nil {
+							slog.ErrorContext(msgCtx, "failed to nak message", "error", err)
+						}
 					}
-				} else {
+				} else if msg.Reply != "" {
 					// Success - acknowledge message
 					if err := msg.Ack(); err != nil {
 						slog.ErrorContext(msgCtx, "failed to ack message", "error", err)
@@ -85,19 +93,19 @@ func handleCommitteeSync(ctx context.Context, wg *sync.WaitGroup) error {
 		if err != nil {
 			return fmt.Errorf("failed to subscribe to %s: %w", subject, err)
 		}
-		slog.InfoContext(ctx, "subscribed to committee event",
+		slog.InfoContext(ctx, "subscribed to mailing list event",
 			"subject", subject,
 			"queue", constants.MailingListAPIQueue)
 	}
 
-	slog.InfoContext(ctx, "committee sync started successfully")
+	slog.InfoContext(ctx, "mailing list sync started successfully")
 
-	// Graceful shutdown (mirrors handleHTTPServer)
+	// Graceful shutdown (mirrors handleCommitteeSync)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		slog.InfoContext(ctx, "shutting down committee sync")
+		slog.InfoContext(ctx, "shutting down mailing list sync")
 		// NATS client cleanup handled by existing Close() in main shutdown
 	}()
 

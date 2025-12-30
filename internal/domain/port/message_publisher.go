@@ -16,4 +16,8 @@ type MessagePublisher interface {
 	// Access publishes access control messages for OpenFGA permission management
 	// These messages are consumed by the fga-sync service to update permission tuples
 	Access(ctx context.Context, subject string, message any) error
+
+	// Internal publishes internal service events for inter-service communication
+	// These messages are consumed by internal services for event-driven workflows
+	Internal(ctx context.Context, subject string, message any) error
 }

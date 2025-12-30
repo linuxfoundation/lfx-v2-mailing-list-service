@@ -49,3 +49,45 @@ type CommitteeMemberEventData struct {
 type Organization struct {
 	Name string `json:"name"`
 }
+
+// CommitteeMemberBase represents the base committee member attributes
+type CommitteeMember struct {
+	UID             string                      `json:"uid"`
+	Username        string                      `json:"username"`
+	Email           string                      `json:"email"`
+	FirstName       string                      `json:"first_name"`
+	LastName        string                      `json:"last_name"`
+	JobTitle        string                      `json:"job_title,omitempty"`
+	Role            CommitteeMemberRole         `json:"role"`
+	AppointedBy     string                      `json:"appointed_by"`
+	Status          string                      `json:"status"`
+	Voting          CommitteeMemberVotingInfo   `json:"voting"`
+	Agency          string                      `json:"agency,omitempty"`
+	Country         string                      `json:"country,omitempty"`
+	Organization    CommitteeMemberOrganization `json:"organization"`
+	CommitteeUID    string                      `json:"committee_uid"`
+	CommitteeName   string                      `json:"committee_name"`
+	LinkedInProfile string                      `json:"linkedin_profile,omitempty"`
+	CreatedAt       time.Time                   `json:"created_at"`
+	UpdatedAt       time.Time                   `json:"updated_at"`
+}
+
+// CommitteeMemberRole represents committee role information
+type CommitteeMemberRole struct {
+	Name      string `json:"name"`
+	StartDate string `json:"start_date,omitempty"`
+	EndDate   string `json:"end_date,omitempty"`
+}
+
+// CommitteeMemberVotingInfo represents voting information for the committee member
+type CommitteeMemberVotingInfo struct {
+	Status    string `json:"status"`
+	StartDate string `json:"start_date,omitempty"`
+	EndDate   string `json:"end_date,omitempty"`
+}
+
+// CommitteeMemberOrganization represents organization information for the committee member
+type CommitteeMemberOrganization struct {
+	Name    string `json:"name"`
+	Website string `json:"website,omitempty"`
+}

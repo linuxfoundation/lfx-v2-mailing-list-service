@@ -488,8 +488,9 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 
 // MockMessagePublisherWithError is a mock publisher that can return errors for testing
 type MockMessagePublisherWithError struct {
-	indexerError error
-	accessError  error
+	indexerError  error
+	accessError   error
+	internalError error
 }
 
 func (p *MockMessagePublisherWithError) Indexer(ctx context.Context, subject string, message interface{}) error {
@@ -502,6 +503,13 @@ func (p *MockMessagePublisherWithError) Indexer(ctx context.Context, subject str
 func (p *MockMessagePublisherWithError) Access(ctx context.Context, subject string, message interface{}) error {
 	if p.accessError != nil {
 		return p.accessError
+	}
+	return nil
+}
+
+func (p *MockMessagePublisherWithError) Internal(ctx context.Context, subject string, message interface{}) error {
+	if p.internalError != nil {
+		return p.internalError
 	}
 	return nil
 }

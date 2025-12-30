@@ -114,6 +114,12 @@ func main() {
 		// Log but don't fail - committee sync is optional feature
 	}
 
+	// Start mailing list sync (mirrors handleCommitteeSync pattern)
+	if err := handleMailingListSync(ctx, &wg); err != nil {
+		slog.ErrorContext(ctx, "failed to start mailing list sync", "error", err)
+		// Log but don't fail - mailing list sync is optional feature
+	}
+
 	// Wait for signal.
 	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
 		"signal", <-errc,

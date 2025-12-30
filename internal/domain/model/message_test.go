@@ -111,7 +111,8 @@ func TestIndexerMessage_Build(t *testing.T) {
 
 				assert.Equal(t, ActionDeleted, result.Action)
 				assert.Equal(t, "delete-user", result.Headers[constants.XOnBehalfOfHeader])
-				assert.NotContains(t, result.Headers, constants.AuthorizationHeader)
+				// Fallback authorization is always added for system-generated events
+				assert.Equal(t, "Bearer mailing-list-service", result.Headers[constants.AuthorizationHeader])
 
 				// For delete actions, data should be the input directly (string)
 				assert.Equal(t, "deleted-uid-123", result.Data)
@@ -133,8 +134,10 @@ func TestIndexerMessage_Build(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, result)
 
-				// Headers should be empty when no context values
-				assert.Empty(t, result.Headers)
+				// Fallback authorization is always added for system-generated events
+				assert.Equal(t, "Bearer mailing-list-service", result.Headers[constants.AuthorizationHeader])
+				// No x-on-behalf-of header when no principal in context
+				assert.NotContains(t, result.Headers, constants.XOnBehalfOfHeader)
 
 				dataMap, ok := result.Data.(map[string]any)
 				require.True(t, ok)

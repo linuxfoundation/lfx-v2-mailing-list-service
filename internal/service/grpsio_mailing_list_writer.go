@@ -390,12 +390,12 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Conte
 			"mailing_list_uid", mailingList.UID)
 		return nil
 	}
-	return ml.publishMailingListChange(ctx, mailingList, model.ActionCreated)
+	return ml.publishMailingListChange(ctx, nil, mailingList, model.ActionCreated)
 }
 
 // publishMailingListUpdateMessages publishes update messages for indexer and access control
-func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
-	return ml.publishMailingListChange(ctx, mailingList, model.ActionUpdated)
+func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList) error {
+	return ml.publishMailingListChange(ctx, oldMailingList, newMailingList, model.ActionUpdated)
 }
 
 // publishMailingListDeleteMessages publishes delete messages for indexer and access control
@@ -532,7 +532,7 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 
 	// Publish update messages
 	if ml.publisher != nil {
-		if err := ml.publishMailingListUpdateMessages(ctx, updatedMailingList); err != nil {
+		if err := ml.publishMailingListUpdateMessages(ctx, existing, updatedMailingList); err != nil {
 			slog.ErrorContext(ctx, "failed to publish update messages", "error", err)
 			// Don't fail the update on message publishing errors
 		}
@@ -571,8 +571,12 @@ func (ml *grpsIOWriterOrchestrator) publishIndexerMessage(ctx context.Context, m
 	return nil
 }
 
-// publishMailingListChange publishes indexer and access control messages for create/update operations
-func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context, mailingList *model.GrpsIOMailingList, action model.MessageAction) error {
+// publishMailingListChange publishes indexer, access control, and event notification messages for create/update operations
+func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList, action model.MessageAction) error {
+	// For creates, newMailingList is the created list and oldMailingList is nil
+	// For updates, both are provided
+	mailingList := newMailingList
+
 	slog.DebugContext(ctx, "publishing messages for mailing list",
 		"action", action,
 		"mailing_list_uid", mailingList.UID)
@@ -592,6 +596,15 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context
 	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
 		slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
 		return fmt.Errorf("failed to publish %s access control message: %w", action, err)
+	}
+
+	// Publish mailing list event notification for committee sync
+	if err := ml.publishMailingListEventNotification(ctx, oldMailingList, newMailingList, action); err != nil {
+		slog.WarnContext(ctx, "failed to publish mailing list event notification",
+			"error", err,
+			"action", action,
+			"mailing_list_uid", mailingList.UID)
+		// Don't fail - indexer and access control messages already sent
 	}
 
 	slog.DebugContext(ctx, "messages published successfully",
@@ -795,5 +808,53 @@ func (ml *grpsIOWriterOrchestrator) handleMockSourceMailingList(
 ) *int64 {
 	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
 		"group_name", request.GroupName)
+	return nil
+}
+
+// publishMailingListEventNotification publishes internal events for mailing list changes
+// These events are consumed by internal services like committee sync for event-driven workflows
+func (ml *grpsIOWriterOrchestrator) publishMailingListEventNotification(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList, action model.MessageAction) error {
+	var subject string
+	var event any
+
+	switch action {
+	case model.ActionCreated:
+		subject = constants.MailingListCreatedSubject
+		event = model.MailingListCreatedEvent{
+			MailingList: newMailingList,
+		}
+		slog.DebugContext(ctx, "publishing mailing list created event",
+			"subject", subject,
+			"mailing_list_uid", newMailingList.UID)
+
+	case model.ActionUpdated:
+		subject = constants.MailingListUpdatedSubject
+		event = model.MailingListUpdatedEvent{
+			OldMailingList: oldMailingList,
+			NewMailingList: newMailingList,
+		}
+		slog.DebugContext(ctx, "publishing mailing list updated event",
+			"subject", subject,
+			"mailing_list_uid", newMailingList.UID)
+
+	default:
+		// Don't publish events for other actions (e.g., deleted)
+		slog.DebugContext(ctx, "skipping event notification for action",
+			"action", action)
+		return nil
+	}
+
+	if err := ml.publisher.Internal(ctx, subject, event); err != nil {
+		slog.ErrorContext(ctx, "failed to publish internal event notification",
+			"error", err,
+			"subject", subject,
+			"action", action)
+		return fmt.Errorf("failed to publish internal event: %w", err)
+	}
+
+	slog.InfoContext(ctx, "mailing list event notification published successfully",
+		"subject", subject,
+		"action", action)
+
 	return nil
 }
