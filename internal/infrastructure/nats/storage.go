@@ -34,6 +34,11 @@ type storage struct {
 	client *NATSClient
 }
 
+// Client returns the underlying NATS client for subscriptions
+func (s *storage) Client() *NATSClient {
+	return s.client
+}
+
 // IndexSpec defines a secondary index to create
 type IndexSpec struct {
 	Name      string  // Index name for logging
@@ -923,6 +928,50 @@ func (s *storage) GetMailingListByGroupID(ctx context.Context, groupID uint64) (
 		"revision", rev)
 
 	return mailingList, rev, nil
+}
+
+// GetMailingListsByCommittee retrieves all mailing lists for a committee using secondary index
+// Pattern: mirrors GetServicesByGroupID for indexed multi-result queries
+func (s *storage) GetMailingListsByCommittee(ctx context.Context, committeeUID string) ([]*model.GrpsIOMailingList, error) {
+	slog.DebugContext(ctx, "nats storage: getting mailing lists by committee (indexed)",
+		"committee_uid", committeeUID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMailingLists]
+	if !exists || kv == nil {
+		return nil, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	indexPrefix := fmt.Sprintf(constants.KVLookupGroupsIOMailingListCommitteePrefix, committeeUID)
+
+	// Extract UIDs from secondary index (0 = get all)
+	uids, err := s.getUIDsFromSecondaryIndex(ctx, kv, indexPrefix, 0)
+	if err != nil {
+		return nil, errs.NewServiceUnavailable("failed to list mailing lists by committee")
+	}
+
+	if len(uids) == 0 {
+		slog.DebugContext(ctx, "no mailing lists found for committee", "committee_uid", committeeUID)
+		return []*model.GrpsIOMailingList{}, nil
+	}
+
+	// Fetch mailing lists by UID
+	var mailingLists []*model.GrpsIOMailingList
+	for _, uid := range uids {
+		ml, _, err := s.GetGrpsIOMailingList(ctx, uid)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to get mailing list, skipping",
+				"uid", uid,
+				"error", err)
+			continue
+		}
+		mailingLists = append(mailingLists, ml)
+	}
+
+	slog.DebugContext(ctx, "mailing lists retrieved by committee (indexed)",
+		"committee_uid", committeeUID,
+		"count", len(mailingLists))
+
+	return mailingLists, nil
 }
 
 // ================== GrpsIOMember operations ==================

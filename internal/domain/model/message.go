@@ -40,6 +40,11 @@ func (g *IndexerMessage) Build(ctx context.Context, input any) (*IndexerMessage,
 	headers := make(map[string]string)
 	if authorization, ok := ctx.Value(constants.AuthorizationContextID).(string); ok {
 		headers[constants.AuthorizationHeader] = authorization
+	} else {
+		// Fallback for system-generated events (webhooks, etc.) that don't have user auth context
+		// This is just a dummy value so that the indexer service can still process the message,
+		// given that it requires an authorization header.
+		headers[constants.AuthorizationHeader] = "Bearer mailing-list-service"
 	}
 	if principal, ok := ctx.Value(constants.PrincipalContextID).(string); ok {
 		headers[constants.XOnBehalfOfHeader] = principal

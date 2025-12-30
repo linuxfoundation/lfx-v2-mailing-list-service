@@ -29,6 +29,12 @@ func (m *messagingPublisher) Access(ctx context.Context, subject string, message
 	return m.publish(ctx, subject, message, "access")
 }
 
+// Internal publishes internal service events for inter-service communication
+// These messages are consumed by internal services for event-driven workflows
+func (m *messagingPublisher) Internal(ctx context.Context, subject string, message any) error {
+	return m.publish(ctx, subject, message, "internal")
+}
+
 // publish is the common method for publishing messages to NATS
 func (m *messagingPublisher) publish(ctx context.Context, subject string, message any, messageType string) error {
 	// Check if client is ready

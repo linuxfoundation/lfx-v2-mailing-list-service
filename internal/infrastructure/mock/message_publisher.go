@@ -38,3 +38,12 @@ func (m *mockMessagePublisher) Access(ctx context.Context, subject string, messa
 	)
 	return nil
 }
+
+// Internal publishes internal service events (mock implementation - logs only)
+func (m *mockMessagePublisher) Internal(ctx context.Context, subject string, message any) error {
+	slog.InfoContext(ctx, "mock internal event published",
+		"subject", subject,
+		"message_type", "internal",
+	)
+	return nil
+}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -578,6 +579,13 @@ func (r *MockEntityAttributeReader) CommitteeName(ctx context.Context, uid strin
 	return name, nil
 }
 
+// ListMembers returns an empty list for testing (can be customized per test)
+func (r *MockEntityAttributeReader) ListMembers(ctx context.Context, committeeUID string) ([]model.CommitteeMember, error) {
+	slog.DebugContext(ctx, "mock entity attribute reader: listing committee members", "committee_uid", committeeUID)
+	// Return empty list by default - tests can customize this behavior
+	return []model.CommitteeMember{}, nil
+}
+
 // Error configuration methods for testing
 
 // SetErrorForService configures the mock to return an error for a specific service UID
@@ -1051,6 +1059,15 @@ func (p *MockGrpsIOMessagePublisher) Access(ctx context.Context, subject string,
 	return nil
 }
 
+// Internal simulates publishing an internal service event
+func (p *MockGrpsIOMessagePublisher) Internal(ctx context.Context, subject string, message any) error {
+	slog.InfoContext(ctx, "mock publisher: internal event published",
+		"subject", subject,
+		"message_type", "internal",
+	)
+	return nil
+}
+
 // NewMockGrpsIOMessagePublisher creates a mock message publisher
 func NewMockGrpsIOMessagePublisher() port.MessagePublisher {
 	return &MockGrpsIOMessagePublisher{}
@@ -1218,8 +1235,8 @@ func (m *MockRepository) GetGrpsIOMailingListWithRevision(ctx context.Context, u
 	mailingListCopy.Committees = make([]model.Committee, len(mailingList.Committees))
 	for i, c := range mailingList.Committees {
 		mailingListCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1290,6 +1307,48 @@ func (m *MockRepository) GetMailingListByGroupID(ctx context.Context, groupID ui
 	return nil, 0, errors.NewNotFound("mailing list not found")
 }
 
+// GetMailingListsByCommittee retrieves all mailing lists for a committee
+func (m *MockRepository) GetMailingListsByCommittee(ctx context.Context, committeeUID string) ([]*model.GrpsIOMailingList, error) {
+	slog.DebugContext(ctx, "mock mailing list: getting mailing lists by committee", "committee_uid", committeeUID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetMailingListsByCommittee", committeeUID); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var result []*model.GrpsIOMailingList
+
+	// Iterate through all mailing lists to find matches
+	for _, mailingList := range m.mailingLists {
+		if slices.ContainsFunc(mailingList.Committees, func(c model.Committee) bool {
+			return c.UID == committeeUID
+		}) {
+			// Return deep copy to avoid data races
+			mailingListCopy := *mailingList
+			result = append(result, &mailingListCopy)
+
+			slog.DebugContext(ctx, "found mailing list for committee",
+				"mailing_list_uid", mailingListCopy.UID,
+				"group_name", mailingListCopy.GroupName,
+				"committee_uid", committeeUID)
+		}
+	}
+
+	if len(result) == 0 {
+		slog.DebugContext(ctx, "no mailing lists found for committee", "committee_uid", committeeUID)
+		return []*model.GrpsIOMailingList{}, nil
+	}
+
+	slog.DebugContext(ctx, "mailing lists retrieved by committee",
+		"committee_uid", committeeUID,
+		"count", len(result))
+
+	return result, nil
+}
+
 // CheckMailingListExists checks if a mailing list with the given name exists in parent service
 func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, groupName string) (bool, error) {
 	slog.DebugContext(ctx, "mock mailing list: checking mailing list existence", "parent_id", parentID, "group_name", groupName)
@@ -1335,8 +1394,8 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 	mailingListCopy.Committees = make([]model.Committee, len(mailingList.Committees))
 	for i, c := range mailingList.Committees {
 		mailingListCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1352,8 +1411,8 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 	resultCopy.Committees = make([]model.Committee, len(mailingListCopy.Committees))
 	for i, c := range mailingListCopy.Committees {
 		resultCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1394,8 +1453,8 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 	mailingListCopy.Committees = make([]model.Committee, len(mailingList.Committees))
 	for i, c := range mailingList.Committees {
 		mailingListCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1412,8 +1471,8 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 	resultCopy.Committees = make([]model.Committee, len(mailingListCopy.Committees))
 	for i, c := range mailingListCopy.Committees {
 		resultCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1456,8 +1515,8 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 	mailingListCopy.Committees = make([]model.Committee, len(mailingList.Committees))
 	for i, c := range mailingList.Committees {
 		mailingListCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1474,8 +1533,8 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 	resultCopy.Committees = make([]model.Committee, len(mailingListCopy.Committees))
 	for i, c := range mailingListCopy.Committees {
 		resultCopy.Committees[i] = model.Committee{
-			UID:     c.UID,
-			Name:    c.Name,
+			UID:                   c.UID,
+			Name:                  c.Name,
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
@@ -1678,6 +1737,21 @@ func (m *MockRepository) GetMemberByEmail(ctx context.Context, mailingListUID, e
 	}
 
 	return nil, 0, errors.NewNotFound(fmt.Sprintf("member with email %s not found in mailing list %s", email, mailingListUID))
+}
+
+// GetMembersForMailingList returns all members for a given mailing list (test helper)
+func (m *MockRepository) GetMembersForMailingList(mailingListUID string) []*model.GrpsIOMember {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var result []*model.GrpsIOMember
+	for _, member := range m.members {
+		if member.MailingListUID == mailingListUID {
+			memberCopy := *member
+			result = append(result, &memberCopy)
+		}
+	}
+	return result
 }
 
 // AddMember adds a member to the mock repository for testing

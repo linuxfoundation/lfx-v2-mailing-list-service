@@ -56,6 +56,18 @@ func (c *NATSClient) IsReady(ctx context.Context) error {
 	return nil
 }
 
+// QueueSubscribe creates a queue subscription for load-balanced message processing
+// Returns subscription handle and error
+func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandler) (*nats.Subscription, error) {
+	if c.conn == nil {
+		return nil, errors.NewServiceUnavailable("NATS connection not initialized")
+	}
+	if !c.conn.IsConnected() {
+		return nil, errors.NewServiceUnavailable("NATS connection not ready")
+	}
+	return c.conn.QueueSubscribe(subject, queue, handler)
+}
+
 // KeyValueStore creates a JetStream client and gets the key-value store for projects.
 func (c *NATSClient) KeyValueStore(ctx context.Context, bucketName string) error {
 	js, err := jetstream.New(c.conn)

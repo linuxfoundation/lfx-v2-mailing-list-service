@@ -25,4 +25,9 @@ type GrpsIOMailingListReader interface {
 	// Returns NotFound error if mailing list doesn't exist
 	// Used by webhook processor to find mailing list for deletion
 	GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error)
+
+	// GetMailingListsByCommittee retrieves all mailing lists associated with a committee
+	// Used by committee sync service to find lists that need member updates
+	// Returns empty slice if no mailing lists found for the committee
+	GetMailingListsByCommittee(ctx context.Context, committeeUID string) ([]*model.GrpsIOMailingList, error)
 }

@@ -17,6 +17,9 @@ const (
 	// SourceWebhook indicates the operation originated from a Groups.io webhook
 	SourceWebhook = "webhook"
 
+	// SourceCommittee indicates the operation originated from committee-api events via NATS
+	SourceCommittee = "committee"
+
 	// SourceMock indicates the operation originated from mock/test infrastructure
 	SourceMock = "mock"
 )
@@ -24,19 +27,19 @@ const (
 // ValidateSource validates that the source is one of the allowed values
 func ValidateSource(source string) error {
 	switch source {
-	case SourceAPI, SourceWebhook, SourceMock:
+	case SourceAPI, SourceWebhook, SourceCommittee, SourceMock:
 		return nil
 	case "":
 		return errors.NewValidation("source is required")
 	default:
 		return errors.NewValidation(
-			fmt.Sprintf("unsupported source: %s (must be api, webhook, or mock)", source))
+			fmt.Sprintf("unsupported source: %s (must be api, webhook, committee, or mock)", source))
 	}
 }
 
 // ValidSources returns list of all valid sources for documentation
 func ValidSources() []string {
-	return []string{SourceAPI, SourceWebhook, SourceMock}
+	return []string{SourceAPI, SourceWebhook, SourceCommittee, SourceMock}
 }
 
 // SourceDescription returns human-readable description of source behavior
@@ -46,6 +49,8 @@ func SourceDescription(source string) string {
 		return "Creates entity in Groups.io via API, then stores locally"
 	case SourceWebhook:
 		return "Adopts existing Groups.io entity from webhook, stores locally"
+	case SourceCommittee:
+		return "Syncs entity from committee-api events, stores locally"
 	case SourceMock:
 		return "Skips Groups.io coordination, stores locally only (testing mode)"
 	default:
