@@ -668,12 +668,26 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 		return nil, errs.NewServiceUnavailable("KV bucket not available")
 	}
 
-	createdKeys, err := s.createSecondaryIndices(ctx, kv, mailingList.UID, []IndexSpec{
+	// Build base index specs
+	specs := []IndexSpec{
 		{Name: "service", KeyFormat: constants.KVLookupGroupsIOMailingListServicePrefix, StringID: &mailingList.ServiceUID},
 		{Name: "project", KeyFormat: constants.KVLookupGroupsIOMailingListProjectPrefix, StringID: &mailingList.ProjectUID},
-		{Name: "committee", KeyFormat: constants.KVLookupGroupsIOMailingListCommitteePrefix, StringID: &mailingList.CommitteeUID},
 		{Name: "subgroupid", KeyFormat: constants.KVLookupGroupsIOMailingListBySubgroupIDPrefix, Int64ID: mailingList.SubgroupID},
-	})
+	}
+
+	// Add committee indices for each committee in the array
+	for _, committee := range mailingList.Committees {
+		if committee.UID != "" {
+			committeeUID := committee.UID // Create local copy for pointer
+			specs = append(specs, IndexSpec{
+				Name:      "committee",
+				KeyFormat: constants.KVLookupGroupsIOMailingListCommitteePrefix,
+				StringID:  &committeeUID,
+			})
+		}
+	}
+
+	createdKeys, err := s.createSecondaryIndices(ctx, kv, mailingList.UID, specs)
 	if err != nil {
 		return createdKeys, err
 	}
@@ -828,12 +842,14 @@ func (s *storage) deleteMailingListSecondaryIndices(ctx context.Context, mailing
 		slog.WarnContext(ctx, "failed to delete project index", "error", err, "key", projectKey)
 	}
 
-	// Committee index (only if committee-based)
-	if mailingList.CommitteeUID != "" {
-		committeeKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListCommitteePrefix, mailingList.CommitteeUID) + "/" + mailingList.UID
-		err = kv.Delete(ctx, committeeKey)
-		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
-			slog.WarnContext(ctx, "failed to delete committee index", "error", err, "key", committeeKey)
+	// Committee indices (for each committee in the array)
+	for _, committee := range mailingList.Committees {
+		if committee.UID != "" {
+			committeeKey := fmt.Sprintf(constants.KVLookupGroupsIOMailingListCommitteePrefix, committee.UID) + "/" + mailingList.UID
+			err = kv.Delete(ctx, committeeKey)
+			if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+				slog.WarnContext(ctx, "failed to delete committee index", "error", err, "key", committeeKey)
+			}
 		}
 	}
 }

@@ -69,7 +69,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	slog.DebugContext(ctx, "orchestrator: creating mailing list",
 		"group_name", request.GroupName,
 		"parent_uid", request.ServiceUID,
-		"committee_uid", request.CommitteeUID,
+		"committees_count", len(request.Committees),
 		"source", request.Source,
 		"subgroup_id", request.SubgroupID)
 
@@ -137,8 +137,8 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 6: Validate committee and populate metadata (if specified)
-	if err := ml.validateAndPopulateCommittee(ctx, request, parentService.ProjectUID); err != nil {
+	// Step 6: Validate committees and populate metadata (if specified)
+	if err := ml.validateAndPopulateCommittees(ctx, request); err != nil {
 		return nil, 0, err
 	}
 
@@ -245,6 +245,24 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	return createdMailingList, revision, nil
 }
 
+// audienceAccessToGroupsIO converts audience_access enum to Groups.io restricted/invite_only flags
+func audienceAccessToGroupsIO(audienceAccess string) (restricted, inviteOnly *bool) {
+	falseVal := false
+	trueVal := true
+
+	switch audienceAccess {
+	case model.AudienceAccessApprovalRequired:
+		// Users must request to join and be approved by moderator
+		return &trueVal, &falseVal
+	case model.AudienceAccessInviteOnly:
+		// Only invited users can join
+		return &falseVal, &trueVal
+	default: // public
+		// Anyone can join
+		return &falseVal, &falseVal
+	}
+}
+
 // createMailingListInGroupsIO handles Groups.io subgroup creation and returns the ID
 func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, error) {
 	if ml.groupsClient == nil || parentService.GroupID == nil {
@@ -255,12 +273,18 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 		"domain", parentService.Domain,
 		"parent_group_id", *parentService.GroupID,
 		"subgroup_name", mailingList.GroupName,
+		"audience_access", mailingList.AudienceAccess,
 	)
+
+	// Convert audience_access to Groups.io fields
+	restricted, inviteOnly := audienceAccessToGroupsIO(mailingList.AudienceAccess)
 
 	subgroupOptions := groupsio.SubgroupCreateOptions{
 		ParentGroupID: utils.Int64PtrToUint64(parentService.GroupID),                                             // Production field
 		GroupName:     mailingList.GroupName,                                                                     // Fixed: was SubgroupName
 		Desc:          fmt.Sprintf("Mailing list for %s - %s", parentService.ProjectName, mailingList.GroupName), // Fixed: was Description
+		Restricted:    restricted,                                                                                // Audience access: approval_required
+		InviteOnly:    inviteOnly,                                                                                // Audience access: invite_only
 		// Privacy: leave empty to inherit from parent group (production pattern)
 	}
 
@@ -317,34 +341,38 @@ func (ml *grpsIOWriterOrchestrator) validateAndInheritFromParent(ctx context.Con
 	return parentService, nil
 }
 
-// validateAndPopulateCommittee validates committee exists and populates committee metadata
-func (ml *grpsIOWriterOrchestrator) validateAndPopulateCommittee(ctx context.Context, request *model.GrpsIOMailingList, projectID string) error {
-	if request.CommitteeUID == "" {
-		// No committee specified, validation not needed
+// validateAndPopulateCommittees validates all committees exist and populates committee names
+func (ml *grpsIOWriterOrchestrator) validateAndPopulateCommittees(ctx context.Context, request *model.GrpsIOMailingList) error {
+	if len(request.Committees) == 0 {
+		// No committees specified, validation not needed
 		return nil
 	}
 
-	slog.DebugContext(ctx, "validating and populating committee",
-		"committee_uid", request.CommitteeUID,
-		"project_uid", projectID)
+	slog.DebugContext(ctx, "validating and populating committees",
+		"committees_count", len(request.Committees))
 
-	// Get committee name to validate it exists and populate metadata
-	committeeName, err := ml.entityReader.CommitteeName(ctx, request.CommitteeUID)
-	if err != nil {
-		slog.WarnContext(ctx, "committee validation failed",
-			"committee_uid", request.CommitteeUID,
-			"project_uid", projectID,
-			"error", err)
-		return errors.NewNotFound("committee not found")
+	// Validate each committee and populate its name
+	for i, committee := range request.Committees {
+		if committee.UID == "" {
+			continue
+		}
+
+		// Get committee name to validate it exists and populate metadata
+		committeeName, err := ml.entityReader.CommitteeName(ctx, committee.UID)
+		if err != nil {
+			slog.WarnContext(ctx, "committee validation failed",
+				"committee_uid", committee.UID,
+				"error", err)
+			return errors.NewNotFound(fmt.Sprintf("committee %s not found", committee.UID))
+		}
+
+		// Populate committee name
+		request.Committees[i].Name = committeeName
+
+		slog.DebugContext(ctx, "committee validated and populated successfully",
+			"committee_uid", committee.UID,
+			"committee_name", committeeName)
 	}
-
-	// Populate committee name
-	request.CommitteeName = committeeName
-
-	slog.DebugContext(ctx, "committee validated and populated successfully",
-		"committee_uid", request.CommitteeUID,
-		"committee_name", committeeName,
-		"project_uid", projectID)
 
 	return nil
 }
@@ -388,13 +416,16 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.C
 
 // buildMailingListAccessControlMessage builds an access control message for OpenFGA
 func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailingList *model.GrpsIOMailingList) *model.AccessMessage {
-	references := map[string]string{
-		constants.RelationGroupsIOService: mailingList.ServiceUID, // Required for service-level permission inheritance (project inherited through service)
+	references := map[string][]string{
+		constants.RelationGroupsIOService: {mailingList.ServiceUID}, // Required for service-level permission inheritance (project inherited through service)
 	}
 
-	// Add committee reference for committee-based lists (enables committee-level authorization)
-	if mailingList.CommitteeUID != "" {
-		references[constants.RelationCommittee] = mailingList.CommitteeUID
+	// Add committee references for committee-based lists (enables committee-level authorization)
+	// Each committee gets its own reference key for OR logic (any committee grants access)
+	for _, committee := range mailingList.Committees {
+		if committee.UID != "" {
+			references[constants.RelationCommittee] = append(references[constants.RelationCommittee], committee.UID)
+		}
 	}
 
 	relations := map[string][]string{}
@@ -474,9 +505,9 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		return nil, 0, err
 	}
 
-	// Step 3.3: Refresh committee name if committee UID changed
-	if mailingList.CommitteeUID != "" && mailingList.CommitteeUID != existing.CommitteeUID {
-		if err := ml.validateAndPopulateCommittee(ctx, mailingList, parentSvc.ProjectUID); err != nil {
+	// Always refresh committee names to pick up any name changes in committee-service
+	if len(mailingList.Committees) > 0 {
+		if err := ml.validateAndPopulateCommittees(ctx, mailingList); err != nil {
 			return nil, 0, err
 		}
 	}
@@ -660,20 +691,12 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 	updated.ServiceUID = existing.ServiceUID   // Parent reference is immutable
 	updated.GroupName = existing.GroupName     // Group name is immutable due to unique constraint
 
-	// Committee name handling: preserve if UID unchanged, clear if UID removed, use provided if changed
-	if updated.CommitteeUID == existing.CommitteeUID {
-		updated.CommitteeName = existing.CommitteeName
-	} else if updated.CommitteeUID == "" {
-		updated.CommitteeName = "" // Clear name when committee association removed
-	}
-	// If UID changed to different committee, keep client-provided name
-
 	// Update timestamp
 	updated.UpdatedAt = time.Now()
 
 	slog.DebugContext(ctx, "mailing list data merged",
 		"mailing_list_uid", existing.UID,
-		"mutable_fields", []string{"public", "type", "description", "title", "committee_uid", "committee_name", "committee_filters", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
+		"mutable_fields", []string{"public", "audience_access", "type", "description", "title", "committees", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
 	)
 }
 
@@ -693,12 +716,16 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 		return
 	}
 
+	// Convert audience_access to Groups.io fields
+	restricted, inviteOnly := audienceAccessToGroupsIO(mailingList.AudienceAccess)
+
 	// Build update options from mailing list model
 	updates := groupsio.SubgroupUpdateOptions{
 		Title:       mailingList.Title,
 		Description: mailingList.Description,
 		SubjectTag:  mailingList.SubjectTag,
-		Committee:   mailingList.CommitteeUID,
+		Restricted:  restricted,
+		InviteOnly:  inviteOnly,
 	}
 
 	// Perform Groups.io mailing list update

@@ -143,8 +143,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 				assert.Equal(t, "test-project", result.ProjectSlug)
 				assert.Equal(t, "announce", result.GroupName)
 				assert.Equal(t, "service-1", result.ServiceUID)
-				assert.Empty(t, result.CommitteeUID)
-				assert.Empty(t, result.CommitteeName)
+				assert.Empty(t, result.Committees)
 				assert.Equal(t, 1, mockRepo.GetMailingListCount())
 			},
 		},
@@ -172,20 +171,23 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 				mockRepo.AddCommittee("committee-1", "Technical Committee")
 			},
 			inputMailingList: &model.GrpsIOMailingList{
-				GroupName:    "tsc-discuss",
-				Public:       false,
-				Type:         "discussion_moderated",
-				CommitteeUID: "committee-1",
-				Description:  "Technical Steering Committee discussion list",
-				Title:        "TSC Discussion",
-				Source:       constants.SourceMock,
-				ServiceUID:   "service-1",
+				GroupName: "tsc-discuss",
+				Public:    false,
+				Type:      "discussion_moderated",
+				Committees: []model.Committee{
+					{UID: "committee-1"},
+				},
+				Description: "Technical Steering Committee discussion list",
+				Title:       "TSC Discussion",
+				Source:      constants.SourceMock,
+				ServiceUID:  "service-1",
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMailingList, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
-				assert.Equal(t, "committee-1", result.CommitteeUID)
-				assert.Equal(t, "Technical Committee", result.CommitteeName)
+				require.Len(t, result.Committees, 1)
+				assert.Equal(t, "committee-1", result.Committees[0].UID)
+				assert.Equal(t, "Technical Committee", result.Committees[0].Name)
 				assert.Equal(t, "tsc-discuss", result.GroupName)
 				assert.False(t, result.Public)
 				assert.Equal(t, "discussion_moderated", result.Type)
@@ -272,14 +274,16 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 				// Don't add committee
 			},
 			inputMailingList: &model.GrpsIOMailingList{
-				GroupName:    "committee-discuss",
-				Public:       false,
-				Type:         "discussion_moderated",
-				CommitteeUID: "nonexistent-committee",
-				Description:  "Committee discussion list",
-				Title:        "Committee Discussion",
-				Source:       constants.SourceMock,
-				ServiceUID:   "service-1",
+				GroupName: "committee-discuss",
+				Public:    false,
+				Type:      "discussion_moderated",
+				Committees: []model.Committee{
+					{UID: "nonexistent-committee"},
+				},
+				Description: "Committee discussion list",
+				Title:       "Committee Discussion",
+				Source:      constants.SourceMock,
+				ServiceUID:  "service-1",
 			},
 			expectedError: errs.NotFound{},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList, mockRepo *mock.MockRepository) {
@@ -669,28 +673,30 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     true,
 				Relations:  map[string][]string{},
-				References: map[string]string{
-					constants.RelationGroupsIOService: "service-1",
+				References: map[string][]string{
+					constants.RelationGroupsIOService: {"service-1"},
 				},
 			},
 		},
 		{
 			name: "mailing list with committee",
 			mailingList: &model.GrpsIOMailingList{
-				UID:          "list-2",
-				ServiceUID:   "service-2",
-				ProjectUID:   "project-2",
-				CommitteeUID: "committee-1",
-				Public:       false,
+				UID:        "list-2",
+				ServiceUID: "service-2",
+				ProjectUID: "project-2",
+				Committees: []model.Committee{
+					{UID: "committee-1"},
+				},
+				Public: false,
 			},
 			expected: &model.AccessMessage{
 				UID:        "list-2",
 				ObjectType: constants.ObjectTypeGroupsIOMailingList,
 				Public:     false,
 				Relations:  map[string][]string{},
-				References: map[string]string{
-					"committee":                       "committee-1",
-					constants.RelationGroupsIOService: "service-2",
+				References: map[string][]string{
+					constants.RelationCommittee:       {"committee-1"},
+					constants.RelationGroupsIOService: {"service-2"},
 				},
 			},
 		},
@@ -710,8 +716,8 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 				Relations: map[string][]string{
 					constants.RelationWriter: {"user1", "user2"},
 				},
-				References: map[string]string{
-					constants.RelationGroupsIOService: "service-3",
+				References: map[string][]string{
+					constants.RelationGroupsIOService: {"service-3"},
 				},
 			},
 		},
@@ -766,38 +772,42 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMailingList(t *testing.T) {
 
 				// Create existing mailing list
 				existing := &model.GrpsIOMailingList{
-					UID:           "list-1",
-					GroupName:     "tsc-discuss",
-					Public:        false,
-					Type:          "discussion_moderated",
-					CommitteeUID:  "committee-1",
-					CommitteeName: "Technical Steering Committee",
-					Description:   "Technical steering committee discussions",
-					Title:         "TSC Discussion List",
-					ServiceUID:    "service-1",
-					ProjectUID:    "project-1",
-					ProjectName:   "Test Project",
-					ProjectSlug:   "test-project",
-					CreatedAt:     time.Now().Add(-time.Hour),
-					UpdatedAt:     time.Now().Add(-time.Hour),
+					UID:       "list-1",
+					GroupName: "tsc-discuss",
+					Public:    false,
+					Type:      "discussion_moderated",
+					Committees: []model.Committee{
+						{UID: "committee-1", Name: "Technical Steering Committee"},
+					},
+					Description: "Technical steering committee discussions",
+					Title:       "TSC Discussion List",
+					ServiceUID:  "service-1",
+					ProjectUID:  "project-1",
+					ProjectName: "Test Project",
+					ProjectSlug: "test-project",
+					CreatedAt:   time.Now().Add(-time.Hour),
+					UpdatedAt:   time.Now().Add(-time.Hour),
 				}
 				mockRepo.AddMailingList(existing)
 			},
 			existingUID: "list-1",
 			updatedMailingList: &model.GrpsIOMailingList{
-				GroupName:    "tsc-discuss",
-				Public:       true, // Changed
-				Type:         "discussion_moderated",
-				CommitteeUID: "committee-1",                                      // Same committee
-				Description:  "Updated technical steering committee discussions", // Changed
-				Title:        "TSC Discussion List",
-				ServiceUID:   "service-1",
+				GroupName: "tsc-discuss",
+				Public:    true, // Changed
+				Type:      "discussion_moderated",
+				Committees: []model.Committee{
+					{UID: "committee-1"}, // Same committee
+				},
+				Description: "Updated technical steering committee discussions", // Changed
+				Title:       "TSC Discussion List",
+				ServiceUID:  "service-1",
 			},
 			expectedRevision: 1,
 			expectedError:    nil,
 			validate: func(t *testing.T, result *model.GrpsIOMailingList, mockRepo *mock.MockRepository) {
-				assert.Equal(t, "committee-1", result.CommitteeUID)
-				assert.Equal(t, "Technical Steering Committee", result.CommitteeName)                   // Should be preserved
+				require.Len(t, result.Committees, 1)
+				assert.Equal(t, "committee-1", result.Committees[0].UID)
+				assert.Equal(t, "Technical Steering Committee", result.Committees[0].Name)              // Should be preserved
 				assert.Equal(t, true, result.Public)                                                    // Should be updated
 				assert.Equal(t, "Updated technical steering committee discussions", result.Description) // Should be updated
 			},
@@ -856,73 +866,107 @@ func TestGrpsIOWriterOrchestrator_mergeMailingListData(t *testing.T) {
 		validate func(*testing.T, *model.GrpsIOMailingList)
 	}{
 		{
-			name: "preserve_committee_name_when_uid_unchanged",
+			name: "preserve_committees_when_unchanged",
 			existing: &model.GrpsIOMailingList{
-				UID:           "list-1",
-				GroupName:     "tsc-discuss",
-				CommitteeUID:  "committee-1",
-				CommitteeName: "Technical Steering Committee",
-				CreatedAt:     time.Now().Add(-time.Hour),
-				ServiceUID:    "service-1",
-				ProjectUID:    "project-1",
-				ProjectName:   "Test Project",
-				ProjectSlug:   "test-project",
+				UID:       "list-1",
+				GroupName: "tsc-discuss",
+				Committees: []model.Committee{
+					{UID: "committee-1", Name: "Technical Steering Committee"},
+				},
+				CreatedAt:   time.Now().Add(-time.Hour),
+				ServiceUID:  "service-1",
+				ProjectUID:  "project-1",
+				ProjectName: "Test Project",
+				ProjectSlug: "test-project",
 			},
 			updated: &model.GrpsIOMailingList{
-				CommitteeUID: "committee-1", // Same committee
-				Public:       true,          // Changed field
+				Committees: []model.Committee{
+					{UID: "committee-1"}, // Same committee UID
+				},
+				Public: true, // Changed field
 			},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
-				assert.Equal(t, "Technical Steering Committee", result.CommitteeName)
-				assert.Equal(t, "committee-1", result.CommitteeUID)
+				require.Len(t, result.Committees, 1)
+				assert.Equal(t, "committee-1", result.Committees[0].UID)
 				assert.Equal(t, true, result.Public)
 			},
 		},
 		{
-			name: "clear_committee_name_when_uid_removed",
+			name: "clear_committees_when_removed",
 			existing: &model.GrpsIOMailingList{
-				UID:           "list-2",
-				GroupName:     "general-discuss",
-				CommitteeUID:  "committee-1",
-				CommitteeName: "Technical Steering Committee",
-				CreatedAt:     time.Now().Add(-time.Hour),
-				ServiceUID:    "service-1",
-				ProjectUID:    "project-1",
-				ProjectName:   "Test Project",
-				ProjectSlug:   "test-project",
+				UID:       "list-2",
+				GroupName: "general-discuss",
+				Committees: []model.Committee{
+					{UID: "committee-1", Name: "Technical Steering Committee"},
+				},
+				CreatedAt:   time.Now().Add(-time.Hour),
+				ServiceUID:  "service-1",
+				ProjectUID:  "project-1",
+				ProjectName: "Test Project",
+				ProjectSlug: "test-project",
 			},
 			updated: &model.GrpsIOMailingList{
-				CommitteeUID: "", // Empty committee (removing committee)
-				Public:       true,
+				Committees: []model.Committee{}, // Empty committees (removing all)
+				Public:     true,
 			},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
-				assert.Equal(t, "", result.CommitteeName, "Committee name should be cleared when UID is removed")
-				assert.Equal(t, "", result.CommitteeUID)
+				assert.Empty(t, result.Committees, "Committees should be cleared when array is empty")
 				assert.Equal(t, true, result.Public)
 			},
 		},
 		{
-			name: "use_new_committee_name_when_uid_changes",
+			name: "use_new_committees_when_changed",
 			existing: &model.GrpsIOMailingList{
-				UID:           "list-3",
-				GroupName:     "committee-discuss",
-				CommitteeUID:  "committee-1",
-				CommitteeName: "Technical Steering Committee",
-				CreatedAt:     time.Now().Add(-time.Hour),
-				ServiceUID:    "service-1",
-				ProjectUID:    "project-1",
-				ProjectName:   "Test Project",
-				ProjectSlug:   "test-project",
+				UID:       "list-3",
+				GroupName: "committee-discuss",
+				Committees: []model.Committee{
+					{UID: "committee-1", Name: "Technical Steering Committee"},
+				},
+				CreatedAt:   time.Now().Add(-time.Hour),
+				ServiceUID:  "service-1",
+				ProjectUID:  "project-1",
+				ProjectName: "Test Project",
+				ProjectSlug: "test-project",
 			},
 			updated: &model.GrpsIOMailingList{
-				CommitteeUID:  "committee-2",          // Different committee
-				CommitteeName: "Governance Committee", // New committee name
-				Public:        true,
+				Committees: []model.Committee{
+					{UID: "committee-2", Name: "Governance Committee"}, // Different committee
+				},
+				Public: true,
 			},
 			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
-				// When CommitteeUID changes, new CommitteeName should be used as provided
-				assert.Equal(t, "Governance Committee", result.CommitteeName)
-				assert.Equal(t, "committee-2", result.CommitteeUID)
+				// When Committees change, new values should be used
+				require.Len(t, result.Committees, 1)
+				assert.Equal(t, "committee-2", result.Committees[0].UID)
+				assert.Equal(t, "Governance Committee", result.Committees[0].Name)
+				assert.Equal(t, true, result.Public)
+			},
+		},
+		{
+			name: "add_multiple_committees",
+			existing: &model.GrpsIOMailingList{
+				UID:       "list-4",
+				GroupName: "multi-committee",
+				Committees: []model.Committee{
+					{UID: "committee-1", Name: "Technical Steering Committee"},
+				},
+				CreatedAt:   time.Now().Add(-time.Hour),
+				ServiceUID:  "service-1",
+				ProjectUID:  "project-1",
+				ProjectName: "Test Project",
+				ProjectSlug: "test-project",
+			},
+			updated: &model.GrpsIOMailingList{
+				Committees: []model.Committee{
+					{UID: "committee-1", Name: "Technical Steering Committee"},
+					{UID: "committee-2", Name: "Governance Committee"},
+				},
+				Public: true,
+			},
+			validate: func(t *testing.T, result *model.GrpsIOMailingList) {
+				require.Len(t, result.Committees, 2)
+				assert.Equal(t, "committee-1", result.Committees[0].UID)
+				assert.Equal(t, "committee-2", result.Committees[1].UID)
 				assert.Equal(t, true, result.Public)
 			},
 		},
@@ -1034,6 +1078,58 @@ func TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO(t *testing.T) {
 
 			// The method should complete without errors, handling all edge cases internally
 			// This validates that our error handling and guard clauses work correctly
+		})
+	}
+}
+
+func TestAudienceAccessToGroupsIO(t *testing.T) {
+	tests := []struct {
+		name               string
+		audienceAccess     string
+		expectedRestricted bool
+		expectedInviteOnly bool
+	}{
+		{
+			name:               "public - anyone can join",
+			audienceAccess:     model.AudienceAccessPublic,
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "approval_required - restricted membership",
+			audienceAccess:     model.AudienceAccessApprovalRequired,
+			expectedRestricted: true,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "invite_only - only invited users can join",
+			audienceAccess:     model.AudienceAccessInviteOnly,
+			expectedRestricted: false,
+			expectedInviteOnly: true,
+		},
+		{
+			name:               "empty string defaults to public",
+			audienceAccess:     "",
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+		{
+			name:               "unknown value defaults to public",
+			audienceAccess:     "unknown_value",
+			expectedRestricted: false,
+			expectedInviteOnly: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			restricted, inviteOnly := audienceAccessToGroupsIO(tt.audienceAccess)
+
+			require.NotNil(t, restricted, "restricted should not be nil")
+			require.NotNil(t, inviteOnly, "inviteOnly should not be nil")
+
+			assert.Equal(t, tt.expectedRestricted, *restricted, "restricted flag mismatch")
+			assert.Equal(t, tt.expectedInviteOnly, *inviteOnly, "inviteOnly flag mismatch")
 		})
 	}
 }

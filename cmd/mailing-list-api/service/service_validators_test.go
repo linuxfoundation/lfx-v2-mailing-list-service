@@ -613,13 +613,14 @@ func TestValidateMailingListCreation(t *testing.T) {
 		{
 			name: "valid mailing list with committee",
 			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
-				GroupName:        "committee-list",
-				Type:             "discussion_moderated",
-				CommitteeUID:     stringPtr("committee-123"),
-				CommitteeFilters: []string{"Voting Rep", "Observer"},
-				Description:      "Committee-based mailing list",
-				Title:            "Committee List",
-				ServiceUID:       "parent-456",
+				GroupName: "committee-list",
+				Type:      "discussion_moderated",
+				Committees: []*mailinglistservice.Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
+				},
+				Description: "Committee-based mailing list",
+				Title:       "Committee List",
+				ServiceUID:  "parent-456",
 			},
 			expectErr: false,
 		},
@@ -630,14 +631,16 @@ func TestValidateMailingListCreation(t *testing.T) {
 		},
 		// Group name length test removed - now handled by GOA MaxLength validation
 		{
-			name: "committee filters without committee should fail",
+			name: "committee filters without committee UID should fail",
 			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
-				GroupName:        "invalid-list",
-				Type:             "discussion_open",
-				CommitteeFilters: []string{"Voting Rep"},
-				Description:      "Invalid committee setup",
-				Title:            "Invalid List",
-				ServiceUID:       "parent-123",
+				GroupName: "invalid-list",
+				Type:      "discussion_open",
+				Committees: []*mailinglistservice.Committee{
+					{UID: "", AllowedVotingStatuses: []string{"Voting Rep"}}, // Empty UID with filters
+				},
+				Description: "Invalid committee setup",
+				Title:       "Invalid List",
+				ServiceUID:  "parent-123",
 			},
 			expectErr: true,
 		},

@@ -159,7 +159,7 @@ For comprehensive integration testing using local Kubernetes cluster:
    This deploys the service with:
    - `AUTH_SOURCE=mock` - Bypasses JWT validation
    - `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-super-admin` - Mock principal
-   - `openfga.enabled=false` - Disables authorization 
+   - `openfga.enabled=false` - Disables authorization
    - `heimdall.enabled=false` - Bypasses middleware
 
 2. **Run Integration Tests**:

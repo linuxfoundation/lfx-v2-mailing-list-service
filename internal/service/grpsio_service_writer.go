@@ -488,8 +488,8 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 		ObjectType: constants.ObjectTypeGroupsIOService,
 		Public:     service.Public,
 		Relations:  relations,
-		References: map[string]string{
-			constants.RelationProject: service.ProjectUID,
+		References: map[string][]string{
+			constants.RelationProject: {service.ProjectUID},
 		},
 	}
 

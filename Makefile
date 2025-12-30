@@ -19,6 +19,7 @@ DOCKER_TAG := $(VERSION)
 HELM_CHART_PATH=./charts/lfx-v2-mailing-list-service
 HELM_RELEASE_NAME=lfx-v2-mailing-list-service
 HELM_NAMESPACE=lfx
+HELM_VALUES_FILE=./charts/lfx-v2-mailing-list-service/values.local.yaml
 
 # Go
 GO_VERSION := 1.24.0
@@ -101,23 +102,28 @@ docker-run: ## Run Docker container locally
 .PHONY: helm-install
 helm-install:
 	@echo "==> Installing Helm chart..."
-	helm upgrade --install $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE) --set image.tag=$(DOCKER_TAG)
+	helm upgrade --force --install $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE)
 	@echo "==> Helm chart installed: $(HELM_RELEASE_NAME)"
 
 # Install Helm chart with local development values (mock authentication)
 .PHONY: helm-install-local
 helm-install-local:
 	@echo "==> Installing Helm chart with local development configuration..."
-	helm upgrade --install $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE) \
-		-f $(HELM_CHART_PATH)/values.local.yaml \
-		--set image.tag=$(DOCKER_TAG)
+	helm upgrade --force --install $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE) --values $(HELM_VALUES_FILE)
 	@echo "==> Helm chart installed with mock authentication: $(HELM_RELEASE_NAME)"
 
 # Print templates for Helm chart
 .PHONY: helm-templates
 helm-templates:
 	@echo "==> Printing templates for Helm chart..."
-	helm template $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE) --set image.tag=$(DOCKER_TAG)
+	helm template $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE)
+	@echo "==> Templates printed for Helm chart: $(HELM_RELEASE_NAME)"
+
+# Print templates for Helm chart with local values file
+.PHONY: helm-templates-local
+helm-templates-local:
+	@echo "==> Printing templates for Helm chart with local values file..."
+	helm template $(HELM_RELEASE_NAME) $(HELM_CHART_PATH) --namespace $(HELM_NAMESPACE) --values $(HELM_VALUES_FILE)
 	@echo "==> Templates printed for Helm chart: $(HELM_RELEASE_NAME)"
 
 # Uninstall Helm chart

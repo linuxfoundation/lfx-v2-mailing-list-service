@@ -266,9 +266,14 @@ func validateMailingListCreation(payload *mailinglistservice.CreateGrpsioMailing
 
 	// Title, description, and committee filter format validations now handled by GOA
 
-	// Committee filters business logic validation
-	if len(payload.CommitteeFilters) > 0 && (payload.CommitteeUID == nil || *payload.CommitteeUID == "") {
-		return errors.NewValidation("committee must not be empty if committee_filters is non-empty")
+	// Committees validation - each committee must have a UID
+	for i, committee := range payload.Committees {
+		if committee == nil {
+			return errors.NewValidation(fmt.Sprintf("committees[%d] cannot be nil", i))
+		}
+		if committee.UID == "" {
+			return errors.NewValidation(fmt.Sprintf("committees[%d].uid is required", i))
+		}
 	}
 
 	return nil
@@ -346,11 +351,10 @@ func validateMailingListUpdate(ctx context.Context, existing *model.GrpsIOMailin
 			"new_service_uid", payload.ServiceUID)
 	}
 
-	// Cannot change committee without special handling
-	committeeValue := payloadStringValue(payload.CommitteeUID)
-	if committeeValue != existing.CommitteeUID {
+	// Detect committee changes for member sync
+	if committeesChanged(existing.Committees, payload.Committees) {
 		// TODO: LFXV2-478 - Trigger committee member sync
-		slog.Debug("committee change detected - member sync required", "mailing_list_uid", existing.UID)
+		slog.Debug("committees change detected - member sync required", "mailing_list_uid", existing.UID)
 	}
 
 	// Description and title length validations now handled by GOA
@@ -381,14 +385,18 @@ func validateMailingListDeleteProtection(mailingList *model.GrpsIOMailingList, p
 	}
 
 	// Check for active committee associations
-	if mailingList.CommitteeUID != "" {
+	if len(mailingList.Committees) > 0 {
 		// TODO: LFXV2-478 - When committee sync is implemented, validate:
 		// - Check if committee sync is active
 		// - Verify no pending sync operations
 		// - Ensure committee members are notified
+		committeeUIDs := make([]string, 0, len(mailingList.Committees))
+		for _, c := range mailingList.Committees {
+			committeeUIDs = append(committeeUIDs, c.UID)
+		}
 		slog.Debug("committee-based list deletion - cleanup may be required",
 			"mailing_list_uid", mailingList.UID,
-			"committee_uid", mailingList.CommitteeUID)
+			"committee_uids", committeeUIDs)
 	}
 
 	// TODO: LFXV2-353 - Groups.io API integration for:
@@ -445,6 +453,54 @@ func isMainGroupForService(ml *model.GrpsIOMailingList, svc *model.GrpsIOService
 	default:
 		return false
 	}
+}
+
+// committeesChanged detects if committees have changed between existing domain model and payload
+// This includes changes to UIDs and AllowedVotingStatuses to ensure proper validation
+func committeesChanged(existing []model.Committee, payload []*mailinglistservice.Committee) bool {
+	// Different number of committees means changed
+	if len(existing) != len(payload) {
+		return true
+	}
+
+	// Build a map of existing committees by UID for detailed comparison
+	existingMap := make(map[string]model.Committee)
+	for _, c := range existing {
+		existingMap[c.UID] = c
+	}
+
+	// Check if any payload committee has changed UID or AllowedVotingStatuses
+	for _, payloadCommittee := range payload {
+		if payloadCommittee == nil {
+			continue
+		}
+
+		existingCommittee, exists := existingMap[payloadCommittee.UID]
+		if !exists {
+			// Committee UID not found in existing
+			return true
+		}
+
+		// Compare allowed voting statuses - both length and content
+		if len(existingCommittee.AllowedVotingStatuses) != len(payloadCommittee.AllowedVotingStatuses) {
+			return true
+		}
+
+		// Build status set for comparison
+		existingStatuses := make(map[string]bool)
+		for _, s := range existingCommittee.AllowedVotingStatuses {
+			existingStatuses[s] = true
+		}
+
+		// Check if any payload status is missing from existing
+		for _, s := range payloadCommittee.AllowedVotingStatuses {
+			if !existingStatuses[s] {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // validateMemberUpdate validates that immutable fields are not changed during updates

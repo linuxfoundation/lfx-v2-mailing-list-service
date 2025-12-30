@@ -214,68 +214,87 @@ func TestGrpsIOMailingList_ValidateCommitteeFields(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid committee with filters",
+			name: "valid committee with allowed voting statuses",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+					Committees: []Committee{
+						{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
+					},
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "valid committee without filters",
+			name: "valid committee without allowed voting statuses",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{},
+					Committees: []Committee{
+						{UID: "committee-123", AllowedVotingStatuses: []string{}},
+					},
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "no committee no filters",
+			name: "no committee no allowed voting statuses",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "",
-					CommitteeFilters: []string{},
+					Committees: []Committee{},
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "filters without committee",
+			name: "allowed voting statuses without committee UID",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "",
-					CommitteeFilters: []string{CommitteeFilterVotingRep},
+					Committees: []Committee{
+						{UID: "", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "committee must not be empty if committee_filters is non-empty",
+			errorMsg:    "committees[0].uid is required",
 		},
 		{
-			name: "invalid committee filter",
+			name: "invalid committee allowed voting status",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID:     "committee-123",
-					CommitteeFilters: []string{CommitteeFilterVotingRep, "invalid_filter"},
+					Committees: []Committee{
+						{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, "invalid_status"}},
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "invalid committee_filter: invalid_filter",
+			errorMsg:    "invalid committees[0].allowed_voting_statuses value: invalid_status",
 		},
 		{
-			name: "all valid committee filters",
+			name: "all valid committee allowed voting statuses",
 			mailingList: func() *GrpsIOMailingList {
 				return &GrpsIOMailingList{
-					CommitteeUID: "committee-123",
-					CommitteeFilters: []string{
-						CommitteeFilterVotingRep,
-						CommitteeFilterAltVotingRep,
-						CommitteeFilterObserver,
-						CommitteeFilterEmeritus,
-						CommitteeFilterNone,
+					Committees: []Committee{
+						{
+							UID: "committee-123",
+							AllowedVotingStatuses: []string{
+								CommitteeVotingStatusVotingRep,
+								CommitteeVotingStatusAltVotingRep,
+								CommitteeVotingStatusObserver,
+								CommitteeVotingStatusEmeritus,
+								CommitteeVotingStatusNone,
+							},
+						},
+					},
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "multiple valid committees",
+			mailingList: func() *GrpsIOMailingList {
+				return &GrpsIOMailingList{
+					Committees: []Committee{
+						{UID: "committee-1", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
+						{UID: "committee-2", AllowedVotingStatuses: []string{CommitteeVotingStatusObserver}},
 					},
 				}
 			},
@@ -390,42 +409,44 @@ func TestGrpsIOMailingList_IsCommitteeBased(t *testing.T) {
 		expected    bool
 	}{
 		{
-			name: "committee UID provided",
+			name: "single committee without filters",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{},
+				Committees: []Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "committee filters provided",
+			name: "single committee with filters",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: []string{CommitteeFilterVotingRep},
+				Committees: []Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "both committee UID and filters provided",
+			name: "multiple committees",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{CommitteeFilterVotingRep},
+				Committees: []Committee{
+					{UID: "committee-1", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
+					{UID: "committee-2", AllowedVotingStatuses: []string{CommitteeVotingStatusObserver}},
+				},
 			},
 			expected: true,
 		},
 		{
-			name: "neither committee UID nor filters provided",
+			name: "empty committees array",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: []string{},
+				Committees: []Committee{},
 			},
 			expected: false,
 		},
 		{
-			name: "nil committee filters",
+			name: "nil committees",
 			mailingList: &GrpsIOMailingList{
-				CommitteeUID:     "",
-				CommitteeFilters: nil,
+				Committees: nil,
 			},
 			expected: false,
 		},
@@ -513,22 +534,25 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 		{
 			name: "complete mailing list",
 			mailingList: &GrpsIOMailingList{
-				UID:              "ml-123",
-				ProjectUID:       "project-456",
-				ServiceUID:       "service-789",
-				Type:             TypeDiscussionOpen,
-				Public:           true,
-				CommitteeUID:     "committee-123",
-				CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+				UID:            "ml-123",
+				ProjectUID:     "project-456",
+				ServiceUID:     "service-789",
+				Type:           TypeDiscussionOpen,
+				Public:         true,
+				AudienceAccess: AudienceAccessApprovalRequired,
+				Committees: []Committee{
+					{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
+				},
 			},
 			expectedTags: []string{
 				"project_uid:project-456",
 				"service_uid:service-789",
 				"type:discussion_open",
 				"public:true",
+				"audience_access:approval_required",
 				"committee_uid:committee-123",
-				"committee_filter:Voting Rep",
-				"committee_filter:Observer",
+				"committee_voting_status:Voting Rep",
+				"committee_voting_status:Observer",
 				"groupsio_mailing_list_uid:ml-123",
 			},
 		},
@@ -564,19 +588,120 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 	}
 }
 
-func TestValidCommitteeFilters(t *testing.T) {
-	filters := ValidCommitteeFilters()
+func TestValidCommitteeVotingStatuses(t *testing.T) {
+	votingStatuses := ValidCommitteeVotingStatuses()
 
-	expectedFilters := []string{
-		CommitteeFilterVotingRep,
-		CommitteeFilterAltVotingRep,
-		CommitteeFilterObserver,
-		CommitteeFilterEmeritus,
-		CommitteeFilterNone,
+	expectedVotingStatuses := []string{
+		CommitteeVotingStatusVotingRep,
+		CommitteeVotingStatusAltVotingRep,
+		CommitteeVotingStatusObserver,
+		CommitteeVotingStatusEmeritus,
+		CommitteeVotingStatusNone,
 	}
 
-	assert.Equal(t, expectedFilters, filters)
-	assert.Len(t, filters, 5, "Should return 5 valid committee filters")
+	assert.Equal(t, expectedVotingStatuses, votingStatuses)
+	assert.Len(t, votingStatuses, 5, "Should return 5 valid committee voting statuses")
+}
+
+func TestValidAudienceAccessValues(t *testing.T) {
+	values := ValidAudienceAccessValues()
+
+	expectedValues := []string{
+		AudienceAccessPublic,
+		AudienceAccessApprovalRequired,
+		AudienceAccessInviteOnly,
+	}
+
+	assert.Equal(t, expectedValues, values)
+	assert.Len(t, values, 3, "Should return 3 valid audience access values")
+}
+
+func TestIsValidAudienceAccess(t *testing.T) {
+	tests := []struct {
+		name     string
+		access   string
+		expected bool
+	}{
+		{"valid public", AudienceAccessPublic, true},
+		{"valid approval_required", AudienceAccessApprovalRequired, true},
+		{"valid invite_only", AudienceAccessInviteOnly, true},
+		{"invalid type", "invalid_access", false},
+		{"empty type", "", false},
+		{"uppercase type", "PUBLIC", false},
+		{"mixed case", "Public", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidAudienceAccess(tt.access)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGrpsIOMailingList_ValidateBasicFields_AudienceAccess(t *testing.T) {
+	tests := []struct {
+		name                   string
+		audienceAccess         string
+		expectError            bool
+		errorMsg               string
+		expectedAudienceAccess string
+	}{
+		{
+			name:                   "empty audience_access defaults to public",
+			audienceAccess:         "",
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessPublic,
+		},
+		{
+			name:                   "valid public",
+			audienceAccess:         AudienceAccessPublic,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessPublic,
+		},
+		{
+			name:                   "valid approval_required",
+			audienceAccess:         AudienceAccessApprovalRequired,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessApprovalRequired,
+		},
+		{
+			name:                   "valid invite_only",
+			audienceAccess:         AudienceAccessInviteOnly,
+			expectError:            false,
+			expectedAudienceAccess: AudienceAccessInviteOnly,
+		},
+		{
+			name:           "invalid audience_access value",
+			audienceAccess: "invalid_value",
+			expectError:    true,
+			errorMsg:       "audience_access must be one of",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ml := &GrpsIOMailingList{
+				GroupName:      "dev-team",
+				Type:           TypeDiscussionOpen,
+				Description:    "Development team discussions and updates",
+				Title:          "Development Team",
+				ServiceUID:     "service-123",
+				AudienceAccess: tt.audienceAccess,
+			}
+
+			err := ml.ValidateBasicFields()
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+				assert.IsType(t, errors.Validation{}, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedAudienceAccess, ml.AudienceAccess, "AudienceAccess should be set correctly")
+			}
+		})
+	}
 }
 
 func TestIsValidGroupName(t *testing.T) {
@@ -679,13 +804,14 @@ func BenchmarkGrpsIOMailingList_BuildIndexKey(b *testing.B) {
 
 func BenchmarkGrpsIOMailingList_Tags(b *testing.B) {
 	ml := &GrpsIOMailingList{
-		UID:              "ml-" + uuid.New().String(),
-		ProjectUID:       "project-" + uuid.New().String(),
-		ServiceUID:       "service-" + uuid.New().String(),
-		Type:             TypeDiscussionOpen,
-		Public:           true,
-		CommitteeUID:     "committee-" + uuid.New().String(),
-		CommitteeFilters: []string{CommitteeFilterVotingRep, CommitteeFilterObserver},
+		UID:        "ml-" + uuid.New().String(),
+		ProjectUID: "project-" + uuid.New().String(),
+		ServiceUID: "service-" + uuid.New().String(),
+		Type:       TypeDiscussionOpen,
+		Public:     true,
+		Committees: []Committee{
+			{UID: "committee-" + uuid.New().String(), AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
+		},
 	}
 
 	b.ResetTimer()

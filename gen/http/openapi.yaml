@@ -987,6 +987,43 @@ definitions:
             message: The request was invalid.
         required:
             - message
+    Committee:
+        title: Committee
+        type: object
+        properties:
+            allowed_voting_statuses:
+                type: array
+                items:
+                    type: string
+                    example: Emeritus
+                    enum:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                        - None
+                description: Committee member voting statuses that determine which members are synced
+                example:
+                    - Voting Rep
+                    - Alternate Voting Rep
+            name:
+                type: string
+                description: Committee name (read-only, populated by server)
+                example: Molestias ut soluta veritatis veniam consectetur magni.
+            uid:
+                type: string
+                description: Committee UUID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+        description: Committee associated with a mailing list
+        example:
+            allowed_voting_statuses:
+                - Voting Rep
+                - Alternate Voting Rep
+            name: Dolorem quas eum qui.
+            uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+        required:
+            - uid
     ConflictError:
         title: ConflictError
         type: object
@@ -1017,59 +1054,64 @@ definitions:
             extra:
                 type: string
                 description: Extra data field (subgroup suffix)
-                example: Corrupti quis aut voluptatem aut.
+                example: Optio molestias ullam porro aut.
             extra_id:
                 type: integer
                 description: Extra ID field (subgroup ID for deletion)
-                example: 7098653019585474488
+                example: 2343783012775007402
                 format: int64
             group:
                 description: Contains subgroup data from Groups.io
-                example: Ut rerum quam repellat eum.
+                example: Exercitationem dolorum nobis voluptatibus recusandae ad dolorem.
             member_info:
                 description: Contains member data from Groups.io
-                example: Voluptatem voluptate vitae saepe mollitia.
+                example: Molestias aliquam sit nesciunt sint praesentium.
         example:
             action: created_subgroup
-            extra: Consequuntur velit rerum ea.
-            extra_id: 7211270697616219187
-            group: Aliquid aliquid.
-            member_info: Voluptatibus corporis.
+            extra: Sint rerum laboriosam consequatur ut explicabo saepe.
+            extra_id: 500672409584855543
+            group: Repellat velit qui.
+            member_info: Totam cumque totam alias.
         required:
             - action
     GrpsIoMailingListFull:
         title: GrpsIoMailingListFull
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
                     type: string
-                    example: Libero voluptatem.
+                    example: Quod ducimus ex et velit dolore.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
                     - auditor_user_id2
-            committee_filters:
+            committees:
                 type: array
                 items:
-                    type: string
-                    example: Emeritus
-                    enum:
+                    $ref: '#/definitions/Committee'
+                description: Committees associated with this mailing list (OR logic for access control)
+                example:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                        - Observer
-                        - Emeritus
-                        - None
-                description: Committee member filters
-                example:
-                    - Voting Rep
-                    - Alternate Voting Rep
-            committee_uid:
-                type: string
-                description: Committee UUID for committee-based mailing lists
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
+                      name: Itaque repudiandae.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Itaque repudiandae.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1155,19 +1197,27 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Alias amet aspernatur ut nihil.
+                    example: Sint quos laudantium eligendi.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
-            committee_filters:
-                - Voting Rep
-                - Alternate Voting Rep
-            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            committees:
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -1190,35 +1240,40 @@ definitions:
         title: GrpsIoMailingListWithReadonlyAttributes
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
                     type: string
-                    example: Quos laudantium eligendi ut quod.
+                    example: In reprehenderit.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
                     - auditor_user_id2
-            committee_filters:
+            committees:
                 type: array
                 items:
-                    type: string
-                    example: None
-                    enum:
+                    $ref: '#/definitions/Committee'
+                description: Committees associated with this mailing list (OR logic for access control)
+                example:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                        - Observer
-                        - Emeritus
-                        - None
-                description: Committee member filters
-                example:
-                    - Voting Rep
-                    - Alternate Voting Rep
-            committee_uid:
-                type: string
-                description: Committee UUID for committee-based mailing lists
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
+                      name: Itaque repudiandae.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Itaque repudiandae.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1295,20 +1350,38 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eum qui ex magnam.
+                    example: Saepe sit saepe qui.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
                     - manager_user_id2
         description: A representation of GroupsIO mailing lists with readonly attributes.
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
-            committee_filters:
-                - Voting Rep
-                - Alternate Voting Rep
-            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            committees:
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Itaque repudiandae.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -1333,7 +1406,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ad aut saepe.
+                    example: Ut rerum quam repellat eum.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1410,7 +1483,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: owner
+                example: none
                 enum:
                     - none
                     - moderator
@@ -1443,7 +1516,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sint accusamus.
+                    example: Veniam nulla eaque voluptatem consequatur quibusdam.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1453,7 +1526,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: normal
+            delivery_mode: digest
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1463,8 +1536,8 @@ definitions:
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            member_type: committee
-            mod_status: owner
+            member_type: direct
+            mod_status: moderator
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1493,7 +1566,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sequi nemo quia facilis sapiente incidunt perferendis.
+                    example: Velit rerum ea nesciunt maiores quibusdam.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1570,7 +1643,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: moderator
+                example: owner
                 enum:
                     - none
                     - moderator
@@ -1603,7 +1676,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sed corporis dolorem possimus ipsam delectus aliquam.
+                    example: Doloribus aliquid aliquid ipsam voluptatibus corporis qui.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1614,7 +1687,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: none
+            delivery_mode: normal
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1624,7 +1697,7 @@ definitions:
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            member_type: committee
+            member_type: direct
             mod_status: none
             organization: Example Corp
             status: pending
@@ -1642,7 +1715,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Qui aut atque neque.
+                    example: Cupiditate sit debitis assumenda.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1660,7 +1733,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: angie.orn@fadel.com
+                    example: tomasa.moen@mosciskiwaelchi.org
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1747,7 +1820,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Quia hic eos eos et quas.
+                    example: Deserunt iure.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1790,7 +1863,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Repellat dignissimos sit enim quis iure.
+                    example: Nam eaque et quas voluptatem.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1808,7 +1881,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: alec@lindgren.org
+                    example: scot.mayer@abshire.net
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1895,7 +1968,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolorem dolorum at.
+                    example: Autem tempora.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1952,7 +2025,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: normal
+                example: digest
                 enum:
                     - normal
                     - digest
@@ -1992,7 +2065,7 @@ definitions:
                 type: string
                 description: Member type
                 default: direct
-                example: direct
+                example: committee
                 enum:
                     - committee
                     - direct
@@ -2016,15 +2089,15 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: digest
+            delivery_mode: none
             email: john.doe@example.com
             first_name: John
             job_title: Software Engineer
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
-            member_type: direct
-            mod_status: owner
+            member_type: committee
+            mod_status: moderator
             organization: Example Corp
             username: jdoe
         required:
@@ -2033,35 +2106,45 @@ definitions:
         title: MailingListCreateGrpsioMailingListRequestBody
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
                     type: string
-                    example: Soluta veritatis veniam consectetur magni nihil consectetur.
+                    example: Alias quisquam sunt molestias sint accusamus.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
                     - auditor_user_id2
-            committee_filters:
+            committees:
                 type: array
                 items:
-                    type: string
-                    example: Voting Rep
-                    enum:
+                    $ref: '#/definitions/Committee'
+                description: Committees associated with this mailing list (OR logic for access control)
+                example:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                        - Observer
-                        - Emeritus
-                        - None
-                description: Committee member filters
-                example:
-                    - Voting Rep
-                    - Alternate Voting Rep
-            committee_uid:
-                type: string
-                description: Committee UUID for committee-based mailing lists
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
                 description: Mailing list description (11-500 characters)
@@ -2108,19 +2191,37 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Autem molestias.
+                    example: Vel repudiandae.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
-            committee_filters:
-                - Voting Rep
-                - Alternate Voting Rep
-            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            committees:
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
             public: false
@@ -2146,7 +2247,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Blanditiis culpa iusto enim distinctio.
+                    example: Unde quis amet.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2159,7 +2260,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: louvenia@cremin.com
+                    example: dannie_weimann@greenfelder.biz
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2214,7 +2315,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Est quis quibusdam nemo animi est.
+                    example: Non cupiditate et quasi modi quas eum.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2300,46 +2401,56 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: digest
+            delivery_mode: none
             first_name: John
             job_title: Software Engineer
             last_name: Doe
-            mod_status: none
+            mod_status: moderator
             organization: Example Corp
             username: jdoe
     MailingListUpdateGrpsioMailingListRequestBody:
         title: MailingListUpdateGrpsioMailingListRequestBody
         type: object
         properties:
+            audience_access:
+                type: string
+                description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
+                default: public
+                example: public
+                enum:
+                    - public
+                    - approval_required
+                    - invite_only
             auditors:
                 type: array
                 items:
                     type: string
-                    example: Autem vero vel repudiandae nisi.
+                    example: Ipsam delectus aliquam repudiandae sequi nemo quia.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
                     - auditor_user_id2
-            committee_filters:
+            committees:
                 type: array
                 items:
-                    type: string
-                    example: Observer
-                    enum:
+                    $ref: '#/definitions/Committee'
+                description: Committees associated with this mailing list (OR logic for access control)
+                example:
+                    - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                        - Observer
-                        - Emeritus
-                        - None
-                description: Committee member filters
-                example:
-                    - Voting Rep
-                    - Alternate Voting Rep
-            committee_uid:
-                type: string
-                description: Committee UUID for committee-based mailing lists
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Odit quis sed nesciunt incidunt quia ut.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
                 description: Mailing list description (11-500 characters)
@@ -2386,19 +2497,32 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Et velit dolore.
+                    example: Est blanditiis incidunt explicabo sed corporis dolorem.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
                     - manager_user_id2
         example:
+            audience_access: public
             auditors:
                 - auditor_user_id1
                 - auditor_user_id2
-            committee_filters:
-                - Voting Rep
-                - Alternate Voting Rep
-            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            committees:
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Odit quis sed nesciunt incidunt quia ut.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
             public: false
@@ -2424,7 +2548,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolore possimus et et qui.
+                    example: Voluptatem ipsum similique.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2437,7 +2561,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: lauryn.cummings@bogisich.org
+                    example: bridie@dickens.net
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2492,7 +2616,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Suscipit quia placeat.
+                    example: Nihil autem.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
