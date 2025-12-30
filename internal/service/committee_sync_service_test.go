@@ -260,6 +260,7 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 	t.Run("creates member when voting status matches filters", func(t *testing.T) {
 		// Setup with pre-populated mailing list
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		mailingList := &model.GrpsIOMailingList{
 			UID:        "test-list-1",
@@ -319,6 +320,7 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 	t.Run("does not create member when voting status does not match", func(t *testing.T) {
 		// Setup with pre-populated mailing list
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		mailingList := &model.GrpsIOMailingList{
 			UID:        "test-list-2",
@@ -370,6 +372,7 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 	t.Run("deletes member from private list, converts on public list", func(t *testing.T) {
 		// Setup with both public and private lists
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		publicList := &model.GrpsIOMailingList{
 			UID:        "public-list",
@@ -452,6 +455,7 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 
 	t.Run("handles voting status change - adds and removes appropriately", func(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		mailingList := &model.GrpsIOMailingList{
 			UID:        "test-list-3",

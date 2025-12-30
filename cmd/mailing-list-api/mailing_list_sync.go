@@ -48,7 +48,9 @@ func handleMailingListSync(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 
 	for _, subject := range subjects {
-		_, err := natsClient.QueueSubscribe(
+		// Capture loop variable for closure
+		subject := subject
+		_, subErr := natsClient.QueueSubscribe(
 			subject,
 			constants.MailingListAPIQueue,
 			func(msg *nats.Msg) {
@@ -58,8 +60,8 @@ func handleMailingListSync(ctx context.Context, wg *sync.WaitGroup) error {
 					slog.InfoContext(ctx, "rejecting message - service shutting down",
 						"subject", msg.Subject)
 					if msg.Reply != "" {
-						if err := msg.Nak(); err != nil {
-							slog.ErrorContext(ctx, "failed to nak message during shutdown", "error", err)
+						if nakErr := msg.Nak(); nakErr != nil {
+							slog.ErrorContext(ctx, "failed to nak message during shutdown", "error", nakErr)
 						}
 					}
 					return
@@ -73,25 +75,25 @@ func handleMailingListSync(ctx context.Context, wg *sync.WaitGroup) error {
 				defer cancel()
 
 				// Process message with proper error handling and acknowledgment
-				if err := syncService.HandleMessage(msgCtx, msg); err != nil {
+				if handleErr := syncService.HandleMessage(msgCtx, msg); handleErr != nil {
 					slog.ErrorContext(msgCtx, "failed to process mailing list event, will retry",
-						"error", err,
+						"error", handleErr,
 						"subject", msg.Subject)
 					if msg.Reply != "" {
-						if err := msg.Nak(); err != nil {
-							slog.ErrorContext(msgCtx, "failed to nak message", "error", err)
+						if nakErr := msg.Nak(); nakErr != nil {
+							slog.ErrorContext(msgCtx, "failed to nak message", "error", nakErr)
 						}
 					}
 				} else if msg.Reply != "" {
 					// Success - acknowledge message
-					if err := msg.Ack(); err != nil {
-						slog.ErrorContext(msgCtx, "failed to ack message", "error", err)
+					if ackErr := msg.Ack(); ackErr != nil {
+						slog.ErrorContext(msgCtx, "failed to ack message", "error", ackErr)
 					}
 				}
 			},
 		)
-		if err != nil {
-			return fmt.Errorf("failed to subscribe to %s: %w", subject, err)
+		if subErr != nil {
+			return fmt.Errorf("failed to subscribe to %s: %w", subject, subErr)
 		}
 		slog.InfoContext(ctx, "subscribed to mailing list event",
 			"subject", subject,

@@ -108,16 +108,16 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
-	// Start committee sync (mirrors handleHTTPServer pattern)
+	// Start committee sync - critical for data consistency
 	if err := handleCommitteeSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "failed to start committee sync", "error", err)
-		// Log but don't fail - committee sync is optional feature
+		slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
+		os.Exit(1)
 	}
 
-	// Start mailing list sync (mirrors handleCommitteeSync pattern)
+	// Start mailing list sync - critical for data consistency
 	if err := handleMailingListSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "failed to start mailing list sync", "error", err)
-		// Log but don't fail - mailing list sync is optional feature
+		slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
+		os.Exit(1)
 	}
 
 	// Wait for signal.

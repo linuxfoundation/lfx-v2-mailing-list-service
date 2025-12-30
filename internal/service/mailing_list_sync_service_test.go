@@ -416,6 +416,7 @@ func TestMailingListSyncService_Integration(t *testing.T) {
 
 	t.Run("created event with committees completes without error", func(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		mailingList := &model.GrpsIOMailingList{
 			UID:        "ml-integration-1",
@@ -457,6 +458,7 @@ func TestMailingListSyncService_Integration(t *testing.T) {
 
 	t.Run("updated event handles committee additions without error", func(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		oldMailingList := &model.GrpsIOMailingList{
 			UID:        "ml-integration-2",
@@ -518,6 +520,7 @@ func TestMailingListSyncService_Integration(t *testing.T) {
 
 	t.Run("updated event handles committee removals without error", func(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		oldMailingList := &model.GrpsIOMailingList{
 			UID:        "ml-integration-3",
@@ -579,6 +582,7 @@ func TestMailingListSyncService_Integration(t *testing.T) {
 
 	t.Run("updated event handles filter modifications without error", func(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
+		mockRepo.ClearAll()
 
 		oldMailingList := &model.GrpsIOMailingList{
 			UID:        "ml-integration-4",
