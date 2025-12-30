@@ -259,13 +259,17 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
 
 		mailingList := &model.GrpsIOMailingList{
-			UID:              "test-list-1",
-			GroupName:        "test-dev",
-			ServiceUID:       "service-1",
-			CommitteeUID:     "committee-123",
-			CommitteeName:    "Test Committee",
-			CommitteeFilters: []string{"Voting Rep", "Observer"},
-			Public:           true,
+			UID:        "test-list-1",
+			GroupName:  "test-dev",
+			ServiceUID: "service-1",
+			Committees: []model.Committee{
+				{
+					UID:                   "committee-123",
+					Name:                  "Test Committee",
+					AllowedVotingStatuses: []string{"Voting Rep", "Observer"},
+				},
+			},
+			Public: true,
 		}
 		mockRepo.AddMailingList(mailingList)
 
@@ -313,13 +317,17 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
 
 		mailingList := &model.GrpsIOMailingList{
-			UID:              "test-list-2",
-			GroupName:        "test-voting-only",
-			ServiceUID:       "service-1",
-			CommitteeUID:     "committee-456",
-			CommitteeName:    "Voting Committee",
-			CommitteeFilters: []string{"Voting Rep"}, // Only voting reps
-			Public:           true,
+			UID:        "test-list-2",
+			GroupName:  "test-voting-only",
+			ServiceUID: "service-1",
+			Committees: []model.Committee{
+				{
+					UID:                   "committee-456",
+					Name:                  "Voting Committee",
+					AllowedVotingStatuses: []string{"Voting Rep"}, // Only voting reps
+				},
+			},
+			Public: true,
 		}
 		mockRepo.AddMailingList(mailingList)
 
@@ -359,24 +367,32 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
 
 		publicList := &model.GrpsIOMailingList{
-			UID:              "public-list",
-			GroupName:        "public-dev",
-			ServiceUID:       "service-1",
-			CommitteeUID:     "committee-789",
-			CommitteeName:    "Public Committee",
-			CommitteeFilters: []string{"Voting Rep"},
-			Public:           true,
+			UID:        "public-list",
+			GroupName:  "public-dev",
+			ServiceUID: "service-1",
+			Committees: []model.Committee{
+				{
+					UID:                   "committee-789",
+					Name:                  "Public Committee",
+					AllowedVotingStatuses: []string{"Voting Rep"},
+				},
+			},
+			Public: true,
 		}
 		mockRepo.AddMailingList(publicList)
 
 		privateList := &model.GrpsIOMailingList{
-			UID:              "private-list",
-			GroupName:        "private-dev",
-			ServiceUID:       "service-1",
-			CommitteeUID:     "committee-789",
-			CommitteeName:    "Private Committee",
-			CommitteeFilters: []string{"Voting Rep"},
-			Public:           false,
+			UID:        "private-list",
+			GroupName:  "private-dev",
+			ServiceUID: "service-1",
+			Committees: []model.Committee{
+				{
+					UID:                   "committee-789",
+					Name:                  "Private Committee",
+					AllowedVotingStatuses: []string{"Voting Rep"},
+				},
+			},
+			Public: false,
 		}
 		mockRepo.AddMailingList(privateList)
 
@@ -432,13 +448,17 @@ func TestCommitteeSyncService_IntegrationWithMailingLists(t *testing.T) {
 		mockRepo := mock.NewMockRepository()
 
 		mailingList := &model.GrpsIOMailingList{
-			UID:              "test-list-3",
-			GroupName:        "test-voting",
-			ServiceUID:       "service-1",
-			CommitteeUID:     "committee-999",
-			CommitteeName:    "Test Committee",
-			CommitteeFilters: []string{"Voting Rep"}, // Only voting reps
-			Public:           true,
+			UID:        "test-list-3",
+			GroupName:  "test-voting",
+			ServiceUID: "service-1",
+			Committees: []model.Committee{
+				{
+					UID:                   "committee-999",
+					Name:                  "Test Committee",
+					AllowedVotingStatuses: []string{"Voting Rep"}, // Only voting reps
+				},
+			},
+			Public: true,
 		}
 		mockRepo.AddMailingList(mailingList)
 

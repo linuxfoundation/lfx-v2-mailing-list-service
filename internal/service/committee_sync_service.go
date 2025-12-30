@@ -104,25 +104,27 @@ func (s *CommitteeSyncService) handleCreated(ctx context.Context, msg *nats.Msg)
 	// For each mailing list, check if member should be added based on filters
 	for _, ml := range mailingLists {
 		// Check if this member's voting status matches the list's filters
-		if matchesFilter(event.Member.VotingStatus, ml.CommitteeFilters) {
-			slog.InfoContext(ctx, "adding committee member to matching mailing list",
-				"mailing_list_uid", ml.UID,
-				"group_name", ml.GroupName,
-				"email", redaction.RedactEmail(event.Member.Email),
-				"voting_status", event.Member.VotingStatus)
+		for _, committee := range ml.Committees {
+			if matchesFilter(event.Member.VotingStatus, committee.AllowedVotingStatuses) {
+				slog.InfoContext(ctx, "adding committee member to matching mailing list",
+					"mailing_list_uid", ml.UID,
+					"group_name", ml.GroupName,
+					"email", redaction.RedactEmail(event.Member.Email),
+					"voting_status", event.Member.VotingStatus)
 
-			if err := s.addMemberToList(ctx, ml, event.Member); err != nil {
-				slog.ErrorContext(ctx, "failed to add member to list",
-					"error", err,
-					"mailing_list_uid", ml.UID)
-				// Continue with other lists even if one fails
-				continue
+				if err := s.addMemberToList(ctx, ml, event.Member); err != nil {
+					slog.ErrorContext(ctx, "failed to add member to list",
+						"error", err,
+						"mailing_list_uid", ml.UID)
+					// Continue with other lists even if one fails
+					continue
+				}
+			} else {
+				slog.DebugContext(ctx, "member voting status does not match list filters",
+					"mailing_list_uid", ml.UID,
+					"voting_status", event.Member.VotingStatus,
+					"filters", committee.AllowedVotingStatuses)
 			}
-		} else {
-			slog.DebugContext(ctx, "member voting status does not match list filters",
-				"mailing_list_uid", ml.UID,
-				"voting_status", event.Member.VotingStatus,
-				"filters", ml.CommitteeFilters)
 		}
 	}
 
@@ -241,8 +243,18 @@ func (s *CommitteeSyncService) handleUpdated(ctx context.Context, msg *nats.Msg)
 	// Process each mailing list with consolidated logic
 	// This handles all combinations: email-only, status-only, or both changes
 	for _, ml := range mailingLists {
-		oldMatch := matchesFilter(event.OldMember.VotingStatus, ml.CommitteeFilters)
-		newMatch := matchesFilter(event.NewMember.VotingStatus, ml.CommitteeFilters)
+		// Find the committee in the mailing list that matches the event
+		committeeIndex := slices.IndexFunc(ml.Committees, func(c model.Committee) bool {
+			return c.UID == event.CommitteeUID
+		})
+		if committeeIndex == -1 {
+			// Committee not found in this mailing list, skip it
+			continue
+		}
+
+		committee := ml.Committees[committeeIndex]
+		oldMatch := matchesFilter(event.OldMember.VotingStatus, committee.AllowedVotingStatuses)
+		newMatch := matchesFilter(event.NewMember.VotingStatus, committee.AllowedVotingStatuses)
 
 		// Determine actions based on combined state
 		// Remove old member if: (1) email changed and was in list, OR (2) status changed and no longer matches
