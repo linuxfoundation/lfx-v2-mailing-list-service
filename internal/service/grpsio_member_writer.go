@@ -19,6 +19,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
+// groupsioMailingListMemberStub represents the minimal data needed for member access control
+type groupsioMailingListMemberStub struct {
+	// UID is the mailing list member ID.
+	UID string `json:"uid"`
+	// Username is the username (i.e. LFID) of the member. This is the identity of the user object in FGA.
+	Username string `json:"username"`
+	// MailingListUID is the mailing list ID for the mailing list the member belongs to.
+	MailingListUID string `json:"mailing_list_uid"`
+}
+
 // ensureMemberIdempotent checks if member already exists by Groups.io member ID or email
 // Returns existing entity if found, nil if not found, error on failure
 // Pattern mirrors ensureMailingListIdempotent
@@ -416,7 +426,7 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 
 	// Publish delete messages (indexer and access control)
 	if o.publisher != nil {
-		if err := o.publishMemberDeleteMessages(ctx, uid); err != nil {
+		if err := o.publishMemberDeleteMessages(ctx, uid, *member); err != nil {
 			slog.ErrorContext(ctx, "failed to publish member delete messages", "error", err)
 			// Don't fail the operation on message failure, delete succeeded
 		}
@@ -461,13 +471,16 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 		return fmt.Errorf("failed to build %s indexer message: %w", action, err)
 	}
 
-	// TODO: LFXV2-459 - Review and implement member access control logic for OpenFGA integration
-	// Access control message building and publishing will be implemented after research is complete
+	// Build access control message for OpenFGA integration
+	accessMessage := o.buildMemberAccessMessage(member)
 
-	// Publish messages concurrently (only indexer for now)
+	// Publish messages concurrently (indexer and access control)
 	messages := []func() error{
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, indexerMessage)
+		},
+		func() error {
+			return o.publisher.Access(ctx, constants.PutMemberGroupsIOMailingListSubject, accessMessage)
 		},
 	}
 
@@ -489,15 +502,13 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 	return nil
 }
 
-// publishMemberDeleteMessages publishes member delete messages concurrently (for future use)
-// nolint:unused // Reserved for future member deletion functionality
-func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Context, uid string) error {
+// publishMemberDeleteMessages publishes member delete messages concurrently
+func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Context, uid string, member model.GrpsIOMember) error {
 	if o.publisher == nil {
 		slog.WarnContext(ctx, "publisher not available, skipping member delete message publishing")
 		return nil
 	}
 
-	// For delete messages, we just need the UID
 	indexerMessage := &model.IndexerMessage{
 		Action: model.ActionDeleted,
 		Tags:   []string{},
@@ -509,16 +520,16 @@ func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Conte
 		return fmt.Errorf("failed to build member delete indexer message: %w", err)
 	}
 
+	accessMessage := o.buildMemberAccessMessage(&member)
+
 	// Publish delete messages concurrently
 	messages := []func() error{
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, builtMessage)
 		},
-		// TODO: LFXV2-459 Implement proper member removal from mailing list relations
-		// Currently commented out to avoid deleting entire mailing list from OpenFGA
-		// func() error {
-		//	return o.publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMemberSubject, uid)
-		// },
+		func() error {
+			return o.publisher.Access(ctx, constants.DeleteMemberGroupsIOMailingListSubject, accessMessage)
+		},
 	}
 
 	// Execute all messages concurrently
@@ -544,6 +555,15 @@ func (o *grpsIOWriterOrchestrator) buildMemberIndexerMessage(ctx context.Context
 
 	// Build the message with proper context and authorization headers
 	return indexerMessage.Build(ctx, member)
+}
+
+// buildMemberAccessMessage creates the access control message stub for OpenFGA integration
+func (o *grpsIOWriterOrchestrator) buildMemberAccessMessage(member *model.GrpsIOMember) *groupsioMailingListMemberStub {
+	return &groupsioMailingListMemberStub{
+		UID:            member.UID,
+		Username:       member.Username,
+		MailingListUID: member.MailingListUID,
+	}
 }
 
 // mergeMemberData merges existing member data with updated fields, preserving immutable fields
