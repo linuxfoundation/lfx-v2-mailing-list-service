@@ -172,6 +172,7 @@ func (s *storage) createServiceSecondaryIndices(ctx context.Context, service *mo
 
 	createdKeys, err := s.createSecondaryIndices(ctx, kv, service.UID, []IndexSpec{
 		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOServiceByGroupIDPrefix, Int64ID: service.GroupID},
+		{Name: "projectuid", KeyFormat: constants.KVLookupGroupsIOServiceByProjectUIDPrefix, StringID: &service.ProjectUID},
 	})
 	if err != nil {
 		return createdKeys, err
@@ -179,6 +180,7 @@ func (s *storage) createServiceSecondaryIndices(ctx context.Context, service *mo
 
 	slog.DebugContext(ctx, "service secondary indices created successfully",
 		"service_uid", service.UID,
+		"project_uid", service.ProjectUID,
 		"indices_created", createdKeys)
 	return createdKeys, nil
 }
@@ -299,6 +301,55 @@ func (s *storage) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*
 
 	slog.DebugContext(ctx, "nats storage: services retrieved by group_id (indexed)",
 		"group_id", groupID,
+		"count", len(services))
+
+	return services, nil
+}
+
+// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
+// A single parent group can have multiple services (1 primary + N formation/shared)
+// Returns empty slice if no services found (not an error)
+// Performance: O(1) indexed lookup using secondary index
+func (s *storage) GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "nats storage: getting services by project_uid (indexed)",
+		"project_uid", projectUID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOServices]
+	if !exists || kv == nil {
+		return nil, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	indexPrefix := fmt.Sprintf(constants.KVLookupGroupsIOServiceByProjectUIDPrefix, projectUID)
+
+	// Extract UIDs from secondary index using helper
+	uids, err := s.getUIDsFromSecondaryIndex(ctx, kv, indexPrefix, 0) // 0 = get all
+	if err != nil {
+		return nil, errs.NewServiceUnavailable("failed to list services")
+	}
+
+	if len(uids) == 0 {
+		slog.DebugContext(ctx, "no services found for project_uid", "project_uid", projectUID)
+		return []*model.GrpsIOService{}, nil
+	}
+
+	// Fetch services sequentially (unchanged behavior)
+	var services []*model.GrpsIOService
+	for _, uid := range uids {
+		service, _, err := s.GetGrpsIOService(ctx, uid)
+		if err != nil {
+			slog.DebugContext(ctx, "failed to get service, skipping", "service_uid", uid, "error", err)
+			continue
+		}
+
+		services = append(services, service)
+		slog.DebugContext(ctx, "found service with matching project_uid",
+			"service_uid", service.UID,
+			"service_type", service.Type,
+			"project_uid", projectUID)
+	}
+
+	slog.DebugContext(ctx, "nats storage: services retrieved by project_uid (indexed)",
+		"project_uid", projectUID,
 		"count", len(services))
 
 	return services, nil

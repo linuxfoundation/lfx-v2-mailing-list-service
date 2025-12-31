@@ -91,7 +91,26 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 			name: "successful shared service creation with group ID",
 			setupMock: func(mockRepo *mock.MockRepository) {
 				mockRepo.ClearAll()
+				// Set up parent project with primary service
+				mockRepo.AddProject("parent-project-3", "parent-shared-project", "Parent Shared Project")
+				mockRepo.AddService(&model.GrpsIOService{
+					UID:          "parent-service-3",
+					Type:         constants.ServiceTypePrimary,
+					Domain:       "lists.parent.org",
+					GroupID:      writerServiceInt64Ptr(99999),
+					GlobalOwners: []string{"admin@parent.org"},
+					Prefix:       "",
+					ProjectUID:   "parent-project-3",
+					URL:          "https://lists.parent.org",
+					GroupName:    "parent-group",
+					Public:       true,
+					Status:       "created",
+					Source:       constants.SourceMock,
+				})
+
+				// Set up child project and link to parent
 				mockRepo.AddProject("project-3", "shared-project", "Shared Project")
+				mockRepo.SetProjectParent("project-3", "parent-project-3")
 			},
 			inputService: &model.GrpsIOService{
 				Type:         "shared",
@@ -113,8 +132,9 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				assert.Nil(t, result.GroupID) // Mock source doesn't coordinate with Groups.io, so GroupID is nil
 				assert.False(t, result.Public)
 				assert.Equal(t, "project-3", result.ProjectUID)
-				assert.Equal(t, uint64(1), revision)
-				assert.Equal(t, 1, mockRepo.GetServiceCount())
+				assert.Equal(t, "parent-service-3", result.ParentServiceUID, "should have parent service UID set")
+				assert.Equal(t, uint64(1), revision) // Each service gets its own revision counter
+				assert.Equal(t, 2, mockRepo.GetServiceCount()) // Parent service + this shared service
 			},
 		},
 		{
@@ -755,3 +775,307 @@ func TestGrpsIOWriterOrchestrator_syncServiceToGroupsIO(t *testing.T) {
 
 // Note: buildServiceIndexerMessage and buildServiceAccessControlMessage methods are private
 // and are tested indirectly through the Create/Update/Delete operations above
+
+func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
+	testCases := []struct {
+		name          string
+		setupMock     func(*mock.MockRepository)
+		inputService  *model.GrpsIOService
+		expectedError bool
+		errorContains string
+		validate      func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository)
+	}{
+		{
+			name: "successful shared service creation with parent primary service",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+
+				// Add parent project
+				mockRepo.AddProject("parent-project-uid", "parent-project", "Parent Project")
+
+				// Add sub-project with parent relationship
+				mockRepo.AddProject("sub-project-uid", "sub-project", "Sub Project")
+				mockRepo.SetProjectParent("sub-project-uid", "parent-project-uid")
+
+				// Create primary service for parent project
+				primaryService := &model.GrpsIOService{
+					UID:          "primary-service-uid",
+					Type:         constants.ServiceTypePrimary,
+					Domain:       "lists.parent.org",
+					GroupID:      writerServiceInt64Ptr(12345),
+					GlobalOwners: []string{"admin@parent.org"},
+					ProjectUID:   "parent-project-uid",
+					ProjectSlug:  "parent-project",
+					ProjectName:  "Parent Project",
+					URL:          "https://lists.parent.org",
+					GroupName:    "parent-project",
+					Public:       true,
+					Status:       "created",
+					Source:       constants.SourceMock,
+				}
+				mockRepo.AddService(primaryService)
+			},
+			inputService: &model.GrpsIOService{
+				Type:       constants.ServiceTypeShared,
+				Domain:     "lists.sub.org",
+				Prefix:     "shared",
+				ProjectUID: "sub-project-uid",
+				URL:        "https://lists.sub.org",
+				GroupName:  "sub-project-shared",
+				Public:     false,
+				Status:     "created",
+				Source:     constants.SourceMock,
+			},
+			expectedError: false,
+			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+				require.NotNil(t, result)
+				assert.NotEmpty(t, result.UID)
+				assert.Equal(t, constants.ServiceTypeShared, result.Type)
+				assert.Equal(t, "sub-project-uid", result.ProjectUID)
+				assert.Equal(t, "primary-service-uid", result.ParentServiceUID, "parent_service_uid should be automatically set")
+				assert.Equal(t, "shared", result.Prefix)
+				assert.Equal(t, uint64(1), revision)
+			},
+		},
+		{
+			name: "shared service fails when project has no parent",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+
+				// Add project without parent
+				mockRepo.AddProject("standalone-project-uid", "standalone-project", "Standalone Project")
+				// Don't set parent - will return not found error
+			},
+			inputService: &model.GrpsIOService{
+				Type:       constants.ServiceTypeShared,
+				Domain:     "lists.standalone.org",
+				Prefix:     "shared",
+				ProjectUID: "standalone-project-uid",
+				URL:        "https://lists.standalone.org",
+				GroupName:  "standalone-shared",
+				Public:     false,
+				Status:     "created",
+				Source:     constants.SourceMock,
+			},
+			expectedError: true,
+			errorContains: "shared services can only be created for sub-projects that have a parent project",
+		},
+		{
+			name: "shared service fails when parent project has no primary service",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+
+				// Add parent project
+				mockRepo.AddProject("parent-project-uid", "parent-project", "Parent Project")
+
+				// Add sub-project with parent relationship
+				mockRepo.AddProject("sub-project-uid", "sub-project", "Sub Project")
+				mockRepo.SetProjectParent("sub-project-uid", "parent-project-uid")
+
+				// Don't create primary service for parent project
+			},
+			inputService: &model.GrpsIOService{
+				Type:       constants.ServiceTypeShared,
+				Domain:     "lists.sub.org",
+				Prefix:     "shared",
+				ProjectUID: "sub-project-uid",
+				URL:        "https://lists.sub.org",
+				GroupName:  "sub-project-shared",
+				Public:     false,
+				Status:     "created",
+				Source:     constants.SourceMock,
+			},
+			expectedError: true,
+			errorContains: "parent project must have a primary service before creating shared services",
+		},
+		{
+			name: "shared service finds parent service among multiple services",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+
+				// Add parent project
+				mockRepo.AddProject("parent-project-uid", "parent-project", "Parent Project")
+
+				// Add sub-project with parent relationship
+				mockRepo.AddProject("sub-project-uid", "sub-project", "Sub Project")
+				mockRepo.SetProjectParent("sub-project-uid", "parent-project-uid")
+
+				// Create multiple services for parent project
+				formationService := &model.GrpsIOService{
+					UID:        "formation-service-uid",
+					Type:       constants.ServiceTypeFormation,
+					Domain:     "lists.parent.org",
+					Prefix:     "formation",
+					ProjectUID: "parent-project-uid",
+					Status:     "created",
+					Source:     constants.SourceMock,
+				}
+				mockRepo.AddService(formationService)
+
+				primaryService := &model.GrpsIOService{
+					UID:          "primary-service-uid",
+					Type:         constants.ServiceTypePrimary,
+					Domain:       "lists.parent.org",
+					GroupID:      writerServiceInt64Ptr(12345),
+					GlobalOwners: []string{"admin@parent.org"},
+					ProjectUID:   "parent-project-uid",
+					ProjectSlug:  "parent-project",
+					ProjectName:  "Parent Project",
+					URL:          "https://lists.parent.org",
+					GroupName:    "parent-project",
+					Public:       true,
+					Status:       "created",
+					Source:       constants.SourceMock,
+				}
+				mockRepo.AddService(primaryService)
+			},
+			inputService: &model.GrpsIOService{
+				Type:       constants.ServiceTypeShared,
+				Domain:     "lists.sub.org",
+				Prefix:     "shared",
+				ProjectUID: "sub-project-uid",
+				URL:        "https://lists.sub.org",
+				GroupName:  "sub-project-shared",
+				Public:     false,
+				Status:     "created",
+				Source:     constants.SourceMock,
+			},
+			expectedError: false,
+			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+				require.NotNil(t, result)
+				assert.Equal(t, "primary-service-uid", result.ParentServiceUID, "should find primary service among multiple services")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+			)
+
+			// Execute
+			ctx := context.Background()
+			result, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService)
+
+			// Assert
+			if tc.expectedError {
+				require.Error(t, err)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
+				assert.Nil(t, result)
+				assert.Equal(t, uint64(0), revision)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				if tc.validate != nil {
+					tc.validate(t, result, revision, mockRepo)
+				}
+			}
+		})
+	}
+}
+
+func TestGrpsIOWriterOrchestrator_findPrimaryServiceForProject(t *testing.T) {
+	testCases := []struct {
+		name           string
+		setupMock      func(*mock.MockRepository)
+		projectUID     string
+		expectedError  bool
+		expectedResult string
+	}{
+		{
+			name: "finds primary service successfully",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+
+				primaryService := &model.GrpsIOService{
+					UID:          "primary-service-uid",
+					Type:         constants.ServiceTypePrimary,
+					ProjectUID:   "project-1",
+					GlobalOwners: []string{"admin@test.org"},
+					Status:       "created",
+					Source:       constants.SourceMock,
+				}
+				mockRepo.AddService(primaryService)
+			},
+			projectUID:     "project-1",
+			expectedError:  false,
+			expectedResult: "primary-service-uid",
+		},
+		{
+			name: "returns error when no primary service exists",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+				// No services added
+			},
+			projectUID:    "project-1",
+			expectedError: true,
+		},
+		{
+			name: "returns error when only formation service exists",
+			setupMock: func(mockRepo *mock.MockRepository) {
+				mockRepo.ClearAll()
+				mockRepo.AddProject("project-1", "test-project", "Test Project")
+
+				formationService := &model.GrpsIOService{
+					UID:        "formation-service-uid",
+					Type:       constants.ServiceTypeFormation,
+					ProjectUID: "project-1",
+					Prefix:     "formation",
+					Status:     "created",
+					Source:     constants.SourceMock,
+				}
+				mockRepo.AddService(formationService)
+			},
+			projectUID:    "project-1",
+			expectedError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			mockRepo := mock.NewMockRepository()
+			tc.setupMock(mockRepo)
+
+			grpsIOReader := mock.NewMockGrpsIOReader(mockRepo)
+			grpsIOWriter := mock.NewMockGrpsIOWriter(mockRepo)
+			entityReader := mock.NewMockEntityAttributeReader(mockRepo)
+
+			orchestrator := NewGrpsIOWriterOrchestrator(
+				WithGrpsIOWriterReader(grpsIOReader),
+				WithGrpsIOWriter(grpsIOWriter),
+				WithEntityAttributeReader(entityReader),
+			).(*grpsIOWriterOrchestrator)
+
+			// Execute
+			ctx := context.Background()
+			result, err := orchestrator.findPrimaryServiceForProject(ctx, tc.projectUID)
+
+			// Assert
+			if tc.expectedError {
+				require.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				assert.Equal(t, tc.expectedResult, result.UID)
+				assert.Equal(t, constants.ServiceTypePrimary, result.Type)
+			}
+		})
+	}
+}

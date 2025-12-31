@@ -33,6 +33,11 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 		Public:       service.Public,
 	}
 
+	// Only set ParentServiceUID if it's non-empty
+	if service.ParentServiceUID != "" {
+		result.ParentServiceUID = &service.ParentServiceUID
+	}
+
 	// Handle timestamps
 	if !service.CreatedAt.IsZero() {
 		createdAt := service.CreatedAt.Format(time.RFC3339)
@@ -73,6 +78,11 @@ func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(servic
 		URL:          &service.URL,
 		GroupName:    &service.GroupName,
 		Public:       service.Public,
+	}
+
+	// Only set ParentServiceUID if it's non-empty
+	if service.ParentServiceUID != "" {
+		result.ParentServiceUID = &service.ParentServiceUID
 	}
 
 	// Handle timestamps

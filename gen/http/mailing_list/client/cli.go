@@ -25,13 +25,16 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
 		}
 		for _, e := range body.GlobalOwners {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+		}
+		if body.ParentServiceUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
 		}
 		if body.ProjectSlug != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
@@ -64,16 +67,17 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 		}
 	}
 	v := &mailinglist.CreateGrpsioServicePayload{
-		Type:        body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
-		Public:      body.Public,
+		Type:             body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
+		Public:           body.Public,
 	}
 	if body.GlobalOwners != nil {
 		v.GlobalOwners = make([]string, len(body.GlobalOwners))
@@ -151,13 +155,16 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
 		}
 		for _, e := range body.GlobalOwners {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+		}
+		if body.ParentServiceUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
 		}
 		if body.ProjectSlug != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
@@ -204,16 +211,17 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 		}
 	}
 	v := &mailinglist.UpdateGrpsioServicePayload{
-		Type:        body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
-		Public:      body.Public,
+		Type:             body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
+		Public:           body.Public,
 	}
 	if body.GlobalOwners != nil {
 		v.GlobalOwners = make([]string, len(body.GlobalOwners))

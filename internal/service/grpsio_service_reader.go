@@ -81,3 +81,27 @@ func (sr *grpsIOReaderOrchestrator) GetServicesByGroupID(ctx context.Context, gr
 
 	return services, nil
 }
+
+// GetServicesByProjectUID retrieves all services for a given project UID
+func (sr *grpsIOReaderOrchestrator) GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "executing get services by project_uid use case",
+		"project_uid", projectUID,
+	)
+
+	// Get services from storage
+	services, err := sr.grpsIOReader.GetServicesByProjectUID(ctx, projectUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get services by project_uid",
+			"error", err,
+			"project_uid", projectUID,
+		)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "services retrieved successfully by project_uid",
+		"project_uid", projectUID,
+		"count", len(services),
+	)
+
+	return services, nil
+}

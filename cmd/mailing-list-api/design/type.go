@@ -31,6 +31,10 @@ func GrpsIOServiceBaseAttributes() {
 	dsl.Attribute("prefix", dsl.String, "Email prefix (required for formation and shared, forbidden for primary)", func() {
 		dsl.Example("formation")
 	})
+	dsl.Attribute("parent_service_uid", dsl.String, "Parent primary service UID (automatically set for shared type services)", func() {
+		dsl.Format(dsl.FormatUUID)
+		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
 	dsl.Attribute("project_slug", dsl.String, "Project slug identifier", func() {
 		dsl.Format(dsl.FormatRegexp)
 		dsl.Pattern(`^[a-z][a-z0-9_\-]*[a-z0-9]$`)

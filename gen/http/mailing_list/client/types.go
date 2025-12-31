@@ -31,6 +31,8 @@ type CreateGrpsioServiceRequestBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -63,6 +65,8 @@ type UpdateGrpsioServiceRequestBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -214,6 +218,8 @@ type CreateGrpsioServiceResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -266,6 +272,8 @@ type UpdateGrpsioServiceResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -976,6 +984,8 @@ type GrpsIoServiceWithReadonlyAttributesResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -1116,16 +1126,17 @@ type GrpsIoMemberWithReadonlyAttributesResponseBody struct {
 // service.
 func NewCreateGrpsioServiceRequestBody(p *mailinglist.CreateGrpsioServicePayload) *CreateGrpsioServiceRequestBody {
 	body := &CreateGrpsioServiceRequestBody{
-		Type:        p.Type,
-		Domain:      p.Domain,
-		GroupID:     p.GroupID,
-		Status:      p.Status,
-		Prefix:      p.Prefix,
-		ProjectSlug: p.ProjectSlug,
-		ProjectUID:  p.ProjectUID,
-		URL:         p.URL,
-		GroupName:   p.GroupName,
-		Public:      p.Public,
+		Type:             p.Type,
+		Domain:           p.Domain,
+		GroupID:          p.GroupID,
+		Status:           p.Status,
+		Prefix:           p.Prefix,
+		ParentServiceUID: p.ParentServiceUID,
+		ProjectSlug:      p.ProjectSlug,
+		ProjectUID:       p.ProjectUID,
+		URL:              p.URL,
+		GroupName:        p.GroupName,
+		Public:           p.Public,
 	}
 	if p.GlobalOwners != nil {
 		body.GlobalOwners = make([]string, len(p.GlobalOwners))
@@ -1159,16 +1170,17 @@ func NewCreateGrpsioServiceRequestBody(p *mailinglist.CreateGrpsioServicePayload
 // service.
 func NewUpdateGrpsioServiceRequestBody(p *mailinglist.UpdateGrpsioServicePayload) *UpdateGrpsioServiceRequestBody {
 	body := &UpdateGrpsioServiceRequestBody{
-		Type:        p.Type,
-		Domain:      p.Domain,
-		GroupID:     p.GroupID,
-		Status:      p.Status,
-		Prefix:      p.Prefix,
-		ProjectSlug: p.ProjectSlug,
-		ProjectUID:  p.ProjectUID,
-		URL:         p.URL,
-		GroupName:   p.GroupName,
-		Public:      p.Public,
+		Type:             p.Type,
+		Domain:           p.Domain,
+		GroupID:          p.GroupID,
+		Status:           p.Status,
+		Prefix:           p.Prefix,
+		ParentServiceUID: p.ParentServiceUID,
+		ProjectSlug:      p.ProjectSlug,
+		ProjectUID:       p.ProjectUID,
+		URL:              p.URL,
+		GroupName:        p.GroupName,
+		Public:           p.Public,
 	}
 	if p.GlobalOwners != nil {
 		body.GlobalOwners = make([]string, len(p.GlobalOwners))
@@ -1373,23 +1385,24 @@ func NewReadyzServiceUnavailable(body *ReadyzServiceUnavailableResponseBody) *ma
 // response.
 func NewCreateGrpsioServiceGrpsIoServiceFullCreated(body *CreateGrpsioServiceResponseBody) *mailinglist.GrpsIoServiceFull {
 	v := &mailinglist.GrpsIoServiceFull{
-		UID:             body.UID,
-		Type:            *body.Type,
-		Domain:          body.Domain,
-		GroupID:         body.GroupID,
-		Status:          body.Status,
-		Prefix:          body.Prefix,
-		ProjectSlug:     body.ProjectSlug,
-		ProjectUID:      *body.ProjectUID,
-		URL:             body.URL,
-		GroupName:       body.GroupName,
-		ProjectName:     body.ProjectName,
-		CreatedAt:       body.CreatedAt,
-		UpdatedAt:       body.UpdatedAt,
-		LastReviewedAt:  body.LastReviewedAt,
-		LastReviewedBy:  body.LastReviewedBy,
-		LastAuditedBy:   body.LastAuditedBy,
-		LastAuditedTime: body.LastAuditedTime,
+		UID:              body.UID,
+		Type:             *body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       *body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
+		ProjectName:      body.ProjectName,
+		CreatedAt:        body.CreatedAt,
+		UpdatedAt:        body.UpdatedAt,
+		LastReviewedAt:   body.LastReviewedAt,
+		LastReviewedBy:   body.LastReviewedBy,
+		LastAuditedBy:    body.LastAuditedBy,
+		LastAuditedTime:  body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -1473,23 +1486,24 @@ func NewCreateGrpsioServiceServiceUnavailable(body *CreateGrpsioServiceServiceUn
 // "get-grpsio-service" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioServiceResultOK(body *GetGrpsioServiceResponseBody, etag *string) *mailinglist.GetGrpsioServiceResult {
 	v := &mailinglist.GrpsIoServiceWithReadonlyAttributes{
-		UID:             body.UID,
-		Type:            *body.Type,
-		Domain:          body.Domain,
-		GroupID:         body.GroupID,
-		Status:          body.Status,
-		Prefix:          body.Prefix,
-		ProjectSlug:     body.ProjectSlug,
-		ProjectUID:      *body.ProjectUID,
-		URL:             body.URL,
-		GroupName:       body.GroupName,
-		ProjectName:     body.ProjectName,
-		CreatedAt:       body.CreatedAt,
-		UpdatedAt:       body.UpdatedAt,
-		LastReviewedAt:  body.LastReviewedAt,
-		LastReviewedBy:  body.LastReviewedBy,
-		LastAuditedBy:   body.LastAuditedBy,
-		LastAuditedTime: body.LastAuditedTime,
+		UID:              body.UID,
+		Type:             *body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       *body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
+		ProjectName:      body.ProjectName,
+		CreatedAt:        body.CreatedAt,
+		UpdatedAt:        body.UpdatedAt,
+		LastReviewedAt:   body.LastReviewedAt,
+		LastReviewedBy:   body.LastReviewedBy,
+		LastAuditedBy:    body.LastAuditedBy,
+		LastAuditedTime:  body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -1568,23 +1582,24 @@ func NewGetGrpsioServiceServiceUnavailable(body *GetGrpsioServiceServiceUnavaila
 // "OK" response.
 func NewUpdateGrpsioServiceGrpsIoServiceWithReadonlyAttributesOK(body *UpdateGrpsioServiceResponseBody) *mailinglist.GrpsIoServiceWithReadonlyAttributes {
 	v := &mailinglist.GrpsIoServiceWithReadonlyAttributes{
-		UID:             body.UID,
-		Type:            *body.Type,
-		Domain:          body.Domain,
-		GroupID:         body.GroupID,
-		Status:          body.Status,
-		Prefix:          body.Prefix,
-		ProjectSlug:     body.ProjectSlug,
-		ProjectUID:      *body.ProjectUID,
-		URL:             body.URL,
-		GroupName:       body.GroupName,
-		ProjectName:     body.ProjectName,
-		CreatedAt:       body.CreatedAt,
-		UpdatedAt:       body.UpdatedAt,
-		LastReviewedAt:  body.LastReviewedAt,
-		LastReviewedBy:  body.LastReviewedBy,
-		LastAuditedBy:   body.LastAuditedBy,
-		LastAuditedTime: body.LastAuditedTime,
+		UID:              body.UID,
+		Type:             *body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       *body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
+		ProjectName:      body.ProjectName,
+		CreatedAt:        body.CreatedAt,
+		UpdatedAt:        body.UpdatedAt,
+		LastReviewedAt:   body.LastReviewedAt,
+		LastReviewedBy:   body.LastReviewedBy,
+		LastAuditedBy:    body.LastAuditedBy,
+		LastAuditedTime:  body.LastAuditedTime,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2448,6 +2463,9 @@ func ValidateCreateGrpsioServiceResponseBody(body *CreateGrpsioServiceResponseBo
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
 	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
+	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
 	}
@@ -2495,6 +2513,9 @@ func ValidateGetGrpsioServiceResponseBody(body *GetGrpsioServiceResponseBody) (e
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
 	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
+	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
 	}
@@ -2541,6 +2562,9 @@ func ValidateUpdateGrpsioServiceResponseBody(body *UpdateGrpsioServiceResponseBo
 	}
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
 	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
@@ -3661,6 +3685,9 @@ func ValidateGrpsIoServiceWithReadonlyAttributesResponseBody(body *GrpsIoService
 	}
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
 	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))

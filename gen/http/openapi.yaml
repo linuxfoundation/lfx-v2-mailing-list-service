@@ -1765,6 +1765,11 @@ definitions:
                 type: string
                 description: The user ID who last reviewed this service
                 example: user_id_12345
+            parent_service_uid:
+                type: string
+                description: Parent primary service UID (automatically set for shared type services)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
             prefix:
                 type: string
                 description: Email prefix (required for formation and shared, forbidden for primary)
@@ -1839,6 +1844,7 @@ definitions:
             last_audited_time: "2023-05-10T09:15:00Z"
             last_reviewed_at: "2025-08-04T09:00:00Z"
             last_reviewed_by: user_id_12345
+            parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_name: Cloud Native Computing Foundation
             project_slug: cncf
@@ -1913,6 +1919,11 @@ definitions:
                 type: string
                 description: The user ID who last reviewed this service
                 example: user_id_12345
+            parent_service_uid:
+                type: string
+                description: Parent primary service UID (automatically set for shared type services)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
             prefix:
                 type: string
                 description: Email prefix (required for formation and shared, forbidden for primary)
@@ -1988,6 +1999,7 @@ definitions:
             last_audited_time: "2023-05-10T09:15:00Z"
             last_reviewed_at: "2025-08-04T09:00:00Z"
             last_reviewed_by: user_id_12345
+            parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_name: Cloud Native Computing Foundation
             project_slug: cncf
@@ -2274,6 +2286,11 @@ definitions:
                 type: string
                 description: GroupsIO group name
                 example: project-name
+            parent_service_uid:
+                type: string
+                description: Parent primary service UID (automatically set for shared type services)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
             prefix:
                 type: string
                 description: Email prefix (required for formation and shared, forbidden for primary)
@@ -2329,6 +2346,7 @@ definitions:
                 - admin@example.com
             group_id: 12345
             group_name: project-name
+            parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_slug: cncf
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
@@ -2575,6 +2593,11 @@ definitions:
                 type: string
                 description: GroupsIO group name
                 example: project-name
+            parent_service_uid:
+                type: string
+                description: Parent primary service UID (automatically set for shared type services)
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
             prefix:
                 type: string
                 description: Email prefix (required for formation and shared, forbidden for primary)
@@ -2630,6 +2653,7 @@ definitions:
                 - admin@example.com
             group_id: 12345
             group_name: project-name
+            parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_slug: cncf
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee

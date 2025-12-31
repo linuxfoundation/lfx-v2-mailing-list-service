@@ -31,6 +31,8 @@ type CreateGrpsioServiceRequestBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -63,6 +65,8 @@ type UpdateGrpsioServiceRequestBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -214,6 +218,8 @@ type CreateGrpsioServiceResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -266,6 +272,8 @@ type UpdateGrpsioServiceResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -976,6 +984,8 @@ type GrpsIoServiceWithReadonlyAttributesResponseBody struct {
 	GlobalOwners []string `form:"global_owners,omitempty" json:"global_owners,omitempty" xml:"global_owners,omitempty"`
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty" xml:"prefix,omitempty"`
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string `form:"parent_service_uid,omitempty" json:"parent_service_uid,omitempty" xml:"parent_service_uid,omitempty"`
 	// Project slug identifier
 	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// LFXv2 Project UID
@@ -1115,24 +1125,25 @@ type CommitteeRequestBody struct {
 // result of the "create-grpsio-service" endpoint of the "mailing-list" service.
 func NewCreateGrpsioServiceResponseBody(res *mailinglist.GrpsIoServiceFull) *CreateGrpsioServiceResponseBody {
 	body := &CreateGrpsioServiceResponseBody{
-		UID:             res.UID,
-		Type:            res.Type,
-		Domain:          res.Domain,
-		GroupID:         res.GroupID,
-		Status:          res.Status,
-		Prefix:          res.Prefix,
-		ProjectSlug:     res.ProjectSlug,
-		ProjectUID:      res.ProjectUID,
-		URL:             res.URL,
-		GroupName:       res.GroupName,
-		Public:          res.Public,
-		ProjectName:     res.ProjectName,
-		CreatedAt:       res.CreatedAt,
-		UpdatedAt:       res.UpdatedAt,
-		LastReviewedAt:  res.LastReviewedAt,
-		LastReviewedBy:  res.LastReviewedBy,
-		LastAuditedBy:   res.LastAuditedBy,
-		LastAuditedTime: res.LastAuditedTime,
+		UID:              res.UID,
+		Type:             res.Type,
+		Domain:           res.Domain,
+		GroupID:          res.GroupID,
+		Status:           res.Status,
+		Prefix:           res.Prefix,
+		ParentServiceUID: res.ParentServiceUID,
+		ProjectSlug:      res.ProjectSlug,
+		ProjectUID:       res.ProjectUID,
+		URL:              res.URL,
+		GroupName:        res.GroupName,
+		Public:           res.Public,
+		ProjectName:      res.ProjectName,
+		CreatedAt:        res.CreatedAt,
+		UpdatedAt:        res.UpdatedAt,
+		LastReviewedAt:   res.LastReviewedAt,
+		LastReviewedBy:   res.LastReviewedBy,
+		LastAuditedBy:    res.LastAuditedBy,
+		LastAuditedTime:  res.LastAuditedTime,
 	}
 	if res.GlobalOwners != nil {
 		body.GlobalOwners = make([]string, len(res.GlobalOwners))
@@ -1165,24 +1176,25 @@ func NewCreateGrpsioServiceResponseBody(res *mailinglist.GrpsIoServiceFull) *Cre
 // result of the "get-grpsio-service" endpoint of the "mailing-list" service.
 func NewGetGrpsioServiceResponseBody(res *mailinglist.GetGrpsioServiceResult) *GetGrpsioServiceResponseBody {
 	body := &GetGrpsioServiceResponseBody{
-		UID:             res.Service.UID,
-		Type:            res.Service.Type,
-		Domain:          res.Service.Domain,
-		GroupID:         res.Service.GroupID,
-		Status:          res.Service.Status,
-		Prefix:          res.Service.Prefix,
-		ProjectSlug:     res.Service.ProjectSlug,
-		ProjectUID:      res.Service.ProjectUID,
-		URL:             res.Service.URL,
-		GroupName:       res.Service.GroupName,
-		Public:          res.Service.Public,
-		ProjectName:     res.Service.ProjectName,
-		CreatedAt:       res.Service.CreatedAt,
-		UpdatedAt:       res.Service.UpdatedAt,
-		LastReviewedAt:  res.Service.LastReviewedAt,
-		LastReviewedBy:  res.Service.LastReviewedBy,
-		LastAuditedBy:   res.Service.LastAuditedBy,
-		LastAuditedTime: res.Service.LastAuditedTime,
+		UID:              res.Service.UID,
+		Type:             res.Service.Type,
+		Domain:           res.Service.Domain,
+		GroupID:          res.Service.GroupID,
+		Status:           res.Service.Status,
+		Prefix:           res.Service.Prefix,
+		ParentServiceUID: res.Service.ParentServiceUID,
+		ProjectSlug:      res.Service.ProjectSlug,
+		ProjectUID:       res.Service.ProjectUID,
+		URL:              res.Service.URL,
+		GroupName:        res.Service.GroupName,
+		Public:           res.Service.Public,
+		ProjectName:      res.Service.ProjectName,
+		CreatedAt:        res.Service.CreatedAt,
+		UpdatedAt:        res.Service.UpdatedAt,
+		LastReviewedAt:   res.Service.LastReviewedAt,
+		LastReviewedBy:   res.Service.LastReviewedBy,
+		LastAuditedBy:    res.Service.LastAuditedBy,
+		LastAuditedTime:  res.Service.LastAuditedTime,
 	}
 	if res.Service.GlobalOwners != nil {
 		body.GlobalOwners = make([]string, len(res.Service.GlobalOwners))
@@ -1215,24 +1227,25 @@ func NewGetGrpsioServiceResponseBody(res *mailinglist.GetGrpsioServiceResult) *G
 // result of the "update-grpsio-service" endpoint of the "mailing-list" service.
 func NewUpdateGrpsioServiceResponseBody(res *mailinglist.GrpsIoServiceWithReadonlyAttributes) *UpdateGrpsioServiceResponseBody {
 	body := &UpdateGrpsioServiceResponseBody{
-		UID:             res.UID,
-		Type:            res.Type,
-		Domain:          res.Domain,
-		GroupID:         res.GroupID,
-		Status:          res.Status,
-		Prefix:          res.Prefix,
-		ProjectSlug:     res.ProjectSlug,
-		ProjectUID:      res.ProjectUID,
-		URL:             res.URL,
-		GroupName:       res.GroupName,
-		Public:          res.Public,
-		ProjectName:     res.ProjectName,
-		CreatedAt:       res.CreatedAt,
-		UpdatedAt:       res.UpdatedAt,
-		LastReviewedAt:  res.LastReviewedAt,
-		LastReviewedBy:  res.LastReviewedBy,
-		LastAuditedBy:   res.LastAuditedBy,
-		LastAuditedTime: res.LastAuditedTime,
+		UID:              res.UID,
+		Type:             res.Type,
+		Domain:           res.Domain,
+		GroupID:          res.GroupID,
+		Status:           res.Status,
+		Prefix:           res.Prefix,
+		ParentServiceUID: res.ParentServiceUID,
+		ProjectSlug:      res.ProjectSlug,
+		ProjectUID:       res.ProjectUID,
+		URL:              res.URL,
+		GroupName:        res.GroupName,
+		Public:           res.Public,
+		ProjectName:      res.ProjectName,
+		CreatedAt:        res.CreatedAt,
+		UpdatedAt:        res.UpdatedAt,
+		LastReviewedAt:   res.LastReviewedAt,
+		LastReviewedBy:   res.LastReviewedBy,
+		LastAuditedBy:    res.LastAuditedBy,
+		LastAuditedTime:  res.LastAuditedTime,
 	}
 	if res.GlobalOwners != nil {
 		body.GlobalOwners = make([]string, len(res.GlobalOwners))
@@ -2177,15 +2190,16 @@ func NewGroupsioWebhookUnauthorizedResponseBody(res *mailinglist.UnauthorizedErr
 // create-grpsio-service endpoint payload.
 func NewCreateGrpsioServicePayload(body *CreateGrpsioServiceRequestBody, version string, bearerToken *string) *mailinglist.CreateGrpsioServicePayload {
 	v := &mailinglist.CreateGrpsioServicePayload{
-		Type:        *body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  *body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
+		Type:             *body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       *body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2232,15 +2246,16 @@ func NewGetGrpsioServicePayload(uid string, version *string, bearerToken *string
 // update-grpsio-service endpoint payload.
 func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid string, version string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioServicePayload {
 	v := &mailinglist.UpdateGrpsioServicePayload{
-		Type:        *body.Type,
-		Domain:      body.Domain,
-		GroupID:     body.GroupID,
-		Status:      body.Status,
-		Prefix:      body.Prefix,
-		ProjectSlug: body.ProjectSlug,
-		ProjectUID:  *body.ProjectUID,
-		URL:         body.URL,
-		GroupName:   body.GroupName,
+		Type:             *body.Type,
+		Domain:           body.Domain,
+		GroupID:          body.GroupID,
+		Status:           body.Status,
+		Prefix:           body.Prefix,
+		ParentServiceUID: body.ParentServiceUID,
+		ProjectSlug:      body.ProjectSlug,
+		ProjectUID:       *body.ProjectUID,
+		URL:              body.URL,
+		GroupName:        body.GroupName,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2521,6 +2536,9 @@ func ValidateCreateGrpsioServiceRequestBody(body *CreateGrpsioServiceRequestBody
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
 	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
+	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))
 	}
@@ -2552,6 +2570,9 @@ func ValidateUpdateGrpsioServiceRequestBody(body *UpdateGrpsioServiceRequestBody
 	}
 	for _, e := range body.GlobalOwners {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.global_owners[*]", e, goa.FormatEmail))
+	}
+	if body.ParentServiceUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_service_uid", *body.ParentServiceUID, goa.FormatUUID))
 	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))

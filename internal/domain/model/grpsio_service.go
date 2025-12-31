@@ -21,26 +21,27 @@ const DefaultGroupsIODomain = "groups.io"
 
 // GrpsIOService represents a GroupsIO service entity
 type GrpsIOService struct {
-	Type           string    `json:"type"`
-	UID            string    `json:"uid"`
-	Domain         string    `json:"domain"`
-	GroupID        *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
-	Status         string    `json:"status"`
-	Source         string    `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
-	GlobalOwners   []string  `json:"global_owners"`
-	Prefix         string    `json:"prefix"`
-	ProjectSlug    string    `json:"project_slug"`
-	ProjectName    string    `json:"project_name"`
-	ProjectUID     string    `json:"project_uid"`
-	URL            string    `json:"url"`
-	GroupName      string    `json:"group_name"`
-	Public         bool      `json:"public"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	LastReviewedAt *string   `json:"last_reviewed_at,omitempty"`
-	LastReviewedBy *string   `json:"last_reviewed_by,omitempty"`
-	Writers        []string  `json:"writers"`
-	Auditors       []string  `json:"auditors"`
+	Type             string    `json:"type"`
+	UID              string    `json:"uid"`
+	Domain           string    `json:"domain"`
+	GroupID          *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
+	Status           string    `json:"status"`
+	Source           string    `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
+	GlobalOwners     []string  `json:"global_owners"`
+	Prefix           string    `json:"prefix"`
+	ParentServiceUID string    `json:"parent_service_uid"` // Parent primary service UID for shared type
+	ProjectSlug      string    `json:"project_slug"`
+	ProjectName      string    `json:"project_name"`
+	ProjectUID       string    `json:"project_uid"`
+	URL              string    `json:"url"`
+	GroupName        string    `json:"group_name"`
+	Public           bool      `json:"public"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	LastReviewedAt   *string   `json:"last_reviewed_at,omitempty"`
+	LastReviewedBy   *string   `json:"last_reviewed_by,omitempty"`
+	Writers          []string  `json:"writers"`
+	Auditors         []string  `json:"auditors"`
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key

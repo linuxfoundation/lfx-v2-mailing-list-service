@@ -20,6 +20,8 @@ const (
 	// Service secondary index key patterns for external GroupsIO IDs
 	// KVLookupGroupsIOServiceByGroupIDPrefix is the key pattern for GroupID index (lookup by Groups.io group ID)
 	KVLookupGroupsIOServiceByGroupIDPrefix = "lookup/groupsio-service-groupid/%d"
+	// KVLookupGroupsIOServiceByProjectUIDPrefix is the key pattern for ProjectUID index (lookup by ProjectUID)
+	KVLookupGroupsIOServiceByProjectUIDPrefix = "lookup/groupsio-service-projectuid/%s"
 
 	// Mailing list secondary index key patterns
 	// KVLookupMailingListServicePrefix is the key pattern for service index
