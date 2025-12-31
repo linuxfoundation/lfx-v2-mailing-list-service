@@ -165,6 +165,8 @@ type CreateGrpsioServicePayload struct {
 	GlobalOwners []string
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string
 	// Project slug identifier
 	ProjectSlug *string
 	// LFXv2 Project UID
@@ -492,6 +494,8 @@ type GrpsIoServiceFull struct {
 	GlobalOwners []string
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string
 	// Project slug identifier
 	ProjectSlug *string
 	// LFXv2 Project UID
@@ -540,6 +544,8 @@ type GrpsIoServiceWithReadonlyAttributes struct {
 	GlobalOwners []string
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string
 	// Project slug identifier
 	ProjectSlug *string
 	// LFXv2 Project UID
@@ -659,6 +665,8 @@ type UpdateGrpsioServicePayload struct {
 	GlobalOwners []string
 	// Email prefix (required for formation and shared, forbidden for primary)
 	Prefix *string
+	// Parent primary service UID (automatically set for shared type services)
+	ParentServiceUID *string
 	// Project slug identifier
 	ProjectSlug *string
 	// LFXv2 Project UID

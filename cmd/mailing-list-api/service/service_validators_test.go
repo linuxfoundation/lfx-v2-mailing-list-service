@@ -311,30 +311,30 @@ func TestValidateSharedRules(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "shared service without group_id should fail",
+			name: "shared service without group_id should pass (group_id inherited from parent)",
 			payload: &mailinglistservice.CreateGrpsioServicePayload{
 				Type:   "shared",
 				Prefix: stringPtr("shared-prefix"),
 			},
-			expectErr: true,
+			expectErr: false,
 		},
 		{
-			name: "shared service with invalid group_id should fail",
+			name: "shared service with invalid group_id should pass (group_id inherited from parent)",
 			payload: &mailinglistservice.CreateGrpsioServicePayload{
 				Type:    "shared",
 				Prefix:  stringPtr("shared-prefix"),
 				GroupID: int64Ptr(0),
 			},
-			expectErr: true,
+			expectErr: false,
 		},
 		{
-			name: "shared service with negative group_id should fail",
+			name: "shared service with negative group_id should pass (group_id inherited from parent)",
 			payload: &mailinglistservice.CreateGrpsioServicePayload{
 				Type:    "shared",
 				Prefix:  stringPtr("shared-prefix"),
 				GroupID: int64Ptr(-1),
 			},
-			expectErr: true,
+			expectErr: false,
 		},
 		{
 			name: "shared service with global owners should fail",
@@ -737,6 +737,14 @@ func (m *MockServiceReader) GetRevision(ctx context.Context, uid string) (uint64
 
 func (m *MockServiceReader) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
 	args := m.Called(ctx, groupID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.GrpsIOService), args.Error(1)
+}
+
+func (m *MockServiceReader) GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error) {
+	args := m.Called(ctx, projectUID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

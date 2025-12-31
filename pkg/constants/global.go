@@ -22,6 +22,8 @@ const (
 	ProjectGetSlugSubject = "lfx.projects-api.get_slug"
 	// ProjectGetNameSubject is the NATS subject for getting project name
 	ProjectGetNameSubject = "lfx.projects-api.get_name"
+	// ProjectGetParentUIDSubject is the NATS subject for getting project parent UID
+	ProjectGetParentUIDSubject = "lfx.projects-api.get_parent_uid"
 
 	// CommitteeGetNameSubject is the NATS subject for getting committee name
 	CommitteeGetNameSubject = "lfx.committee-api.get_name"

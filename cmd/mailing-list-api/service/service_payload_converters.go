@@ -22,22 +22,23 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 
 	now := time.Now()
 	service := &model.GrpsIOService{
-		Type:         p.Type,
-		Domain:       payloadStringValue(p.Domain),
-		GroupID:      payloadInt64Ptr(p.GroupID),
-		Status:       payloadStringValue(p.Status),
-		GlobalOwners: p.GlobalOwners,
-		Prefix:       payloadStringValue(p.Prefix),
-		ProjectSlug:  payloadStringValue(p.ProjectSlug),
-		ProjectUID:   p.ProjectUID,
-		URL:          payloadStringValue(p.URL),
-		GroupName:    payloadStringValue(p.GroupName),
-		Public:       p.Public,
-		Writers:      p.Writers,
-		Auditors:     p.Auditors,
-		Source:       constants.SourceAPI, // API operations always use api source
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Type:             p.Type,
+		Domain:           payloadStringValue(p.Domain),
+		GroupID:          payloadInt64Ptr(p.GroupID),
+		Status:           payloadStringValue(p.Status),
+		GlobalOwners:     p.GlobalOwners,
+		Prefix:           payloadStringValue(p.Prefix),
+		ParentServiceUID: payloadStringValue(p.ParentServiceUID),
+		ProjectSlug:      payloadStringValue(p.ProjectSlug),
+		ProjectUID:       p.ProjectUID,
+		URL:              payloadStringValue(p.URL),
+		GroupName:        payloadStringValue(p.GroupName),
+		Public:           p.Public,
+		Writers:          p.Writers,
+		Auditors:         p.Auditors,
+		Source:           constants.SourceAPI, // API operations always use api source
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 
 	return service
@@ -102,18 +103,19 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 	now := time.Now()
 	return &model.GrpsIOService{
 		// Preserve ALL immutable fields from existing service
-		UID:            *p.UID,
-		Type:           existing.Type, // Fixed: preserve from existing, not payload
-		Domain:         existing.Domain,
-		GroupID:        existing.GroupID,
-		Prefix:         existing.Prefix,
-		ProjectSlug:    existing.ProjectSlug,
-		ProjectName:    existing.ProjectName,
-		URL:            existing.URL,       // Fixed: add missing field preservation
-		GroupName:      existing.GroupName, // Fixed: add missing field preservation
-		CreatedAt:      existing.CreatedAt,
-		LastReviewedAt: existing.LastReviewedAt,
-		LastReviewedBy: existing.LastReviewedBy,
+		UID:              *p.UID,
+		Type:             existing.Type, // Fixed: preserve from existing, not payload
+		Domain:           existing.Domain,
+		GroupID:          existing.GroupID,
+		Prefix:           existing.Prefix,
+		ProjectSlug:      existing.ProjectSlug,
+		ProjectName:      existing.ProjectName,
+		ParentServiceUID: existing.ParentServiceUID,
+		URL:              existing.URL,       // Fixed: add missing field preservation
+		GroupName:        existing.GroupName, // Fixed: add missing field preservation
+		CreatedAt:        existing.CreatedAt,
+		LastReviewedAt:   existing.LastReviewedAt,
+		LastReviewedBy:   existing.LastReviewedBy,
 
 		// Update mutable fields (PUT semantics - complete replacement)
 		Status:       payloadStringValue(p.Status), // nil → ""

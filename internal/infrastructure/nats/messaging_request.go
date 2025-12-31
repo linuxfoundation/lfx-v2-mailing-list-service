@@ -53,6 +53,10 @@ func (m *messageRequest) ProjectName(ctx context.Context, uid string) (string, e
 	return m.get(ctx, constants.ProjectGetNameSubject, uid)
 }
 
+func (m *messageRequest) ProjectParentUID(ctx context.Context, uid string) (string, error) {
+	return m.get(ctx, constants.ProjectGetParentUIDSubject, uid)
+}
+
 func (m *messageRequest) CommitteeName(ctx context.Context, uid string) (string, error) {
 	return m.get(ctx, constants.CommitteeGetNameSubject, uid)
 }

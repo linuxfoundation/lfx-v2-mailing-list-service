@@ -48,6 +48,7 @@ type MockRepository struct {
 	memberIndexKeys      map[string]*model.GrpsIOMember      // indexKey -> member
 	projectSlugs         map[string]string                   // projectUID -> slug
 	projectNames         map[string]string                   // projectUID -> name
+	projectParents       map[string]string                   // projectUID -> parentProjectUID
 	committeeNames       map[string]string                   // committeeUID -> name
 	errorSimulation      ErrorSimulationConfig               // Error simulation configuration
 	errorSimulationMu    sync.RWMutex                        // Protect concurrent access to error config
@@ -72,6 +73,7 @@ func NewMockRepository() *MockRepository {
 			memberIndexKeys:      make(map[string]*model.GrpsIOMember),
 			projectSlugs:         make(map[string]string),
 			projectNames:         make(map[string]string),
+			projectParents:       make(map[string]string),
 			committeeNames:       make(map[string]string),
 			errorSimulation: ErrorSimulationConfig{
 				Enabled:           false,
@@ -549,6 +551,21 @@ func (r *MockEntityAttributeReader) ProjectName(ctx context.Context, uid string)
 	return name, nil
 }
 
+// ProjectParentUID returns the project parent UID for a given UID
+func (r *MockEntityAttributeReader) ProjectParentUID(ctx context.Context, uid string) (string, error) {
+	slog.DebugContext(ctx, "mock entity attribute reader: getting project parent UID", "uid", uid)
+
+	r.mock.mu.RLock()
+	defer r.mock.mu.RUnlock()
+
+	parentUID, exists := r.mock.projectParents[uid]
+	if !exists || parentUID == "" {
+		return "", errors.NewNotFound(fmt.Sprintf("project parent UID not found for UID %s", uid))
+	}
+
+	return parentUID, nil
+}
+
 // ProjectSlug returns the project slug for a given UID
 func (r *MockEntityAttributeReader) ProjectSlug(ctx context.Context, uid string) (string, error) {
 	slog.DebugContext(ctx, "mock entity attribute reader: getting project slug", "uid", uid)
@@ -917,6 +934,41 @@ func (m *MockRepository) GetServicesByGroupID(ctx context.Context, groupID uint6
 	return services, nil
 }
 
+// GetServicesByProjectUID retrieves all services for a given project UID
+// Returns empty slice if no services found (not an error)
+func (m *MockRepository) GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "mock service: getting services by project_uid", "project_uid", projectUID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetServicesByProjectUID", projectUID); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var services []*model.GrpsIOService
+
+	// Iterate through all services to find matches
+	for _, service := range m.services {
+		if service.ProjectUID == projectUID {
+			// Return deep copy to avoid data races
+			serviceCopy := *service
+			serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
+			copy(serviceCopy.GlobalOwners, service.GlobalOwners)
+			serviceCopy.Writers = append([]string(nil), service.Writers...)
+			serviceCopy.Auditors = append([]string(nil), service.Auditors...)
+			services = append(services, &serviceCopy)
+		}
+	}
+
+	slog.DebugContext(ctx, "mock service: services retrieved by project_uid",
+		"project_uid", projectUID,
+		"count", len(services))
+
+	return services, nil
+}
+
 // MockGrpsIOReaderWriter combines reader and writer functionality
 type MockGrpsIOReaderWriter struct {
 	port.GrpsIOReader
@@ -1009,6 +1061,14 @@ func (m *MockRepository) AddProject(uid, slug, name string) {
 	m.projectNames[uid] = name
 }
 
+// SetProjectParent sets the parent project UID for a given project (useful for testing)
+func (m *MockRepository) SetProjectParent(projectUID, parentProjectUID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.projectParents[projectUID] = parentProjectUID
+}
+
 // AddCommittee adds committee name mapping (useful for testing)
 func (m *MockRepository) AddCommittee(uid, name string) {
 	m.mu.Lock()
@@ -1033,6 +1093,7 @@ func (m *MockRepository) ClearAll() {
 	m.memberIndexKeys = make(map[string]*model.GrpsIOMember)
 	m.projectSlugs = make(map[string]string)
 	m.projectNames = make(map[string]string)
+	m.projectParents = make(map[string]string)
 	m.committeeNames = make(map[string]string)
 }
 
