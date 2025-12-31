@@ -136,15 +136,10 @@ func validateFormationRules(payload *mailinglistservice.CreateGrpsioServicePaylo
 func validateSharedRules(payload *mailinglistservice.CreateGrpsioServicePayload) error {
 	// shared rules:
 	// - prefix must be non-empty string
-	// - group_id must be valid Groups.io group ID
 	// - global_owners must NOT be provided (will return 400 error)
 
 	if payload.Prefix == nil || strings.TrimSpace(*payload.Prefix) == "" {
 		return errors.NewValidation("prefix is required and must be non-empty for shared service type")
-	}
-
-	if payload.GroupID == nil || *payload.GroupID <= 0 {
-		return errors.NewValidation("group_id is required and must be a valid Groups.io group ID for shared service type")
 	}
 
 	if len(payload.GlobalOwners) > 0 {

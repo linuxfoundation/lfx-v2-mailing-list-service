@@ -22,4 +22,10 @@ type GrpsIOServiceReader interface {
 	// Returns empty slice if no services found (not an error)
 	// Used by webhook processor to determine which service should adopt a subgroup
 	GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error)
+
+	// GetServicesByProjectUID retrieves all services for a given project UID
+	// A single project can have multiple services (1 primary + N formation/shared services)
+	// Returns empty slice if no services found (not an error)
+	// Used to find parent primary services and list all services for a project
+	GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error)
 }

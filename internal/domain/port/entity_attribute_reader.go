@@ -13,6 +13,7 @@ import (
 type EntityAttributeReader interface {
 	ProjectSlug(ctx context.Context, uid string) (string, error)
 	ProjectName(ctx context.Context, uid string) (string, error)
+	ProjectParentUID(ctx context.Context, uid string) (string, error)
 	CommitteeName(ctx context.Context, uid string) (string, error)
 	ListMembers(ctx context.Context, committeeUID string) ([]model.CommitteeMember, error)
 }

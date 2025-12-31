@@ -66,6 +66,21 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"project_name", service.ProjectName,
 	)
 
+	// Step 2.5: Find and validate parent service for shared type
+	if service.Type == constants.ServiceTypeShared {
+		if err := sw.findAndValidateParentService(ctx, service); err != nil {
+			slog.ErrorContext(ctx, "parent service lookup failed",
+				"error", err,
+				"project_uid", service.ProjectUID,
+			)
+			return nil, 0, err
+		}
+
+		slog.DebugContext(ctx, "parent service found and validated",
+			"parent_service_uid", service.ParentServiceUID,
+		)
+	}
+
 	// Step 3: Reserve unique constraints based on service type
 	constraintKey, err := sw.reserveUniqueConstraints(ctx, service)
 	if err != nil {
@@ -417,6 +432,95 @@ func (sw *grpsIOWriterOrchestrator) validateAndPopulateProject(ctx context.Conte
 	service.ProjectName = name
 
 	return nil
+}
+
+// findAndValidateParentService finds the primary service for the parent project and sets it as parent
+func (sw *grpsIOWriterOrchestrator) findAndValidateParentService(ctx context.Context, service *model.GrpsIOService) error {
+	if service.ProjectUID == "" {
+		return errors.NewValidation("project_uid is required to find parent service")
+	}
+
+	slog.DebugContext(ctx, "looking up parent project for shared service creation",
+		"project_uid", service.ProjectUID,
+	)
+
+	// Get parent project UID - this is required for shared services
+	parentProjectUID, err := sw.entityReader.ProjectParentUID(ctx, service.ProjectUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "no parent project found - cannot create shared service",
+			"project_uid", service.ProjectUID,
+			"error", err,
+		)
+		return errors.NewValidation("shared services can only be created for sub-projects that have a parent project")
+	}
+
+	if parentProjectUID == "" {
+		slog.ErrorContext(ctx, "parent project UID is empty - cannot create shared service",
+			"project_uid", service.ProjectUID,
+		)
+		return errors.NewValidation("shared services can only be created for sub-projects that have a parent project")
+	}
+
+	slog.InfoContext(ctx, "found parent project, looking for its primary service",
+		"project_uid", service.ProjectUID,
+		"parent_project_uid", parentProjectUID,
+	)
+
+	// Find primary service for the parent project
+	primaryService, err := sw.findPrimaryServiceForProject(ctx, parentProjectUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to find primary service for parent project",
+			"error", err,
+			"parent_project_uid", parentProjectUID,
+		)
+		return errors.NewValidation("parent project must have a primary service before creating shared services")
+	}
+
+	// Set the parent service UID
+	service.ParentServiceUID = primaryService.UID
+
+	slog.InfoContext(ctx, "found and set primary service as parent for shared service",
+		"parent_service_uid", service.ParentServiceUID,
+		"parent_project_uid", parentProjectUID,
+		"project_uid", service.ProjectUID,
+	)
+
+	return nil
+}
+
+// findPrimaryServiceForProject finds the primary service for a given project
+func (sw *grpsIOWriterOrchestrator) findPrimaryServiceForProject(ctx context.Context, projectUID string) (*model.GrpsIOService, error) {
+	slog.DebugContext(ctx, "looking up primary service for project",
+		"project_uid", projectUID,
+	)
+
+	// Get all services for the project using the project UID index
+	services, err := sw.grpsIOReader.GetServicesByProjectUID(ctx, projectUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to retrieve services for project",
+			"error", err,
+			"project_uid", projectUID,
+		)
+		return nil, err
+	}
+
+	// Find the primary service among all services
+	for _, service := range services {
+		if service.Type == constants.ServiceTypePrimary {
+			slog.InfoContext(ctx, "found primary service for project",
+				"project_uid", projectUID,
+				"service_uid", service.UID,
+			)
+			return service, nil
+		}
+	}
+
+	// No primary service found
+	slog.WarnContext(ctx, "no primary service found for project",
+		"project_uid", projectUID,
+		"services_checked", len(services),
+	)
+	return nil, errors.NewValidation("no primary service exists for this project")
 }
 
 // reserveUniqueConstraints reserves unique constraints based on service type
