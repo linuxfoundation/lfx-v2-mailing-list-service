@@ -18,7 +18,7 @@ const (
 	DeleteAllAccessGroupsIOMailingListSubject = "lfx.delete_all_access.groupsio_mailing_list"
 
 	PutMemberGroupsIOMailingListSubject    = "lfx.put_member.groupsio_mailing_list"
-	DeleteMemberGroupsIOMailingListSubject = "lfx.remove_member.groupsio_mailing_list"
+	RemoveMemberGroupsIOMailingListSubject = "lfx.remove_member.groupsio_mailing_list"
 
 	// Committee event subjects from committee-api
 	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"

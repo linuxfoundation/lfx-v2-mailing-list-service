@@ -425,7 +425,7 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 	)
 
 	// Publish delete messages (indexer and access control)
-	if o.publisher != nil {
+	if o.publisher != nil && member != nil {
 		if err := o.publishMemberDeleteMessages(ctx, uid, *member); err != nil {
 			slog.ErrorContext(ctx, "failed to publish member delete messages", "error", err)
 			// Don't fail the operation on message failure, delete succeeded
@@ -471,17 +471,22 @@ func (o *grpsIOWriterOrchestrator) publishMemberMessages(ctx context.Context, me
 		return fmt.Errorf("failed to build %s indexer message: %w", action, err)
 	}
 
-	// Build access control message for OpenFGA integration
-	accessMessage := o.buildMemberAccessMessage(member)
-
-	// Publish messages concurrently (indexer and access control)
+	// Prepare messages to publish
 	messages := []func() error{
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, indexerMessage)
 		},
-		func() error {
+	}
+
+	// Only publish access control message if member has a username (required for FGA identity)
+	if member.Username != "" {
+		accessMessage := o.buildMemberAccessMessage(member)
+		messages = append(messages, func() error {
 			return o.publisher.Access(ctx, constants.PutMemberGroupsIOMailingListSubject, accessMessage)
-		},
+		})
+	} else {
+		slog.DebugContext(ctx, "skipping access control message - member has no username",
+			"member_uid", member.UID)
 	}
 
 	// Execute all messages concurrently
@@ -520,16 +525,22 @@ func (o *grpsIOWriterOrchestrator) publishMemberDeleteMessages(ctx context.Conte
 		return fmt.Errorf("failed to build member delete indexer message: %w", err)
 	}
 
-	accessMessage := o.buildMemberAccessMessage(&member)
-
-	// Publish delete messages concurrently
+	// Prepare messages to publish
 	messages := []func() error{
 		func() error {
 			return o.publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, builtMessage)
 		},
-		func() error {
-			return o.publisher.Access(ctx, constants.DeleteMemberGroupsIOMailingListSubject, accessMessage)
-		},
+	}
+
+	// Only publish access control message if member has a username (required for FGA identity)
+	if member.Username != "" {
+		accessMessage := o.buildMemberAccessMessage(&member)
+		messages = append(messages, func() error {
+			return o.publisher.Access(ctx, constants.RemoveMemberGroupsIOMailingListSubject, accessMessage)
+		})
+	} else {
+		slog.DebugContext(ctx, "skipping access control delete message - member has no username",
+			"member_uid", uid)
 	}
 
 	// Execute all messages concurrently
