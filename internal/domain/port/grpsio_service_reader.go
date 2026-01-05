@@ -28,4 +28,9 @@ type GrpsIOServiceReader interface {
 	// Returns empty slice if no services found (not an error)
 	// Used to find parent primary services and list all services for a project
 	GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error)
+
+	// GetGrpsIOServiceSettings retrieves service settings by service UID and returns ETag revision
+	GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error)
+	// GetSettingsRevision retrieves only the revision for service settings
+	GetSettingsRevision(ctx context.Context, uid string) (uint64, error)
 }

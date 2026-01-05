@@ -22,6 +22,8 @@ type Client struct {
 	GetGrpsioServiceEndpoint              goa.Endpoint
 	UpdateGrpsioServiceEndpoint           goa.Endpoint
 	DeleteGrpsioServiceEndpoint           goa.Endpoint
+	GetGrpsioServiceSettingsEndpoint      goa.Endpoint
+	UpdateGrpsioServiceSettingsEndpoint   goa.Endpoint
 	CreateGrpsioMailingListEndpoint       goa.Endpoint
 	GetGrpsioMailingListEndpoint          goa.Endpoint
 	UpdateGrpsioMailingListEndpoint       goa.Endpoint
@@ -34,7 +36,7 @@ type Client struct {
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, getGrpsioServiceSettings, updateGrpsioServiceSettings, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                         livez,
 		ReadyzEndpoint:                        readyz,
@@ -42,6 +44,8 @@ func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsi
 		GetGrpsioServiceEndpoint:              getGrpsioService,
 		UpdateGrpsioServiceEndpoint:           updateGrpsioService,
 		DeleteGrpsioServiceEndpoint:           deleteGrpsioService,
+		GetGrpsioServiceSettingsEndpoint:      getGrpsioServiceSettings,
+		UpdateGrpsioServiceSettingsEndpoint:   updateGrpsioServiceSettings,
 		CreateGrpsioMailingListEndpoint:       createGrpsioMailingList,
 		GetGrpsioMailingListEndpoint:          getGrpsioMailingList,
 		UpdateGrpsioMailingListEndpoint:       updateGrpsioMailingList,
@@ -142,6 +146,41 @@ func (c *Client) UpdateGrpsioService(ctx context.Context, p *UpdateGrpsioService
 func (c *Client) DeleteGrpsioService(ctx context.Context, p *DeleteGrpsioServicePayload) (err error) {
 	_, err = c.DeleteGrpsioServiceEndpoint(ctx, p)
 	return
+}
+
+// GetGrpsioServiceSettings calls the "get-grpsio-service-settings" endpoint of
+// the "mailing-list" service.
+// GetGrpsioServiceSettings may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Service settings not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGrpsioServiceSettings(ctx context.Context, p *GetGrpsioServiceSettingsPayload) (res *GetGrpsioServiceSettingsResult, err error) {
+	var ires any
+	ires, err = c.GetGrpsioServiceSettingsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GetGrpsioServiceSettingsResult), nil
+}
+
+// UpdateGrpsioServiceSettings calls the "update-grpsio-service-settings"
+// endpoint of the "mailing-list" service.
+// UpdateGrpsioServiceSettings may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Service settings not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateGrpsioServiceSettings(ctx context.Context, p *UpdateGrpsioServiceSettingsPayload) (res *GrpsIoServiceSettings, err error) {
+	var ires any
+	ires, err = c.UpdateGrpsioServiceSettingsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GrpsIoServiceSettings), nil
 }
 
 // CreateGrpsioMailingList calls the "create-grpsio-mailing-list" endpoint of

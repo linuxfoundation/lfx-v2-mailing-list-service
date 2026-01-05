@@ -32,4 +32,7 @@ type GrpsIOServiceWriter interface {
 
 	// UniqueProjectGroupID validates that the group_id is unique within the project for shared services
 	UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error)
+
+	// UpdateGrpsIOServiceSettings updates service settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error)
 }

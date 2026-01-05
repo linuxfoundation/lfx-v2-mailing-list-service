@@ -187,6 +187,72 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	dsl.Method("get-grpsio-service-settings", func() {
+		dsl.Description("Get GroupsIO service settings (writers and auditors)")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			GrpsIOServiceUIDAttribute()
+		})
+		dsl.Result(func() {
+			dsl.Attribute("service_settings", GrpsIOServiceSettings)
+			ETagAttribute()
+			dsl.Required("service_settings")
+		})
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Service settings not found")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.GET("/groupsio/services/{uid}/settings")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusOK, func() {
+				dsl.Body("service_settings")
+				dsl.Header("etag:ETag")
+			})
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	dsl.Method("update-grpsio-service-settings", func() {
+		dsl.Description("Update GroupsIO service settings (writers and auditors)")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			VersionAttribute()
+			IfMatchAttribute()
+			GrpsIOServiceUIDAttribute()
+			ServiceWritersAttribute()
+			ServiceAuditorsAttribute()
+			dsl.Required("version", "uid")
+		})
+		dsl.Result(GrpsIOServiceSettings)
+		dsl.Error("BadRequest", BadRequestError, "Bad request")
+		dsl.Error("NotFound", NotFoundError, "Service settings not found")
+		dsl.Error("Conflict", ConflictError, "Conflict - ETag mismatch")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.PUT("/groupsio/services/{uid}/settings")
+			dsl.Param("version:v")
+			dsl.Param("uid")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Header("if_match:If-Match")
+			dsl.Response(dsl.StatusOK)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("Conflict", dsl.StatusConflict)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
 	// Mailing List Management endpoints
 	dsl.Method("create-grpsio-mailing-list", func() {
 		dsl.Description("Create GroupsIO mailing list/subgroup with comprehensive validation")

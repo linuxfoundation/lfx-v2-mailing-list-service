@@ -23,6 +23,8 @@ type Endpoints struct {
 	GetGrpsioService              goa.Endpoint
 	UpdateGrpsioService           goa.Endpoint
 	DeleteGrpsioService           goa.Endpoint
+	GetGrpsioServiceSettings      goa.Endpoint
+	UpdateGrpsioServiceSettings   goa.Endpoint
 	CreateGrpsioMailingList       goa.Endpoint
 	GetGrpsioMailingList          goa.Endpoint
 	UpdateGrpsioMailingList       goa.Endpoint
@@ -45,6 +47,8 @@ func NewEndpoints(s Service) *Endpoints {
 		GetGrpsioService:              NewGetGrpsioServiceEndpoint(s, a.JWTAuth),
 		UpdateGrpsioService:           NewUpdateGrpsioServiceEndpoint(s, a.JWTAuth),
 		DeleteGrpsioService:           NewDeleteGrpsioServiceEndpoint(s, a.JWTAuth),
+		GetGrpsioServiceSettings:      NewGetGrpsioServiceSettingsEndpoint(s, a.JWTAuth),
+		UpdateGrpsioServiceSettings:   NewUpdateGrpsioServiceSettingsEndpoint(s, a.JWTAuth),
 		CreateGrpsioMailingList:       NewCreateGrpsioMailingListEndpoint(s, a.JWTAuth),
 		GetGrpsioMailingList:          NewGetGrpsioMailingListEndpoint(s, a.JWTAuth),
 		UpdateGrpsioMailingList:       NewUpdateGrpsioMailingListEndpoint(s, a.JWTAuth),
@@ -65,6 +69,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetGrpsioService = m(e.GetGrpsioService)
 	e.UpdateGrpsioService = m(e.UpdateGrpsioService)
 	e.DeleteGrpsioService = m(e.DeleteGrpsioService)
+	e.GetGrpsioServiceSettings = m(e.GetGrpsioServiceSettings)
+	e.UpdateGrpsioServiceSettings = m(e.UpdateGrpsioServiceSettings)
 	e.CreateGrpsioMailingList = m(e.CreateGrpsioMailingList)
 	e.GetGrpsioMailingList = m(e.GetGrpsioMailingList)
 	e.UpdateGrpsioMailingList = m(e.UpdateGrpsioMailingList)
@@ -181,6 +187,52 @@ func NewDeleteGrpsioServiceEndpoint(s Service, authJWTFn security.AuthJWTFunc) g
 			return nil, err
 		}
 		return nil, s.DeleteGrpsioService(ctx, p)
+	}
+}
+
+// NewGetGrpsioServiceSettingsEndpoint returns an endpoint function that calls
+// the method "get-grpsio-service-settings" of service "mailing-list".
+func NewGetGrpsioServiceSettingsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGrpsioServiceSettingsPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGrpsioServiceSettings(ctx, p)
+	}
+}
+
+// NewUpdateGrpsioServiceSettingsEndpoint returns an endpoint function that
+// calls the method "update-grpsio-service-settings" of service "mailing-list".
+func NewUpdateGrpsioServiceSettingsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*UpdateGrpsioServiceSettingsPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.UpdateGrpsioServiceSettings(ctx, p)
 	}
 }
 

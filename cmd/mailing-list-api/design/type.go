@@ -7,6 +7,19 @@ import (
 	"goa.design/goa/v3/dsl"
 )
 
+// UserInfo represents user information including profile details.
+var UserInfo = dsl.Type("UserInfo", func() {
+	dsl.Description("User information including profile details.")
+	dsl.Attribute("name", dsl.String, "The full name of the user")
+	dsl.Attribute("email", dsl.String, "The email address of the user", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("username", dsl.String, "The username/LFID of the user")
+	dsl.Attribute("avatar", dsl.String, "The avatar URL of the user", func() {
+		dsl.Format(dsl.FormatURI)
+	})
+})
+
 // GrpsIOServiceBaseAttributes is the DSL attributes for a GroupsIO service base.
 func GrpsIOServiceBaseAttributes() {
 	dsl.Attribute("type", dsl.String, "Service type", func() {
@@ -60,6 +73,25 @@ func GrpsIOServiceBaseAttributes() {
 	dsl.Required("type", "project_uid")
 }
 
+// GrpsIOServiceSettingsAttributes defines attributes for service settings (user management).
+func GrpsIOServiceSettingsAttributes() {
+	GrpsIOServiceUIDAttribute()
+	ServiceWritersAttribute()
+	ServiceAuditorsAttribute()
+	LastReviewedAtAttribute()
+	LastReviewedByAttribute()
+	LastAuditedByAttribute()
+	LastAuditedTimeAttribute()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+}
+
+// GrpsIOServiceSettings is the DSL type for service settings.
+var GrpsIOServiceSettings = dsl.Type("grps-io-service-settings", func() {
+	dsl.Description("A representation of GroupsIO service settings for user management.")
+	GrpsIOServiceSettingsAttributes()
+})
+
 // GrpsIOServiceWithReadonlyAttributes is the DSL type for a GroupsIO service with readonly attributes.
 var GrpsIOServiceWithReadonlyAttributes = dsl.Type("grps-io-service-with-readonly-attributes", func() {
 	dsl.Description("A representation of GroupsIO services with readonly attributes.")
@@ -69,12 +101,8 @@ var GrpsIOServiceWithReadonlyAttributes = dsl.Type("grps-io-service-with-readonl
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	LastReviewedAtAttribute()
-	LastReviewedByAttribute()
-	LastAuditedByAttribute()
-	LastAuditedTimeAttribute()
-	WritersAttribute()
-	AuditorsAttribute()
+	ServiceWritersAttribute()
+	ServiceAuditorsAttribute()
 })
 
 // GrpsIOServiceUIDAttribute is the DSL attribute for service UID.
@@ -94,12 +122,8 @@ var GrpsIOServiceFull = dsl.Type("grps-io-service-full", func() {
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	LastReviewedAtAttribute()
-	LastReviewedByAttribute()
-	LastAuditedByAttribute()
-	LastAuditedTimeAttribute()
-	WritersAttribute()
-	AuditorsAttribute()
+	ServiceWritersAttribute()
+	ServiceAuditorsAttribute()
 })
 
 // BearerTokenAttribute is the DSL attribute for bearer token.
@@ -141,18 +165,28 @@ func ProjectSlugAttribute() {
 	})
 }
 
-// WritersAttribute is the DSL attribute for service writers.
+// WritersAttribute is the DSL attribute for service writers (string array - legacy).
 func WritersAttribute() {
 	dsl.Attribute("writers", dsl.ArrayOf(dsl.String), "Manager user IDs who can edit/modify this service", func() {
 		dsl.Example([]string{"manager_user_id1", "manager_user_id2"})
 	})
 }
 
-// AuditorsAttribute is the DSL attribute for service auditors.
+// AuditorsAttribute is the DSL attribute for service auditors (string array - legacy).
 func AuditorsAttribute() {
 	dsl.Attribute("auditors", dsl.ArrayOf(dsl.String), "Auditor user IDs who can audit this service", func() {
 		dsl.Example([]string{"auditor_user_id1", "auditor_user_id2"})
 	})
+}
+
+// ServiceWritersAttribute is the DSL attribute for service writers (UserInfo array).
+func ServiceWritersAttribute() {
+	dsl.Attribute("writers", dsl.ArrayOf(UserInfo), "Manager users who can edit/modify this service")
+}
+
+// ServiceAuditorsAttribute is the DSL attribute for service auditors (UserInfo array).
+func ServiceAuditorsAttribute() {
+	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this service")
 }
 
 // LastAuditedByAttribute is the DSL attribute for last audited by user.

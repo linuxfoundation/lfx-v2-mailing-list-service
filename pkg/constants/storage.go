@@ -7,6 +7,9 @@ const (
 	// KVBucketNameGroupsIOServices is the name of the KV bucket for services.
 	KVBucketNameGroupsIOServices = "groupsio-services"
 
+	// KVBucketNameGroupsIOServiceSettings is the name of the KV bucket for service settings.
+	KVBucketNameGroupsIOServiceSettings = "groupsio-service-settings"
+
 	// KVBucketNameGroupsIOMailingLists is the name of the KV bucket for mailing lists.
 	KVBucketNameGroupsIOMailingLists = "groupsio-mailing-lists"
 

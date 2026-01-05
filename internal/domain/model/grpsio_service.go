@@ -19,6 +19,56 @@ import (
 // DefaultGroupsIODomain is the default domain for Groups.io API calls
 const DefaultGroupsIODomain = "groups.io"
 
+// UserInfo represents user information including profile details.
+type UserInfo struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+}
+
+// GrpsIOServiceSettings represents the settings for a GroupsIO service (user management).
+type GrpsIOServiceSettings struct {
+	UID             string     `json:"uid"`
+	Writers         []UserInfo `json:"writers"`
+	Auditors        []UserInfo `json:"auditors"`
+	LastReviewedAt  *string    `json:"last_reviewed_at,omitempty"`
+	LastReviewedBy  *string    `json:"last_reviewed_by,omitempty"`
+	LastAuditedBy   *string    `json:"last_audited_by,omitempty"`
+	LastAuditedTime *string    `json:"last_audited_time,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// Tags generates a consistent set of tags for the GrpsIO service settings
+func (s *GrpsIOServiceSettings) Tags() []string {
+	var tags []string
+
+	if s == nil {
+		return nil
+	}
+
+	if s.UID != "" {
+		tags = append(tags, s.UID)
+		tag := fmt.Sprintf("service_uid:%s", s.UID)
+		tags = append(tags, tag)
+	}
+
+	return tags
+}
+
+// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
+// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
+func (s *GrpsIOServiceSettings) ValidateLastReviewedAt() error {
+	return utils.ValidateRFC3339Ptr(s.LastReviewedAt)
+}
+
+// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
+// Returns nil if the field is nil or empty, or the parsed time if valid.
+func (s *GrpsIOServiceSettings) GetLastReviewedAtTime() (*time.Time, error) {
+	return utils.ParseTimestampPtr(s.LastReviewedAt)
+}
+
 // GrpsIOService represents a GroupsIO service entity
 type GrpsIOService struct {
 	Type             string    `json:"type"`
@@ -38,10 +88,6 @@ type GrpsIOService struct {
 	Public           bool      `json:"public"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
-	LastReviewedAt   *string   `json:"last_reviewed_at,omitempty"`
-	LastReviewedBy   *string   `json:"last_reviewed_by,omitempty"`
-	Writers          []string  `json:"writers"`
-	Auditors         []string  `json:"auditors"`
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
@@ -110,18 +156,6 @@ func (s *GrpsIOService) Tags() []string {
 	}
 
 	return tags
-}
-
-// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
-// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
-func (s *GrpsIOService) ValidateLastReviewedAt() error {
-	return utils.ValidateRFC3339Ptr(s.LastReviewedAt)
-}
-
-// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
-// Returns nil if the field is nil or empty, or the parsed time if valid.
-func (s *GrpsIOService) GetLastReviewedAtTime() (*time.Time, error) {
-	return utils.ParseTimestampPtr(s.LastReviewedAt)
 }
 
 // GetDomain returns the appropriate domain for Groups.io API calls

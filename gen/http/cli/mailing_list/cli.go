@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
+	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|get-grpsio-service-settings|update-grpsio-service-settings|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
 `
 }
 
@@ -71,6 +71,18 @@ func ParseEndpoint(
 		mailingListDeleteGrpsioServiceVersionFlag     = mailingListDeleteGrpsioServiceFlags.String("version", "", "")
 		mailingListDeleteGrpsioServiceBearerTokenFlag = mailingListDeleteGrpsioServiceFlags.String("bearer-token", "", "")
 		mailingListDeleteGrpsioServiceIfMatchFlag     = mailingListDeleteGrpsioServiceFlags.String("if-match", "", "")
+
+		mailingListGetGrpsioServiceSettingsFlags           = flag.NewFlagSet("get-grpsio-service-settings", flag.ExitOnError)
+		mailingListGetGrpsioServiceSettingsUIDFlag         = mailingListGetGrpsioServiceSettingsFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
+		mailingListGetGrpsioServiceSettingsVersionFlag     = mailingListGetGrpsioServiceSettingsFlags.String("version", "", "")
+		mailingListGetGrpsioServiceSettingsBearerTokenFlag = mailingListGetGrpsioServiceSettingsFlags.String("bearer-token", "", "")
+
+		mailingListUpdateGrpsioServiceSettingsFlags           = flag.NewFlagSet("update-grpsio-service-settings", flag.ExitOnError)
+		mailingListUpdateGrpsioServiceSettingsBodyFlag        = mailingListUpdateGrpsioServiceSettingsFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGrpsioServiceSettingsUIDFlag         = mailingListUpdateGrpsioServiceSettingsFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
+		mailingListUpdateGrpsioServiceSettingsVersionFlag     = mailingListUpdateGrpsioServiceSettingsFlags.String("version", "REQUIRED", "")
+		mailingListUpdateGrpsioServiceSettingsBearerTokenFlag = mailingListUpdateGrpsioServiceSettingsFlags.String("bearer-token", "", "")
+		mailingListUpdateGrpsioServiceSettingsIfMatchFlag     = mailingListUpdateGrpsioServiceSettingsFlags.String("if-match", "", "")
 
 		mailingListCreateGrpsioMailingListFlags           = flag.NewFlagSet("create-grpsio-mailing-list", flag.ExitOnError)
 		mailingListCreateGrpsioMailingListBodyFlag        = mailingListCreateGrpsioMailingListFlags.String("body", "REQUIRED", "")
@@ -133,6 +145,8 @@ func ParseEndpoint(
 	mailingListGetGrpsioServiceFlags.Usage = mailingListGetGrpsioServiceUsage
 	mailingListUpdateGrpsioServiceFlags.Usage = mailingListUpdateGrpsioServiceUsage
 	mailingListDeleteGrpsioServiceFlags.Usage = mailingListDeleteGrpsioServiceUsage
+	mailingListGetGrpsioServiceSettingsFlags.Usage = mailingListGetGrpsioServiceSettingsUsage
+	mailingListUpdateGrpsioServiceSettingsFlags.Usage = mailingListUpdateGrpsioServiceSettingsUsage
 	mailingListCreateGrpsioMailingListFlags.Usage = mailingListCreateGrpsioMailingListUsage
 	mailingListGetGrpsioMailingListFlags.Usage = mailingListGetGrpsioMailingListUsage
 	mailingListUpdateGrpsioMailingListFlags.Usage = mailingListUpdateGrpsioMailingListUsage
@@ -194,6 +208,12 @@ func ParseEndpoint(
 
 			case "delete-grpsio-service":
 				epf = mailingListDeleteGrpsioServiceFlags
+
+			case "get-grpsio-service-settings":
+				epf = mailingListGetGrpsioServiceSettingsFlags
+
+			case "update-grpsio-service-settings":
+				epf = mailingListUpdateGrpsioServiceSettingsFlags
 
 			case "create-grpsio-mailing-list":
 				epf = mailingListCreateGrpsioMailingListFlags
@@ -263,6 +283,12 @@ func ParseEndpoint(
 			case "delete-grpsio-service":
 				endpoint = c.DeleteGrpsioService()
 				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
+			case "get-grpsio-service-settings":
+				endpoint = c.GetGrpsioServiceSettings()
+				data, err = mailinglistc.BuildGetGrpsioServiceSettingsPayload(*mailingListGetGrpsioServiceSettingsUIDFlag, *mailingListGetGrpsioServiceSettingsVersionFlag, *mailingListGetGrpsioServiceSettingsBearerTokenFlag)
+			case "update-grpsio-service-settings":
+				endpoint = c.UpdateGrpsioServiceSettings()
+				data, err = mailinglistc.BuildUpdateGrpsioServiceSettingsPayload(*mailingListUpdateGrpsioServiceSettingsBodyFlag, *mailingListUpdateGrpsioServiceSettingsUIDFlag, *mailingListUpdateGrpsioServiceSettingsVersionFlag, *mailingListUpdateGrpsioServiceSettingsBearerTokenFlag, *mailingListUpdateGrpsioServiceSettingsIfMatchFlag)
 			case "create-grpsio-mailing-list":
 				endpoint = c.CreateGrpsioMailingList()
 				data, err = mailinglistc.BuildCreateGrpsioMailingListPayload(*mailingListCreateGrpsioMailingListBodyFlag, *mailingListCreateGrpsioMailingListVersionFlag, *mailingListCreateGrpsioMailingListBearerTokenFlag)
@@ -314,6 +340,8 @@ COMMAND:
     get-grpsio-service: Get groupsIO service details by ID
     update-grpsio-service: Update GroupsIO service
     delete-grpsio-service: Delete GroupsIO service
+    get-grpsio-service-settings: Get GroupsIO service settings (writers and auditors)
+    update-grpsio-service-settings: Update GroupsIO service settings (writers and auditors)
     create-grpsio-mailing-list: Create GroupsIO mailing list/subgroup with comprehensive validation
     get-grpsio-mailing-list: Get GroupsIO mailing list details by UID
     update-grpsio-mailing-list: Update GroupsIO mailing list
@@ -449,6 +477,87 @@ Example:
 `, os.Args[0])
 }
 
+func mailingListGetGrpsioServiceSettingsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-service-settings -uid STRING -version STRING -bearer-token STRING
+
+Get GroupsIO service settings (writers and auditors)
+    -uid STRING: Service UID -- unique identifier for the service
+    -version STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-grpsio-service-settings --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListUpdateGrpsioServiceSettingsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service-settings -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+
+Update GroupsIO service settings (writers and auditors)
+    -body JSON: 
+    -uid STRING: Service UID -- unique identifier for the service
+    -version STRING: 
+    -bearer-token STRING: 
+    -if-match STRING: 
+
+Example:
+    %[1]s mailing-list update-grpsio-service-settings --body '{
+      "auditors": [
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         }
+      ],
+      "writers": [
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         },
+         {
+            "avatar": "http://fay.net/zachary_yundt",
+            "email": "enola@armstrong.org",
+            "name": "Numquam deserunt.",
+            "username": "Qui ex magnam sint."
+         }
+      ]
+   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+`, os.Args[0])
+}
+
 func mailingListCreateGrpsioMailingListUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-mailing-list -body JSON -version STRING -bearer-token STRING
 
@@ -470,7 +579,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "name": "Ut rerum quam repellat eum.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -478,7 +587,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "name": "Ut rerum quam repellat eum.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -533,7 +642,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "name": "Ut rerum quam repellat eum.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -541,7 +650,15 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Odit quis sed nesciunt incidunt quia ut.",
+            "name": "Ut rerum quam repellat eum.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Ut rerum quam repellat eum.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -585,7 +702,7 @@ Create a new member for a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list create-grpsio-mailing-list-member --body '{
-      "delivery_mode": "digest",
+      "delivery_mode": "none",
       "email": "john.doe@example.com",
       "first_name": "John",
       "job_title": "Software Engineer",
@@ -593,7 +710,7 @@ Example:
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
       "member_type": "direct",
-      "mod_status": "none",
+      "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
@@ -627,11 +744,11 @@ Update a member of a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "normal",
+      "delivery_mode": "digest",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "moderator",
+      "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -663,10 +780,10 @@ Handle GroupsIO webhook events for subgroup and member changes
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
       "action": "created_subgroup",
-      "extra": "Ut id laboriosam aut aut eos sequi.",
-      "extra_id": 2981127877810673139,
-      "group": "Hic repellendus.",
-      "member_info": "Adipisci quia laudantium qui aut sunt."
-   }' --signature "Et commodi quo."
+      "extra": "Eos illum exercitationem dolorum nobis.",
+      "extra_id": 9070427938889905950,
+      "group": "Maiores quibusdam.",
+      "member_info": "Consequatur qui quia id."
+   }' --signature "Ad dolorem sit molestias aliquam sit."
 `, os.Args[0])
 }

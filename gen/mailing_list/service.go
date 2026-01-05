@@ -28,6 +28,10 @@ type Service interface {
 	UpdateGrpsioService(context.Context, *UpdateGrpsioServicePayload) (res *GrpsIoServiceWithReadonlyAttributes, err error)
 	// Delete GroupsIO service
 	DeleteGrpsioService(context.Context, *DeleteGrpsioServicePayload) (err error)
+	// Get GroupsIO service settings (writers and auditors)
+	GetGrpsioServiceSettings(context.Context, *GetGrpsioServiceSettingsPayload) (res *GetGrpsioServiceSettingsResult, err error)
+	// Update GroupsIO service settings (writers and auditors)
+	UpdateGrpsioServiceSettings(context.Context, *UpdateGrpsioServiceSettingsPayload) (res *GrpsIoServiceSettings, err error)
 	// Create GroupsIO mailing list/subgroup with comprehensive validation
 	CreateGrpsioMailingList(context.Context, *CreateGrpsioMailingListPayload) (res *GrpsIoMailingListFull, err error)
 	// Get GroupsIO mailing list details by UID
@@ -68,7 +72,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [15]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member", "groupsio-webhook"}
+var MethodNames = [17]string{"livez", "readyz", "create-grpsio-service", "get-grpsio-service", "update-grpsio-service", "delete-grpsio-service", "get-grpsio-service-settings", "update-grpsio-service-settings", "create-grpsio-mailing-list", "get-grpsio-mailing-list", "update-grpsio-mailing-list", "delete-grpsio-mailing-list", "create-grpsio-mailing-list-member", "get-grpsio-mailing-list-member", "update-grpsio-mailing-list-member", "delete-grpsio-mailing-list-member", "groupsio-webhook"}
 
 // Committee associated with a mailing list
 type Committee struct {
@@ -283,6 +287,25 @@ type GetGrpsioServiceResult struct {
 	Etag *string
 	// Version of the API
 	Version string
+}
+
+// GetGrpsioServiceSettingsPayload is the payload type of the mailing-list
+// service get-grpsio-service-settings method.
+type GetGrpsioServiceSettingsPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version *string
+	// Service UID -- unique identifier for the service
+	UID *string
+}
+
+// GetGrpsioServiceSettingsResult is the result type of the mailing-list
+// service get-grpsio-service-settings method.
+type GetGrpsioServiceSettingsResult struct {
+	ServiceSettings *GrpsIoServiceSettings
+	// ETag header value
+	Etag *string
 }
 
 // GroupsioWebhookPayload is the payload type of the mailing-list service
@@ -512,6 +535,21 @@ type GrpsIoServiceFull struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
+	// Manager users who can edit/modify this service
+	Writers []*UserInfo
+	// Auditor users who can audit this service
+	Auditors []*UserInfo
+}
+
+// GrpsIoServiceSettings is the result type of the mailing-list service
+// update-grpsio-service-settings method.
+type GrpsIoServiceSettings struct {
+	// Service UID -- unique identifier for the service
+	UID *string
+	// Manager users who can edit/modify this service
+	Writers []*UserInfo
+	// Auditor users who can audit this service
+	Auditors []*UserInfo
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string
 	// The user ID who last reviewed this service
@@ -520,10 +558,10 @@ type GrpsIoServiceFull struct {
 	LastAuditedBy *string
 	// The timestamp when the service was last audited
 	LastAuditedTime *string
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
+	// The timestamp when the service was created (read-only)
+	CreatedAt *string
+	// The timestamp when the service was last updated (read-only)
+	UpdatedAt *string
 }
 
 // GrpsIoServiceWithReadonlyAttributes is the result type of the mailing-list
@@ -562,18 +600,10 @@ type GrpsIoServiceWithReadonlyAttributes struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
-	// The timestamp when the service was last reviewed in RFC3339 format
-	LastReviewedAt *string
-	// The user ID who last reviewed this service
-	LastReviewedBy *string
-	// The user ID who last audited the service
-	LastAuditedBy *string
-	// The timestamp when the service was last audited
-	LastAuditedTime *string
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
+	// Manager users who can edit/modify this service
+	Writers []*UserInfo
+	// Auditor users who can audit this service
+	Auditors []*UserInfo
 }
 
 // UpdateGrpsioMailingListMemberPayload is the payload type of the mailing-list
@@ -681,6 +711,35 @@ type UpdateGrpsioServicePayload struct {
 	Writers []string
 	// Auditor user IDs who can audit this service
 	Auditors []string
+}
+
+// UpdateGrpsioServiceSettingsPayload is the payload type of the mailing-list
+// service update-grpsio-service-settings method.
+type UpdateGrpsioServiceSettingsPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Version of the API
+	Version string
+	// If-Match header value for conditional requests
+	IfMatch *string
+	// Service UID -- unique identifier for the service
+	UID string
+	// Manager users who can edit/modify this service
+	Writers []*UserInfo
+	// Auditor users who can audit this service
+	Auditors []*UserInfo
+}
+
+// User information including profile details.
+type UserInfo struct {
+	// The full name of the user
+	Name *string
+	// The email address of the user
+	Email *string
+	// The username/LFID of the user
+	Username *string
+	// The avatar URL of the user
+	Avatar *string
 }
 
 type BadRequestError struct {
