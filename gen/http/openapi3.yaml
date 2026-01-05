@@ -34,6 +34,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
                         example:
+                            allow_attachments: true
                             audience_access: public
                             auditors:
                                 - auditor_user_id1
@@ -67,6 +68,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListFull'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 auditors:
                                     - auditor_user_id1
@@ -270,6 +272,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 auditors:
                                     - auditor_user_id1
@@ -380,6 +383,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
                         example:
+                            allow_attachments: true
                             audience_access: public
                             auditors:
                                 - auditor_user_id1
@@ -413,6 +417,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 auditors:
                                     - auditor_user_id1
@@ -1651,6 +1656,10 @@ components:
         CreateGrpsioMailingListRequestBody:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -1747,6 +1756,7 @@ components:
                         - manager_user_id1
                         - manager_user_id2
             example:
+                allow_attachments: true
                 audience_access: public
                 auditors:
                     - auditor_user_id1
@@ -1969,6 +1979,10 @@ components:
         GrpsIoMailingListFull:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -2100,6 +2114,7 @@ components:
                         - manager_user_id2
             description: A complete representation of GroupsIO mailing lists with all attributes including access control and audit trail.
             example:
+                allow_attachments: true
                 audience_access: public
                 auditors:
                     - auditor_user_id1
@@ -2141,6 +2156,10 @@ components:
         GrpsIoMailingListWithReadonlyAttributes:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -2263,6 +2282,7 @@ components:
                         - manager_user_id2
             description: A representation of GroupsIO mailing lists with readonly attributes.
             example:
+                allow_attachments: true
                 audience_access: public
                 auditors:
                     - auditor_user_id1

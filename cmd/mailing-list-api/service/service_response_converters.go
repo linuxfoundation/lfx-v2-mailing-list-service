@@ -111,21 +111,22 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 	}
 
 	result := &mailinglistservice.GrpsIoMailingListFull{
-		UID:            &ml.UID,
-		GroupName:      &ml.GroupName,
-		Public:         ml.Public,
-		AudienceAccess: ml.AudienceAccess,
-		Type:           &ml.Type,
-		Committees:     convertCommitteesToResponse(ml.Committees),
-		Description:    &ml.Description,
-		Title:          &ml.Title,
-		SubjectTag:     stringToPointer(ml.SubjectTag),
-		ServiceUID:     &ml.ServiceUID,
-		ProjectUID:     &ml.ProjectUID,  // This is inherited from parent in orchestrator
-		ProjectName:    &ml.ProjectName, // Inherited from parent service
-		ProjectSlug:    &ml.ProjectSlug, // Inherited from parent service
-		Writers:        ml.Writers,
-		Auditors:       ml.Auditors,
+		UID:              &ml.UID,
+		GroupName:        &ml.GroupName,
+		Public:           ml.Public,
+		AudienceAccess:   ml.AudienceAccess,
+		Type:             &ml.Type,
+		Committees:       convertCommitteesToResponse(ml.Committees),
+		Description:      &ml.Description,
+		Title:            &ml.Title,
+		SubjectTag:       stringToPointer(ml.SubjectTag),
+		AllowAttachments: &ml.AllowAttachments,
+		ServiceUID:       &ml.ServiceUID,
+		ProjectUID:       &ml.ProjectUID,  // This is inherited from parent in orchestrator
+		ProjectName:      &ml.ProjectName, // Inherited from parent service
+		ProjectSlug:      &ml.ProjectSlug, // Inherited from parent service
+		Writers:          ml.Writers,
+		Auditors:         ml.Auditors,
 	}
 
 	// Handle timestamps
@@ -169,21 +170,22 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(ma
 	}
 
 	response := &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{
-		UID:            &mailingList.UID,
-		GroupName:      &mailingList.GroupName,
-		Public:         mailingList.Public,
-		AudienceAccess: mailingList.AudienceAccess,
-		Type:           &mailingList.Type,
-		Committees:     convertCommitteesToResponse(mailingList.Committees),
-		Description:    &mailingList.Description,
-		Title:          &mailingList.Title,
-		SubjectTag:     stringToPointer(mailingList.SubjectTag),
-		ServiceUID:     &mailingList.ServiceUID,
-		ProjectUID:     stringToPointer(mailingList.ProjectUID),
-		ProjectName:    stringToPointer(mailingList.ProjectName),
-		ProjectSlug:    stringToPointer(mailingList.ProjectSlug),
-		Writers:        mailingList.Writers,
-		Auditors:       mailingList.Auditors,
+		UID:              &mailingList.UID,
+		GroupName:        &mailingList.GroupName,
+		Public:           mailingList.Public,
+		AudienceAccess:   mailingList.AudienceAccess,
+		Type:             &mailingList.Type,
+		Committees:       convertCommitteesToResponse(mailingList.Committees),
+		Description:      &mailingList.Description,
+		Title:            &mailingList.Title,
+		SubjectTag:       stringToPointer(mailingList.SubjectTag),
+		AllowAttachments: &mailingList.AllowAttachments,
+		ServiceUID:       &mailingList.ServiceUID,
+		ProjectUID:       stringToPointer(mailingList.ProjectUID),
+		ProjectName:      stringToPointer(mailingList.ProjectName),
+		ProjectSlug:      stringToPointer(mailingList.ProjectSlug),
+		Writers:          mailingList.Writers,
+		Auditors:         mailingList.Auditors,
 	}
 
 	// Convert timestamps

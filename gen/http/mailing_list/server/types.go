@@ -103,6 +103,9 @@ type CreateGrpsioMailingListRequestBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// Manager user IDs who can edit/modify this service
@@ -131,6 +134,9 @@ type UpdateGrpsioMailingListRequestBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// Manager user IDs who can edit/modify this service
@@ -326,6 +332,9 @@ type CreateGrpsioMailingListResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -374,6 +383,9 @@ type UpdateGrpsioMailingListResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -1048,6 +1060,9 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -1279,22 +1294,23 @@ func NewUpdateGrpsioServiceResponseBody(res *mailinglist.GrpsIoServiceWithReadon
 // "mailing-list" service.
 func NewCreateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListFull) *CreateGrpsioMailingListResponseBody {
 	body := &CreateGrpsioMailingListResponseBody{
-		UID:            res.UID,
-		GroupName:      res.GroupName,
-		Public:         res.Public,
-		Type:           res.Type,
-		AudienceAccess: res.AudienceAccess,
-		Description:    res.Description,
-		Title:          res.Title,
-		SubjectTag:     res.SubjectTag,
-		ServiceUID:     res.ServiceUID,
-		ProjectUID:     res.ProjectUID,
-		ProjectName:    res.ProjectName,
-		ProjectSlug:    res.ProjectSlug,
-		CreatedAt:      res.CreatedAt,
-		UpdatedAt:      res.UpdatedAt,
-		LastReviewedAt: res.LastReviewedAt,
-		LastReviewedBy: res.LastReviewedBy,
+		UID:              res.UID,
+		GroupName:        res.GroupName,
+		Public:           res.Public,
+		Type:             res.Type,
+		AudienceAccess:   res.AudienceAccess,
+		Description:      res.Description,
+		Title:            res.Title,
+		SubjectTag:       res.SubjectTag,
+		AllowAttachments: res.AllowAttachments,
+		ServiceUID:       res.ServiceUID,
+		ProjectUID:       res.ProjectUID,
+		ProjectName:      res.ProjectName,
+		ProjectSlug:      res.ProjectSlug,
+		CreatedAt:        res.CreatedAt,
+		UpdatedAt:        res.UpdatedAt,
+		LastReviewedAt:   res.LastReviewedAt,
+		LastReviewedBy:   res.LastReviewedBy,
 	}
 	{
 		var zero bool
@@ -1334,20 +1350,21 @@ func NewCreateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListFu
 // service.
 func NewGetGrpsioMailingListResponseBody(res *mailinglist.GetGrpsioMailingListResult) *GetGrpsioMailingListResponseBody {
 	body := &GetGrpsioMailingListResponseBody{
-		UID:            res.MailingList.UID,
-		GroupName:      res.MailingList.GroupName,
-		Public:         res.MailingList.Public,
-		Type:           res.MailingList.Type,
-		AudienceAccess: res.MailingList.AudienceAccess,
-		Description:    res.MailingList.Description,
-		Title:          res.MailingList.Title,
-		SubjectTag:     res.MailingList.SubjectTag,
-		ServiceUID:     res.MailingList.ServiceUID,
-		ProjectUID:     res.MailingList.ProjectUID,
-		ProjectName:    res.MailingList.ProjectName,
-		ProjectSlug:    res.MailingList.ProjectSlug,
-		CreatedAt:      res.MailingList.CreatedAt,
-		UpdatedAt:      res.MailingList.UpdatedAt,
+		UID:              res.MailingList.UID,
+		GroupName:        res.MailingList.GroupName,
+		Public:           res.MailingList.Public,
+		Type:             res.MailingList.Type,
+		AudienceAccess:   res.MailingList.AudienceAccess,
+		Description:      res.MailingList.Description,
+		Title:            res.MailingList.Title,
+		SubjectTag:       res.MailingList.SubjectTag,
+		AllowAttachments: res.MailingList.AllowAttachments,
+		ServiceUID:       res.MailingList.ServiceUID,
+		ProjectUID:       res.MailingList.ProjectUID,
+		ProjectName:      res.MailingList.ProjectName,
+		ProjectSlug:      res.MailingList.ProjectSlug,
+		CreatedAt:        res.MailingList.CreatedAt,
+		UpdatedAt:        res.MailingList.UpdatedAt,
 	}
 	{
 		var zero bool
@@ -1387,20 +1404,21 @@ func NewGetGrpsioMailingListResponseBody(res *mailinglist.GetGrpsioMailingListRe
 // "mailing-list" service.
 func NewUpdateGrpsioMailingListResponseBody(res *mailinglist.GrpsIoMailingListWithReadonlyAttributes) *UpdateGrpsioMailingListResponseBody {
 	body := &UpdateGrpsioMailingListResponseBody{
-		UID:            res.UID,
-		GroupName:      res.GroupName,
-		Public:         res.Public,
-		Type:           res.Type,
-		AudienceAccess: res.AudienceAccess,
-		Description:    res.Description,
-		Title:          res.Title,
-		SubjectTag:     res.SubjectTag,
-		ServiceUID:     res.ServiceUID,
-		ProjectUID:     res.ProjectUID,
-		ProjectName:    res.ProjectName,
-		ProjectSlug:    res.ProjectSlug,
-		CreatedAt:      res.CreatedAt,
-		UpdatedAt:      res.UpdatedAt,
+		UID:              res.UID,
+		GroupName:        res.GroupName,
+		Public:           res.Public,
+		Type:             res.Type,
+		AudienceAccess:   res.AudienceAccess,
+		Description:      res.Description,
+		Title:            res.Title,
+		SubjectTag:       res.SubjectTag,
+		AllowAttachments: res.AllowAttachments,
+		ServiceUID:       res.ServiceUID,
+		ProjectUID:       res.ProjectUID,
+		ProjectName:      res.ProjectName,
+		ProjectSlug:      res.ProjectSlug,
+		CreatedAt:        res.CreatedAt,
+		UpdatedAt:        res.UpdatedAt,
 	}
 	{
 		var zero bool
@@ -2305,13 +2323,14 @@ func NewDeleteGrpsioServicePayload(uid string, version *string, bearerToken *str
 // create-grpsio-mailing-list endpoint payload.
 func NewCreateGrpsioMailingListPayload(body *CreateGrpsioMailingListRequestBody, version string, bearerToken *string) *mailinglist.CreateGrpsioMailingListPayload {
 	v := &mailinglist.CreateGrpsioMailingListPayload{
-		GroupName:   *body.GroupName,
-		Public:      *body.Public,
-		Type:        *body.Type,
-		Description: *body.Description,
-		Title:       *body.Title,
-		SubjectTag:  body.SubjectTag,
-		ServiceUID:  *body.ServiceUID,
+		GroupName:        *body.GroupName,
+		Public:           *body.Public,
+		Type:             *body.Type,
+		Description:      *body.Description,
+		Title:            *body.Title,
+		SubjectTag:       body.SubjectTag,
+		AllowAttachments: body.AllowAttachments,
+		ServiceUID:       *body.ServiceUID,
 	}
 	if body.AudienceAccess != nil {
 		v.AudienceAccess = *body.AudienceAccess
@@ -2358,13 +2377,14 @@ func NewGetGrpsioMailingListPayload(uid string, version string, bearerToken stri
 // update-grpsio-mailing-list endpoint payload.
 func NewUpdateGrpsioMailingListPayload(body *UpdateGrpsioMailingListRequestBody, uid string, version string, bearerToken *string, ifMatch *string) *mailinglist.UpdateGrpsioMailingListPayload {
 	v := &mailinglist.UpdateGrpsioMailingListPayload{
-		GroupName:   *body.GroupName,
-		Public:      *body.Public,
-		Type:        *body.Type,
-		Description: *body.Description,
-		Title:       *body.Title,
-		SubjectTag:  body.SubjectTag,
-		ServiceUID:  *body.ServiceUID,
+		GroupName:        *body.GroupName,
+		Public:           *body.Public,
+		Type:             *body.Type,
+		Description:      *body.Description,
+		Title:            *body.Title,
+		SubjectTag:       body.SubjectTag,
+		AllowAttachments: body.AllowAttachments,
+		ServiceUID:       *body.ServiceUID,
 	}
 	if body.AudienceAccess != nil {
 		v.AudienceAccess = *body.AudienceAccess

@@ -322,6 +322,7 @@ func (s *mailingListService) UpdateGrpsioMailingList(ctx context.Context, payloa
 	if payload.UID != nil {
 		domainMailingList.UID = *payload.UID
 	}
+	slog.InfoContext(ctx, "domain mailing list", "domain_mailing_list", domainMailingList)
 
 	// Execute use case
 	updatedMailingList, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOMailingList(ctx, *payload.UID, domainMailingList, expectedRevision)
