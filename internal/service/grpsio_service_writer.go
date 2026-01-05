@@ -158,9 +158,19 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		keys = append(keys, secondaryKeys...)
 	}
 
-	// Step 8: Publish messages (indexer and access control)
+	// Step 8: Fetch settings and publish messages (indexer and access control)
 	if sw.publisher != nil {
-		if err := sw.publishServiceMessages(ctx, createdService, model.ActionCreated); err != nil {
+		// Fetch settings for message publishing
+		settings, _, errSettings := sw.grpsIOReader.GetGrpsIOServiceSettings(ctx, createdService.UID)
+		if errSettings != nil {
+			slog.WarnContext(ctx, "failed to get service settings for message publishing",
+				"error", errSettings,
+				"service_uid", createdService.UID,
+			)
+			settings = nil // Continue without settings
+		}
+
+		if err := sw.publishServiceMessages(ctx, createdService, settings, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish messages", "error", err)
 			// Don't fail the operation on message failure, service creation succeeded
 		}
@@ -342,9 +352,19 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 	// Sync service updates to Groups.io
 	sw.syncServiceToGroupsIO(ctx, updatedService)
 
-	// Publish update messages
+	// Fetch settings and publish update messages
 	if sw.publisher != nil {
-		if err := sw.publishServiceMessages(ctx, updatedService, model.ActionUpdated); err != nil {
+		// Fetch settings for message publishing
+		settings, _, errSettings := sw.grpsIOReader.GetGrpsIOServiceSettings(ctx, updatedService.UID)
+		if errSettings != nil {
+			slog.WarnContext(ctx, "failed to get service settings for message publishing",
+				"error", errSettings,
+				"service_uid", updatedService.UID,
+			)
+			settings = nil // Continue without settings
+		}
+
+		if err := sw.publishServiceMessages(ctx, updatedService, settings, model.ActionUpdated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish update messages", "error", err)
 			// Don't fail the update on message publishing errors
 		}
@@ -353,6 +373,106 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 	// Mark update as successful for defer cleanup
 	updateSucceeded = true
 	return updatedService, revision, nil
+}
+
+// UpdateGrpsIOServiceSettings updates service settings and publishes indexer message
+func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "executing update service settings use case",
+		"service_uid", settings.UID,
+		"expected_revision", expectedRevision,
+	)
+
+	// Update timestamp
+	settings.UpdatedAt = time.Now()
+
+	// Update settings in storage
+	updatedSettings, revision, err := sw.grpsIOWriter.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update service settings",
+			"error", err,
+			"service_uid", settings.UID,
+			"expected_revision", expectedRevision,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "service settings updated successfully",
+		"service_uid", settings.UID,
+		"revision", revision,
+	)
+
+	// Publish settings indexer message
+	if sw.publisher != nil {
+		settingsIndexerMessage := &model.IndexerMessage{
+			Action: model.ActionUpdated,
+			Tags:   updatedSettings.Tags(),
+		}
+		builtMessage, errBuild := settingsIndexerMessage.Build(ctx, updatedSettings)
+		if errBuild != nil {
+			slog.ErrorContext(ctx, "failed to build settings indexer message",
+				"error", errBuild,
+				"service_uid", settings.UID,
+			)
+			// Don't fail the update on message building errors
+		} else {
+			if errPublish := sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSettingsSubject, builtMessage); errPublish != nil {
+				slog.ErrorContext(ctx, "failed to publish settings indexer message",
+					"error", errPublish,
+					"service_uid", settings.UID,
+				)
+				// Don't fail the update on message publishing errors
+			}
+		}
+
+		// Also publish updated access control message with new writers/auditors
+		service, _, errService := sw.grpsIOReader.GetGrpsIOService(ctx, settings.UID)
+		if errService != nil {
+			slog.WarnContext(ctx, "failed to get service for access control update",
+				"error", errService,
+				"service_uid", settings.UID,
+			)
+		} else {
+			// Build access control message using updated settings
+			relations := map[string][]string{}
+			if len(service.GlobalOwners) > 0 {
+				relations[constants.RelationOwner] = service.GlobalOwners
+			}
+			if len(updatedSettings.Writers) > 0 {
+				writers := make([]string, len(updatedSettings.Writers))
+				for i, w := range updatedSettings.Writers {
+					writers[i] = w.Username
+				}
+				relations[constants.RelationWriter] = writers
+			}
+			if len(updatedSettings.Auditors) > 0 {
+				auditors := make([]string, len(updatedSettings.Auditors))
+				for i, a := range updatedSettings.Auditors {
+					auditors[i] = a.Username
+				}
+				relations[constants.RelationAuditor] = auditors
+			}
+
+			accessMessage := &model.AccessMessage{
+				UID:        service.UID,
+				ObjectType: constants.ObjectTypeGroupsIOService,
+				Public:     service.Public,
+				Relations:  relations,
+				References: map[string][]string{
+					constants.RelationProject: {service.ProjectUID},
+				},
+			}
+
+			if errAccess := sw.publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMessage); errAccess != nil {
+				slog.ErrorContext(ctx, "failed to publish access control message",
+					"error", errAccess,
+					"service_uid", settings.UID,
+				)
+				// Don't fail the update on message publishing errors
+			}
+		}
+	}
+
+	return updatedSettings, revision, nil
 }
 
 // DeleteGrpsIOService deletes a service with message publishing
@@ -558,14 +678,14 @@ func (sw *grpsIOWriterOrchestrator) createServiceSecondaryIndices(ctx context.Co
 	return nil, nil
 }
 
-// publishServiceMessages publishes service-specific messages
-func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, service *model.GrpsIOService, action model.MessageAction) error {
+// publishServiceMessages publishes service and settings indexer messages, plus service access control message
+func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings, action model.MessageAction) error {
 	if sw.publisher == nil {
 		slog.WarnContext(ctx, "publisher not available, skipping service message publishing")
 		return nil
 	}
 
-	// Build indexer message
+	// Build service indexer message
 	indexerMessage := &model.IndexerMessage{
 		Action: action,
 		Tags:   service.Tags(),
@@ -575,16 +695,41 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 		return fmt.Errorf("failed to build service indexer message: %w", err)
 	}
 
-	// Build access control message
+	// Build settings indexer message if settings exist
+	var builtSettingsIndexerMessage *model.IndexerMessage
+	if settings != nil {
+		settingsIndexerMessage := &model.IndexerMessage{
+			Action: action,
+			Tags:   settings.Tags(),
+		}
+		var errSettings error
+		builtSettingsIndexerMessage, errSettings = settingsIndexerMessage.Build(ctx, settings)
+		if errSettings != nil {
+			return fmt.Errorf("failed to build settings indexer message: %w", errSettings)
+		}
+	}
+
+	// Build access control message using settings data
 	relations := map[string][]string{}
 	if len(service.GlobalOwners) > 0 {
 		relations[constants.RelationOwner] = service.GlobalOwners
 	}
-	if len(service.Writers) > 0 {
-		relations[constants.RelationWriter] = service.Writers
-	}
-	if len(service.Auditors) > 0 {
-		relations[constants.RelationAuditor] = service.Auditors
+	if settings != nil {
+		// Convert UserInfo arrays to string arrays using username for access control
+		if len(settings.Writers) > 0 {
+			writers := make([]string, len(settings.Writers))
+			for i, w := range settings.Writers {
+				writers[i] = w.Username
+			}
+			relations[constants.RelationWriter] = writers
+		}
+		if len(settings.Auditors) > 0 {
+			auditors := make([]string, len(settings.Auditors))
+			for i, a := range settings.Auditors {
+				auditors[i] = a.Username
+			}
+			relations[constants.RelationAuditor] = auditors
+		}
 	}
 
 	accessMessage := &model.AccessMessage{
@@ -605,6 +750,13 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 		func() error {
 			return sw.publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMessage)
 		},
+	}
+
+	// Add settings indexer message if available
+	if builtSettingsIndexerMessage != nil {
+		messages = append(messages, func() error {
+			return sw.publisher.Indexer(ctx, constants.IndexGroupsIOServiceSettingsSubject, builtSettingsIndexerMessage)
+		})
 	}
 
 	// Execute all messages concurrently

@@ -49,11 +49,6 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 		result.UpdatedAt = &updatedAt
 	}
 
-	result.Writers = service.Writers
-	result.Auditors = service.Auditors
-	result.LastReviewedAt = service.LastReviewedAt
-	result.LastReviewedBy = service.LastReviewedBy
-
 	return result
 }
 
@@ -95,11 +90,6 @@ func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(servic
 		updatedAt := service.UpdatedAt.Format(time.RFC3339)
 		result.UpdatedAt = &updatedAt
 	}
-
-	result.LastReviewedAt = service.LastReviewedAt
-	result.LastReviewedBy = service.LastReviewedBy
-	result.Writers = service.Writers
-	result.Auditors = service.Auditors
 
 	return result
 }
@@ -307,4 +297,42 @@ func stringToPointer(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+// convertGrpsIOServiceSettingsDomainToResponse converts domain settings to GOA response
+func (s *mailingListService) convertGrpsIOServiceSettingsDomainToResponse(settings *model.GrpsIOServiceSettings) *mailinglistservice.GrpsIoServiceSettings {
+	createdAt := settings.CreatedAt.Format(time.RFC3339)
+	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
+
+	response := &mailinglistservice.GrpsIoServiceSettings{
+		UID:             &settings.UID,
+		Writers:         convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:        convertUserInfoDomainToResponse(settings.Auditors),
+		LastReviewedAt:  settings.LastReviewedAt,
+		LastReviewedBy:  settings.LastReviewedBy,
+		LastAuditedBy:   settings.LastAuditedBy,
+		LastAuditedTime: settings.LastAuditedTime,
+		CreatedAt:       &createdAt,
+		UpdatedAt:       &updatedAt,
+	}
+
+	return response
+}
+
+// convertUserInfoDomainToResponse converts domain UserInfo array to GOA UserInfo array
+func convertUserInfoDomainToResponse(domainUsers []model.UserInfo) []*mailinglistservice.UserInfo {
+	if domainUsers == nil {
+		return []*mailinglistservice.UserInfo{}
+	}
+
+	users := make([]*mailinglistservice.UserInfo, len(domainUsers))
+	for i, u := range domainUsers {
+		users[i] = &mailinglistservice.UserInfo{
+			Name:     &u.Name,
+			Email:    &u.Email,
+			Username: &u.Username,
+			Avatar:   &u.Avatar,
+		}
+	}
+	return users
 }

@@ -34,8 +34,6 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 		URL:              payloadStringValue(p.URL),
 		GroupName:        payloadStringValue(p.GroupName),
 		Public:           p.Public,
-		Writers:          p.Writers,
-		Auditors:         p.Auditors,
 		Source:           constants.SourceAPI, // API operations always use api source
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -114,16 +112,12 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 		URL:              existing.URL,       // Fixed: add missing field preservation
 		GroupName:        existing.GroupName, // Fixed: add missing field preservation
 		CreatedAt:        existing.CreatedAt,
-		LastReviewedAt:   existing.LastReviewedAt,
-		LastReviewedBy:   existing.LastReviewedBy,
 
 		// Update mutable fields (PUT semantics - complete replacement)
 		Status:       payloadStringValue(p.Status), // nil → ""
 		ProjectUID:   existing.ProjectUID,          // IMMUTABLE (keep as is)
 		Public:       p.Public,                     // Direct assignment
 		GlobalOwners: p.GlobalOwners,               // nil → nil
-		Writers:      p.Writers,                    // nil → nil
-		Auditors:     p.Auditors,                   // nil → nil
 		UpdatedAt:    now,
 	}
 }
@@ -305,4 +299,34 @@ func (s *mailingListService) convertWebhookMemberInfo(m map[string]any) (*model.
 	}
 
 	return member, nil
+}
+
+// convertGrpsIOServiceSettingsPayloadToDomain converts GOA settings payload to domain model
+func (s *mailingListService) convertGrpsIOServiceSettingsPayloadToDomain(payload *mailinglistservice.UpdateGrpsioServiceSettingsPayload) *model.GrpsIOServiceSettings {
+	settings := &model.GrpsIOServiceSettings{
+		UID:       payload.UID,
+		Writers:   convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(payload.Auditors),
+		UpdatedAt: time.Now().UTC(),
+	}
+
+	return settings
+}
+
+// convertUserInfoPayloadToDomain converts GOA UserInfo array to domain UserInfo array
+func convertUserInfoPayloadToDomain(goaUsers []*mailinglistservice.UserInfo) []model.UserInfo {
+	if goaUsers == nil {
+		return []model.UserInfo{}
+	}
+
+	users := make([]model.UserInfo, len(goaUsers))
+	for i, u := range goaUsers {
+		users[i] = model.UserInfo{
+			Name:     *u.Name,
+			Email:    *u.Email,
+			Username: *u.Username,
+			Avatar:   *u.Avatar,
+		}
+	}
+	return users
 }

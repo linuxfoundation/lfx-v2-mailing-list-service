@@ -47,8 +47,6 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 				URL:          "https://example.groups.io/g/test-group",
 				GroupName:    "test-group",
 				Public:       true,
-				Writers:      []string{"writer1", "writer2"},
-				Auditors:     []string{"auditor1", "auditor2"},
 			},
 		},
 		{
@@ -70,8 +68,6 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 				URL:          "",
 				GroupName:    "",
 				Public:       false,
-				Writers:      nil,
-				Auditors:     nil,
 			},
 		},
 		{
@@ -98,8 +94,6 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.URL, result.URL)
 			assert.Equal(t, tt.expected.GroupName, result.GroupName)
 			assert.Equal(t, tt.expected.Public, result.Public)
-			assert.Equal(t, tt.expected.Writers, result.Writers)
-			assert.Equal(t, tt.expected.Auditors, result.Auditors)
 
 			// Verify timestamps are set for non-nil payloads
 			if tt.payload != nil {
@@ -219,19 +213,17 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 		{
 			name: "complete update payload conversion",
 			existing: &model.GrpsIOService{
-				Type:           "primary",
-				UID:            "service-123",
-				Domain:         "example.groups.io",
-				GroupID:        int64Ptr(12345),
-				Prefix:         "",
-				ProjectSlug:    "test-project",
-				ProjectName:    "Test Project",
-				ProjectUID:     "project-123",
-				URL:            "https://example.groups.io/g/test",
-				GroupName:      "test-group",
-				CreatedAt:      baseTime,
-				LastReviewedAt: stringPtr("2023-01-01T10:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-123"),
+				Type:        "primary",
+				UID:         "service-123",
+				Domain:      "example.groups.io",
+				GroupID:     int64Ptr(12345),
+				Prefix:      "",
+				ProjectSlug: "test-project",
+				ProjectName: "Test Project",
+				ProjectUID:  "project-123",
+				URL:         "https://example.groups.io/g/test",
+				GroupName:   "test-group",
+				CreatedAt:   baseTime,
 			},
 			payload: &mailinglistservice.UpdateGrpsioServicePayload{
 				UID:          stringPtr("service-123"),
@@ -242,24 +234,20 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Auditors:     []string{"auditor1"},
 			},
 			expected: &model.GrpsIOService{
-				Type:           "primary",
-				UID:            "service-123",
-				Domain:         "example.groups.io",
-				GroupID:        int64Ptr(12345),
-				Status:         "inactive",
-				GlobalOwners:   []string{"newowner@example.com"},
-				Prefix:         "",
-				ProjectSlug:    "test-project",
-				ProjectName:    "Test Project",
-				ProjectUID:     "project-123",
-				URL:            "https://example.groups.io/g/test",
-				GroupName:      "test-group",
-				Public:         true,
-				CreatedAt:      baseTime,
-				LastReviewedAt: stringPtr("2023-01-01T10:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-123"),
-				Writers:        []string{"writer1", "writer2"},
-				Auditors:       []string{"auditor1"},
+				Type:         "primary",
+				UID:          "service-123",
+				Domain:       "example.groups.io",
+				GroupID:      int64Ptr(12345),
+				Status:       "inactive",
+				GlobalOwners: []string{"newowner@example.com"},
+				Prefix:       "",
+				ProjectSlug:  "test-project",
+				ProjectName:  "Test Project",
+				ProjectUID:   "project-123",
+				URL:          "https://example.groups.io/g/test",
+				GroupName:    "test-group",
+				Public:       true,
+				CreatedAt:    baseTime,
 			},
 		},
 		{
@@ -325,10 +313,6 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.GroupName, result.GroupName)
 			assert.Equal(t, tt.expected.Public, result.Public)
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
-			assert.Equal(t, tt.expected.LastReviewedAt, result.LastReviewedAt)
-			assert.Equal(t, tt.expected.LastReviewedBy, result.LastReviewedBy)
-			assert.Equal(t, tt.expected.Writers, result.Writers)
-			assert.Equal(t, tt.expected.Auditors, result.Auditors)
 
 			// Verify UpdatedAt is set for valid payloads
 			if tt.payload != nil && tt.payload.UID != nil && tt.existing != nil {

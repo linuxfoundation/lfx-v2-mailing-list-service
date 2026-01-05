@@ -74,6 +74,9 @@ type GrpsIOServiceWriter interface {
 	// constraint cleanup based on the current state of the service. The 'service' parameter provides
 	// necessary context for deleting related constraints or dependent records.
 	DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error
+
+	// UpdateGrpsIOServiceSettings updates service settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error)
 }
 
 // GrpsIOMailingListWriter defines the interface for mailing list write operations

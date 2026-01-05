@@ -40,6 +40,8 @@ type MockRepository struct {
 	services             map[string]*model.GrpsIOService
 	serviceRevisions     map[string]uint64
 	serviceIndexKeys     map[string]*model.GrpsIOService // indexKey -> service
+	settings             map[string]*model.GrpsIOServiceSettings // serviceUID -> settings
+	settingsRevisions    map[string]uint64                       // serviceUID -> revision
 	mailingLists         map[string]*model.GrpsIOMailingList
 	mailingListRevisions map[string]uint64
 	mailingListIndexKeys map[string]*model.GrpsIOMailingList // indexKey -> mailingList
@@ -65,6 +67,8 @@ func NewMockRepository() *MockRepository {
 			services:             make(map[string]*model.GrpsIOService),
 			serviceRevisions:     make(map[string]uint64),
 			serviceIndexKeys:     make(map[string]*model.GrpsIOService),
+			settings:             make(map[string]*model.GrpsIOServiceSettings),
+			settingsRevisions:    make(map[string]uint64),
 			mailingLists:         make(map[string]*model.GrpsIOMailingList),
 			mailingListRevisions: make(map[string]uint64),
 			mailingListIndexKeys: make(map[string]*model.GrpsIOMailingList),
@@ -172,6 +176,46 @@ func NewMockRepository() *MockRepository {
 			mock.services[service.UID] = service
 			mock.serviceRevisions[service.UID] = 1
 			mock.serviceIndexKeys[service.BuildIndexKey(context.Background())] = service
+		}
+
+		// Add sample settings for services
+		sampleSettings := []*model.GrpsIOServiceSettings{
+			{
+				UID: "550e8400-e29b-41d4-a716-446655440001",
+				Writers: []model.UserInfo{
+					{Name: "Test Admin", Email: "admin@testproject.org", Username: "testadmin", Avatar: "https://example.com/avatar1.png"},
+				},
+				Auditors: []model.UserInfo{
+					{Name: "Test Auditor", Email: "auditor@testproject.org", Username: "testauditor", Avatar: "https://example.com/avatar2.png"},
+				},
+				CreatedAt: now.Add(-24 * time.Hour),
+				UpdatedAt: now,
+			},
+			{
+				UID: "550e8400-e29b-41d4-a716-446655440002",
+				Writers: []model.UserInfo{
+					{Name: "Formation Admin", Email: "formation@testproject.org", Username: "formationadmin", Avatar: "https://example.com/avatar3.png"},
+				},
+				Auditors:  []model.UserInfo{},
+				CreatedAt: now.Add(-12 * time.Hour),
+				UpdatedAt: now,
+			},
+			{
+				UID: "550e8400-e29b-41d4-a716-446655440003",
+				Writers: []model.UserInfo{
+					{Name: "Owner User", Email: "owner@example.org", Username: "owner", Avatar: "https://example.com/avatar4.png"},
+					{Name: "Admin User", Email: "admin@example.org", Username: "admin", Avatar: "https://example.com/avatar5.png"},
+				},
+				Auditors:  []model.UserInfo{},
+				CreatedAt: now.Add(-6 * time.Hour),
+				UpdatedAt: now.Add(-1 * time.Hour),
+			},
+		}
+
+		// Store settings by service UID
+		for _, settings := range sampleSettings {
+			mock.settings[settings.UID] = settings
+			mock.settingsRevisions[settings.UID] = 1
 		}
 
 		// Add project mappings - using consistent naming
@@ -480,6 +524,10 @@ func (w *MockGrpsIOWriter) UniqueProjectGroupID(ctx context.Context, service *mo
 	return w.serviceWriter.UniqueProjectGroupID(ctx, service)
 }
 
+func (w *MockGrpsIOWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	return w.serviceWriter.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
+}
+
 // Mailing list writer methods
 func (w *MockGrpsIOWriter) CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
 	return w.mailingListWriter.CreateGrpsIOMailingList(ctx, mailingList)
@@ -721,8 +769,6 @@ func (m *MockRepository) GetGrpsIOService(ctx context.Context, uid string) (*mod
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
-	serviceCopy.Writers = append([]string(nil), service.Writers...)
-	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 	revision := m.serviceRevisions[uid]
 	return &serviceCopy, revision, nil
 }
@@ -750,8 +796,6 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
-	serviceCopy.Writers = append([]string(nil), service.Writers...)
-	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 
 	w.mock.services[service.UID] = &serviceCopy
 	w.mock.serviceRevisions[service.UID] = 1
@@ -761,8 +805,6 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 	resultCopy := serviceCopy
 	resultCopy.GlobalOwners = make([]string, len(serviceCopy.GlobalOwners))
 	copy(resultCopy.GlobalOwners, serviceCopy.GlobalOwners)
-	resultCopy.Writers = append([]string(nil), serviceCopy.Writers...)
-	resultCopy.Auditors = append([]string(nil), serviceCopy.Auditors...)
 
 	return &resultCopy, 1, nil
 }
@@ -795,8 +837,6 @@ func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid s
 	serviceCopy := *service
 	serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 	copy(serviceCopy.GlobalOwners, service.GlobalOwners)
-	serviceCopy.Writers = append([]string(nil), service.Writers...)
-	serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 
 	// Remove old index key and add new one
 	oldIndexKey := existingService.BuildIndexKey(ctx)
@@ -811,8 +851,6 @@ func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid s
 	resultCopy := serviceCopy
 	resultCopy.GlobalOwners = make([]string, len(serviceCopy.GlobalOwners))
 	copy(resultCopy.GlobalOwners, serviceCopy.GlobalOwners)
-	resultCopy.Writers = append([]string(nil), serviceCopy.Writers...)
-	resultCopy.Auditors = append([]string(nil), serviceCopy.Auditors...)
 
 	return &resultCopy, newRevision, nil
 }
@@ -885,6 +923,11 @@ func (w *MockGrpsIOServiceWriter) Delete(ctx context.Context, key string, revisi
 	return nil
 }
 
+// UpdateGrpsIOServiceSettings delegates to MockRepository
+func (w *MockGrpsIOServiceWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	return w.mock.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
+}
+
 // GetRevision retrieves only the revision for a given UID (reader interface)
 func (m *MockRepository) GetRevision(ctx context.Context, uid string) (uint64, error) {
 	slog.DebugContext(ctx, "mock get service revision", "service_uid", uid)
@@ -897,6 +940,102 @@ func (m *MockRepository) GetRevision(ctx context.Context, uid string) (uint64, e
 	}
 
 	return 0, errors.NewNotFound("service not found")
+}
+
+// GetGrpsIOServiceSettings retrieves service settings by UID and returns ETag revision
+func (m *MockRepository) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock service: getting service settings", "service_uid", uid)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("GetGrpsIOServiceSettings", uid); err != nil {
+		return nil, 0, err
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	settings, exists := m.settings[uid]
+	if !exists {
+		return nil, 0, errors.NewNotFound(fmt.Sprintf("service settings with UID %s not found", uid))
+	}
+
+	// Return a deep copy of the settings to avoid data races
+	settingsCopy := *settings
+	settingsCopy.Writers = make([]model.UserInfo, len(settings.Writers))
+	copy(settingsCopy.Writers, settings.Writers)
+	settingsCopy.Auditors = make([]model.UserInfo, len(settings.Auditors))
+	copy(settingsCopy.Auditors, settings.Auditors)
+
+	rev := m.settingsRevisions[uid]
+
+	slog.DebugContext(ctx, "mock service: service settings retrieved",
+		"service_uid", uid,
+		"revision", rev,
+		"writers_count", len(settingsCopy.Writers),
+		"auditors_count", len(settingsCopy.Auditors))
+
+	return &settingsCopy, rev, nil
+}
+
+// GetSettingsRevision retrieves only the revision for service settings
+func (m *MockRepository) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "mock get service settings revision", "service_uid", uid)
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if rev, exists := m.settingsRevisions[uid]; exists {
+		return rev, nil
+	}
+
+	return 0, errors.NewNotFound("service settings not found")
+}
+
+// UpdateGrpsIOServiceSettings updates service settings with CAS revision checking
+func (m *MockRepository) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock service: updating service settings",
+		"service_uid", settings.UID,
+		"expected_revision", expectedRevision)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("UpdateGrpsIOServiceSettings", settings.UID); err != nil {
+		return nil, 0, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check if settings exist
+	_, exists := m.settings[settings.UID]
+	if !exists {
+		return nil, 0, errors.NewNotFound(fmt.Sprintf("service settings with UID %s not found", settings.UID))
+	}
+
+	// Check revision match
+	currentRevision := m.settingsRevisions[settings.UID]
+	if currentRevision != expectedRevision {
+		slog.WarnContext(ctx, "revision mismatch on settings update",
+			"service_uid", settings.UID,
+			"expected_revision", expectedRevision,
+			"current_revision", currentRevision)
+		return nil, 0, errors.NewConflict("revision mismatch")
+	}
+
+	// Update timestamp
+	settings.UpdatedAt = time.Now()
+
+	// Store updated settings and increment revision
+	m.settings[settings.UID] = settings
+	newRevision := currentRevision + 1
+	m.settingsRevisions[settings.UID] = newRevision
+
+	slog.DebugContext(ctx, "mock service: service settings updated",
+		"service_uid", settings.UID,
+		"new_revision", newRevision,
+		"writers_count", len(settings.Writers),
+		"auditors_count", len(settings.Auditors))
+
+	return settings, newRevision, nil
 }
 
 // GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
@@ -921,8 +1060,6 @@ func (m *MockRepository) GetServicesByGroupID(ctx context.Context, groupID uint6
 			serviceCopy := *service
 			serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 			copy(serviceCopy.GlobalOwners, service.GlobalOwners)
-			serviceCopy.Writers = append([]string(nil), service.Writers...)
-			serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 			services = append(services, &serviceCopy)
 		}
 	}
@@ -956,8 +1093,6 @@ func (m *MockRepository) GetServicesByProjectUID(ctx context.Context, projectUID
 			serviceCopy := *service
 			serviceCopy.GlobalOwners = make([]string, len(service.GlobalOwners))
 			copy(serviceCopy.GlobalOwners, service.GlobalOwners)
-			serviceCopy.Writers = append([]string(nil), service.Writers...)
-			serviceCopy.Auditors = append([]string(nil), service.Auditors...)
 			services = append(services, &serviceCopy)
 		}
 	}

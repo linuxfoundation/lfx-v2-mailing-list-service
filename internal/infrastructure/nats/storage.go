@@ -93,6 +93,78 @@ func (s *storage) GetRevision(ctx context.Context, uid string) (uint64, error) {
 	return rev, nil
 }
 
+// GetGrpsIOServiceSettings retrieves service settings by UID and returns ETag revision
+func (s *storage) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting service settings",
+		"service_uid", uid)
+
+	settings := &model.GrpsIOServiceSettings{}
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOServiceSettings, uid, settings, false)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "service settings not found", "service_uid", uid, "error", err)
+			return nil, 0, errs.NewNotFound("service settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get service settings", "error", err, "service_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to get service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings retrieved",
+		"service_uid", uid,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
+// GetSettingsRevision retrieves only the revision for service settings
+func (s *storage) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting service settings revision",
+		"service_uid", uid)
+
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOServiceSettings, uid, &model.GrpsIOServiceSettings{}, true)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "service settings not found for revision", "service_uid", uid, "error", err)
+			return 0, errs.NewNotFound("service settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get service settings revision", "error", err, "service_uid", uid)
+		return 0, errs.NewServiceUnavailable("failed to get service settings revision")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings revision retrieved",
+		"service_uid", uid,
+		"revision", rev)
+
+	return rev, nil
+}
+
+// UpdateGrpsIOServiceSettings updates service settings with CAS (Compare-And-Swap) revision checking
+func (s *storage) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: updating service settings",
+		"service_uid", settings.UID,
+		"expected_revision", expectedRevision)
+
+	rev, err := s.putWithRevision(ctx, constants.KVBucketNameGroupsIOServiceSettings, settings.UID, settings, expectedRevision)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "service settings not found on update", "service_uid", settings.UID)
+			return nil, 0, errs.NewNotFound("service settings not found")
+		}
+		if s.isRevisionMismatch(err) {
+			slog.WarnContext(ctx, "revision mismatch on update", "service_uid", settings.UID, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
+		slog.ErrorContext(ctx, "failed to update service settings", "error", err, "service_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to update service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings updated",
+		"service_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
 // get retrieves a model from the NATS KV store by bucket and UID.
 // It unmarshals the data into the provided model and returns the revision.
 // If the UID is empty, it returns a validation error.

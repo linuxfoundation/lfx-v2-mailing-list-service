@@ -751,6 +751,19 @@ func (m *MockServiceReader) GetServicesByProjectUID(ctx context.Context, project
 	return args.Get(0).([]*model.GrpsIOService), args.Error(1)
 }
 
+func (m *MockServiceReader) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
+	args := m.Called(ctx, uid)
+	if args.Get(0) == nil {
+		return nil, 0, args.Error(2)
+	}
+	return args.Get(0).(*model.GrpsIOServiceSettings), args.Get(1).(uint64), args.Error(2)
+}
+
+func (m *MockServiceReader) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	args := m.Called(ctx, uid)
+	return args.Get(0).(uint64), args.Error(1)
+}
+
 func TestValidateMailingListUpdateParentServiceChange(t *testing.T) {
 	ctx := context.Background()
 

@@ -163,35 +163,6 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				assert.Equal(t, 0, mockRepo.GetServiceCount())
 			},
 		},
-		{
-			name: "service with writers and auditors",
-			setupMock: func(mockRepo *mock.MockRepository) {
-				mockRepo.ClearAll()
-				mockRepo.AddProject("project-4", "audit-project", "Audit Project")
-			},
-			inputService: &model.GrpsIOService{
-				Type:         "primary",
-				Domain:       "lists.audit.org",
-				GroupID:      writerServiceInt64Ptr(45678),
-				GlobalOwners: []string{"admin@audit.org"},
-				Writers:      []string{"writer1@audit.org", "writer2@audit.org"},
-				Auditors:     []string{"auditor1@audit.org"},
-				Prefix:       "",
-				ProjectUID:   "project-4",
-				URL:          "https://lists.audit.org",
-				GroupName:    "audit-project",
-				Public:       true,
-				Status:       "created",
-				Source:       constants.SourceMock,
-			},
-			expectedError: nil,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
-				assert.NotEmpty(t, result.UID)
-				assert.Equal(t, []string{"writer1@audit.org", "writer2@audit.org"}, result.Writers)
-				assert.Equal(t, []string{"auditor1@audit.org"}, result.Auditors)
-				assert.Equal(t, 1, mockRepo.GetServiceCount())
-			},
-		},
 	}
 
 	for _, tc := range testCases {
