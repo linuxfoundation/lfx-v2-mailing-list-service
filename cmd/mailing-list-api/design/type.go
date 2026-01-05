@@ -315,6 +315,10 @@ func GrpsIOMailingListBaseAttributes() {
 		dsl.Example("[TSC]")
 		dsl.MaxLength(50)
 	})
+	dsl.Attribute("allow_attachments", dsl.Boolean, "Whether attachments are allowed in the mailing list", func() {
+		dsl.Example(true)
+		dsl.Description("If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).")
+	})
 	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
 		dsl.Format(dsl.FormatUUID)
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
