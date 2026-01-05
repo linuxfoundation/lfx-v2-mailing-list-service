@@ -143,6 +143,11 @@ authelia:
   # Note: Disabling Authelia should only be used for local development
   enabled: true
 
+# global is the configuration for the global settings
+global:
+  # awsRegion is the AWS region for the External Secrets Operator
+  awsRegion: us-west-2
+
 # app is the configuration for the application
 app:
   # audience is the JWT audience required for authentication with this app
@@ -224,3 +229,29 @@ app:
     # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
     GROUPSIO_WEBHOOK_SECRET:
       value: null
+
+# External Secrets Operator
+externalSecretsOperator:
+  # Enable/disable External Secrets Operator integration
+  enabled: true
+
+  # ExternalSecret configuration
+  externalSecret:
+    # How often to refresh secrets from AWS
+    refreshInterval: "10m"
+
+    # Secret data mappings
+    # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
+    data:
+      - secretKey: GROUPSIO_EMAIL
+        remoteRef:
+          key: cloud/groupsio/lfx-v2-mailing-list-service
+          property: groupsio_email
+      - secretKey: GROUPSIO_PASSWORD
+        remoteRef:
+          key: cloud/groupsio/lfx-v2-mailing-list-service
+          property: groupsio_password
+      - secretKey: GROUPSIO_WEBHOOK_SECRET
+        remoteRef:
+          key: cloud/groupsio/lfx-v2-mailing-list-service
+          property: groupsio_webhook_secret
