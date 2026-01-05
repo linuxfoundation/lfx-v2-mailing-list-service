@@ -2159,13 +2159,13 @@ func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWrite
 	}
 }
 
-// marshalMailinglistUserInfoToUserInfoResponseBody builds a value of type
-// *UserInfoResponseBody from a value of type *mailinglist.UserInfo.
-func marshalMailinglistUserInfoToUserInfoResponseBody(v *mailinglist.UserInfo) *UserInfoResponseBody {
+// unmarshalUserInfoRequestBodyToMailinglistUserInfo builds a value of type
+// *mailinglist.UserInfo from a value of type *UserInfoRequestBody.
+func unmarshalUserInfoRequestBodyToMailinglistUserInfo(v *UserInfoRequestBody) *mailinglist.UserInfo {
 	if v == nil {
 		return nil
 	}
-	res := &UserInfoResponseBody{
+	res := &mailinglist.UserInfo{
 		Name:     v.Name,
 		Email:    v.Email,
 		Username: v.Username,
@@ -2175,13 +2175,13 @@ func marshalMailinglistUserInfoToUserInfoResponseBody(v *mailinglist.UserInfo) *
 	return res
 }
 
-// unmarshalUserInfoRequestBodyToMailinglistUserInfo builds a value of type
-// *mailinglist.UserInfo from a value of type *UserInfoRequestBody.
-func unmarshalUserInfoRequestBodyToMailinglistUserInfo(v *UserInfoRequestBody) *mailinglist.UserInfo {
+// marshalMailinglistUserInfoToUserInfoResponseBody builds a value of type
+// *UserInfoResponseBody from a value of type *mailinglist.UserInfo.
+func marshalMailinglistUserInfoToUserInfoResponseBody(v *mailinglist.UserInfo) *UserInfoResponseBody {
 	if v == nil {
 		return nil
 	}
-	res := &mailinglist.UserInfo{
+	res := &UserInfoResponseBody{
 		Name:     v.Name,
 		Email:    v.Email,
 		Username: v.Username,

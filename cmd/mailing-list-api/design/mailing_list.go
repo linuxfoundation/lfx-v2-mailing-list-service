@@ -62,8 +62,8 @@ var _ = dsl.Service("mailing-list", func() {
 
 			GrpsIOServiceBaseAttributes()
 
-			WritersAttribute()
-			AuditorsAttribute()
+			ServiceWritersAttribute()
+			ServiceAuditorsAttribute()
 
 			// Only common required fields - type-specific validation handled in service layer
 			dsl.Required("type", "project_uid", "version")
@@ -131,9 +131,6 @@ var _ = dsl.Service("mailing-list", func() {
 
 			GrpsIOServiceUIDAttribute()
 			GrpsIOServiceBaseAttributes()
-
-			WritersAttribute()
-			AuditorsAttribute()
 
 			dsl.Required("type", "project_uid", "version")
 		})

@@ -18,8 +18,8 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
-// CreateGrpsIOService creates a new service with transactional operations and rollback
-func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
+// CreateGrpsIOService creates a new service and its settings with transactional operations and rollback
+func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "executing create service use case",
 		"service_type", service.Type,
 		"service_domain", service.Domain,
@@ -31,6 +31,13 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 	service.UID = uuid.New().String() // Always generate server-side, never trust client
 	service.CreatedAt = now
 	service.UpdatedAt = now
+
+	// Set settings UID to match service UID and timestamps
+	if settings != nil {
+		settings.UID = service.UID
+		settings.CreatedAt = now
+		settings.UpdatedAt = now
+	}
 
 	// For rollback purposes
 	var (
@@ -57,7 +64,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"error", err,
 			"project_uid", service.ProjectUID,
 		)
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
 	slog.DebugContext(ctx, "project validation successful",
@@ -73,7 +80,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 				"error", err,
 				"project_uid", service.ProjectUID,
 			)
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 
 		slog.DebugContext(ctx, "parent service found and validated",
@@ -85,7 +92,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 	constraintKey, err := sw.reserveUniqueConstraints(ctx, service)
 	if err != nil {
 		rollbackRequired = true
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
@@ -93,7 +100,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 
 	// Step 4: Validate source (Service only supports API and Mock, not webhook)
 	if service.Source != constants.SourceAPI && service.Source != constants.SourceMock {
-		return nil, 0, errors.NewValidation(
+		return nil, nil, 0, errors.NewValidation(
 			fmt.Sprintf("service only supports api or mock source, got: %s", service.Source))
 	}
 
@@ -108,7 +115,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		groupID, requiresCleanup, err = sw.handleAPISourceService(ctx, service)
 		if err != nil {
 			rollbackRequired = true
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 		if requiresCleanup {
 			serviceID = groupID
@@ -126,14 +133,14 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 
 	default:
 		// Should never reach here due to validation above
-		return nil, 0, errors.NewValidation(
+		return nil, nil, 0, errors.NewValidation(
 			fmt.Sprintf("unsupported source for service: %s", service.Source))
 	}
 
 	service.GroupID = groupID
 
 	// Step 6: Create service in storage (with Groups.io ID already set)
-	createdService, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service)
+	createdService, _, revision, err := sw.grpsIOWriter.CreateGrpsIOService(ctx, service, nil)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service",
 			"error", err,
@@ -141,7 +148,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"service_domain", service.Domain,
 		)
 		rollbackRequired = true
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
 	slog.DebugContext(ctx, "service created successfully",
@@ -149,7 +156,25 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		"revision", revision,
 	)
 
-	// Step 7: Create secondary indices
+	// Step 7: Create service settings
+	var createdSettings *model.GrpsIOServiceSettings
+	if settings != nil {
+		createdSettings, _, err = sw.grpsIOWriter.CreateGrpsIOServiceSettings(ctx, settings)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to create service settings",
+				"error", err,
+				"service_uid", createdService.UID,
+			)
+			rollbackRequired = true
+			return nil, nil, 0, err
+		}
+
+		slog.DebugContext(ctx, "service settings created successfully",
+			"service_uid", createdSettings.UID,
+		)
+	}
+
+	// Step 8: Create secondary indices
 	secondaryKeys, err := sw.createServiceSecondaryIndices(ctx, createdService)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to create service secondary indices", "error", err)
@@ -158,25 +183,15 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		keys = append(keys, secondaryKeys...)
 	}
 
-	// Step 8: Fetch settings and publish messages (indexer and access control)
+	// Step 9: Publish messages (indexer and access control)
 	if sw.publisher != nil {
-		// Fetch settings for message publishing
-		settings, _, errSettings := sw.grpsIOReader.GetGrpsIOServiceSettings(ctx, createdService.UID)
-		if errSettings != nil {
-			slog.WarnContext(ctx, "failed to get service settings for message publishing",
-				"error", errSettings,
-				"service_uid", createdService.UID,
-			)
-			settings = nil // Continue without settings
-		}
-
-		if err := sw.publishServiceMessages(ctx, createdService, settings, model.ActionCreated); err != nil {
+		if err := sw.publishServiceMessages(ctx, createdService, createdSettings, model.ActionCreated); err != nil {
 			slog.ErrorContext(ctx, "failed to publish messages", "error", err)
 			// Don't fail the operation on message failure, service creation succeeded
 		}
 	}
 
-	return createdService, revision, nil
+	return createdService, createdSettings, revision, nil
 }
 
 // createServiceInGroupsIO handles Groups.io group creation and returns the ID
@@ -332,7 +347,7 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 	// Merge existing data with updated fields
 	sw.mergeServiceData(ctx, existing, service)
 
-	// Update service in storage
+	// Update service in storageå
 	updatedService, revision, err := sw.grpsIOWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update service",
@@ -382,7 +397,28 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOServiceSettings(ctx context.Cont
 		"expected_revision", expectedRevision,
 	)
 
-	// Update timestamp
+	// Fetch existing settings to preserve created_at timestamp
+	existingSettings, existingRevision, err := sw.grpsIOReader.GetGrpsIOServiceSettings(ctx, settings.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to retrieve existing service settings",
+			"error", err,
+			"service_uid", settings.UID,
+		)
+		return nil, 0, err
+	}
+
+	// Verify revision matches to ensure optimistic locking
+	if existingRevision != expectedRevision {
+		slog.WarnContext(ctx, "revision mismatch during settings update",
+			"expected_revision", expectedRevision,
+			"current_revision", existingRevision,
+			"service_uid", settings.UID,
+		)
+		return nil, 0, errors.NewConflict("service settings have been modified by another process")
+	}
+
+	// Preserve created_at and update updated_at
+	settings.CreatedAt = existingSettings.CreatedAt
 	settings.UpdatedAt = time.Now()
 
 	// Update settings in storage

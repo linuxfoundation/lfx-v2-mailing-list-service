@@ -32,8 +32,8 @@ func TestConvertCreatePayloadToDomain(t *testing.T) {
 				URL:          stringPtr("https://example.groups.io/g/test-group"),
 				GroupName:    stringPtr("test-group"),
 				Public:       true,
-				Writers:      []string{"writer1", "writer2"},
-				Auditors:     []string{"auditor1", "auditor2"},
+				Writers:      []*mailinglistservice.UserInfo{{Name: stringPtr("Writer One")}, {Name: stringPtr("Writer Two")}},
+				Auditors:     []*mailinglistservice.UserInfo{{Name: stringPtr("Auditor One")}, {Name: stringPtr("Auditor Two")}},
 			},
 			expected: &model.GrpsIOService{
 				Type:         "primary",
@@ -230,8 +230,6 @@ func TestConvertUpdatePayloadToDomain(t *testing.T) {
 				Status:       stringPtr("inactive"),
 				GlobalOwners: []string{"newowner@example.com"},
 				Public:       true,
-				Writers:      []string{"writer1", "writer2"},
-				Auditors:     []string{"auditor1"},
 			},
 			expected: &model.GrpsIOService{
 				Type:         "primary",

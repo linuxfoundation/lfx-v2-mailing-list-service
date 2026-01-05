@@ -23,7 +23,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 		setupMock     func(*mock.MockRepository)
 		inputService  *model.GrpsIOService
 		expectedError error
-		validate      func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository)
+		validate      func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository)
 	}{
 		{
 			name: "successful primary service creation",
@@ -45,7 +45,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "primary", result.Type)
 				assert.Equal(t, "project-1", result.ProjectUID)
@@ -76,7 +76,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "formation", result.Type)
 				assert.Equal(t, "form", result.Prefix)
@@ -126,14 +126,14 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				Source:       constants.SourceMock,
 			},
 			expectedError: nil,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "shared", result.Type)
 				assert.Nil(t, result.GroupID) // Mock source doesn't coordinate with Groups.io, so GroupID is nil
 				assert.False(t, result.Public)
 				assert.Equal(t, "project-3", result.ProjectUID)
 				assert.Equal(t, "parent-service-3", result.ParentServiceUID, "should have parent service UID set")
-				assert.Equal(t, uint64(1), revision) // Each service gets its own revision counter
+				assert.Equal(t, uint64(1), revision)           // Each service gets its own revision counter
 				assert.Equal(t, 2, mockRepo.GetServiceCount()) // Parent service + this shared service
 			},
 		},
@@ -157,7 +157,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				Source:       constants.SourceMock,
 			},
 			expectedError: errs.NotFound{},
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				assert.Nil(t, result)
 				assert.Equal(t, uint64(0), revision)
 				assert.Equal(t, 0, mockRepo.GetServiceCount())
@@ -185,7 +185,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService)
+			result, settings, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -196,7 +196,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				require.NotNil(t, result)
 			}
 
-			tc.validate(t, result, revision, mockRepo)
+			tc.validate(t, result, settings, revision, mockRepo)
 		})
 	}
 }
@@ -268,7 +268,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService_PublishingErrors(t *testin
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOService(ctx, service)
+			result, _, revision, err := orchestrator.CreateGrpsIOService(ctx, service, nil)
 
 			// Validate
 			if tc.expectComplete {
@@ -754,7 +754,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 		inputService  *model.GrpsIOService
 		expectedError bool
 		errorContains string
-		validate      func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository)
+		validate      func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository)
 	}{
 		{
 			name: "successful shared service creation with parent primary service",
@@ -798,7 +798,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 				Source:     constants.SourceMock,
 			},
 			expectedError: false,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				require.NotNil(t, result)
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, constants.ServiceTypeShared, result.Type)
@@ -912,7 +912,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 				Source:     constants.SourceMock,
 			},
 			expectedError: false,
-			validate: func(t *testing.T, result *model.GrpsIOService, revision uint64, mockRepo *mock.MockRepository) {
+			validate: func(t *testing.T, result *model.GrpsIOService, settings *model.GrpsIOServiceSettings, revision uint64, mockRepo *mock.MockRepository) {
 				require.NotNil(t, result)
 				assert.Equal(t, "primary-service-uid", result.ParentServiceUID, "should find primary service among multiple services")
 			},
@@ -937,7 +937,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService)
+			result, settings, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
 
 			// Assert
 			if tc.expectedError {
@@ -951,7 +951,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				if tc.validate != nil {
-					tc.validate(t, result, revision, mockRepo)
+					tc.validate(t, result, settings, revision, mockRepo)
 				}
 			}
 		})

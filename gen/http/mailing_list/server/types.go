@@ -43,10 +43,10 @@ type CreateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+	// Manager users who can edit/modify this service
+	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this service
+	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioServiceRequestBody is the type of the "mailing-list" service
@@ -77,10 +77,6 @@ type UpdateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioServiceSettingsRequestBody is the type of the "mailing-list"
@@ -2479,15 +2475,15 @@ func NewCreateGrpsioServicePayload(body *CreateGrpsioServiceRequestBody, version
 		v.Public = false
 	}
 	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
 		for i, val := range body.Writers {
-			v.Writers[i] = val
+			v.Writers[i] = unmarshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
 		for i, val := range body.Auditors {
-			v.Auditors[i] = val
+			v.Auditors[i] = unmarshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	v.Version = version
@@ -2533,18 +2529,6 @@ func NewUpdateGrpsioServicePayload(body *UpdateGrpsioServiceRequestBody, uid str
 	}
 	if body.Public == nil {
 		v.Public = false
-	}
-	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
-		for i, val := range body.Writers {
-			v.Writers[i] = val
-		}
-	}
-	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
-		for i, val := range body.Auditors {
-			v.Auditors[i] = val
-		}
 	}
 	v.UID = &uid
 	v.Version = version
@@ -2850,6 +2834,20 @@ func ValidateCreateGrpsioServiceRequestBody(body *CreateGrpsioServiceRequestBody
 	}
 	if body.URL != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
+	}
+	for _, e := range body.Writers {
+		if e != nil {
+			if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Auditors {
+		if e != nil {
+			if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	return
 }

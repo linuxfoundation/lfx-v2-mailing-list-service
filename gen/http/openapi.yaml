@@ -1146,7 +1146,7 @@ definitions:
             name:
                 type: string
                 description: Committee name (read-only, populated by server)
-                example: Quia quam nihil et quaerat vero.
+                example: Veritatis veritatis doloremque repellendus architecto et accusantium.
             uid:
                 type: string
                 description: Committee UUID
@@ -1157,7 +1157,7 @@ definitions:
             allowed_voting_statuses:
                 - Voting Rep
                 - Alternate Voting Rep
-            name: Iure sed labore eius aliquam consequatur.
+            name: Tempore nam non harum voluptatum.
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
         required:
             - uid
@@ -1191,24 +1191,24 @@ definitions:
             extra:
                 type: string
                 description: Extra data field (subgroup suffix)
-                example: Molestias eos quibusdam.
+                example: Accusantium deleniti.
             extra_id:
                 type: integer
                 description: Extra ID field (subgroup ID for deletion)
-                example: 261829579036956883
+                example: 7267254203065811520
                 format: int64
             group:
                 description: Contains subgroup data from Groups.io
-                example: Hic et aut.
+                example: Aliquam molestiae voluptas neque velit.
             member_info:
                 description: Contains member data from Groups.io
-                example: Quaerat sit.
+                example: Inventore in.
         example:
             action: created_subgroup
-            extra: Eveniet nesciunt ex ab.
-            extra_id: 513350243628480653
-            group: Eaque similique consectetur accusantium ut.
-            member_info: Ut veritatis alias ad.
+            extra: Quibusdam odit omnis.
+            extra_id: 8879252608711124236
+            group: Aliquid distinctio mollitia.
+            member_info: Et aut iste quaerat sit porro molestias.
         required:
             - action
     GrpsIoMailingListFull:
@@ -1228,7 +1228,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Libero rerum quasi molestias vel voluptatem itaque.
+                    example: Vero laudantium facilis.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1242,12 +1242,12 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
+                      name: Deserunt corrupti quis.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
+                      name: Deserunt corrupti quis.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
@@ -1334,7 +1334,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eum ut.
+                    example: Dolor non quia quam nihil et.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1348,17 +1348,17 @@ definitions:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
@@ -1395,7 +1395,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ea nisi sapiente minus qui aut.
+                    example: Numquam laboriosam eaque temporibus.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1409,22 +1409,17 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
+                      name: Deserunt corrupti quis.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
+                      name: Deserunt corrupti quis.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Voluptatem voluptate vitae saepe mollitia.
+                      name: Deserunt corrupti quis.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
@@ -1502,7 +1497,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Molestias molestiae fuga.
+                    example: Magnam aperiam et suscipit aliquid ut ipsam.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1517,22 +1512,17 @@ definitions:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
-                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - allowed_voting_statuses:
-                    - Voting Rep
-                    - Alternate Voting Rep
-                  name: Voluptatem voluptate vitae saepe mollitia.
+                  name: Deserunt corrupti quis.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
@@ -1558,7 +1548,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolore unde est.
+                    example: Ea error unde.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1668,7 +1658,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Pariatur quia voluptas dolorem inventore ducimus.
+                    example: Atque omnis recusandae qui.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1678,7 +1668,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: digest
+            delivery_mode: none
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1688,8 +1678,8 @@ definitions:
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            member_type: committee
-            mod_status: owner
+            member_type: direct
+            mod_status: moderator
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1718,7 +1708,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Neque velit dicta inventore in.
+                    example: Est necessitatibus eligendi esse.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -1795,7 +1785,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: none
+                example: moderator
                 enum:
                     - none
                     - moderator
@@ -1828,7 +1818,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Repellendus tempore hic commodi placeat aliquam molestiae.
+                    example: Nam molestias.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -1839,7 +1829,7 @@ definitions:
                 - auditor_user_id1
                 - auditor_user_id2
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: digest
+            delivery_mode: normal
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1850,7 +1840,7 @@ definitions:
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             member_type: committee
-            mod_status: moderator
+            mod_status: owner
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
@@ -1869,14 +1859,14 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Auditor users who can audit this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1966,24 +1956,24 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Manager users who can edit/modify this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
         example:
             auditors:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
             created_at: "2023-01-15T10:30:00Z"
             domain: lists.project.org
             global_owners:
@@ -2002,14 +1992,14 @@ definitions:
             updated_at: "2023-06-20T14:45:30Z"
             url: https://lists.project.org
             writers:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
         required:
             - type
             - project_uid
@@ -2023,14 +2013,14 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Auditor users who can audit this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -2070,29 +2060,33 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Manager users who can edit/modify this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
         description: A representation of GroupsIO service settings for user management.
         example:
             auditors:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
             created_at: "2023-01-15T10:30:00Z"
             last_audited_by: user_id_12345
             last_audited_time: "2023-05-10T09:15:00Z"
@@ -2101,22 +2095,18 @@ definitions:
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             updated_at: "2023-06-20T14:45:30Z"
             writers:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
     GrpsIoServiceWithReadonlyAttributes:
         title: GrpsIoServiceWithReadonlyAttributes
         type: object
@@ -2127,14 +2117,14 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Auditor users who can audit this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -2148,7 +2138,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: vivian@johnswisozk.org
+                    example: wilfrid@littletremblay.biz
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2224,29 +2214,33 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Manager users who can edit/modify this service
                 example:
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
-                    - avatar: http://schmitt.org/yadira_schultz
-                      email: zakary@waters.biz
-                      name: Culpa quaerat quos et dolor.
-                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
+                    - avatar: http://harberhagenes.biz/roxanne_klein
+                      email: macey@cruickshank.net
+                      name: Eos sed nihil provident illum omnis.
+                      username: Nihil consectetur dolorem quas eum qui ex.
         description: A representation of GroupsIO services with readonly attributes.
         example:
             auditors:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
             created_at: "2023-01-15T10:30:00Z"
             domain: lists.project.org
             global_owners:
@@ -2265,14 +2259,18 @@ definitions:
             updated_at: "2023-06-20T14:45:30Z"
             url: https://lists.project.org
             writers:
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
-                - avatar: http://schmitt.org/yadira_schultz
-                  email: zakary@waters.biz
-                  name: Culpa quaerat quos et dolor.
-                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
+                - avatar: http://harberhagenes.biz/roxanne_klein
+                  email: macey@cruickshank.net
+                  name: Eos sed nihil provident illum omnis.
+                  username: Nihil consectetur dolorem quas eum qui ex.
         required:
             - type
             - project_uid
@@ -2297,7 +2295,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: none
+                example: normal
                 enum:
                     - normal
                     - digest
@@ -2337,7 +2335,7 @@ definitions:
                 type: string
                 description: Member type
                 default: direct
-                example: committee
+                example: direct
                 enum:
                     - committee
                     - direct
@@ -2345,7 +2343,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: moderator
+                example: none
                 enum:
                     - none
                     - moderator
@@ -2361,14 +2359,14 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: normal
+            delivery_mode: digest
             email: john.doe@example.com
             first_name: John
             job_title: Software Engineer
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
-            member_type: committee
+            member_type: direct
             mod_status: none
             organization: Example Corp
             username: jdoe
@@ -2391,7 +2389,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Numquam laboriosam eaque temporibus.
+                    example: Libero rerum quasi molestias vel voluptatem itaque.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2405,17 +2403,22 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Ut rerum quam repellat eum.
+                      name: Voluptate vitae saepe.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Ut rerum quam repellat eum.
+                      name: Voluptate vitae saepe.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Ut rerum quam repellat eum.
+                      name: Voluptate vitae saepe.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Voluptate vitae saepe.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
@@ -2463,7 +2466,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Magnam aperiam et suscipit aliquid ut ipsam.
+                    example: Eius aliquam consequatur dolor perferendis eum ut.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2477,17 +2480,17 @@ definitions:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -2513,12 +2516,17 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Quisquam natus illo.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this service
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
             domain:
                 type: string
                 description: Service domain
@@ -2586,16 +2594,27 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Quidem enim porro ad sed accusamus.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this service
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
             domain: lists.project.org
             global_owners:
                 - admin@example.com
@@ -2610,8 +2629,14 @@ definitions:
             type: primary
             url: https://lists.project.org
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
         required:
             - type
             - project_uid
@@ -2635,7 +2660,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: normal
+                example: none
                 enum:
                     - normal
                     - digest
@@ -2661,7 +2686,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: owner
+                example: none
                 enum:
                     - none
                     - moderator
@@ -2677,7 +2702,7 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: digest
+            delivery_mode: normal
             first_name: John
             job_title: Software Engineer
             last_name: Doe
@@ -2701,7 +2726,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Omnis recusandae.
+                    example: Ea nisi sapiente minus qui aut.
                 description: Auditor user IDs who can audit this service
                 example:
                     - auditor_user_id1
@@ -2715,12 +2740,22 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Ut rerum quam repellat eum.
+                      name: Voluptate vitae saepe.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Ut rerum quam repellat eum.
+                      name: Voluptate vitae saepe.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Voluptate vitae saepe.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Voluptate vitae saepe.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
@@ -2768,7 +2803,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Non blanditiis.
+                    example: Molestias molestiae fuga.
                 description: Manager user IDs who can edit/modify this service
                 example:
                     - manager_user_id1
@@ -2782,17 +2817,22 @@ definitions:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Ut rerum quam repellat eum.
+                  name: Voluptate vitae saepe.
+                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                - allowed_voting_statuses:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                  name: Voluptate vitae saepe.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -2815,15 +2855,6 @@ definitions:
         title: MailingListUpdateGrpsioServiceRequestBody
         type: object
         properties:
-            auditors:
-                type: array
-                items:
-                    type: string
-                    example: Rem dolores.
-                description: Auditor user IDs who can audit this service
-                example:
-                    - auditor_user_id1
-                    - auditor_user_id2
             domain:
                 type: string
                 description: Service domain
@@ -2832,7 +2863,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: eileen_gutmann@wiegand.info
+                    example: nannie@hayescasper.name
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2888,19 +2919,7 @@ definitions:
                 description: Service URL
                 example: https://lists.project.org
                 format: uri
-            writers:
-                type: array
-                items:
-                    type: string
-                    example: Veritatis doloremque repellendus architecto et.
-                description: Manager user IDs who can edit/modify this service
-                example:
-                    - manager_user_id1
-                    - manager_user_id2
         example:
-            auditors:
-                - auditor_user_id1
-                - auditor_user_id2
             domain: lists.project.org
             global_owners:
                 - admin@example.com
@@ -2914,9 +2933,6 @@ definitions:
             status: created
             type: primary
             url: https://lists.project.org
-            writers:
-                - manager_user_id1
-                - manager_user_id2
         required:
             - type
             - project_uid
@@ -2930,59 +2946,59 @@ definitions:
                     $ref: '#/definitions/UserInfo'
                 description: Auditor users who can audit this service
                 example:
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
             writers:
                 type: array
                 items:
                     $ref: '#/definitions/UserInfo'
                 description: Manager users who can edit/modify this service
                 example:
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
-                    - avatar: http://fay.net/zachary_yundt
-                      email: enola@armstrong.org
-                      name: Numquam deserunt.
-                      username: Qui ex magnam sint.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
+                    - avatar: http://schmitt.org/yadira_schultz
+                      email: will_upton@fay.biz
+                      name: Quaerat quos et dolor magni.
+                      username: Sunt qui tempora culpa ipsa maxime ex.
         example:
             auditors:
-                - avatar: http://fay.net/zachary_yundt
-                  email: enola@armstrong.org
-                  name: Numquam deserunt.
-                  username: Qui ex magnam sint.
-                - avatar: http://fay.net/zachary_yundt
-                  email: enola@armstrong.org
-                  name: Numquam deserunt.
-                  username: Qui ex magnam sint.
-                - avatar: http://fay.net/zachary_yundt
-                  email: enola@armstrong.org
-                  name: Numquam deserunt.
-                  username: Qui ex magnam sint.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
             writers:
-                - avatar: http://fay.net/zachary_yundt
-                  email: enola@armstrong.org
-                  name: Numquam deserunt.
-                  username: Qui ex magnam sint.
-                - avatar: http://fay.net/zachary_yundt
-                  email: enola@armstrong.org
-                  name: Numquam deserunt.
-                  username: Qui ex magnam sint.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
+                - avatar: http://schmitt.org/yadira_schultz
+                  email: will_upton@fay.biz
+                  name: Quaerat quos et dolor magni.
+                  username: Sunt qui tempora culpa ipsa maxime ex.
     NotFoundError:
         title: NotFoundError
         type: object

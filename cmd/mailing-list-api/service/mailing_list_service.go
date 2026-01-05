@@ -127,15 +127,18 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	domainService := s.convertGrpsIOServiceCreatePayloadToDomain(payload)
 	domainService.UID = serviceUID
 
+	// Extract settings from payload (writers/auditors)
+	domainSettings := s.convertGrpsIOServiceCreatePayloadToSettings(payload, serviceUID)
+
 	// Execute use case
-	createdService, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOService(ctx, domainService)
+	createdService, createdSettings, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOService(ctx, domainService, domainSettings)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service", "error", err, "service_type", payload.Type)
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response
-	result = s.convertGrpsIOServiceDomainToFullResponse(createdService)
+	// Convert domain model to GOA response, including settings
+	result = s.convertGrpsIOServiceDomainToFullResponse(createdService, createdSettings)
 
 	slog.InfoContext(ctx, "successfully created service", "service_uid", createdService.UID, "revision", revision)
 	return result, nil

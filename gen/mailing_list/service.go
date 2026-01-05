@@ -181,10 +181,10 @@ type CreateGrpsioServicePayload struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
+	// Manager users who can edit/modify this service
+	Writers []*UserInfo
+	// Auditor users who can audit this service
+	Auditors []*UserInfo
 }
 
 // DeleteGrpsioMailingListMemberPayload is the payload type of the mailing-list
@@ -707,10 +707,6 @@ type UpdateGrpsioServicePayload struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
 }
 
 // UpdateGrpsioServiceSettingsPayload is the payload type of the mailing-list

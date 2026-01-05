@@ -500,8 +500,8 @@ type MockGrpsIOWriter struct {
 // ================== MockGrpsIOWriter implementation (delegates to sub-writers) ==================
 
 // Service writer methods
-func (w *MockGrpsIOWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
-	return w.serviceWriter.CreateGrpsIOService(ctx, service)
+func (w *MockGrpsIOWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
+	return w.serviceWriter.CreateGrpsIOService(ctx, service, settings)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
@@ -522,6 +522,10 @@ func (w *MockGrpsIOWriter) UniqueProjectPrefix(ctx context.Context, service *mod
 
 func (w *MockGrpsIOWriter) UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	return w.serviceWriter.UniqueProjectGroupID(ctx, service)
+}
+
+func (w *MockGrpsIOWriter) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+	return w.serviceWriter.CreateGrpsIOServiceSettings(ctx, settings)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
@@ -775,8 +779,8 @@ func (m *MockRepository) GetGrpsIOService(ctx context.Context, uid string) (*mod
 
 // ================== MockGrpsIOServiceWriter implementation ==================
 
-// CreateGrpsIOService creates a new service in the mock storage
-func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
+// CreateGrpsIOService creates a new service and its settings in the mock storage
+func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "mock service: creating service", "service_id", service.UID)
 
 	w.mock.mu.Lock()
@@ -784,7 +788,7 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 
 	// Check if service already exists
 	if _, exists := w.mock.services[service.UID]; exists {
-		return nil, 0, errors.NewConflict(fmt.Sprintf("service with ID %s already exists", service.UID))
+		return nil, nil, 0, errors.NewConflict(fmt.Sprintf("service with ID %s already exists", service.UID))
 	}
 
 	// Set created/updated timestamps
@@ -801,12 +805,37 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 	w.mock.serviceRevisions[service.UID] = 1
 	w.mock.serviceIndexKeys[service.BuildIndexKey(ctx)] = &serviceCopy
 
+	// Create settings if provided
+	var resultSettingsCopy *model.GrpsIOServiceSettings
+	if settings != nil {
+		settings.CreatedAt = now
+		settings.UpdatedAt = now
+		settingsCopy := &model.GrpsIOServiceSettings{
+			UID:       settings.UID,
+			Writers:   append([]model.UserInfo(nil), settings.Writers...),
+			Auditors:  append([]model.UserInfo(nil), settings.Auditors...),
+			CreatedAt: settings.CreatedAt,
+			UpdatedAt: settings.UpdatedAt,
+		}
+		w.mock.settings[settings.UID] = settingsCopy
+		w.mock.settingsRevisions[settings.UID] = 1
+
+		// Create result copy for return
+		resultSettingsCopy = &model.GrpsIOServiceSettings{
+			UID:       settingsCopy.UID,
+			Writers:   append([]model.UserInfo(nil), settingsCopy.Writers...),
+			Auditors:  append([]model.UserInfo(nil), settingsCopy.Auditors...),
+			CreatedAt: settingsCopy.CreatedAt,
+			UpdatedAt: settingsCopy.UpdatedAt,
+		}
+	}
+
 	// Return service copy
 	resultCopy := serviceCopy
 	resultCopy.GlobalOwners = make([]string, len(serviceCopy.GlobalOwners))
 	copy(resultCopy.GlobalOwners, serviceCopy.GlobalOwners)
 
-	return &resultCopy, 1, nil
+	return &resultCopy, resultSettingsCopy, 1, nil
 }
 
 // UpdateGrpsIOService updates an existing service with revision checking
@@ -923,6 +952,11 @@ func (w *MockGrpsIOServiceWriter) Delete(ctx context.Context, key string, revisi
 	return nil
 }
 
+// CreateGrpsIOServiceSettings delegates to MockRepository
+func (w *MockGrpsIOServiceWriter) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+	return w.mock.CreateGrpsIOServiceSettings(ctx, settings)
+}
+
 // UpdateGrpsIOServiceSettings delegates to MockRepository
 func (w *MockGrpsIOServiceWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
 	return w.mock.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
@@ -991,7 +1025,47 @@ func (m *MockRepository) GetSettingsRevision(ctx context.Context, uid string) (u
 	return 0, errors.NewNotFound("service settings not found")
 }
 
-// UpdateGrpsIOServiceSettings updates service settings with CAS revision checking
+// CreateGrpsIOServiceSettings creates new service settings in the mock repository
+func (m *MockRepository) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock service: creating service settings",
+		"service_uid", settings.UID)
+
+	// Check error simulation first
+	if err := m.checkErrorSimulation("CreateGrpsIOServiceSettings", settings.UID); err != nil {
+		return nil, 0, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check if settings already exist
+	if _, exists := m.settings[settings.UID]; exists {
+		return nil, 0, errors.NewConflict(fmt.Sprintf("service settings with UID %s already exists", settings.UID))
+	}
+
+	// Set timestamps
+	now := time.Now().UTC()
+	settings.CreatedAt = now
+	settings.UpdatedAt = now
+
+	// Store settings with initial revision 1
+	settingsCopy := &model.GrpsIOServiceSettings{
+		UID:       settings.UID,
+		Writers:   append([]model.UserInfo(nil), settings.Writers...),
+		Auditors:  append([]model.UserInfo(nil), settings.Auditors...),
+		CreatedAt: settings.CreatedAt,
+		UpdatedAt: settings.UpdatedAt,
+	}
+	m.settings[settings.UID] = settingsCopy
+	m.settingsRevisions[settings.UID] = 1
+
+	slog.DebugContext(ctx, "mock service: service settings created",
+		"service_uid", settings.UID,
+		"revision", 1)
+
+	return settingsCopy, 1, nil
+}
+
 func (m *MockRepository) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "mock service: updating service settings",
 		"service_uid", settings.UID,

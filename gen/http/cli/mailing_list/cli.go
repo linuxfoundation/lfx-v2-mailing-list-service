@@ -387,8 +387,30 @@ Create GroupsIO service with type-specific validation rules
 Example:
     %[1]s mailing-list create-grpsio-service --body '{
       "auditors": [
-         "auditor_user_id1",
-         "auditor_user_id2"
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         }
       ],
       "domain": "lists.project.org",
       "global_owners": [
@@ -405,8 +427,30 @@ Example:
       "type": "primary",
       "url": "https://lists.project.org",
       "writers": [
-         "manager_user_id1",
-         "manager_user_id2"
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         },
+         {
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
+         }
       ]
    }' --version "1" --bearer-token "eyJhbGci..."
 `, os.Args[0])
@@ -437,10 +481,6 @@ Update GroupsIO service
 
 Example:
     %[1]s mailing-list update-grpsio-service --body '{
-      "auditors": [
-         "auditor_user_id1",
-         "auditor_user_id2"
-      ],
       "domain": "lists.project.org",
       "global_owners": [
          "admin@example.com"
@@ -454,11 +494,7 @@ Example:
       "public": true,
       "status": "created",
       "type": "primary",
-      "url": "https://lists.project.org",
-      "writers": [
-         "manager_user_id1",
-         "manager_user_id2"
-      ]
+      "url": "https://lists.project.org"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }
@@ -504,54 +540,54 @@ Example:
     %[1]s mailing-list update-grpsio-service-settings --body '{
       "auditors": [
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          }
       ],
       "writers": [
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          },
          {
-            "avatar": "http://fay.net/zachary_yundt",
-            "email": "enola@armstrong.org",
-            "name": "Numquam deserunt.",
-            "username": "Qui ex magnam sint."
+            "avatar": "http://schmitt.org/yadira_schultz",
+            "email": "will_upton@fay.biz",
+            "name": "Quaerat quos et dolor magni.",
+            "username": "Sunt qui tempora culpa ipsa maxime ex."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -579,7 +615,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Ut rerum quam repellat eum.",
+            "name": "Voluptate vitae saepe.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -587,7 +623,15 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Ut rerum quam repellat eum.",
+            "name": "Voluptate vitae saepe.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Voluptate vitae saepe.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -642,7 +686,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Ut rerum quam repellat eum.",
+            "name": "Voluptate vitae saepe.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -650,7 +694,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Ut rerum quam repellat eum.",
+            "name": "Voluptate vitae saepe.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -658,7 +702,15 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Ut rerum quam repellat eum.",
+            "name": "Voluptate vitae saepe.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Voluptate vitae saepe.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -709,8 +761,8 @@ Example:
       "last_name": "Doe",
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
-      "member_type": "direct",
-      "mod_status": "owner",
+      "member_type": "committee",
+      "mod_status": "none",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
@@ -748,7 +800,7 @@ Example:
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "owner",
+      "mod_status": "moderator",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -780,10 +832,10 @@ Handle GroupsIO webhook events for subgroup and member changes
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
       "action": "created_subgroup",
-      "extra": "Eos illum exercitationem dolorum nobis.",
-      "extra_id": 9070427938889905950,
-      "group": "Maiores quibusdam.",
-      "member_info": "Consequatur qui quia id."
-   }' --signature "Ad dolorem sit molestias aliquam sit."
+      "extra": "Recusandae ad dolorem.",
+      "extra_id": 8580972433300173377,
+      "group": "Consequatur qui quia id.",
+      "member_info": "Eos illum exercitationem dolorum nobis."
+   }' --signature "Aliquam sit."
 `, os.Args[0])
 }

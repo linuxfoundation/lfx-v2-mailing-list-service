@@ -42,6 +42,24 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 	return service
 }
 
+// convertGrpsIOServiceCreatePayloadToSettings extracts writers/auditors from create payload to settings model
+func (s *mailingListService) convertGrpsIOServiceCreatePayloadToSettings(p *mailinglistservice.CreateGrpsioServicePayload, serviceUID string) *model.GrpsIOServiceSettings {
+	if p == nil {
+		return nil
+	}
+
+	now := time.Now()
+	settings := &model.GrpsIOServiceSettings{
+		UID:       serviceUID,
+		Writers:   convertUserInfoPayloadToDomain(p.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(p.Auditors),
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	return settings
+}
+
 // convertGrpsIOMailingListPayloadToDomain converts GOA mailing list payload to domain model
 func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailinglistservice.CreateGrpsioMailingListPayload) *model.GrpsIOMailingList {
 	// Check for nil payload to avoid panic
@@ -321,12 +339,20 @@ func convertUserInfoPayloadToDomain(goaUsers []*mailinglistservice.UserInfo) []m
 
 	users := make([]model.UserInfo, len(goaUsers))
 	for i, u := range goaUsers {
-		users[i] = model.UserInfo{
-			Name:     *u.Name,
-			Email:    *u.Email,
-			Username: *u.Username,
-			Avatar:   *u.Avatar,
+		var user model.UserInfo
+		if u.Name != nil {
+			user.Name = *u.Name
 		}
+		if u.Email != nil {
+			user.Email = *u.Email
+		}
+		if u.Username != nil {
+			user.Username = *u.Username
+		}
+		if u.Avatar != nil {
+			user.Avatar = *u.Avatar
+		}
+		users[i] = user
 	}
 	return users
 }

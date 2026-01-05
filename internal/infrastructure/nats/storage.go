@@ -138,7 +138,24 @@ func (s *storage) GetSettingsRevision(ctx context.Context, uid string) (uint64, 
 	return rev, nil
 }
 
-// UpdateGrpsIOServiceSettings updates service settings with CAS (Compare-And-Swap) revision checking
+// CreateGrpsIOServiceSettings creates new service settings in NATS KV store
+func (s *storage) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: creating service settings",
+		"service_uid", settings.UID)
+
+	rev, err := s.put(ctx, constants.KVBucketNameGroupsIOServiceSettings, settings.UID, settings)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create service settings", "error", err, "service_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to create service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings created",
+		"service_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
 func (s *storage) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: updating service settings",
 		"service_uid", settings.UID,
@@ -212,7 +229,7 @@ func (s *storage) GetServiceRevision(ctx context.Context, bucket, uid string) (u
 }
 
 // CreateGrpsIOService creates a new service in NATS KV store
-func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
+func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: creating service",
 		"service_id", service.UID,
 		"service_type", service.Type)
@@ -220,14 +237,14 @@ func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIO
 	rev, err := s.put(ctx, constants.KVBucketNameGroupsIOServices, service.UID, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service", "error", err, "service_id", service.UID)
-		return nil, 0, errs.NewServiceUnavailable("failed to create service")
+		return nil, nil, 0, errs.NewServiceUnavailable("failed to create service")
 	}
 
 	slog.DebugContext(ctx, "nats storage: service created",
 		"service_id", service.UID,
 		"revision", rev)
 
-	return service, rev, nil
+	return service, settings, rev, nil
 }
 
 // CreateServiceSecondaryIndices creates all secondary indices for the service (public interface)

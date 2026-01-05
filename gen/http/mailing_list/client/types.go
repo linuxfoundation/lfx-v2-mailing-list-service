@@ -43,10 +43,10 @@ type CreateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+	// Manager users who can edit/modify this service
+	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this service
+	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioServiceRequestBody is the type of the "mailing-list" service
@@ -77,10 +77,6 @@ type UpdateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioServiceSettingsRequestBody is the type of the "mailing-list"
@@ -1058,6 +1054,18 @@ type GroupsioWebhookUnauthorizedResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// UserInfoRequestBody is used to define fields on request body types.
+type UserInfoRequestBody struct {
+	// The full name of the user
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The email address of the user
+	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	// The username/LFID of the user
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// The avatar URL of the user
+	Avatar *string `form:"avatar,omitempty" json:"avatar,omitempty" xml:"avatar,omitempty"`
+}
+
 // UserInfoResponseBody is used to define fields on response body types.
 type UserInfoResponseBody struct {
 	// The full name of the user
@@ -1133,18 +1141,6 @@ type GrpsIoServiceSettingsResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-}
-
-// UserInfoRequestBody is used to define fields on request body types.
-type UserInfoRequestBody struct {
-	// The full name of the user
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The email address of the user
-	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// The username/LFID of the user
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The avatar URL of the user
-	Avatar *string `form:"avatar,omitempty" json:"avatar,omitempty" xml:"avatar,omitempty"`
 }
 
 // CommitteeRequestBody is used to define fields on request body types.
@@ -1282,15 +1278,15 @@ func NewCreateGrpsioServiceRequestBody(p *mailinglist.CreateGrpsioServicePayload
 		}
 	}
 	if p.Writers != nil {
-		body.Writers = make([]string, len(p.Writers))
+		body.Writers = make([]*UserInfoRequestBody, len(p.Writers))
 		for i, val := range p.Writers {
-			body.Writers[i] = val
+			body.Writers[i] = marshalMailinglistUserInfoToUserInfoRequestBody(val)
 		}
 	}
 	if p.Auditors != nil {
-		body.Auditors = make([]string, len(p.Auditors))
+		body.Auditors = make([]*UserInfoRequestBody, len(p.Auditors))
 		for i, val := range p.Auditors {
-			body.Auditors[i] = val
+			body.Auditors[i] = marshalMailinglistUserInfoToUserInfoRequestBody(val)
 		}
 	}
 	return body
@@ -1323,18 +1319,6 @@ func NewUpdateGrpsioServiceRequestBody(p *mailinglist.UpdateGrpsioServicePayload
 		var zero bool
 		if body.Public == zero {
 			body.Public = false
-		}
-	}
-	if p.Writers != nil {
-		body.Writers = make([]string, len(p.Writers))
-		for i, val := range p.Writers {
-			body.Writers[i] = val
-		}
-	}
-	if p.Auditors != nil {
-		body.Auditors = make([]string, len(p.Auditors))
-		for i, val := range p.Auditors {
-			body.Auditors[i] = val
 		}
 	}
 	return body
@@ -4136,6 +4120,18 @@ func ValidateGroupsioWebhookUnauthorizedResponseBody(body *GroupsioWebhookUnauth
 	return
 }
 
+// ValidateUserInfoRequestBody runs the validations defined on
+// UserInfoRequestBody
+func ValidateUserInfoRequestBody(body *UserInfoRequestBody) (err error) {
+	if body.Email != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.Avatar != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.avatar", *body.Avatar, goa.FormatURI))
+	}
+	return
+}
+
 // ValidateUserInfoResponseBody runs the validations defined on
 // UserInfoResponseBody
 func ValidateUserInfoResponseBody(body *UserInfoResponseBody) (err error) {
@@ -4237,18 +4233,6 @@ func ValidateGrpsIoServiceSettingsResponseBody(body *GrpsIoServiceSettingsRespon
 	}
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	return
-}
-
-// ValidateUserInfoRequestBody runs the validations defined on
-// UserInfoRequestBody
-func ValidateUserInfoRequestBody(body *UserInfoRequestBody) (err error) {
-	if body.Email != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
-	}
-	if body.Avatar != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.avatar", *body.Avatar, goa.FormatURI))
 	}
 	return
 }

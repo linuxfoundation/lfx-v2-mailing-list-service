@@ -2556,22 +2556,6 @@ func DecodeGroupsioWebhookResponse(decoder func(*http.Response) goahttp.Decoder,
 	}
 }
 
-// unmarshalUserInfoResponseBodyToMailinglistUserInfo builds a value of type
-// *mailinglist.UserInfo from a value of type *UserInfoResponseBody.
-func unmarshalUserInfoResponseBodyToMailinglistUserInfo(v *UserInfoResponseBody) *mailinglist.UserInfo {
-	if v == nil {
-		return nil
-	}
-	res := &mailinglist.UserInfo{
-		Name:     v.Name,
-		Email:    v.Email,
-		Username: v.Username,
-		Avatar:   v.Avatar,
-	}
-
-	return res
-}
-
 // marshalMailinglistUserInfoToUserInfoRequestBody builds a value of type
 // *UserInfoRequestBody from a value of type *mailinglist.UserInfo.
 func marshalMailinglistUserInfoToUserInfoRequestBody(v *mailinglist.UserInfo) *UserInfoRequestBody {
@@ -2591,6 +2575,22 @@ func marshalMailinglistUserInfoToUserInfoRequestBody(v *mailinglist.UserInfo) *U
 // marshalUserInfoRequestBodyToMailinglistUserInfo builds a value of type
 // *mailinglist.UserInfo from a value of type *UserInfoRequestBody.
 func marshalUserInfoRequestBodyToMailinglistUserInfo(v *UserInfoRequestBody) *mailinglist.UserInfo {
+	if v == nil {
+		return nil
+	}
+	res := &mailinglist.UserInfo{
+		Name:     v.Name,
+		Email:    v.Email,
+		Username: v.Username,
+		Avatar:   v.Avatar,
+	}
+
+	return res
+}
+
+// unmarshalUserInfoResponseBodyToMailinglistUserInfo builds a value of type
+// *mailinglist.UserInfo from a value of type *UserInfoResponseBody.
+func unmarshalUserInfoResponseBodyToMailinglistUserInfo(v *UserInfoResponseBody) *mailinglist.UserInfo {
 	if v == nil {
 		return nil
 	}
