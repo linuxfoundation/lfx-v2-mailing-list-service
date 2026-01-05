@@ -534,8 +534,6 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		}
 	}
 
-	slog.InfoContext(ctx, "will update mailing list", "mailing_list", mailingList, "existing", existing)
-
 	// Step 4: Update in storage with revision check
 	updatedMailingList, newRevision, err := ml.grpsIOWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 	if err != nil {
