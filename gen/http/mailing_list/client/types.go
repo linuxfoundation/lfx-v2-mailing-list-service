@@ -110,6 +110,10 @@ type CreateGrpsioMailingListRequestBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
+	// Manager users who can edit/modify this mailing list
+	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this mailing list
+	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UpdateGrpsioMailingListRequestBody is the type of the "mailing-list" service
@@ -347,6 +351,10 @@ type CreateGrpsioMailingListResponseBody struct {
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Manager users who can edit/modify this mailing list
+	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this mailing list
+	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// Project name (read-only)
 	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Project slug identifier (read-only)
@@ -1478,6 +1486,18 @@ func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingLis
 			body.Committees[i] = marshalMailinglistCommitteeToCommitteeRequestBody(val)
 		}
 	}
+	if p.Writers != nil {
+		body.Writers = make([]*UserInfoRequestBody, len(p.Writers))
+		for i, val := range p.Writers {
+			body.Writers[i] = marshalMailinglistUserInfoToUserInfoRequestBody(val)
+		}
+	}
+	if p.Auditors != nil {
+		body.Auditors = make([]*UserInfoRequestBody, len(p.Auditors))
+		for i, val := range p.Auditors {
+			body.Auditors[i] = marshalMailinglistUserInfoToUserInfoRequestBody(val)
+		}
+	}
 	return body
 }
 
@@ -2141,6 +2161,18 @@ func NewCreateGrpsioMailingListGrpsIoMailingListFullCreated(body *CreateGrpsioMa
 		v.Committees = make([]*mailinglist.Committee, len(body.Committees))
 		for i, val := range body.Committees {
 			v.Committees[i] = unmarshalCommitteeResponseBodyToMailinglistCommittee(val)
+		}
+	}
+	if body.Writers != nil {
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = unmarshalUserInfoResponseBodyToMailinglistUserInfo(val)
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = unmarshalUserInfoResponseBodyToMailinglistUserInfo(val)
 		}
 	}
 
@@ -3246,6 +3278,20 @@ func ValidateCreateGrpsioMailingListResponseBody(body *CreateGrpsioMailingListRe
 	}
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
+	}
+	for _, e := range body.Writers {
+		if e != nil {
+			if err2 := ValidateUserInfoResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Auditors {
+		if e != nil {
+			if err2 := ValidateUserInfoResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	if body.ProjectSlug != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_slug", *body.ProjectSlug, goa.FormatRegexp))

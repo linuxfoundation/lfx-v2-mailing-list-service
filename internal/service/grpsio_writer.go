@@ -82,7 +82,7 @@ type GrpsIOServiceWriter interface {
 // GrpsIOMailingListWriter defines the interface for mailing list write operations
 type GrpsIOMailingListWriter interface {
 	// CreateGrpsIOMailingList creates a new mailing list and returns the mailing list with revision
-	CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error)
+	CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingList, uint64, error)
 
 	// UpdateGrpsIOMailingList updates an existing mailing list with expected revision and returns updated mailing list with new revision
 	UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error)

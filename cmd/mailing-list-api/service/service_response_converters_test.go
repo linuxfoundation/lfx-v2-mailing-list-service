@@ -284,7 +284,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertGrpsIOMailingListDomainToResponse(tt.domain)
+			result := svc.convertGrpsIOMailingListDomainToResponse(tt.domain, nil)
 
 			assert.Equal(t, tt.expected, result)
 		})

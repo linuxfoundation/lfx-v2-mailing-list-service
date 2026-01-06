@@ -406,6 +406,10 @@ var GrpsIOMailingListFull = dsl.Type("grps-io-mailing-list-full", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 
+	// Settings fields (writers and auditors)
+	MailingListWritersAttribute()
+	MailingListAuditorsAttribute()
+
 	ProjectNameAttribute()
 	ProjectSlugAttribute()
 	CreatedAtAttribute()

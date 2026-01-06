@@ -147,6 +147,10 @@ type CreateGrpsioMailingListPayload struct {
 	SubjectTag *string
 	// Service UUID
 	ServiceUID string
+	// Manager users who can edit/modify this mailing list
+	Writers []*UserInfo
+	// Auditor users who can audit this mailing list
+	Auditors []*UserInfo
 }
 
 // CreateGrpsioServicePayload is the payload type of the mailing-list service
@@ -370,6 +374,10 @@ type GrpsIoMailingListFull struct {
 	ServiceUID *string
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string
+	// Manager users who can edit/modify this mailing list
+	Writers []*UserInfo
+	// Auditor users who can audit this mailing list
+	Auditors []*UserInfo
 	// Project name (read-only)
 	ProjectName *string
 	// Project slug identifier (read-only)

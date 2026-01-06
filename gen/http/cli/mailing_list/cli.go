@@ -416,28 +416,16 @@ Example:
     %[1]s mailing-list create-grpsio-service --body '{
       "auditors": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
-         },
-         {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
-         },
-         {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ],
       "domain": "lists.project.org",
@@ -456,28 +444,16 @@ Example:
       "url": "https://lists.project.org",
       "writers": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
-         },
-         {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
-         },
-         {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ]
    }' --version "1" --bearer-token "eyJhbGci..."
@@ -568,42 +544,42 @@ Example:
     %[1]s mailing-list update-grpsio-service-settings --body '{
       "auditors": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ],
       "writers": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -621,13 +597,33 @@ Create GroupsIO mailing list/subgroup with comprehensive validation
 Example:
     %[1]s mailing-list create-grpsio-mailing-list --body '{
       "audience_access": "public",
+      "auditors": [
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         }
+      ],
       "committees": [
          {
             "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
+            "name": "Corrupti quis aut voluptatem aut.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -635,23 +631,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
+            "name": "Corrupti quis aut voluptatem aut.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -661,7 +641,33 @@ Example:
       "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "subject_tag": "[TSC]",
       "title": "Technical Steering Committee",
-      "type": "discussion_moderated"
+      "type": "discussion_moderated",
+      "writers": [
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         }
+      ]
    }' --version "1" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
@@ -698,7 +704,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
+            "name": "Corrupti quis aut voluptatem aut.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -706,23 +712,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
+            "name": "Corrupti quis aut voluptatem aut.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -778,42 +768,54 @@ Example:
     %[1]s mailing-list update-grpsio-mailing-list-settings --body '{
       "auditors": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
+         },
+         {
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ],
       "writers": [
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          },
          {
-            "avatar": "http://gibsonfahey.name/lauryn.cummings",
-            "email": "tamia_dicki@schaden.name",
-            "name": "Aut ipsa.",
-            "username": "Ipsa maxime ex laborum qui."
+            "avatar": "http://turner.org/winifred_ernser",
+            "email": "sabrina_gleason@wisozk.net",
+            "name": "Debitis dicta et.",
+            "username": "Commodi impedit ea."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -839,7 +841,7 @@ Example:
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
       "member_type": "direct",
-      "mod_status": "owner",
+      "mod_status": "moderator",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
@@ -873,7 +875,7 @@ Update a member of a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "digest",
+      "delivery_mode": "normal",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
@@ -911,8 +913,8 @@ Example:
       "action": "created_subgroup",
       "extra": "Optio molestias ullam porro aut.",
       "extra_id": 2343783012775007402,
-      "group": "Recusandae ad dolorem.",
-      "member_info": "Molestias aliquam sit nesciunt sint praesentium."
+      "group": "Aliquam sit.",
+      "member_info": "Sint praesentium."
    }' --signature "Repellat velit qui."
 `, os.Args[0])
 }

@@ -469,7 +469,11 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList)
+			settings := &model.GrpsIOMailingListSettings{
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			}
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList, settings)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -591,7 +595,11 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList_PublishingErrors(t *te
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList)
+			settings := &model.GrpsIOMailingListSettings{
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			}
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList, settings)
 
 			// Validate
 			if tc.expectComplete {

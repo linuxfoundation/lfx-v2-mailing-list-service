@@ -300,15 +300,21 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	domainMailingList := s.convertGrpsIOMailingListPayloadToDomain(payload)
 	domainMailingList.UID = mailingListUID
 
+	// Extract writers and auditors from payload and create settings
+	domainSettings := &model.GrpsIOMailingListSettings{
+		Writers:  convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors: convertUserInfoPayloadToDomain(payload.Auditors),
+	}
+
 	// Execute use case
-	createdMailingList, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
+	createdMailingList, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList, domainSettings)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list", "error", err, "group_name", payload.GroupName)
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response
-	result = s.convertGrpsIOMailingListDomainToResponse(createdMailingList)
+	// Convert domain model to GOA response with settings
+	result = s.convertGrpsIOMailingListDomainToResponse(createdMailingList, domainSettings)
 
 	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID, "revision", revision)
 	return result, nil

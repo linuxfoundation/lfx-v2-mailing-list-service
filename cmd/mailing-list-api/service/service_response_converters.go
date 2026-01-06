@@ -121,7 +121,7 @@ func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(servic
 }
 
 // convertGrpsIOMailingListDomainToResponse converts domain mailing list to full response (for CREATE operations)
-func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListFull {
+func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) *mailinglistservice.GrpsIoMailingListFull {
 	if ml == nil {
 		return &mailinglistservice.GrpsIoMailingListFull{}
 	}
@@ -140,6 +140,12 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 		ProjectUID:     &ml.ProjectUID,  // This is inherited from parent in orchestrator
 		ProjectName:    &ml.ProjectName, // Inherited from parent service
 		ProjectSlug:    &ml.ProjectSlug, // Inherited from parent service
+	}
+
+	// Add writers and auditors from settings
+	if settings != nil {
+		result.Writers = convertUserInfoDomainToResponse(settings.Writers)
+		result.Auditors = convertUserInfoDomainToResponse(settings.Auditors)
 	}
 
 	// Handle timestamps
