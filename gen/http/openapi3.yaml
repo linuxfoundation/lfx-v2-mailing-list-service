@@ -34,6 +34,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateGrpsioMailingListRequestBody'
                         example:
+                            allow_attachments: true
                             audience_access: public
                             auditors:
                                 - avatar: http://turner.org/winifred_ernser
@@ -91,6 +92,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListFull'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 auditors:
                                     - avatar: http://haleyklein.org/abdul
@@ -318,6 +320,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 committees:
                                     - allowed_voting_statuses:
@@ -432,6 +435,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/UpdateGrpsioMailingListRequestBody'
                         example:
+                            allow_attachments: true
                             audience_access: public
                             committees:
                                 - allowed_voting_statuses:
@@ -459,6 +463,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/GrpsIoMailingListWithReadonlyAttributes'
                             example:
+                                allow_attachments: true
                                 audience_access: public
                                 committees:
                                     - allowed_voting_statuses:
@@ -2298,6 +2303,10 @@ components:
         CreateGrpsioMailingListRequestBody:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -2411,6 +2420,7 @@ components:
                           name: Debitis dicta et.
                           username: Commodi impedit ea.
             example:
+                allow_attachments: true
                 audience_access: public
                 auditors:
                     - avatar: http://turner.org/winifred_ernser
@@ -2709,6 +2719,10 @@ components:
         GrpsIoMailingListFull:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -2849,6 +2863,7 @@ components:
                           username: Sapiente quo eveniet iusto sit aperiam neque.
             description: A complete representation of GroupsIO mailing lists with all attributes including access control and audit trail.
             example:
+                allow_attachments: true
                 audience_access: public
                 auditors:
                     - avatar: http://legrosboyle.net/adolph_deckow
@@ -3012,6 +3027,10 @@ components:
         GrpsIoMailingListWithReadonlyAttributes:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -3121,6 +3140,7 @@ components:
                     format: date-time
             description: A representation of GroupsIO mailing lists with readonly attributes.
             example:
+                allow_attachments: true
                 audience_access: public
                 committees:
                     - allowed_voting_statuses:
@@ -4017,6 +4037,10 @@ components:
         UpdateGrpsioMailingListRequestBody:
             type: object
             properties:
+                allow_attachments:
+                    type: boolean
+                    description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
+                    example: true
                 audience_access:
                     type: string
                     description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -4085,6 +4109,7 @@ components:
                         - discussion_moderated
                         - discussion_open
             example:
+                allow_attachments: true
                 audience_access: public
                 committees:
                     - allowed_voting_statuses:

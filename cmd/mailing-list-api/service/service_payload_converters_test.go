@@ -725,6 +725,10 @@ func int64Ptr(i int64) *int64 {
 	return &i
 }
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 // TestMailingListService_convertWebhookGroupInfo tests the webhook group info converter
 func TestMailingListService_convertWebhookGroupInfo(t *testing.T) {
 	s := &mailingListService{}

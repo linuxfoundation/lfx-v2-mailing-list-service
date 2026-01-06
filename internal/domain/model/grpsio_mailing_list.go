@@ -30,13 +30,14 @@ type GrpsIOMailingList struct {
 	// Committee association - supports multiple committees with OR logic for access control
 	Committees []Committee `json:"committees,omitempty"`
 
-	Description string `json:"description"` // Minimum 11 characters
-	Title       string `json:"title"`
-	SubjectTag  string `json:"subject_tag"`  // Optional
-	ServiceUID  string `json:"service_uid"`  // Service UUID (required)
-	ProjectUID  string `json:"project_uid"`  // Inherited from parent service
-	ProjectName string `json:"project_name"` // Inherited from parent service
-	ProjectSlug string `json:"project_slug"` // Inherited from parent service
+	Description      string `json:"description"`       // Minimum 11 characters
+	Title            string `json:"title"`
+	SubjectTag       string `json:"subject_tag"`       // Optional
+	AllowAttachments bool   `json:"allow_attachments"` // If true, attachments are allowed (group_attachments_normal), if false they are bounced (group_attachments_bounced)
+	ServiceUID       string `json:"service_uid"`       // Service UUID (required)
+	ProjectUID       string `json:"project_uid"`       // Inherited from parent service
+	ProjectName      string `json:"project_name"`      // Inherited from parent service
+	ProjectSlug      string `json:"project_slug"`      // Inherited from parent service
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

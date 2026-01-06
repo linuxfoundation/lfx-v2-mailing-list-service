@@ -130,6 +130,7 @@ type GroupUpdateOptions struct {
 	MemberDirectoryAccess string   `url:"member_directory_access,omitempty"`
 	PollsAccess           string   `url:"polls_access,omitempty"`
 	ChatAccess            string   `url:"chat_access,omitempty"`
+	HandleAttachments     string   `url:"handle_attachments,omitempty"`
 }
 
 // SubgroupUpdateOptions represents options for updating a Groups.io subgroup/mailing list
@@ -139,6 +140,9 @@ type SubgroupUpdateOptions struct {
 	SubjectTag  string `url:"subject_tag,omitempty"`
 	Restricted  *bool  `url:"restricted,omitempty"`  // If true, users must request to join and be approved
 	InviteOnly  *bool  `url:"invite_only,omitempty"` // If true, only invited users can join
+
+	// Attachment handling - can be: group_attachments_normal, group_attachments_bounced, group_attachments_stripped, group_attachments_moderated
+	HandleAttachments string `url:"handle_attachments,omitempty"`
 }
 
 // TokenCache represents a cached authentication token

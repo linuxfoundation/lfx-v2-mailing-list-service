@@ -145,6 +145,9 @@ type CreateGrpsioMailingListPayload struct {
 	Title string
 	// Subject tag prefix
 	SubjectTag *string
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool
 	// Service UUID
 	ServiceUID string
 	// Manager users who can edit/modify this mailing list
@@ -370,6 +373,9 @@ type GrpsIoMailingListFull struct {
 	Title *string
 	// Subject tag prefix
 	SubjectTag *string
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool
 	// Service UUID
 	ServiceUID *string
 	// LFXv2 Project UID (inherited from parent service)
@@ -433,6 +439,9 @@ type GrpsIoMailingListWithReadonlyAttributes struct {
 	Title *string
 	// Subject tag prefix
 	SubjectTag *string
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool
 	// Service UUID
 	ServiceUID *string
 	// LFXv2 Project UID (inherited from parent service)
@@ -701,6 +710,9 @@ type UpdateGrpsioMailingListPayload struct {
 	Title string
 	// Subject tag prefix
 	SubjectTag *string
+	// If true, attachments are allowed (group_attachments_normal). If false,
+	// attachments are bounced (group_attachments_bounced).
+	AllowAttachments *bool
 	// Service UUID
 	ServiceUID string
 }

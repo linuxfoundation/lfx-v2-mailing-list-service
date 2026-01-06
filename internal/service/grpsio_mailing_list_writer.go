@@ -266,6 +266,14 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	return createdMailingList, revision, nil
 }
 
+// allowAttachmentsToGroupsIO converts allow_attachments boolean to Groups.io handle_attachments enum
+func allowAttachmentsToGroupsIO(allowAttachments bool) string {
+	if allowAttachments {
+		return "group_attachments_normal" // Attachments allowed
+	}
+	return "group_attachments_bounced" // Attachments rejected
+}
+
 // audienceAccessToGroupsIO converts audience_access enum to Groups.io restricted/invite_only flags
 func audienceAccessToGroupsIO(audienceAccess string) (restricted, inviteOnly *bool) {
 	falseVal := false
@@ -331,6 +339,20 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 		"domain", parentService.Domain,
 		"parent_group_id", *parentService.GroupID,
 	)
+
+	// Update subgroup to set attachment handling (not available during creation)
+	handleAttachments := allowAttachmentsToGroupsIO(mailingList.AllowAttachments)
+	updateOptions := groupsio.SubgroupUpdateOptions{
+		HandleAttachments: handleAttachments,
+	}
+	if err := ml.groupsClient.UpdateSubgroup(ctx, parentService.Domain, subgroupResult.ID, updateOptions); err != nil {
+		slog.WarnContext(ctx, "failed to set attachment handling on subgroup",
+			"error", err,
+			"subgroup_id", subgroupResult.ID,
+			"handle_attachments", handleAttachments,
+		)
+		// Don't fail the operation, subgroup was created successfully
+	}
 
 	return &subgroupID, nil
 }
@@ -739,7 +761,7 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 
 	slog.DebugContext(ctx, "mailing list data merged",
 		"mailing_list_uid", existing.UID,
-		"mutable_fields", []string{"public", "audience_access", "type", "description", "title", "committees", "subject_tag", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
+		"mutable_fields", []string{"public", "audience_access", "type", "description", "title", "committees", "subject_tag", "allow_attachments", "writers", "auditors", "last_reviewed_at", "last_reviewed_by"},
 	)
 }
 
@@ -762,13 +784,17 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 	// Convert audience_access to Groups.io fields
 	restricted, inviteOnly := audienceAccessToGroupsIO(mailingList.AudienceAccess)
 
+	// Convert allow_attachments to Groups.io field
+	handleAttachments := allowAttachmentsToGroupsIO(mailingList.AllowAttachments)
+
 	// Build update options from mailing list model
 	updates := groupsio.SubgroupUpdateOptions{
-		Title:       mailingList.Title,
-		Description: mailingList.Description,
-		SubjectTag:  mailingList.SubjectTag,
-		Restricted:  restricted,
-		InviteOnly:  inviteOnly,
+		Title:             mailingList.Title,
+		Description:       mailingList.Description,
+		SubjectTag:        mailingList.SubjectTag,
+		Restricted:        restricted,
+		InviteOnly:        inviteOnly,
+		HandleAttachments: handleAttachments,
 	}
 
 	// Perform Groups.io mailing list update

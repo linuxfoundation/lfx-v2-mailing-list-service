@@ -68,16 +68,24 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 	}
 
 	now := time.Now()
+
+	// Handle allow_attachments: default to false if not provided (server-side default for POST)
+	allowAttachments := false
+	if p.AllowAttachments != nil {
+		allowAttachments = *p.AllowAttachments
+	}
+
 	mailingList := &model.GrpsIOMailingList{
-		GroupName:      p.GroupName,
-		Public:         p.Public,
-		Type:           p.Type,
-		AudienceAccess: p.AudienceAccess,
-		Committees:     convertCommitteesToDomain(p.Committees),
-		Description:    p.Description,
-		Title:          p.Title,
-		SubjectTag:     payloadStringValue(p.SubjectTag),
-		ServiceUID:     p.ServiceUID,
+		GroupName:        p.GroupName,
+		Public:           p.Public,
+		Type:             p.Type,
+		AudienceAccess:   p.AudienceAccess,
+		Committees:       convertCommitteesToDomain(p.Committees),
+		Description:      p.Description,
+		Title:            p.Title,
+		SubjectTag:       payloadStringValue(p.SubjectTag),
+		AllowAttachments: allowAttachments,
+		ServiceUID:       p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
 		Source:    constants.SourceAPI, // API operations always use api source
 		CreatedAt: now,
@@ -140,26 +148,35 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 
 // convertGrpsIOMailingListUpdatePayloadToDomain converts an update payload to domain model
 func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(existing *model.GrpsIOMailingList, payload *mailinglistservice.UpdateGrpsioMailingListPayload) *model.GrpsIOMailingList {
+	// Handle allow_attachments: default to false if not provided (PUT semantics)
+	allowAttachments := false
+	if payload.AllowAttachments != nil {
+		allowAttachments = *payload.AllowAttachments
+	}
+
 	// Create updated mailing list from payload data (PUT semantics)
 	return &model.GrpsIOMailingList{
 		// Preserve immutable/readonly fields
-		UID:            existing.UID,
-		GroupName:      existing.GroupName, // Fixed: GroupName is immutable, preserve from existing
-		ProjectUID:     existing.ProjectUID,
-		ProjectName:    existing.ProjectName,
-		ProjectSlug:    existing.ProjectSlug,
-		CreatedAt:      existing.CreatedAt,
+		UID:         existing.UID,
+		SubgroupID:  existing.SubgroupID, // Preserve Groups.io subgroup ID
+		GroupName:   existing.GroupName,  // Fixed: GroupName is immutable, preserve from existing
+		ProjectUID:  existing.ProjectUID,
+		ProjectName: existing.ProjectName,
+		ProjectSlug: existing.ProjectSlug,
+		Source:      existing.Source, // Preserve source tracking
+		CreatedAt:   existing.CreatedAt,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
-		Public:         payload.Public,                                // Direct assignment
-		AudienceAccess: payload.AudienceAccess,                        // Direct assignment
-		Type:           payload.Type,                                  // Direct assignment
-		Description:    payload.Description,                           // Direct assignment
-		Title:          payload.Title,                                 // Direct assignment
-		ServiceUID:     payload.ServiceUID,                            // Direct assignment
-		Committees:     convertCommitteesToDomain(payload.Committees), // nil → nil
-		SubjectTag:     payloadStringValue(payload.SubjectTag),        // nil → ""
-		UpdatedAt:      time.Now().UTC(),
+		Public:           payload.Public,                                // Direct assignment
+		AudienceAccess:   payload.AudienceAccess,                        // Direct assignment
+		Type:             payload.Type,                                  // Direct assignment
+		Description:      payload.Description,                           // Direct assignment
+		Title:            payload.Title,                                 // Direct assignment
+		ServiceUID:       payload.ServiceUID,                            // Direct assignment
+		AllowAttachments: allowAttachments,                              // Default to false if not provided
+		Committees:       convertCommitteesToDomain(payload.Committees), // nil → nil
+		SubjectTag:       payloadStringValue(payload.SubjectTag),        // nil → ""
+		UpdatedAt:        time.Now().UTC(),
 	}
 }
 

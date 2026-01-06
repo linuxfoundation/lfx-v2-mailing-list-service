@@ -347,7 +347,7 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOService(ctx context.Context, uid
 	// Merge existing data with updated fields
 	sw.mergeServiceData(ctx, existing, service)
 
-	// Update service in storageå
+	// Update service in storage
 	updatedService, revision, err := sw.grpsIOWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update service",
