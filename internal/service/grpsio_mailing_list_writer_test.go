@@ -728,8 +728,8 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			settings: &model.GrpsIOMailingListSettings{
 				UID: "list-3",
 				Writers: []model.UserInfo{
-					{Username: "user1"},
-					{Username: "user2"},
+					{Username: stringPtr("user1")},
+					{Username: stringPtr("user2")},
 				},
 			},
 			expected: &model.AccessMessage{
@@ -1155,6 +1155,11 @@ func TestAudienceAccessToGroupsIO(t *testing.T) {
 			assert.Equal(t, tt.expectedInviteOnly, *inviteOnly, "inviteOnly flag mismatch")
 		})
 	}
+}
+
+// stringPtr is a helper function that returns a pointer to a string value
+func stringPtr(s string) *string {
+	return &s
 }
 
 // Helper functions (if needed in future)

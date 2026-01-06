@@ -474,18 +474,26 @@ func (sw *grpsIOWriterOrchestrator) UpdateGrpsIOServiceSettings(ctx context.Cont
 				relations[constants.RelationOwner] = service.GlobalOwners
 			}
 			if len(updatedSettings.Writers) > 0 {
-				writers := make([]string, len(updatedSettings.Writers))
-				for i, w := range updatedSettings.Writers {
-					writers[i] = w.Username
+				writers := make([]string, 0, len(updatedSettings.Writers))
+				for _, w := range updatedSettings.Writers {
+					if w.Username != nil && *w.Username != "" {
+						writers = append(writers, *w.Username)
+					}
 				}
-				relations[constants.RelationWriter] = writers
+				if len(writers) > 0 {
+					relations[constants.RelationWriter] = writers
+				}
 			}
 			if len(updatedSettings.Auditors) > 0 {
-				auditors := make([]string, len(updatedSettings.Auditors))
-				for i, a := range updatedSettings.Auditors {
-					auditors[i] = a.Username
+				auditors := make([]string, 0, len(updatedSettings.Auditors))
+				for _, a := range updatedSettings.Auditors {
+					if a.Username != nil && *a.Username != "" {
+						auditors = append(auditors, *a.Username)
+					}
 				}
-				relations[constants.RelationAuditor] = auditors
+				if len(auditors) > 0 {
+					relations[constants.RelationAuditor] = auditors
+				}
 			}
 
 			accessMessage := &model.AccessMessage{
@@ -753,18 +761,26 @@ func (sw *grpsIOWriterOrchestrator) publishServiceMessages(ctx context.Context, 
 	if settings != nil {
 		// Convert UserInfo arrays to string arrays using username for access control
 		if len(settings.Writers) > 0 {
-			writers := make([]string, len(settings.Writers))
-			for i, w := range settings.Writers {
-				writers[i] = w.Username
+			writers := make([]string, 0, len(settings.Writers))
+			for _, w := range settings.Writers {
+				if w.Username != nil && *w.Username != "" {
+					writers = append(writers, *w.Username)
+				}
 			}
-			relations[constants.RelationWriter] = writers
+			if len(writers) > 0 {
+				relations[constants.RelationWriter] = writers
+			}
 		}
 		if len(settings.Auditors) > 0 {
-			auditors := make([]string, len(settings.Auditors))
-			for i, a := range settings.Auditors {
-				auditors[i] = a.Username
+			auditors := make([]string, 0, len(settings.Auditors))
+			for _, a := range settings.Auditors {
+				if a.Username != nil && *a.Username != "" {
+					auditors = append(auditors, *a.Username)
+				}
 			}
-			relations[constants.RelationAuditor] = auditors
+			if len(auditors) > 0 {
+				relations[constants.RelationAuditor] = auditors
+			}
 		}
 	}
 

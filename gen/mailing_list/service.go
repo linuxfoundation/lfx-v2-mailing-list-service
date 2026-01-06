@@ -150,9 +150,9 @@ type CreateGrpsioMailingListPayload struct {
 	AllowAttachments *bool
 	// Service UUID
 	ServiceUID string
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 
@@ -188,9 +188,9 @@ type CreateGrpsioServicePayload struct {
 	GroupName *string
 	// Whether the service is publicly accessible
 	Public bool
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 
@@ -380,9 +380,9 @@ type GrpsIoMailingListFull struct {
 	ServiceUID *string
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 	// Project name (read-only)
 	ProjectName *string
@@ -399,9 +399,9 @@ type GrpsIoMailingListFull struct {
 type GrpsIoMailingListSettings struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string
@@ -495,10 +495,10 @@ type GrpsIoMemberFull struct {
 	CreatedAt string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt string
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
+	// Manager users who can edit/modify this resource
+	Writers []*UserInfo
+	// Auditor users who can audit this resource
+	Auditors []*UserInfo
 }
 
 // GrpsIoMemberWithReadonlyAttributes is the result type of the mailing-list
@@ -540,10 +540,10 @@ type GrpsIoMemberWithReadonlyAttributes struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
-	// Manager user IDs who can edit/modify this service
-	Writers []string
-	// Auditor user IDs who can audit this service
-	Auditors []string
+	// Manager users who can edit/modify this resource
+	Writers []*UserInfo
+	// Auditor users who can audit this resource
+	Auditors []*UserInfo
 }
 
 // GrpsIoServiceFull is the result type of the mailing-list service
@@ -582,9 +582,9 @@ type GrpsIoServiceFull struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 
@@ -593,9 +593,9 @@ type GrpsIoServiceFull struct {
 type GrpsIoServiceSettings struct {
 	// Service UID -- unique identifier for the service
 	UID *string
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string
@@ -647,9 +647,9 @@ type GrpsIoServiceWithReadonlyAttributes struct {
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 
@@ -728,9 +728,9 @@ type UpdateGrpsioMailingListSettingsPayload struct {
 	IfMatch *string
 	// Mailing list UID -- unique identifier for the mailing list
 	UID string
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 
@@ -783,9 +783,9 @@ type UpdateGrpsioServiceSettingsPayload struct {
 	IfMatch *string
 	// Service UID -- unique identifier for the service
 	UID string
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfo
 }
 

@@ -438,7 +438,17 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Conte
 
 // publishMailingListUpdateMessages publishes update messages for indexer and access control
 func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList) error {
-	return ml.publishMailingListChange(ctx, oldMailingList, newMailingList, nil, model.ActionUpdated)
+	// Fetch real settings to include current writers/auditors in access control message
+	// If settings retrieval fails, we'll still publish the indexer message but skip ACL message
+	settings, _, err := ml.grpsIOReader.GetGrpsIOMailingListSettings(ctx, newMailingList.UID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to fetch mailing list settings for update messages, will skip access control message",
+			"error", err,
+			"mailing_list_uid", newMailingList.UID)
+		settings = nil // Explicitly set to nil so access control message is skipped
+	}
+
+	return ml.publishMailingListChange(ctx, oldMailingList, newMailingList, settings, model.ActionUpdated)
 }
 
 // publishMailingListDeleteMessages publishes delete messages for indexer and access control
@@ -476,18 +486,26 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailing
 	if settings != nil {
 		// Convert UserInfo arrays to username strings for access control
 		if len(settings.Writers) > 0 {
-			writers := make([]string, len(settings.Writers))
-			for i, w := range settings.Writers {
-				writers[i] = w.Username
+			writers := make([]string, 0, len(settings.Writers))
+			for _, w := range settings.Writers {
+				if w.Username != nil && *w.Username != "" {
+					writers = append(writers, *w.Username)
+				}
 			}
-			relations[constants.RelationWriter] = writers
+			if len(writers) > 0 {
+				relations[constants.RelationWriter] = writers
+			}
 		}
 		if len(settings.Auditors) > 0 {
-			auditors := make([]string, len(settings.Auditors))
-			for i, a := range settings.Auditors {
-				auditors[i] = a.Username
+			auditors := make([]string, 0, len(settings.Auditors))
+			for _, a := range settings.Auditors {
+				if a.Username != nil && *a.Username != "" {
+					auditors = append(auditors, *a.Username)
+				}
 			}
-			relations[constants.RelationAuditor] = auditors
+			if len(auditors) > 0 {
+				relations[constants.RelationAuditor] = auditors
+			}
 		}
 	}
 
@@ -636,18 +654,19 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context
 		return err
 	}
 
-	if settings == nil {
-		settings = &model.GrpsIOMailingListSettings{
-			Writers:  []model.UserInfo{},
-			Auditors: []model.UserInfo{},
+	// Only publish access control message if settings are available
+	// This ensures we only emit ACL messages with real writers/auditors data
+	if settings != nil {
+		// Publish access control message with current writers/auditors from settings
+		accessMessage := ml.buildMailingListAccessControlMessage(mailingList, settings)
+		if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
+			slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
+			return fmt.Errorf("failed to publish %s access control message: %w", action, err)
 		}
-	}
-
-	// Publish access control message with current writers/auditors from settings
-	accessMessage := ml.buildMailingListAccessControlMessage(mailingList, settings)
-	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
-		return fmt.Errorf("failed to publish %s access control message: %w", action, err)
+	} else {
+		slog.DebugContext(ctx, "skipping access control message - settings not available",
+			"action", action,
+			"mailing_list_uid", mailingList.UID)
 	}
 
 	// Publish mailing list event notification for committee sync

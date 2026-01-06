@@ -43,9 +43,9 @@ type CreateGrpsioServiceRequestBody struct {
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// Whether the service is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -82,9 +82,9 @@ type UpdateGrpsioServiceRequestBody struct {
 // UpdateGrpsioServiceSettingsRequestBody is the type of the "mailing-list"
 // service "update-grpsio-service-settings" endpoint HTTP request body.
 type UpdateGrpsioServiceSettingsRequestBody struct {
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -113,9 +113,9 @@ type CreateGrpsioMailingListRequestBody struct {
 	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -149,9 +149,9 @@ type UpdateGrpsioMailingListRequestBody struct {
 // UpdateGrpsioMailingListSettingsRequestBody is the type of the "mailing-list"
 // service "update-grpsio-mailing-list-settings" endpoint HTTP request body.
 type UpdateGrpsioMailingListSettingsRequestBody struct {
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoRequestBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -252,9 +252,9 @@ type CreateGrpsioServiceResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -298,9 +298,9 @@ type UpdateGrpsioServiceResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -313,9 +313,9 @@ type GetGrpsioServiceSettingsResponseBody GrpsIoServiceSettingsResponseBody
 type UpdateGrpsioServiceSettingsResponseBody struct {
 	// Service UID -- unique identifier for the service
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
@@ -360,9 +360,9 @@ type CreateGrpsioMailingListResponseBody struct {
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// Project name (read-only)
 	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
@@ -427,9 +427,9 @@ type GetGrpsioMailingListSettingsResponseBody GrpsIoMailingListSettingsResponseB
 type UpdateGrpsioMailingListSettingsResponseBody struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
@@ -484,10 +484,10 @@ type CreateGrpsioMailingListMemberResponseBody struct {
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+	// Manager users who can edit/modify this resource
+	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this resource
+	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // GetGrpsioMailingListMemberResponseBody is the type of the "mailing-list"
@@ -533,10 +533,10 @@ type UpdateGrpsioMailingListMemberResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+	// Manager users who can edit/modify this resource
+	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this resource
+	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // ReadyzServiceUnavailableResponseBody is the type of the "mailing-list"
@@ -1211,9 +1211,9 @@ type GrpsIoServiceWithReadonlyAttributesResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
@@ -1222,9 +1222,9 @@ type GrpsIoServiceWithReadonlyAttributesResponseBody struct {
 type GrpsIoServiceSettingsResponseBody struct {
 	// Service UID -- unique identifier for the service
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
-	// Manager users who can edit/modify this service
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this service
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
@@ -1294,9 +1294,9 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 type GrpsIoMailingListSettingsResponseBody struct {
 	// Mailing list UID -- unique identifier for the mailing list
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
-	// Manager users who can edit/modify this mailing list
+	// Manager users who can edit/modify this resource
 	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor users who can audit this mailing list
+	// Auditor users who can audit this resource
 	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 	// The timestamp when the service was last reviewed in RFC3339 format
 	LastReviewedAt *string `form:"last_reviewed_at,omitempty" json:"last_reviewed_at,omitempty" xml:"last_reviewed_at,omitempty"`
@@ -1351,10 +1351,10 @@ type GrpsIoMemberWithReadonlyAttributesResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Manager user IDs who can edit/modify this service
-	Writers []string `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
-	// Auditor user IDs who can audit this service
-	Auditors []string `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
+	// Manager users who can edit/modify this resource
+	Writers []*UserInfoResponseBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
+	// Auditor users who can audit this resource
+	Auditors []*UserInfoResponseBody `form:"auditors,omitempty" json:"auditors,omitempty" xml:"auditors,omitempty"`
 }
 
 // UserInfoRequestBody is used to define fields on request body types.
@@ -1795,15 +1795,15 @@ func NewCreateGrpsioMailingListMemberResponseBody(res *mailinglist.GrpsIoMemberF
 		UpdatedAt:        res.UpdatedAt,
 	}
 	if res.Writers != nil {
-		body.Writers = make([]string, len(res.Writers))
+		body.Writers = make([]*UserInfoResponseBody, len(res.Writers))
 		for i, val := range res.Writers {
-			body.Writers[i] = val
+			body.Writers[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	if res.Auditors != nil {
-		body.Auditors = make([]string, len(res.Auditors))
+		body.Auditors = make([]*UserInfoResponseBody, len(res.Auditors))
 		for i, val := range res.Auditors {
-			body.Auditors[i] = val
+			body.Auditors[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	return body
@@ -1852,15 +1852,15 @@ func NewGetGrpsioMailingListMemberResponseBody(res *mailinglist.GetGrpsioMailing
 		}
 	}
 	if res.Member.Writers != nil {
-		body.Writers = make([]string, len(res.Member.Writers))
+		body.Writers = make([]*UserInfoResponseBody, len(res.Member.Writers))
 		for i, val := range res.Member.Writers {
-			body.Writers[i] = val
+			body.Writers[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	if res.Member.Auditors != nil {
-		body.Auditors = make([]string, len(res.Member.Auditors))
+		body.Auditors = make([]*UserInfoResponseBody, len(res.Member.Auditors))
 		for i, val := range res.Member.Auditors {
-			body.Auditors[i] = val
+			body.Auditors[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	return body
@@ -1909,15 +1909,15 @@ func NewUpdateGrpsioMailingListMemberResponseBody(res *mailinglist.GrpsIoMemberW
 		}
 	}
 	if res.Writers != nil {
-		body.Writers = make([]string, len(res.Writers))
+		body.Writers = make([]*UserInfoResponseBody, len(res.Writers))
 		for i, val := range res.Writers {
-			body.Writers[i] = val
+			body.Writers[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	if res.Auditors != nil {
-		body.Auditors = make([]string, len(res.Auditors))
+		body.Auditors = make([]*UserInfoResponseBody, len(res.Auditors))
 		for i, val := range res.Auditors {
-			body.Auditors[i] = val
+			body.Auditors[i] = marshalMailinglistUserInfoToUserInfoResponseBody(val)
 		}
 	}
 	return body

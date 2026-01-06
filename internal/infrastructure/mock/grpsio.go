@@ -187,10 +187,10 @@ func NewMockRepository() *MockRepository {
 			{
 				UID: "550e8400-e29b-41d4-a716-446655440001",
 				Writers: []model.UserInfo{
-					{Name: "Test Admin", Email: "admin@testproject.org", Username: "testadmin", Avatar: "https://example.com/avatar1.png"},
+					{Name: stringPtr("Test Admin"), Email: stringPtr("admin@testproject.org"), Username: stringPtr("testadmin"), Avatar: stringPtr("https://example.com/avatar1.png")},
 				},
 				Auditors: []model.UserInfo{
-					{Name: "Test Auditor", Email: "auditor@testproject.org", Username: "testauditor", Avatar: "https://example.com/avatar2.png"},
+					{Name: stringPtr("Test Auditor"), Email: stringPtr("auditor@testproject.org"), Username: stringPtr("testauditor"), Avatar: stringPtr("https://example.com/avatar2.png")},
 				},
 				CreatedAt: now.Add(-24 * time.Hour),
 				UpdatedAt: now,
@@ -198,7 +198,7 @@ func NewMockRepository() *MockRepository {
 			{
 				UID: "550e8400-e29b-41d4-a716-446655440002",
 				Writers: []model.UserInfo{
-					{Name: "Formation Admin", Email: "formation@testproject.org", Username: "formationadmin", Avatar: "https://example.com/avatar3.png"},
+					{Name: stringPtr("Formation Admin"), Email: stringPtr("formation@testproject.org"), Username: stringPtr("formationadmin"), Avatar: stringPtr("https://example.com/avatar3.png")},
 				},
 				Auditors:  []model.UserInfo{},
 				CreatedAt: now.Add(-12 * time.Hour),
@@ -207,8 +207,8 @@ func NewMockRepository() *MockRepository {
 			{
 				UID: "550e8400-e29b-41d4-a716-446655440003",
 				Writers: []model.UserInfo{
-					{Name: "Owner User", Email: "owner@example.org", Username: "owner", Avatar: "https://example.com/avatar4.png"},
-					{Name: "Admin User", Email: "admin@example.org", Username: "admin", Avatar: "https://example.com/avatar5.png"},
+					{Name: stringPtr("Owner User"), Email: stringPtr("owner@example.org"), Username: stringPtr("owner"), Avatar: stringPtr("https://example.com/avatar4.png")},
+					{Name: stringPtr("Admin User"), Email: stringPtr("admin@example.org"), Username: stringPtr("admin"), Avatar: stringPtr("https://example.com/avatar5.png")},
 				},
 				Auditors:  []model.UserInfo{},
 				CreatedAt: now.Add(-6 * time.Hour),
@@ -1977,8 +1977,23 @@ func (m *MockRepository) GetMailingListCount() int {
 func (m *MockRepository) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
 	slog.DebugContext(ctx, "mock mailing list settings: creating settings", "mailing_list_uid", settings.UID)
 
+	// Check error simulation first
+	if err := m.checkErrorSimulation("CreateGrpsIOMailingListSettings", settings.UID); err != nil {
+		return nil, 0, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	// Check if settings already exist
+	if _, exists := m.mailingListSettings[settings.UID]; exists {
+		return nil, 0, errors.NewConflict(fmt.Sprintf("mailing list settings with UID %s already exists", settings.UID))
+	}
+
+	// Set timestamps
+	now := time.Now().UTC()
+	settings.CreatedAt = now
+	settings.UpdatedAt = now
 
 	// Store settings copy
 	settingsCopy := *settings
@@ -2167,4 +2182,9 @@ func (m *MockRepository) ClearMembers() {
 	m.members = make(map[string]*model.GrpsIOMember)
 	m.memberRevisions = make(map[string]uint64)
 	m.memberIndexKeys = make(map[string]*model.GrpsIOMember)
+}
+
+// stringPtr is a helper function that returns a pointer to a string value
+func stringPtr(s string) *string {
+	return &s
 }

@@ -76,8 +76,8 @@ func GrpsIOServiceBaseAttributes() {
 // GrpsIOServiceSettingsAttributes defines attributes for service settings (user management).
 func GrpsIOServiceSettingsAttributes() {
 	GrpsIOServiceUIDAttribute()
-	ServiceWritersAttribute()
-	ServiceAuditorsAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 	LastReviewedAtAttribute()
 	LastReviewedByAttribute()
 	LastAuditedByAttribute()
@@ -101,8 +101,8 @@ var GrpsIOServiceWithReadonlyAttributes = dsl.Type("grps-io-service-with-readonl
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	ServiceWritersAttribute()
-	ServiceAuditorsAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 })
 
 // GrpsIOServiceUIDAttribute is the DSL attribute for service UID.
@@ -122,8 +122,8 @@ var GrpsIOServiceFull = dsl.Type("grps-io-service-full", func() {
 	ProjectNameAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	ServiceWritersAttribute()
-	ServiceAuditorsAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 })
 
 // BearerTokenAttribute is the DSL attribute for bearer token.
@@ -165,38 +165,14 @@ func ProjectSlugAttribute() {
 	})
 }
 
-// WritersAttribute is the DSL attribute for service writers (string array - legacy).
+// WritersAttribute is the DSL attribute for writers (UserInfo array).
 func WritersAttribute() {
-	dsl.Attribute("writers", dsl.ArrayOf(dsl.String), "Manager user IDs who can edit/modify this service", func() {
-		dsl.Example([]string{"manager_user_id1", "manager_user_id2"})
-	})
+	dsl.Attribute("writers", dsl.ArrayOf(UserInfo), "Manager users who can edit/modify this resource")
 }
 
-// AuditorsAttribute is the DSL attribute for service auditors (string array - legacy).
+// AuditorsAttribute is the DSL attribute for auditors (UserInfo array).
 func AuditorsAttribute() {
-	dsl.Attribute("auditors", dsl.ArrayOf(dsl.String), "Auditor user IDs who can audit this service", func() {
-		dsl.Example([]string{"auditor_user_id1", "auditor_user_id2"})
-	})
-}
-
-// ServiceWritersAttribute is the DSL attribute for service writers (UserInfo array).
-func ServiceWritersAttribute() {
-	dsl.Attribute("writers", dsl.ArrayOf(UserInfo), "Manager users who can edit/modify this service")
-}
-
-// ServiceAuditorsAttribute is the DSL attribute for service auditors (UserInfo array).
-func ServiceAuditorsAttribute() {
-	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this service")
-}
-
-// MailingListWritersAttribute is the DSL attribute for mailing list writers (UserInfo array).
-func MailingListWritersAttribute() {
-	dsl.Attribute("writers", dsl.ArrayOf(UserInfo), "Manager users who can edit/modify this mailing list")
-}
-
-// MailingListAuditorsAttribute is the DSL attribute for mailing list auditors (UserInfo array).
-func MailingListAuditorsAttribute() {
-	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this mailing list")
+	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this resource")
 }
 
 // LastAuditedByAttribute is the DSL attribute for last audited by user.
@@ -322,8 +298,8 @@ var Committee = dsl.Type("Committee", func() {
 // GrpsIOMailingListSettingsAttributes defines attributes for mailing list settings (user management).
 func GrpsIOMailingListSettingsAttributes() {
 	GrpsIOMailingListUIDAttribute()
-	MailingListWritersAttribute()
-	MailingListAuditorsAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 	LastReviewedAtAttribute()
 	LastReviewedByAttribute()
 	LastAuditedByAttribute()
@@ -411,8 +387,8 @@ var GrpsIOMailingListFull = dsl.Type("grps-io-mailing-list-full", func() {
 	})
 
 	// Settings fields (writers and auditors)
-	MailingListWritersAttribute()
-	MailingListAuditorsAttribute()
+	WritersAttribute()
+	AuditorsAttribute()
 
 	ProjectNameAttribute()
 	ProjectSlugAttribute()

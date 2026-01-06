@@ -37,28 +37,42 @@ paths:
                             allow_attachments: true
                             audience_access: public
                             auditors:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
                             committees:
                                 - allowed_voting_statuses:
                                     - Voting Rep
                                     - Alternate Voting Rep
-                                  name: Corrupti quis aut voluptatem aut.
+                                  name: Aliquid aliquid.
                                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 - allowed_voting_statuses:
                                     - Voting Rep
                                     - Alternate Voting Rep
-                                  name: Corrupti quis aut voluptatem aut.
+                                  name: Aliquid aliquid.
+                                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                - allowed_voting_statuses:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                  name: Aliquid aliquid.
+                                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                - allowed_voting_statuses:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                  name: Aliquid aliquid.
                                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             description: Technical steering committee discussions
                             group_name: technical-steering-committee
@@ -68,22 +82,22 @@ paths:
                             title: Technical Steering Committee
                             type: discussion_moderated
                             writers:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
             responses:
                 "201":
                     description: Created response.
@@ -95,38 +109,28 @@ paths:
                                 allow_attachments: true
                                 audience_access: public
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 committees:
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
-                                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                    - allowed_voting_statuses:
-                                        - Voting Rep
-                                        - Alternate Voting Rep
-                                      name: Aliquid ipsam.
-                                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                    - allowed_voting_statuses:
-                                        - Voting Rep
-                                        - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: "2023-01-15T10:30:00Z"
                                 description: Technical steering committee discussions
@@ -142,14 +146,18 @@ paths:
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 updated_at: "2023-06-20T14:45:30Z"
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request - Invalid data, missing required fields, or validation failures'
                     content:
@@ -326,22 +334,22 @@ paths:
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: "2023-01-15T10:30:00Z"
                                 description: Technical steering committee discussions
@@ -441,12 +449,22 @@ paths:
                                 - allowed_voting_statuses:
                                     - Voting Rep
                                     - Alternate Voting Rep
-                                  name: Corrupti quis aut voluptatem aut.
+                                  name: Aliquid aliquid.
                                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 - allowed_voting_statuses:
                                     - Voting Rep
                                     - Alternate Voting Rep
-                                  name: Corrupti quis aut voluptatem aut.
+                                  name: Aliquid aliquid.
+                                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                - allowed_voting_statuses:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                  name: Aliquid aliquid.
+                                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                - allowed_voting_statuses:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                  name: Aliquid aliquid.
                                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             description: Technical steering committee discussions
                             group_name: technical-steering-committee
@@ -469,17 +487,22 @@ paths:
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                     - allowed_voting_statuses:
                                         - Voting Rep
                                         - Alternate Voting Rep
-                                      name: Aliquid ipsam.
+                                      name: Qui consequuntur.
+                                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                    - allowed_voting_statuses:
+                                        - Voting Rep
+                                        - Alternate Voting Rep
+                                      name: Qui consequuntur.
                                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: "2023-01-15T10:30:00Z"
                                 description: Technical steering committee discussions
@@ -592,8 +615,22 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoMemberFull'
                             example:
                                 auditors:
-                                    - auditor_user_id1
-                                    - auditor_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 delivery_mode: digest
                                 email: john.doe@example.com
@@ -605,16 +642,30 @@ paths:
                                 last_reviewed_at: "2023-01-15T14:30:00Z"
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                member_type: committee
-                                mod_status: owner
+                                member_type: direct
+                                mod_status: none
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
                                 updated_at: "2023-06-20T14:45:30Z"
                                 username: jdoe
                                 writers:
-                                    - manager_user_id1
-                                    - manager_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -808,10 +859,24 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoMemberWithReadonlyAttributes'
                             example:
                                 auditors:
-                                    - auditor_user_id1
-                                    - auditor_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
-                                delivery_mode: digest
+                                delivery_mode: none
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -822,15 +887,21 @@ paths:
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 member_type: direct
-                                mod_status: moderator
+                                mod_status: owner
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
                                 updated_at: "2023-06-20T14:45:30Z"
                                 username: jdoe
                                 writers:
-                                    - manager_user_id1
-                                    - manager_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -921,11 +992,11 @@ paths:
                         schema:
                             $ref: '#/components/schemas/UpdateGrpsioMailingListMemberRequestBody'
                         example:
-                            delivery_mode: normal
+                            delivery_mode: none
                             first_name: John
                             job_title: Software Engineer
                             last_name: Doe
-                            mod_status: owner
+                            mod_status: none
                             organization: Example Corp
                             username: jdoe
             responses:
@@ -937,10 +1008,16 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoMemberWithReadonlyAttributes'
                             example:
                                 auditors:
-                                    - auditor_user_id1
-                                    - auditor_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
-                                delivery_mode: none
+                                delivery_mode: normal
                                 email: john.doe@example.com
                                 first_name: John
                                 groupsio_group_id: 67890
@@ -950,16 +1027,26 @@ paths:
                                 last_reviewed_at: "2023-01-15T14:30:00Z"
                                 last_reviewed_by: admin@example.com
                                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                member_type: direct
-                                mod_status: owner
+                                member_type: committee
+                                mod_status: moderator
                                 organization: Example Corp
                                 status: pending
                                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
                                 updated_at: "2023-06-20T14:45:30Z"
                                 username: jdoe
                                 writers:
-                                    - manager_user_id1
-                                    - manager_user_id2
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request - Invalid data or immutable field modification'
                     content:
@@ -1048,22 +1135,14 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceSettings'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 last_audited_by: user_id_12345
                                 last_audited_time: "2023-05-10T09:15:00Z"
@@ -1072,18 +1151,18 @@ paths:
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 updated_at: "2023-06-20T14:45:30Z"
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1164,39 +1243,31 @@ paths:
                             $ref: '#/components/schemas/UpdateGrpsioServiceSettingsRequestBody'
                         example:
                             auditors:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
                             writers:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
             responses:
                 "200":
                     description: OK response.
@@ -1206,14 +1277,22 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoMailingListSettings'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 last_audited_by: user_id_12345
                                 last_audited_time: "2023-05-10T09:15:00Z"
@@ -1222,18 +1301,18 @@ paths:
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 updated_at: "2023-06-20T14:45:30Z"
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1304,14 +1383,14 @@ paths:
                             $ref: '#/components/schemas/CreateGrpsioServiceRequestBody'
                         example:
                             auditors:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
                             domain: lists.project.org
                             global_owners:
                                 - admin@example.com
@@ -1326,14 +1405,14 @@ paths:
                             type: primary
                             url: https://lists.project.org
                             writers:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
             responses:
                 "201":
                     description: Created response.
@@ -1343,18 +1422,18 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceFull'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 domain: lists.project.org
                                 global_owners:
@@ -1373,14 +1452,18 @@ paths:
                                 updated_at: "2023-06-20T14:45:30Z"
                                 url: https://lists.project.org
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request - Invalid type, missing required fields, or validation failures'
                     content:
@@ -1551,22 +1634,14 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceWithReadonlyAttributes'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 domain: lists.project.org
                                 global_owners:
@@ -1585,18 +1660,18 @@ paths:
                                 updated_at: "2023-06-20T14:45:30Z"
                                 url: https://lists.project.org
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1698,22 +1773,14 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceWithReadonlyAttributes'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 domain: lists.project.org
                                 global_owners:
@@ -1732,22 +1799,18 @@ paths:
                                 updated_at: "2023-06-20T14:45:30Z"
                                 url: https://lists.project.org
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1836,18 +1899,22 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceSettings'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 last_audited_by: user_id_12345
                                 last_audited_time: "2023-05-10T09:15:00Z"
@@ -1856,22 +1923,18 @@ paths:
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 updated_at: "2023-06-20T14:45:30Z"
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1952,31 +2015,31 @@ paths:
                             $ref: '#/components/schemas/UpdateGrpsioServiceSettingsRequestBody'
                         example:
                             auditors:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
                             writers:
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
-                                - avatar: http://turner.org/winifred_ernser
-                                  email: sabrina_gleason@wisozk.net
-                                  name: Debitis dicta et.
-                                  username: Commodi impedit ea.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
+                                - avatar: http://goldner.info/perry
+                                  email: ernie.lueilwitz@altenwerth.info
+                                  name: Eos non id at perspiciatis.
+                                  username: Eaque quis possimus velit quasi quis occaecati.
             responses:
                 "200":
                     description: OK response.
@@ -1986,18 +2049,22 @@ paths:
                                 $ref: '#/components/schemas/GrpsIoServiceSettings'
                             example:
                                 auditors:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                                 created_at: "2023-01-15T10:30:00Z"
                                 last_audited_by: user_id_12345
                                 last_audited_time: "2023-05-10T09:15:00Z"
@@ -2006,14 +2073,18 @@ paths:
                                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 updated_at: "2023-06-20T14:45:30Z"
                                 writers:
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
-                                    - avatar: http://haleyklein.org/abdul
-                                      email: mabelle@schowalter.com
-                                      name: Deserunt tempora occaecati dignissimos.
-                                      username: Sint quos laudantium eligendi.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
+                                    - avatar: http://leuschke.com/pietro
+                                      email: pierre.wolf@stroman.info
+                                      name: Temporibus assumenda error.
+                                      username: Ducimus ex et.
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -2123,8 +2194,8 @@ paths:
                   schema:
                     type: string
                     description: HMAC-SHA1 base64 signature for verification
-                    example: Nihil quae dolores quas natus nesciunt omnis.
-                  example: Illum eos sint ea provident.
+                    example: Eveniet reprehenderit unde ut atque voluptatibus rem.
+                  example: Tempora nihil.
             requestBody:
                 required: true
                 content:
@@ -2133,10 +2204,10 @@ paths:
                             $ref: '#/components/schemas/GroupsioWebhookPayload2'
                         example:
                             action: created_subgroup
-                            extra: Optio molestias ullam porro aut.
-                            extra_id: 2343783012775007402
-                            group: Aliquam sit.
-                            member_info: Sint praesentium.
+                            extra: Sint rerum laboriosam consequatur ut explicabo saepe.
+                            extra_id: 500672409584855543
+                            group: Aut consequatur nihil repellat velit qui.
+                            member_info: Totam cumque totam alias.
             responses:
                 "204":
                     description: No Content response.
@@ -2176,7 +2247,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Observer
+                        example: Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -2190,7 +2261,7 @@ components:
                 name:
                     type: string
                     description: Committee name (read-only, populated by server)
-                    example: Distinctio ullam quia.
+                    example: Tempore est et sit et maxime.
                 uid:
                     type: string
                     description: Committee UUID
@@ -2201,7 +2272,7 @@ components:
                 allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                name: Repellendus molestias totam blanditiis consequatur.
+                name: Ex aspernatur.
                 uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             required:
                 - uid
@@ -2263,7 +2334,7 @@ components:
                     type: string
                     description: Member type
                     default: direct
-                    example: direct
+                    example: committee
                     enum:
                         - committee
                         - direct
@@ -2271,7 +2342,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: none
+                    example: owner
                     enum:
                         - none
                         - moderator
@@ -2295,7 +2366,7 @@ components:
                 last_reviewed_at: "2023-01-15T14:30:00Z"
                 last_reviewed_by: admin@example.com
                 member_type: committee
-                mod_status: moderator
+                mod_status: none
                 organization: Example Corp
                 username: jdoe
             required:
@@ -2320,20 +2391,20 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this mailing list
+                    description: Auditor users who can audit this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
                 committees:
                     type: array
                     items:
@@ -2343,17 +2414,17 @@ components:
                         - allowed_voting_statuses:
                             - Voting Rep
                             - Alternate Voting Rep
-                          name: Corrupti quis aut voluptatem aut.
+                          name: Aliquid aliquid.
                           uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                         - allowed_voting_statuses:
                             - Voting Rep
                             - Alternate Voting Rep
-                          name: Corrupti quis aut voluptatem aut.
+                          name: Aliquid aliquid.
                           uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                         - allowed_voting_statuses:
                             - Voting Rep
                             - Alternate Voting Rep
-                          name: Corrupti quis aut voluptatem aut.
+                          name: Aliquid aliquid.
                           uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description:
                     type: string
@@ -2401,64 +2472,46 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this mailing list
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
             example:
                 allow_attachments: true
                 audience_access: public
                 auditors:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
                 committees:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description: Technical steering committee discussions
                 group_name: technical-steering-committee
@@ -2468,14 +2521,18 @@ components:
                 title: Technical Steering Committee
                 type: discussion_moderated
                 writers:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
             required:
                 - group_name
                 - public
@@ -2490,24 +2547,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this service
+                    description: Auditor users who can audit this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
                 domain:
                     type: string
                     description: Service domain
@@ -2516,7 +2565,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: chyna@turner.info
+                        example: carli_johns@sipes.com
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -2576,34 +2625,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this service
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
             example:
                 auditors:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
                 domain: lists.project.org
                 global_owners:
                     - admin@example.com
@@ -2618,22 +2667,22 @@ components:
                 type: primary
                 url: https://lists.project.org
                 writers:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
             required:
                 - type
                 - project_uid
@@ -2653,30 +2702,30 @@ components:
                 extra:
                     type: string
                     description: Extra data field (subgroup suffix)
-                    example: Quas rem autem.
+                    example: Quia fuga.
                 extra_id:
                     type: integer
                     description: Extra ID field (subgroup ID for deletion)
-                    example: 3881478718855809101
+                    example: 5008031110446800685
                     format: int64
                 group:
                     description: Contains subgroup data from Groups.io
-                    example: Adipisci optio.
+                    example: Eligendi facilis sit deserunt reiciendis.
                 member_info:
                     description: Contains member data from Groups.io
-                    example: Hic dignissimos modi.
+                    example: Accusamus et perspiciatis.
                 signature:
                     type: string
                     description: HMAC-SHA1 base64 signature for verification
-                    example: Consequatur impedit esse.
+                    example: Repellendus sint libero quibusdam nulla cupiditate.
             description: Webhook event payload from Groups.io
             example:
                 action: created_subgroup
-                extra: Laudantium rerum.
-                extra_id: 1926612634186145191
-                group: Voluptatem atque impedit.
-                member_info: Et enim.
-                signature: Adipisci expedita et ducimus repellendus eveniet.
+                extra: Praesentium molestiae consequatur impedit esse mollitia voluptatem.
+                extra_id: 5572662436592214257
+                group: Consectetur repudiandae eaque adipisci optio vel hic.
+                member_info: Modi libero quas rem.
+                signature: Aut et enim ut laudantium rerum at.
             required:
                 - action
                 - signature
@@ -2696,24 +2745,24 @@ components:
                 extra:
                     type: string
                     description: Extra data field (subgroup suffix)
-                    example: A quam enim debitis veniam.
+                    example: Reiciendis voluptatibus illum ut et.
                 extra_id:
                     type: integer
                     description: Extra ID field (subgroup ID for deletion)
-                    example: 3712999418023628184
+                    example: 5719676566333912791
                     format: int64
                 group:
                     description: Contains subgroup data from Groups.io
-                    example: Reiciendis voluptatibus illum ut et.
+                    example: Vero qui est nostrum sit.
                 member_info:
                     description: Contains member data from Groups.io
-                    example: Quia et ipsam iste dignissimos vel.
+                    example: Officiis dignissimos.
             example:
                 action: created_subgroup
-                extra: Voluptatibus rem.
-                extra_id: 8012379142150582476
-                group: Voluptates in perspiciatis non repudiandae.
-                member_info: Sed eveniet reprehenderit unde ut.
+                extra: Et voluptates in perspiciatis non repudiandae.
+                extra_id: 3235636813397717479
+                group: Et ipsam iste dignissimos vel.
+                member_info: A quam enim debitis veniam.
             required:
                 - action
         GrpsIoMailingListFull:
@@ -2736,16 +2785,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this mailing list
+                    description: Auditor users who can audit this resource
                     example:
-                        - avatar: http://legrosboyle.net/adolph_deckow
-                          email: noe@ebertbartoletti.biz
-                          name: Et neque dolor deserunt.
-                          username: Sapiente quo eveniet iusto sit aperiam neque.
-                        - avatar: http://legrosboyle.net/adolph_deckow
-                          email: noe@ebertbartoletti.biz
-                          name: Et neque dolor deserunt.
-                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -2851,8 +2892,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this mailing list
+                    description: Manager users who can edit/modify this resource
                     example:
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -2866,6 +2915,10 @@ components:
                 allow_attachments: true
                 audience_access: public
                 auditors:
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
                     - avatar: http://legrosboyle.net/adolph_deckow
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
@@ -2921,10 +2974,6 @@ components:
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
                       username: Sapiente quo eveniet iusto sit aperiam neque.
-                    - avatar: http://legrosboyle.net/adolph_deckow
-                      email: noe@ebertbartoletti.biz
-                      name: Et neque dolor deserunt.
-                      username: Sapiente quo eveniet iusto sit aperiam neque.
         GrpsIoMailingListSettings:
             type: object
             properties:
@@ -2932,8 +2981,12 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this mailing list
+                    description: Auditor users who can audit this resource
                     example:
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -2979,12 +3032,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this mailing list
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - avatar: http://legrosboyle.net/adolph_deckow
-                          email: noe@ebertbartoletti.biz
-                          name: Et neque dolor deserunt.
-                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -3000,6 +3049,10 @@ components:
             description: A representation of GroupsIO mailing list settings for user management.
             example:
                 auditors:
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
                     - avatar: http://legrosboyle.net/adolph_deckow
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
@@ -3153,11 +3206,6 @@ components:
                         - Alternate Voting Rep
                       name: Quas animi qui.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Quas animi qui.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 created_at: "2023-01-15T10:30:00Z"
                 description: Technical steering committee discussions
                 group_name: technical-steering-committee
@@ -3177,12 +3225,25 @@ components:
                 auditors:
                     type: array
                     items:
-                        type: string
-                        example: Nulla cupiditate.
-                    description: Auditor user IDs who can audit this service
+                        $ref: '#/components/schemas/UserInfo'
+                    description: Auditor users who can audit this resource
                     example:
-                        - auditor_user_id1
-                        - auditor_user_id2
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                 created_at:
                     type: string
                     description: The timestamp when the service was created (read-only)
@@ -3287,19 +3348,38 @@ components:
                 writers:
                     type: array
                     items:
-                        type: string
-                        example: Dolore repellendus sint libero.
-                    description: Manager user IDs who can edit/modify this service
+                        $ref: '#/components/schemas/UserInfo'
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - manager_user_id1
-                        - manager_user_id2
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
             description: A complete representation of a GroupsIO mailing list member with all attributes.
             example:
                 auditors:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
                 created_at: "2023-01-15T10:30:00Z"
-                delivery_mode: normal
+                delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
                 groupsio_group_id: 67890
@@ -3309,7 +3389,7 @@ components:
                 last_reviewed_at: "2023-01-15T14:30:00Z"
                 last_reviewed_by: admin@example.com
                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                member_type: direct
+                member_type: committee
                 mod_status: owner
                 organization: Example Corp
                 status: pending
@@ -3317,8 +3397,14 @@ components:
                 updated_at: "2023-06-20T14:45:30Z"
                 username: jdoe
                 writers:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
             required:
                 - uid
                 - mailing_list_uid
@@ -3337,12 +3423,21 @@ components:
                 auditors:
                     type: array
                     items:
-                        type: string
-                        example: Deserunt reiciendis facilis.
-                    description: Auditor user IDs who can audit this service
+                        $ref: '#/components/schemas/UserInfo'
+                    description: Auditor users who can audit this resource
                     example:
-                        - auditor_user_id1
-                        - auditor_user_id2
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                 created_at:
                     type: string
                     description: The timestamp when the service was created (read-only)
@@ -3407,7 +3502,7 @@ components:
                     type: string
                     description: Member type
                     default: direct
-                    example: direct
+                    example: committee
                     enum:
                         - committee
                         - direct
@@ -3415,7 +3510,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: owner
+                    example: none
                     enum:
                         - none
                         - moderator
@@ -3447,19 +3542,34 @@ components:
                 writers:
                     type: array
                     items:
-                        type: string
-                        example: Optio incidunt tempore quas tenetur eligendi facilis.
-                    description: Manager user IDs who can edit/modify this service
+                        $ref: '#/components/schemas/UserInfo'
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - manager_user_id1
-                        - manager_user_id2
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
             description: A representation of GroupsIO mailing list members with readonly attributes.
             example:
                 auditors:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
                 created_at: "2023-01-15T10:30:00Z"
-                delivery_mode: normal
+                delivery_mode: none
                 email: john.doe@example.com
                 first_name: John
                 groupsio_group_id: 67890
@@ -3470,15 +3580,25 @@ components:
                 last_reviewed_by: admin@example.com
                 mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 member_type: committee
-                mod_status: moderator
+                mod_status: owner
                 organization: Example Corp
                 status: pending
                 uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
                 updated_at: "2023-06-20T14:45:30Z"
                 username: jdoe
                 writers:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
         GrpsIoServiceFull:
             type: object
             properties:
@@ -3486,16 +3606,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this service
+                    description: Auditor users who can audit this resource
                     example:
-                        - avatar: http://legrosboyle.net/adolph_deckow
-                          email: noe@ebertbartoletti.biz
-                          name: Et neque dolor deserunt.
-                          username: Sapiente quo eveniet iusto sit aperiam neque.
-                        - avatar: http://legrosboyle.net/adolph_deckow
-                          email: noe@ebertbartoletti.biz
-                          name: Et neque dolor deserunt.
-                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -3517,7 +3629,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: kathryne_dickinson@goodwin.name
+                        example: elmo_kautzer@muellerkoepp.org
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -3591,8 +3703,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this service
+                    description: Manager users who can edit/modify this resource
                     example:
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -3604,10 +3724,6 @@ components:
             description: A complete representation of GroupsIO services with all attributes including access control and audit trail.
             example:
                 auditors:
-                    - avatar: http://legrosboyle.net/adolph_deckow
-                      email: noe@ebertbartoletti.biz
-                      name: Et neque dolor deserunt.
-                      username: Sapiente quo eveniet iusto sit aperiam neque.
                     - avatar: http://legrosboyle.net/adolph_deckow
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
@@ -3642,6 +3758,14 @@ components:
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
                       username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
             required:
                 - type
                 - project_uid
@@ -3652,7 +3776,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this service
+                    description: Auditor users who can audit this resource
                     example:
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
@@ -3707,7 +3831,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this service
+                    description: Manager users who can edit/modify this resource
                     example:
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
@@ -3740,10 +3864,6 @@ components:
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
                       username: Sapiente quo eveniet iusto sit aperiam neque.
-                    - avatar: http://legrosboyle.net/adolph_deckow
-                      email: noe@ebertbartoletti.biz
-                      name: Et neque dolor deserunt.
-                      username: Sapiente quo eveniet iusto sit aperiam neque.
                 created_at: "2023-01-15T10:30:00Z"
                 last_audited_by: user_id_12345
                 last_audited_time: "2023-05-10T09:15:00Z"
@@ -3760,6 +3880,10 @@ components:
                       email: noe@ebertbartoletti.biz
                       name: Et neque dolor deserunt.
                       username: Sapiente quo eveniet iusto sit aperiam neque.
+                    - avatar: http://legrosboyle.net/adolph_deckow
+                      email: noe@ebertbartoletti.biz
+                      name: Et neque dolor deserunt.
+                      username: Sapiente quo eveniet iusto sit aperiam neque.
         GrpsIoServiceWithReadonlyAttributes:
             type: object
             properties:
@@ -3767,8 +3891,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this service
+                    description: Auditor users who can audit this resource
                     example:
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
+                        - avatar: http://legrosboyle.net/adolph_deckow
+                          email: noe@ebertbartoletti.biz
+                          name: Et neque dolor deserunt.
+                          username: Sapiente quo eveniet iusto sit aperiam neque.
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
                           name: Et neque dolor deserunt.
@@ -3790,7 +3922,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: ambrose_schumm@russelsteuber.name
+                        example: otho.witting@trantowschimmel.biz
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -3864,7 +3996,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this service
+                    description: Manager users who can edit/modify this resource
                     example:
                         - avatar: http://legrosboyle.net/adolph_deckow
                           email: noe@ebertbartoletti.biz
@@ -3985,7 +4117,7 @@ components:
                     type: string
                     description: Email delivery mode
                     default: normal
-                    example: normal
+                    example: none
                     enum:
                         - normal
                         - digest
@@ -4011,7 +4143,7 @@ components:
                     type: string
                     description: Moderation status
                     default: none
-                    example: moderator
+                    example: none
                     enum:
                         - none
                         - moderator
@@ -4027,7 +4159,7 @@ components:
                     example: jdoe
                     maxLength: 255
             example:
-                delivery_mode: none
+                delivery_mode: digest
                 first_name: John
                 job_title: Software Engineer
                 last_name: Doe
@@ -4059,12 +4191,12 @@ components:
                         - allowed_voting_statuses:
                             - Voting Rep
                             - Alternate Voting Rep
-                          name: Corrupti quis aut voluptatem aut.
+                          name: Aliquid aliquid.
                           uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                         - allowed_voting_statuses:
                             - Voting Rep
                             - Alternate Voting Rep
-                          name: Corrupti quis aut voluptatem aut.
+                          name: Aliquid aliquid.
                           uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description:
                     type: string
@@ -4115,17 +4247,12 @@ components:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Corrupti quis aut voluptatem aut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description: Technical steering committee discussions
                 group_name: technical-steering-committee
@@ -4152,7 +4279,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: jocelyn.raynor@lubowitz.com
+                        example: khalid_fisher@kassulke.com
                         format: email
                     description: List of global owner email addresses (required for primary, forbidden for shared)
                     example:
@@ -4232,84 +4359,96 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Auditor users who can audit this service
+                    description: Auditor users who can audit this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
                 writers:
                     type: array
                     items:
                         $ref: '#/components/schemas/UserInfo'
-                    description: Manager users who can edit/modify this service
+                    description: Manager users who can edit/modify this resource
                     example:
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
-                        - avatar: http://turner.org/winifred_ernser
-                          email: sabrina_gleason@wisozk.net
-                          name: Debitis dicta et.
-                          username: Commodi impedit ea.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
+                        - avatar: http://goldner.info/perry
+                          email: ernie.lueilwitz@altenwerth.info
+                          name: Eos non id at perspiciatis.
+                          username: Eaque quis possimus velit quasi quis occaecati.
             example:
                 auditors:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
                 writers:
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
-                    - avatar: http://turner.org/winifred_ernser
-                      email: sabrina_gleason@wisozk.net
-                      name: Debitis dicta et.
-                      username: Commodi impedit ea.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
         UserInfo:
             type: object
             properties:
                 avatar:
                     type: string
                     description: The avatar URL of the user
-                    example: http://thompson.com/madyson
+                    example: http://hilpert.name/brooklyn.thompson
                     format: uri
                 email:
                     type: string
                     description: The email address of the user
-                    example: martine@hamill.com
+                    example: beth.renner@ratke.biz
                     format: email
                 name:
                     type: string
                     description: The full name of the user
-                    example: Eaque similique consectetur accusantium ut.
+                    example: Odit omnis eaque similique consectetur.
                 username:
                     type: string
                     description: The username/LFID of the user
-                    example: Quae dolore qui quas.
+                    example: Ullam consequatur.
             description: User information including profile details.
             example:
-                avatar: http://upton.name/dayana_fisher
-                email: fabian@smitham.net
-                name: Nostrum commodi fuga.
-                username: Quia repudiandae similique id voluptatem.
+                avatar: http://pacocha.name/karina.pollich
+                email: carlo_pollich@gottlieb.org
+                name: Magnam nisi.
+                username: Cumque aut ipsum.
     securitySchemes:
         jwt_header_Authorization:
             type: http

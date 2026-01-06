@@ -44,10 +44,10 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 			result.Writers = make([]*mailinglistservice.UserInfo, len(settings.Writers))
 			for i, writer := range settings.Writers {
 				result.Writers[i] = &mailinglistservice.UserInfo{
-					Name:     &writer.Name,
-					Email:    &writer.Email,
-					Username: &writer.Username,
-					Avatar:   &writer.Avatar,
+					Name:     writer.Name,
+					Email:    writer.Email,
+					Username: writer.Username,
+					Avatar:   writer.Avatar,
 				}
 			}
 		}
@@ -55,10 +55,10 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 			result.Auditors = make([]*mailinglistservice.UserInfo, len(settings.Auditors))
 			for i, auditor := range settings.Auditors {
 				result.Auditors[i] = &mailinglistservice.UserInfo{
-					Name:     &auditor.Name,
-					Email:    &auditor.Email,
-					Username: &auditor.Username,
-					Avatar:   &auditor.Avatar,
+					Name:     auditor.Name,
+					Email:    auditor.Email,
+					Username: auditor.Username,
+					Avatar:   auditor.Avatar,
 				}
 			}
 		}
@@ -332,15 +332,24 @@ func (s *mailingListService) convertGrpsIOServiceSettingsDomainToResponse(settin
 	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
 
 	response := &mailinglistservice.GrpsIoServiceSettings{
-		UID:             &settings.UID,
-		Writers:         convertUserInfoDomainToResponse(settings.Writers),
-		Auditors:        convertUserInfoDomainToResponse(settings.Auditors),
-		LastReviewedAt:  settings.LastReviewedAt,
-		LastReviewedBy:  settings.LastReviewedBy,
-		LastAuditedBy:   settings.LastAuditedBy,
-		LastAuditedTime: settings.LastAuditedTime,
-		CreatedAt:       &createdAt,
-		UpdatedAt:       &updatedAt,
+		UID:       &settings.UID,
+		Writers:   convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:  convertUserInfoDomainToResponse(settings.Auditors),
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	}
+
+	if settings.LastReviewedAt != nil {
+		response.LastReviewedAt = settings.LastReviewedAt
+	}
+	if settings.LastReviewedBy != nil {
+		response.LastReviewedBy = settings.LastReviewedBy
+	}
+	if settings.LastAuditedTime != nil {
+		response.LastAuditedTime = settings.LastAuditedTime
+	}
+	if settings.LastAuditedBy != nil {
+		response.LastAuditedBy = settings.LastAuditedBy
 	}
 
 	return response
@@ -355,10 +364,10 @@ func convertUserInfoDomainToResponse(domainUsers []model.UserInfo) []*mailinglis
 	users := make([]*mailinglistservice.UserInfo, len(domainUsers))
 	for i, u := range domainUsers {
 		users[i] = &mailinglistservice.UserInfo{
-			Name:     &u.Name,
-			Email:    &u.Email,
-			Username: &u.Username,
-			Avatar:   &u.Avatar,
+			Name:     u.Name,
+			Email:    u.Email,
+			Username: u.Username,
+			Avatar:   u.Avatar,
 		}
 	}
 	return users
@@ -370,15 +379,24 @@ func (s *mailingListService) convertGrpsIOMailingListSettingsDomainToResponse(se
 	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
 
 	response := &mailinglistservice.GrpsIoMailingListSettings{
-		UID:             &settings.UID,
-		Writers:         convertUserInfoDomainToResponse(settings.Writers),
-		Auditors:        convertUserInfoDomainToResponse(settings.Auditors),
-		LastReviewedAt:  settings.LastReviewedAt,
-		LastReviewedBy:  settings.LastReviewedBy,
-		LastAuditedBy:   settings.LastAuditedBy,
-		LastAuditedTime: settings.LastAuditedTime,
-		CreatedAt:       &createdAt,
-		UpdatedAt:       &updatedAt,
+		UID:       &settings.UID,
+		Writers:   convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:  convertUserInfoDomainToResponse(settings.Auditors),
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	}
+
+	if settings.LastReviewedAt != nil {
+		response.LastReviewedAt = settings.LastReviewedAt
+	}
+	if settings.LastReviewedBy != nil {
+		response.LastReviewedBy = settings.LastReviewedBy
+	}
+	if settings.LastAuditedTime != nil {
+		response.LastAuditedTime = settings.LastAuditedTime
+	}
+	if settings.LastAuditedBy != nil {
+		response.LastAuditedBy = settings.LastAuditedBy
 	}
 
 	return response

@@ -847,6 +847,356 @@ func TestMailingListService_convertWebhookGroupInfo(t *testing.T) {
 	}
 }
 
+// TestConvertGrpsIOServiceCreatePayloadToSettings tests settings extraction from service create payload
+func TestConvertGrpsIOServiceCreatePayloadToSettings(t *testing.T) {
+	tests := []struct {
+		name       string
+		payload    *mailinglistservice.CreateGrpsioServicePayload
+		serviceUID string
+		expected   *model.GrpsIOServiceSettings
+	}{
+		{
+			name: "complete payload with writers and auditors",
+			payload: &mailinglistservice.CreateGrpsioServicePayload{
+				Type:       "primary",
+				ProjectUID: "project-123",
+				Public:     true,
+				Writers: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("Writer One"),
+						Email:    stringPtr("writer1@example.com"),
+						Username: stringPtr("writer1"),
+						Avatar:   stringPtr("https://example.com/avatar1.png"),
+					},
+					{
+						Name:     stringPtr("Writer Two"),
+						Email:    stringPtr("writer2@example.com"),
+						Username: stringPtr("writer2"),
+						Avatar:   stringPtr("https://example.com/avatar2.png"),
+					},
+				},
+				Auditors: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("Auditor One"),
+						Email:    stringPtr("auditor1@example.com"),
+						Username: stringPtr("auditor1"),
+						Avatar:   stringPtr("https://example.com/avatar3.png"),
+					},
+				},
+			},
+			serviceUID: "service-uid-123",
+			expected: &model.GrpsIOServiceSettings{
+				UID: "service-uid-123",
+				Writers: []model.UserInfo{
+					{
+						Name:     stringPtr("Writer One"),
+						Email:    stringPtr("writer1@example.com"),
+						Username: stringPtr("writer1"),
+						Avatar:   stringPtr("https://example.com/avatar1.png"),
+					},
+					{
+						Name:     stringPtr("Writer Two"),
+						Email:    stringPtr("writer2@example.com"),
+						Username: stringPtr("writer2"),
+						Avatar:   stringPtr("https://example.com/avatar2.png"),
+					},
+				},
+				Auditors: []model.UserInfo{
+					{
+						Name:     stringPtr("Auditor One"),
+						Email:    stringPtr("auditor1@example.com"),
+						Username: stringPtr("auditor1"),
+						Avatar:   stringPtr("https://example.com/avatar3.png"),
+					},
+				},
+			},
+		},
+		{
+			name: "payload with only writers",
+			payload: &mailinglistservice.CreateGrpsioServicePayload{
+				Type:       "primary",
+				ProjectUID: "project-456",
+				Public:     false,
+				Writers: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("Solo Writer"),
+						Email:    stringPtr("solo@example.com"),
+						Username: stringPtr("solo"),
+					},
+				},
+				Auditors: nil,
+			},
+			serviceUID: "service-uid-456",
+			expected: &model.GrpsIOServiceSettings{
+				UID: "service-uid-456",
+				Writers: []model.UserInfo{
+					{
+						Name:     stringPtr("Solo Writer"),
+						Email:    stringPtr("solo@example.com"),
+						Username: stringPtr("solo"),
+					},
+				},
+				Auditors: []model.UserInfo{},
+			},
+		},
+		{
+			name: "payload with empty writers and auditors",
+			payload: &mailinglistservice.CreateGrpsioServicePayload{
+				Type:       "formation",
+				ProjectUID: "project-789",
+				Public:     true,
+				Writers:    []*mailinglistservice.UserInfo{},
+				Auditors:   []*mailinglistservice.UserInfo{},
+			},
+			serviceUID: "service-uid-789",
+			expected: &model.GrpsIOServiceSettings{
+				UID:      "service-uid-789",
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			},
+		},
+		{
+			name:       "nil payload",
+			payload:    nil,
+			serviceUID: "service-uid-nil",
+			expected:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &mailingListService{}
+			result := svc.convertGrpsIOServiceCreatePayloadToSettings(tt.payload, tt.serviceUID)
+
+			if tt.expected == nil {
+				assert.Nil(t, result)
+				return
+			}
+
+			assert.NotNil(t, result)
+			assert.Equal(t, tt.expected.UID, result.UID, "UID should match")
+			assert.Equal(t, len(tt.expected.Writers), len(result.Writers), "Writers count should match")
+			assert.Equal(t, len(tt.expected.Auditors), len(result.Auditors), "Auditors count should match")
+
+			// Verify writers field values
+			for i, expectedWriter := range tt.expected.Writers {
+				assert.Equal(t, expectedWriter.Name, result.Writers[i].Name, "Writer Name should match")
+				assert.Equal(t, expectedWriter.Email, result.Writers[i].Email, "Writer Email should match")
+				assert.Equal(t, expectedWriter.Username, result.Writers[i].Username, "Writer Username should match")
+				assert.Equal(t, expectedWriter.Avatar, result.Writers[i].Avatar, "Writer Avatar should match")
+			}
+
+			// Verify auditors field values
+			for i, expectedAuditor := range tt.expected.Auditors {
+				assert.Equal(t, expectedAuditor.Name, result.Auditors[i].Name, "Auditor Name should match")
+				assert.Equal(t, expectedAuditor.Email, result.Auditors[i].Email, "Auditor Email should match")
+				assert.Equal(t, expectedAuditor.Username, result.Auditors[i].Username, "Auditor Username should match")
+				assert.Equal(t, expectedAuditor.Avatar, result.Auditors[i].Avatar, "Auditor Avatar should match")
+			}
+
+			// Verify timestamps are set for non-nil payloads
+			if tt.payload != nil {
+				assert.False(t, result.CreatedAt.IsZero(), "CreatedAt should be set")
+				assert.False(t, result.UpdatedAt.IsZero(), "UpdatedAt should be set")
+			}
+		})
+	}
+}
+
+// TestConvertGrpsIOMailingListCreatePayloadToSettings tests settings extraction from mailing list create payload
+func TestConvertGrpsIOMailingListCreatePayloadToSettings(t *testing.T) {
+	tests := []struct {
+		name           string
+		payload        *mailinglistservice.CreateGrpsioMailingListPayload
+		mailingListUID string
+		expected       *model.GrpsIOMailingListSettings
+	}{
+		{
+			name: "complete payload with writers and auditors",
+			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
+				GroupName:   "test-list",
+				Public:      true,
+				Type:        "discussion_open",
+				Description: "Test mailing list",
+				Title:       "Test List",
+				ServiceUID:  "service-123",
+				Writers: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("ML Writer One"),
+						Email:    stringPtr("mlwriter1@example.com"),
+						Username: stringPtr("mlwriter1"),
+						Avatar:   stringPtr("https://example.com/avatar1.png"),
+					},
+					{
+						Name:     stringPtr("ML Writer Two"),
+						Email:    stringPtr("mlwriter2@example.com"),
+						Username: stringPtr("mlwriter2"),
+						Avatar:   stringPtr("https://example.com/avatar2.png"),
+					},
+				},
+				Auditors: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("ML Auditor One"),
+						Email:    stringPtr("mlauditor1@example.com"),
+						Username: stringPtr("mlauditor1"),
+						Avatar:   stringPtr("https://example.com/avatar3.png"),
+					},
+				},
+			},
+			mailingListUID: "ml-uid-123",
+			expected: &model.GrpsIOMailingListSettings{
+				UID: "ml-uid-123",
+				Writers: []model.UserInfo{
+					{
+						Name:     stringPtr("ML Writer One"),
+						Email:    stringPtr("mlwriter1@example.com"),
+						Username: stringPtr("mlwriter1"),
+						Avatar:   stringPtr("https://example.com/avatar1.png"),
+					},
+					{
+						Name:     stringPtr("ML Writer Two"),
+						Email:    stringPtr("mlwriter2@example.com"),
+						Username: stringPtr("mlwriter2"),
+						Avatar:   stringPtr("https://example.com/avatar2.png"),
+					},
+				},
+				Auditors: []model.UserInfo{
+					{
+						Name:     stringPtr("ML Auditor One"),
+						Email:    stringPtr("mlauditor1@example.com"),
+						Username: stringPtr("mlauditor1"),
+						Avatar:   stringPtr("https://example.com/avatar3.png"),
+					},
+				},
+			},
+		},
+		{
+			name: "payload with only auditors",
+			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
+				GroupName:   "audit-list",
+				Public:      false,
+				Type:        "discussion_moderated",
+				Description: "Audit mailing list",
+				Title:       "Audit List",
+				ServiceUID:  "service-456",
+				Writers:     nil,
+				Auditors: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("Solo Auditor"),
+						Email:    stringPtr("soloauditor@example.com"),
+						Username: stringPtr("soloauditor"),
+					},
+				},
+			},
+			mailingListUID: "ml-uid-456",
+			expected: &model.GrpsIOMailingListSettings{
+				UID:     "ml-uid-456",
+				Writers: []model.UserInfo{},
+				Auditors: []model.UserInfo{
+					{
+						Name:     stringPtr("Solo Auditor"),
+						Email:    stringPtr("soloauditor@example.com"),
+						Username: stringPtr("soloauditor"),
+					},
+				},
+			},
+		},
+		{
+			name: "payload with empty writers and auditors",
+			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
+				GroupName:   "empty-list",
+				Public:      true,
+				Type:        "announcement",
+				Description: "Empty mailing list",
+				Title:       "Empty List",
+				ServiceUID:  "service-789",
+				Writers:     []*mailinglistservice.UserInfo{},
+				Auditors:    []*mailinglistservice.UserInfo{},
+			},
+			mailingListUID: "ml-uid-789",
+			expected: &model.GrpsIOMailingListSettings{
+				UID:      "ml-uid-789",
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			},
+		},
+		{
+			name: "payload with nil entries in writers array (should be skipped)",
+			payload: &mailinglistservice.CreateGrpsioMailingListPayload{
+				GroupName:   "nil-entries-list",
+				Public:      true,
+				Type:        "discussion_open",
+				Description: "List with nil entries",
+				Title:       "Nil Entries List",
+				ServiceUID:  "service-nil",
+				Writers: []*mailinglistservice.UserInfo{
+					{
+						Name:     stringPtr("Valid Writer"),
+						Email:    stringPtr("valid@example.com"),
+						Username: stringPtr("valid"),
+					},
+					nil, // Should be skipped
+					{
+						Name:     stringPtr("Another Writer"),
+						Email:    stringPtr("another@example.com"),
+						Username: stringPtr("another"),
+					},
+				},
+				Auditors: nil,
+			},
+			mailingListUID: "ml-uid-nil",
+			expected: &model.GrpsIOMailingListSettings{
+				UID: "ml-uid-nil",
+				Writers: []model.UserInfo{
+					{
+						Name:     stringPtr("Valid Writer"),
+						Email:    stringPtr("valid@example.com"),
+						Username: stringPtr("valid"),
+					},
+					{
+						Name:     stringPtr("Another Writer"),
+						Email:    stringPtr("another@example.com"),
+						Username: stringPtr("another"),
+					},
+				},
+				Auditors: []model.UserInfo{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the settings extraction logic from mailing_list_service.go:304-307
+			domainSettings := &model.GrpsIOMailingListSettings{
+				UID:      tt.mailingListUID,
+				Writers:  convertUserInfoPayloadToDomain(tt.payload.Writers),
+				Auditors: convertUserInfoPayloadToDomain(tt.payload.Auditors),
+			}
+
+			assert.NotNil(t, domainSettings)
+			assert.Equal(t, tt.expected.UID, domainSettings.UID, "UID should match")
+			assert.Equal(t, len(tt.expected.Writers), len(domainSettings.Writers), "Writers count should match")
+			assert.Equal(t, len(tt.expected.Auditors), len(domainSettings.Auditors), "Auditors count should match")
+
+			// Verify writers field values
+			for i, expectedWriter := range tt.expected.Writers {
+				assert.Equal(t, expectedWriter.Name, domainSettings.Writers[i].Name, "Writer Name should match")
+				assert.Equal(t, expectedWriter.Email, domainSettings.Writers[i].Email, "Writer Email should match")
+				assert.Equal(t, expectedWriter.Username, domainSettings.Writers[i].Username, "Writer Username should match")
+				assert.Equal(t, expectedWriter.Avatar, domainSettings.Writers[i].Avatar, "Writer Avatar should match")
+			}
+
+			// Verify auditors field values
+			for i, expectedAuditor := range tt.expected.Auditors {
+				assert.Equal(t, expectedAuditor.Name, domainSettings.Auditors[i].Name, "Auditor Name should match")
+				assert.Equal(t, expectedAuditor.Email, domainSettings.Auditors[i].Email, "Auditor Email should match")
+				assert.Equal(t, expectedAuditor.Username, domainSettings.Auditors[i].Username, "Auditor Username should match")
+				assert.Equal(t, expectedAuditor.Avatar, domainSettings.Auditors[i].Avatar, "Auditor Avatar should match")
+			}
+		})
+	}
+}
+
 // TestMailingListService_convertWebhookMemberInfo tests the webhook member info converter
 func TestMailingListService_convertWebhookMemberInfo(t *testing.T) {
 	s := &mailingListService{}

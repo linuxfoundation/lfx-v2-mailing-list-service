@@ -21,10 +21,10 @@ const DefaultGroupsIODomain = "groups.io"
 
 // UserInfo represents user information including profile details.
 type UserInfo struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Avatar   string `json:"avatar"`
+	Name     *string `json:"name,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Username *string `json:"username,omitempty"`
+	Avatar   *string `json:"avatar,omitempty"`
 }
 
 // GrpsIOServiceSettings represents the settings for a GroupsIO service (user management).

@@ -348,22 +348,20 @@ func convertUserInfoPayloadToDomain(goaUsers []*mailinglistservice.UserInfo) []m
 		return []model.UserInfo{}
 	}
 
-	users := make([]model.UserInfo, len(goaUsers))
-	for i, u := range goaUsers {
-		var user model.UserInfo
-		if u.Name != nil {
-			user.Name = *u.Name
+	users := make([]model.UserInfo, 0, len(goaUsers))
+	for _, u := range goaUsers {
+		// Skip nil entries to avoid panic
+		if u == nil {
+			continue
 		}
-		if u.Email != nil {
-			user.Email = *u.Email
+
+		user := model.UserInfo{
+			Name:     u.Name,
+			Email:    u.Email,
+			Username: u.Username,
+			Avatar:   u.Avatar,
 		}
-		if u.Username != nil {
-			user.Username = *u.Username
-		}
-		if u.Avatar != nil {
-			user.Avatar = *u.Avatar
-		}
-		users[i] = user
+		users = append(users, user)
 	}
 	return users
 }

@@ -416,16 +416,16 @@ Example:
     %[1]s mailing-list create-grpsio-service --body '{
       "auditors": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ],
       "domain": "lists.project.org",
@@ -444,16 +444,16 @@ Example:
       "url": "https://lists.project.org",
       "writers": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ]
    }' --version "1" --bearer-token "eyJhbGci..."
@@ -544,42 +544,42 @@ Example:
     %[1]s mailing-list update-grpsio-service-settings --body '{
       "auditors": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ],
       "writers": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -600,22 +600,28 @@ Example:
       "audience_access": "public",
       "auditors": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
+         },
+         {
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ],
       "committees": [
@@ -624,7 +630,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Corrupti quis aut voluptatem aut.",
+            "name": "Aliquid aliquid.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -632,7 +638,23 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Corrupti quis aut voluptatem aut.",
+            "name": "Aliquid aliquid.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Aliquid aliquid.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Aliquid aliquid.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -645,28 +667,28 @@ Example:
       "type": "discussion_moderated",
       "writers": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ]
    }' --version "1" --bearer-token "eyJhbGci..."
@@ -706,7 +728,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Corrupti quis aut voluptatem aut.",
+            "name": "Aliquid aliquid.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -714,7 +736,23 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Corrupti quis aut voluptatem aut.",
+            "name": "Aliquid aliquid.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Aliquid aliquid.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Aliquid aliquid.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -770,54 +808,42 @@ Example:
     %[1]s mailing-list update-grpsio-mailing-list-settings --body '{
       "auditors": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ],
       "writers": [
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          },
          {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
-         },
-         {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
-         },
-         {
-            "avatar": "http://turner.org/winifred_ernser",
-            "email": "sabrina_gleason@wisozk.net",
-            "name": "Debitis dicta et.",
-            "username": "Commodi impedit ea."
+            "avatar": "http://goldner.info/perry",
+            "email": "ernie.lueilwitz@altenwerth.info",
+            "name": "Eos non id at perspiciatis.",
+            "username": "Eaque quis possimus velit quasi quis occaecati."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -877,11 +903,11 @@ Update a member of a GroupsIO mailing list
 
 Example:
     %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "normal",
+      "delivery_mode": "none",
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "owner",
+      "mod_status": "none",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -913,10 +939,10 @@ Handle GroupsIO webhook events for subgroup and member changes
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
       "action": "created_subgroup",
-      "extra": "Optio molestias ullam porro aut.",
-      "extra_id": 2343783012775007402,
-      "group": "Aliquam sit.",
-      "member_info": "Sint praesentium."
-   }' --signature "Repellat velit qui."
+      "extra": "Sint rerum laboriosam consequatur ut explicabo saepe.",
+      "extra_id": 500672409584855543,
+      "group": "Aut consequatur nihil repellat velit qui.",
+      "member_info": "Totam cumque totam alias."
+   }' --signature "Nostrum sed quo."
 `, os.Args[0])
 }

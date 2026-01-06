@@ -62,8 +62,8 @@ var _ = dsl.Service("mailing-list", func() {
 
 			GrpsIOServiceBaseAttributes()
 
-			ServiceWritersAttribute()
-			ServiceAuditorsAttribute()
+			WritersAttribute()
+			AuditorsAttribute()
 
 			// Only common required fields - type-specific validation handled in service layer
 			dsl.Required("type", "project_uid", "version")
@@ -225,8 +225,8 @@ var _ = dsl.Service("mailing-list", func() {
 			VersionAttribute()
 			IfMatchAttribute()
 			GrpsIOServiceUIDAttribute()
-			ServiceWritersAttribute()
-			ServiceAuditorsAttribute()
+			WritersAttribute()
+			AuditorsAttribute()
 			dsl.Required("version", "uid")
 		})
 		dsl.Result(GrpsIOServiceSettings)
@@ -261,8 +261,8 @@ var _ = dsl.Service("mailing-list", func() {
 			GrpsIOMailingListBaseAttributes()
 
 			// Settings fields (writers and auditors) for initial mailing list setup
-			MailingListWritersAttribute()
-			MailingListAuditorsAttribute()
+			WritersAttribute()
+			AuditorsAttribute()
 
 			// Required fields for mailing list creation
 			dsl.Required("group_name", "public", "type", "description", "title", "service_uid", "version")
@@ -424,8 +424,8 @@ var _ = dsl.Service("mailing-list", func() {
 			VersionAttribute()
 			IfMatchAttribute()
 			GrpsIOMailingListUIDAttribute()
-			MailingListWritersAttribute()
-			MailingListAuditorsAttribute()
+			WritersAttribute()
+			AuditorsAttribute()
 			dsl.Required("version", "uid")
 		})
 		dsl.Result(GrpsIOMailingListSettings)
