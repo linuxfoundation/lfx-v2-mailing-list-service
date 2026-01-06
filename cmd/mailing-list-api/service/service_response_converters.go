@@ -40,28 +40,8 @@ func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *m
 
 	// Populate writers and auditors from settings
 	if settings != nil {
-		if len(settings.Writers) > 0 {
-			result.Writers = make([]*mailinglistservice.UserInfo, len(settings.Writers))
-			for i, writer := range settings.Writers {
-				result.Writers[i] = &mailinglistservice.UserInfo{
-					Name:     writer.Name,
-					Email:    writer.Email,
-					Username: writer.Username,
-					Avatar:   writer.Avatar,
-				}
-			}
-		}
-		if len(settings.Auditors) > 0 {
-			result.Auditors = make([]*mailinglistservice.UserInfo, len(settings.Auditors))
-			for i, auditor := range settings.Auditors {
-				result.Auditors[i] = &mailinglistservice.UserInfo{
-					Name:     auditor.Name,
-					Email:    auditor.Email,
-					Username: auditor.Username,
-					Avatar:   auditor.Avatar,
-				}
-			}
-		}
+		result.Writers = convertUserInfoDomainToResponse(settings.Writers)
+		result.Auditors = convertUserInfoDomainToResponse(settings.Auditors)
 	}
 
 	// Handle timestamps
