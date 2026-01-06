@@ -245,13 +245,13 @@ externalSecretsOperator:
     data:
       - secretKey: GROUPSIO_EMAIL
         remoteRef:
-          key: cloud/groupsio/lfx-v2-mailing-list-service
+          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
           property: groupsio_email
       - secretKey: GROUPSIO_PASSWORD
         remoteRef:
-          key: cloud/groupsio/lfx-v2-mailing-list-service
+          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
           property: groupsio_password
       - secretKey: GROUPSIO_WEBHOOK_SECRET
         remoteRef:
-          key: cloud/groupsio/lfx-v2-mailing-list-service
+          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
           property: groupsio_webhook_secret
