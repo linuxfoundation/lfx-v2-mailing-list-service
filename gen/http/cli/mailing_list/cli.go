@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|get-grpsio-service-settings|update-grpsio-service-settings|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
+	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|get-grpsio-service-settings|update-grpsio-service-settings|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|get-grpsio-mailing-list-settings|update-grpsio-mailing-list-settings|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
 `
 }
 
@@ -107,6 +107,18 @@ func ParseEndpoint(
 		mailingListDeleteGrpsioMailingListBearerTokenFlag = mailingListDeleteGrpsioMailingListFlags.String("bearer-token", "", "")
 		mailingListDeleteGrpsioMailingListIfMatchFlag     = mailingListDeleteGrpsioMailingListFlags.String("if-match", "", "")
 
+		mailingListGetGrpsioMailingListSettingsFlags           = flag.NewFlagSet("get-grpsio-mailing-list-settings", flag.ExitOnError)
+		mailingListGetGrpsioMailingListSettingsUIDFlag         = mailingListGetGrpsioMailingListSettingsFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
+		mailingListGetGrpsioMailingListSettingsVersionFlag     = mailingListGetGrpsioMailingListSettingsFlags.String("version", "", "")
+		mailingListGetGrpsioMailingListSettingsBearerTokenFlag = mailingListGetGrpsioMailingListSettingsFlags.String("bearer-token", "", "")
+
+		mailingListUpdateGrpsioMailingListSettingsFlags           = flag.NewFlagSet("update-grpsio-mailing-list-settings", flag.ExitOnError)
+		mailingListUpdateGrpsioMailingListSettingsBodyFlag        = mailingListUpdateGrpsioMailingListSettingsFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGrpsioMailingListSettingsUIDFlag         = mailingListUpdateGrpsioMailingListSettingsFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
+		mailingListUpdateGrpsioMailingListSettingsVersionFlag     = mailingListUpdateGrpsioMailingListSettingsFlags.String("version", "REQUIRED", "")
+		mailingListUpdateGrpsioMailingListSettingsBearerTokenFlag = mailingListUpdateGrpsioMailingListSettingsFlags.String("bearer-token", "", "")
+		mailingListUpdateGrpsioMailingListSettingsIfMatchFlag     = mailingListUpdateGrpsioMailingListSettingsFlags.String("if-match", "", "")
+
 		mailingListCreateGrpsioMailingListMemberFlags           = flag.NewFlagSet("create-grpsio-mailing-list-member", flag.ExitOnError)
 		mailingListCreateGrpsioMailingListMemberBodyFlag        = mailingListCreateGrpsioMailingListMemberFlags.String("body", "REQUIRED", "")
 		mailingListCreateGrpsioMailingListMemberUIDFlag         = mailingListCreateGrpsioMailingListMemberFlags.String("uid", "REQUIRED", "Mailing list UID")
@@ -151,6 +163,8 @@ func ParseEndpoint(
 	mailingListGetGrpsioMailingListFlags.Usage = mailingListGetGrpsioMailingListUsage
 	mailingListUpdateGrpsioMailingListFlags.Usage = mailingListUpdateGrpsioMailingListUsage
 	mailingListDeleteGrpsioMailingListFlags.Usage = mailingListDeleteGrpsioMailingListUsage
+	mailingListGetGrpsioMailingListSettingsFlags.Usage = mailingListGetGrpsioMailingListSettingsUsage
+	mailingListUpdateGrpsioMailingListSettingsFlags.Usage = mailingListUpdateGrpsioMailingListSettingsUsage
 	mailingListCreateGrpsioMailingListMemberFlags.Usage = mailingListCreateGrpsioMailingListMemberUsage
 	mailingListGetGrpsioMailingListMemberFlags.Usage = mailingListGetGrpsioMailingListMemberUsage
 	mailingListUpdateGrpsioMailingListMemberFlags.Usage = mailingListUpdateGrpsioMailingListMemberUsage
@@ -227,6 +241,12 @@ func ParseEndpoint(
 			case "delete-grpsio-mailing-list":
 				epf = mailingListDeleteGrpsioMailingListFlags
 
+			case "get-grpsio-mailing-list-settings":
+				epf = mailingListGetGrpsioMailingListSettingsFlags
+
+			case "update-grpsio-mailing-list-settings":
+				epf = mailingListUpdateGrpsioMailingListSettingsFlags
+
 			case "create-grpsio-mailing-list-member":
 				epf = mailingListCreateGrpsioMailingListMemberFlags
 
@@ -301,6 +321,12 @@ func ParseEndpoint(
 			case "delete-grpsio-mailing-list":
 				endpoint = c.DeleteGrpsioMailingList()
 				data, err = mailinglistc.BuildDeleteGrpsioMailingListPayload(*mailingListDeleteGrpsioMailingListUIDFlag, *mailingListDeleteGrpsioMailingListVersionFlag, *mailingListDeleteGrpsioMailingListBearerTokenFlag, *mailingListDeleteGrpsioMailingListIfMatchFlag)
+			case "get-grpsio-mailing-list-settings":
+				endpoint = c.GetGrpsioMailingListSettings()
+				data, err = mailinglistc.BuildGetGrpsioMailingListSettingsPayload(*mailingListGetGrpsioMailingListSettingsUIDFlag, *mailingListGetGrpsioMailingListSettingsVersionFlag, *mailingListGetGrpsioMailingListSettingsBearerTokenFlag)
+			case "update-grpsio-mailing-list-settings":
+				endpoint = c.UpdateGrpsioMailingListSettings()
+				data, err = mailinglistc.BuildUpdateGrpsioMailingListSettingsPayload(*mailingListUpdateGrpsioMailingListSettingsBodyFlag, *mailingListUpdateGrpsioMailingListSettingsUIDFlag, *mailingListUpdateGrpsioMailingListSettingsVersionFlag, *mailingListUpdateGrpsioMailingListSettingsBearerTokenFlag, *mailingListUpdateGrpsioMailingListSettingsIfMatchFlag)
 			case "create-grpsio-mailing-list-member":
 				endpoint = c.CreateGrpsioMailingListMember()
 				data, err = mailinglistc.BuildCreateGrpsioMailingListMemberPayload(*mailingListCreateGrpsioMailingListMemberBodyFlag, *mailingListCreateGrpsioMailingListMemberUIDFlag, *mailingListCreateGrpsioMailingListMemberVersionFlag, *mailingListCreateGrpsioMailingListMemberBearerTokenFlag)
@@ -346,6 +372,8 @@ COMMAND:
     get-grpsio-mailing-list: Get GroupsIO mailing list details by UID
     update-grpsio-mailing-list: Update GroupsIO mailing list
     delete-grpsio-mailing-list: Delete GroupsIO mailing list
+    get-grpsio-mailing-list-settings: Get GroupsIO mailing list settings (writers and auditors)
+    update-grpsio-mailing-list-settings: Update GroupsIO mailing list settings (writers and auditors)
     create-grpsio-mailing-list-member: Create a new member for a GroupsIO mailing list
     get-grpsio-mailing-list-member: Get a member of a GroupsIO mailing list by UID
     update-grpsio-mailing-list-member: Update a member of a GroupsIO mailing list
@@ -388,28 +416,28 @@ Example:
     %[1]s mailing-list create-grpsio-service --body '{
       "auditors": [
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          }
       ],
       "domain": "lists.project.org",
@@ -428,28 +456,28 @@ Example:
       "url": "https://lists.project.org",
       "writers": [
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          }
       ]
    }' --version "1" --bearer-token "eyJhbGci..."
@@ -540,54 +568,42 @@ Example:
     %[1]s mailing-list update-grpsio-service-settings --body '{
       "auditors": [
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
-         },
-         {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          }
       ],
       "writers": [
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          },
          {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
-         },
-         {
-            "avatar": "http://schmitt.org/yadira_schultz",
-            "email": "will_upton@fay.biz",
-            "name": "Quaerat quos et dolor magni.",
-            "username": "Sunt qui tempora culpa ipsa maxime ex."
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
          }
       ]
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -605,17 +621,13 @@ Create GroupsIO mailing list/subgroup with comprehensive validation
 Example:
     %[1]s mailing-list create-grpsio-mailing-list --body '{
       "audience_access": "public",
-      "auditors": [
-         "auditor_user_id1",
-         "auditor_user_id2"
-      ],
       "committees": [
          {
             "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -623,7 +635,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -631,7 +643,15 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
+            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
+         },
+         {
+            "allowed_voting_statuses": [
+               "Voting Rep",
+               "Alternate Voting Rep"
+            ],
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -641,11 +661,7 @@ Example:
       "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "subject_tag": "[TSC]",
       "title": "Technical Steering Committee",
-      "type": "discussion_moderated",
-      "writers": [
-         "manager_user_id1",
-         "manager_user_id2"
-      ]
+      "type": "discussion_moderated"
    }' --version "1" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
@@ -676,17 +692,13 @@ Update GroupsIO mailing list
 Example:
     %[1]s mailing-list update-grpsio-mailing-list --body '{
       "audience_access": "public",
-      "auditors": [
-         "auditor_user_id1",
-         "auditor_user_id2"
-      ],
       "committees": [
          {
             "allowed_voting_statuses": [
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -694,7 +706,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -702,7 +714,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          },
          {
@@ -710,7 +722,7 @@ Example:
                "Voting Rep",
                "Alternate Voting Rep"
             ],
-            "name": "Voluptate vitae saepe.",
+            "name": "Et voluptatem voluptate vitae saepe mollitia deserunt.",
             "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
          }
       ],
@@ -720,11 +732,7 @@ Example:
       "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "subject_tag": "[TSC]",
       "title": "Technical Steering Committee",
-      "type": "discussion_moderated",
-      "writers": [
-         "manager_user_id1",
-         "manager_user_id2"
-      ]
+      "type": "discussion_moderated"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }
@@ -740,6 +748,75 @@ Delete GroupsIO mailing list
 
 Example:
     %[1]s mailing-list delete-grpsio-mailing-list --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+`, os.Args[0])
+}
+
+func mailingListGetGrpsioMailingListSettingsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-mailing-list-settings -uid STRING -version STRING -bearer-token STRING
+
+Get GroupsIO mailing list settings (writers and auditors)
+    -uid STRING: Mailing list UID -- unique identifier for the mailing list
+    -version STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-grpsio-mailing-list-settings --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListUpdateGrpsioMailingListSettingsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-mailing-list-settings -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+
+Update GroupsIO mailing list settings (writers and auditors)
+    -body JSON: 
+    -uid STRING: Mailing list UID -- unique identifier for the mailing list
+    -version STRING: 
+    -bearer-token STRING: 
+    -if-match STRING: 
+
+Example:
+    %[1]s mailing-list update-grpsio-mailing-list-settings --body '{
+      "auditors": [
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         },
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         }
+      ],
+      "writers": [
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         },
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         },
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         },
+         {
+            "avatar": "http://gibsonfahey.name/lauryn.cummings",
+            "email": "tamia_dicki@schaden.name",
+            "name": "Aut ipsa.",
+            "username": "Ipsa maxime ex laborum qui."
+         }
+      ]
+   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
 `, os.Args[0])
 }
 
@@ -761,8 +838,8 @@ Example:
       "last_name": "Doe",
       "last_reviewed_at": "2023-01-15T14:30:00Z",
       "last_reviewed_by": "admin@example.com",
-      "member_type": "committee",
-      "mod_status": "none",
+      "member_type": "direct",
+      "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
@@ -800,7 +877,7 @@ Example:
       "first_name": "John",
       "job_title": "Software Engineer",
       "last_name": "Doe",
-      "mod_status": "moderator",
+      "mod_status": "owner",
       "organization": "Example Corp",
       "username": "jdoe"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
@@ -832,10 +909,10 @@ Handle GroupsIO webhook events for subgroup and member changes
 Example:
     %[1]s mailing-list groupsio-webhook --body '{
       "action": "created_subgroup",
-      "extra": "Recusandae ad dolorem.",
-      "extra_id": 8580972433300173377,
-      "group": "Consequatur qui quia id.",
-      "member_info": "Eos illum exercitationem dolorum nobis."
-   }' --signature "Aliquam sit."
+      "extra": "Optio molestias ullam porro aut.",
+      "extra_id": 2343783012775007402,
+      "group": "Recusandae ad dolorem.",
+      "member_info": "Molestias aliquam sit nesciunt sint praesentium."
+   }' --signature "Repellat velit qui."
 `, os.Args[0])
 }

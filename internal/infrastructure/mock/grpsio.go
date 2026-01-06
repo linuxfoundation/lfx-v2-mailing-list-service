@@ -42,10 +42,12 @@ type MockRepository struct {
 	serviceIndexKeys     map[string]*model.GrpsIOService // indexKey -> service
 	settings             map[string]*model.GrpsIOServiceSettings // serviceUID -> settings
 	settingsRevisions    map[string]uint64                       // serviceUID -> revision
-	mailingLists         map[string]*model.GrpsIOMailingList
-	mailingListRevisions map[string]uint64
-	mailingListIndexKeys map[string]*model.GrpsIOMailingList // indexKey -> mailingList
-	members              map[string]*model.GrpsIOMember      // UID -> member
+	mailingLists               map[string]*model.GrpsIOMailingList
+	mailingListRevisions       map[string]uint64
+	mailingListIndexKeys       map[string]*model.GrpsIOMailingList       // indexKey -> mailingList
+	mailingListSettings        map[string]*model.GrpsIOMailingListSettings // mailingListUID -> settings
+	mailingListSettingsRevisions map[string]uint64                         // mailingListUID -> revision
+	members                    map[string]*model.GrpsIOMember              // UID -> member
 	memberRevisions      map[string]uint64                   // UID -> revision
 	memberIndexKeys      map[string]*model.GrpsIOMember      // indexKey -> member
 	projectSlugs         map[string]string                   // projectUID -> slug
@@ -69,10 +71,12 @@ func NewMockRepository() *MockRepository {
 			serviceIndexKeys:     make(map[string]*model.GrpsIOService),
 			settings:             make(map[string]*model.GrpsIOServiceSettings),
 			settingsRevisions:    make(map[string]uint64),
-			mailingLists:         make(map[string]*model.GrpsIOMailingList),
-			mailingListRevisions: make(map[string]uint64),
-			mailingListIndexKeys: make(map[string]*model.GrpsIOMailingList),
-			members:              make(map[string]*model.GrpsIOMember),
+			mailingLists:               make(map[string]*model.GrpsIOMailingList),
+			mailingListRevisions:       make(map[string]uint64),
+			mailingListIndexKeys:       make(map[string]*model.GrpsIOMailingList),
+			mailingListSettings:        make(map[string]*model.GrpsIOMailingListSettings),
+			mailingListSettingsRevisions: make(map[string]uint64),
+			members:                    make(map[string]*model.GrpsIOMember),
 			memberRevisions:      make(map[string]uint64),
 			memberIndexKeys:      make(map[string]*model.GrpsIOMember),
 			projectSlugs:         make(map[string]string),
@@ -239,8 +243,6 @@ func NewMockRepository() *MockRepository {
 				SubjectTag:  "[DEV]",
 				ServiceUID:  "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:  "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-				Writers:     []string{"dev-admin@testproject.org"},
-				Auditors:    []string{"auditor@testproject.org"},
 				CreatedAt:   now.Add(-18 * time.Hour),
 				UpdatedAt:   now.Add(-2 * time.Hour),
 			},
@@ -254,8 +256,6 @@ func NewMockRepository() *MockRepository {
 				SubjectTag:  "[ANNOUNCE]",
 				ServiceUID:  "550e8400-e29b-41d4-a716-446655440001",
 				ProjectUID:  "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-				Writers:     []string{"admin@testproject.org"},
-				Auditors:    []string{"auditor@testproject.org"},
 				CreatedAt:   now.Add(-12 * time.Hour),
 				UpdatedAt:   now.Add(-1 * time.Hour),
 			},
@@ -272,8 +272,6 @@ func NewMockRepository() *MockRepository {
 				SubjectTag:  "[SECURITY]",
 				ServiceUID:  "550e8400-e29b-41d4-a716-446655440002",
 				ProjectUID:  "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-				Writers:     []string{"security@testproject.org"},
-				Auditors:    []string{"security-audit@testproject.org"},
 				CreatedAt:   now.Add(-6 * time.Hour),
 				UpdatedAt:   now,
 			},
@@ -339,6 +337,16 @@ func (w *MockGrpsIOMailingListWriter) GetKeyRevision(ctx context.Context, key st
 func (w *MockGrpsIOMailingListWriter) Delete(ctx context.Context, key string, revision uint64) error {
 	slog.DebugContext(ctx, "mock delete key", "key", key, "revision", revision)
 	return nil
+}
+
+// CreateGrpsIOMailingListSettings delegates to MockRepository
+func (w *MockGrpsIOMailingListWriter) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
+	return w.mock.CreateGrpsIOMailingListSettings(ctx, settings)
+}
+
+// UpdateGrpsIOMailingListSettings delegates to MockRepository
+func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+	return w.mock.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
 }
 
 // MockGrpsIOMemberWriter implements GrpsIOMemberWriter interface
@@ -551,6 +559,14 @@ func (w *MockGrpsIOWriter) CreateSecondaryIndices(ctx context.Context, mailingLi
 
 func (w *MockGrpsIOWriter) UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
 	return w.mailingListWriter.UniqueMailingListGroupName(ctx, mailingList)
+}
+
+func (w *MockGrpsIOWriter) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
+	return w.mailingListWriter.CreateGrpsIOMailingListSettings(ctx, settings)
+}
+
+func (w *MockGrpsIOWriter) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+	return w.mailingListWriter.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
@@ -1510,8 +1526,6 @@ func (m *MockRepository) GetGrpsIOMailingListWithRevision(ctx context.Context, u
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-	mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
 
 	revision := m.mailingListRevisions[uid]
 	if revision == 0 {
@@ -1635,6 +1649,47 @@ func (m *MockRepository) CheckMailingListExists(ctx context.Context, parentID, g
 	return false, nil
 }
 
+// GetGrpsIOMailingListSettings retrieves mailing list settings by UID with revision
+func (m *MockRepository) GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock mailing list settings: getting settings", "mailing_list_uid", uid)
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	settings, exists := m.mailingListSettings[uid]
+	if !exists {
+		return nil, 0, errors.NewNotFound("mailing list settings not found")
+	}
+
+	revision := m.mailingListSettingsRevisions[uid]
+	if revision == 0 {
+		revision = 1
+	}
+
+	// Return deep copy to avoid data races
+	settingsCopy := *settings
+	return &settingsCopy, revision, nil
+}
+
+// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
+func (m *MockRepository) GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "mock mailing list settings: getting settings revision", "mailing_list_uid", uid)
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if _, exists := m.mailingListSettings[uid]; !exists {
+		return 0, errors.NewNotFound("mailing list settings not found")
+	}
+
+	revision := m.mailingListSettingsRevisions[uid]
+	if revision == 0 {
+		revision = 1
+	}
+
+	return revision, nil
+}
+
 // ==================== MAILING LIST WRITER OPERATIONS ====================
 
 // CreateGrpsIOMailingList creates a new mailing list in the mock storage (interface implementation)
@@ -1669,8 +1724,6 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-	mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
 
 	m.mailingLists[mailingList.UID] = &mailingListCopy
 	m.mailingListRevisions[mailingList.UID] = 1
@@ -1686,8 +1739,6 @@ func (m *MockRepository) CreateGrpsIOMailingList(ctx context.Context, mailingLis
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)
-	resultCopy.Auditors = append([]string(nil), mailingListCopy.Auditors...)
 
 	return &resultCopy, 1, nil
 }
@@ -1728,8 +1779,6 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-	mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
 
 	m.mailingLists[mailingList.UID] = &mailingListCopy
 	currentRevision := m.mailingListRevisions[mailingList.UID]
@@ -1746,8 +1795,6 @@ func (m *MockRepository) UpdateGrpsIOMailingList(ctx context.Context, mailingLis
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)
-	resultCopy.Auditors = append([]string(nil), mailingListCopy.Auditors...)
 
 	return &resultCopy, nil
 }
@@ -1790,8 +1837,6 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	mailingListCopy.Writers = append([]string(nil), mailingList.Writers...)
-	mailingListCopy.Auditors = append([]string(nil), mailingList.Auditors...)
 
 	m.mailingLists[uid] = &mailingListCopy
 	newRevision := currentRevision + 1
@@ -1808,8 +1853,6 @@ func (m *MockRepository) UpdateGrpsIOMailingListWithRevision(ctx context.Context
 			AllowedVotingStatuses: append([]string(nil), c.AllowedVotingStatuses...),
 		}
 	}
-	resultCopy.Writers = append([]string(nil), mailingListCopy.Writers...)
-	resultCopy.Auditors = append([]string(nil), mailingListCopy.Auditors...)
 
 	return &resultCopy, newRevision, nil
 }
@@ -1928,6 +1971,77 @@ func (m *MockRepository) GetMailingListCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return len(m.mailingLists)
+}
+
+// CreateGrpsIOMailingListSettings creates new mailing list settings
+func (m *MockRepository) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock mailing list settings: creating settings", "mailing_list_uid", settings.UID)
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Store settings copy
+	settingsCopy := *settings
+	settingsCopy.Writers = make([]model.UserInfo, len(settings.Writers))
+	copy(settingsCopy.Writers, settings.Writers)
+	settingsCopy.Auditors = make([]model.UserInfo, len(settings.Auditors))
+	copy(settingsCopy.Auditors, settings.Auditors)
+
+	m.mailingListSettings[settings.UID] = &settingsCopy
+	m.mailingListSettingsRevisions[settings.UID] = 1
+
+	// Return settings copy
+	resultCopy := settingsCopy
+	resultCopy.Writers = make([]model.UserInfo, len(settingsCopy.Writers))
+	copy(resultCopy.Writers, settingsCopy.Writers)
+	resultCopy.Auditors = make([]model.UserInfo, len(settingsCopy.Auditors))
+	copy(resultCopy.Auditors, settingsCopy.Auditors)
+
+	return &resultCopy, 1, nil
+}
+
+// UpdateGrpsIOMailingListSettings updates mailing list settings with revision checking
+func (m *MockRepository) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "mock mailing list settings: updating settings", "mailing_list_uid", settings.UID, "expected_revision", expectedRevision)
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check if settings exist
+	existingSettings, exists := m.mailingListSettings[settings.UID]
+	if !exists {
+		return nil, 0, errors.NewNotFound("mailing list settings not found")
+	}
+
+	// Check revision
+	currentRevision := m.mailingListSettingsRevisions[settings.UID]
+	if currentRevision != expectedRevision {
+		return nil, 0, errors.NewConflict(fmt.Sprintf("revision mismatch: expected %d, got %d", expectedRevision, currentRevision))
+	}
+
+	// Preserve created timestamp, update updated timestamp
+	settings.CreatedAt = existingSettings.CreatedAt
+	settings.UpdatedAt = time.Now()
+
+	// Store settings copy
+	settingsCopy := *settings
+	settingsCopy.Writers = make([]model.UserInfo, len(settings.Writers))
+	copy(settingsCopy.Writers, settings.Writers)
+	settingsCopy.Auditors = make([]model.UserInfo, len(settings.Auditors))
+	copy(settingsCopy.Auditors, settings.Auditors)
+
+	m.mailingListSettings[settings.UID] = &settingsCopy
+	newRevision := currentRevision + 1
+	m.mailingListSettingsRevisions[settings.UID] = newRevision
+
+	// Return settings copy
+	resultCopy := settingsCopy
+	resultCopy.Writers = make([]model.UserInfo, len(settingsCopy.Writers))
+	copy(resultCopy.Writers, settingsCopy.Writers)
+	resultCopy.Auditors = make([]model.UserInfo, len(settingsCopy.Auditors))
+	copy(resultCopy.Auditors, settingsCopy.Auditors)
+
+	return &resultCopy, newRevision, nil
 }
 
 // ==================== MEMBER READER OPERATIONS ====================

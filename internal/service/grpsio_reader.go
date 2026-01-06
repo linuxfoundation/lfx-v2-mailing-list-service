@@ -41,6 +41,10 @@ type GrpsIOMailingListReader interface {
 	GetMailingListRevision(ctx context.Context, uid string) (uint64, error)
 	// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
 	GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error)
+	// GetGrpsIOMailingListSettings retrieves mailing list settings by UID with revision
+	GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error)
+	// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
+	GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error)
 }
 
 // GrpsIOMemberReader defines the interface for member read operations

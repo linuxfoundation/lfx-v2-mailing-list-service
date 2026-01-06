@@ -189,6 +189,16 @@ func ServiceAuditorsAttribute() {
 	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this service")
 }
 
+// MailingListWritersAttribute is the DSL attribute for mailing list writers (UserInfo array).
+func MailingListWritersAttribute() {
+	dsl.Attribute("writers", dsl.ArrayOf(UserInfo), "Manager users who can edit/modify this mailing list")
+}
+
+// MailingListAuditorsAttribute is the DSL attribute for mailing list auditors (UserInfo array).
+func MailingListAuditorsAttribute() {
+	dsl.Attribute("auditors", dsl.ArrayOf(UserInfo), "Auditor users who can audit this mailing list")
+}
+
 // LastAuditedByAttribute is the DSL attribute for last audited by user.
 func LastAuditedByAttribute() {
 	dsl.Attribute("last_audited_by", dsl.String, "The user ID who last audited the service", func() {
@@ -309,6 +319,25 @@ var Committee = dsl.Type("Committee", func() {
 	dsl.Required("uid") // Only uid is required on input; name is server-populated
 })
 
+// GrpsIOMailingListSettingsAttributes defines attributes for mailing list settings (user management).
+func GrpsIOMailingListSettingsAttributes() {
+	GrpsIOMailingListUIDAttribute()
+	MailingListWritersAttribute()
+	MailingListAuditorsAttribute()
+	LastReviewedAtAttribute()
+	LastReviewedByAttribute()
+	LastAuditedByAttribute()
+	LastAuditedTimeAttribute()
+	CreatedAtAttribute()
+	UpdatedAtAttribute()
+}
+
+// GrpsIOMailingListSettings is the DSL type for mailing list settings.
+var GrpsIOMailingListSettings = dsl.Type("grps-io-mailing-list-settings", func() {
+	dsl.Description("A representation of GroupsIO mailing list settings for user management.")
+	GrpsIOMailingListSettingsAttributes()
+})
+
 // GrpsIOMailingListBaseAttributes defines attributes for mailing list requests (CREATE/UPDATE) - excludes project_uid.
 func GrpsIOMailingListBaseAttributes() {
 	dsl.Attribute("group_name", dsl.String, "Mailing list group name", func() {
@@ -381,10 +410,6 @@ var GrpsIOMailingListFull = dsl.Type("grps-io-mailing-list-full", func() {
 	ProjectSlugAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	LastReviewedAtAttribute()
-	LastReviewedByAttribute()
-	WritersAttribute()
-	AuditorsAttribute()
 })
 
 // GrpsIOMailingListWithReadonlyAttributes is the DSL type for a mailing list with readonly attributes.
@@ -404,8 +429,6 @@ var GrpsIOMailingListWithReadonlyAttributes = dsl.Type("grps-io-mailing-list-wit
 	ProjectSlugAttribute()
 	CreatedAtAttribute()
 	UpdatedAtAttribute()
-	WritersAttribute()
-	AuditorsAttribute()
 })
 
 // GrpsIOMemberBaseAttributes defines common attributes for member requests and responses.

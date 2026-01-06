@@ -80,8 +80,6 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 		ServiceUID:     p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
 		Source:    constants.SourceAPI, // API operations always use api source
-		Writers:   p.Writers,
-		Auditors:  p.Auditors,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -151,8 +149,6 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		ProjectName:    existing.ProjectName,
 		ProjectSlug:    existing.ProjectSlug,
 		CreatedAt:      existing.CreatedAt,
-		LastReviewedAt: existing.LastReviewedAt,
-		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
 		Public:         payload.Public,                                // Direct assignment
@@ -163,8 +159,6 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		ServiceUID:     payload.ServiceUID,                            // Direct assignment
 		Committees:     convertCommitteesToDomain(payload.Committees), // nil → nil
 		SubjectTag:     payloadStringValue(payload.SubjectTag),        // nil → ""
-		Writers:        payload.Writers,                               // nil → nil
-		Auditors:       payload.Auditors,                              // nil → nil
 		UpdatedAt:      time.Now().UTC(),
 	}
 }
@@ -355,4 +349,16 @@ func convertUserInfoPayloadToDomain(goaUsers []*mailinglistservice.UserInfo) []m
 		users[i] = user
 	}
 	return users
+}
+
+// convertGrpsIOMailingListSettingsPayloadToDomain converts GOA mailing list settings payload to domain model
+func (s *mailingListService) convertGrpsIOMailingListSettingsPayloadToDomain(payload *mailinglistservice.UpdateGrpsioMailingListSettingsPayload) *model.GrpsIOMailingListSettings {
+	settings := &model.GrpsIOMailingListSettings{
+		UID:       payload.UID,
+		Writers:   convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(payload.Auditors),
+		UpdatedAt: time.Now().UTC(),
+	}
+
+	return settings
 }

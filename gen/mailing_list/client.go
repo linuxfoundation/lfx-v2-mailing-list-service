@@ -16,45 +16,49 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint                         goa.Endpoint
-	ReadyzEndpoint                        goa.Endpoint
-	CreateGrpsioServiceEndpoint           goa.Endpoint
-	GetGrpsioServiceEndpoint              goa.Endpoint
-	UpdateGrpsioServiceEndpoint           goa.Endpoint
-	DeleteGrpsioServiceEndpoint           goa.Endpoint
-	GetGrpsioServiceSettingsEndpoint      goa.Endpoint
-	UpdateGrpsioServiceSettingsEndpoint   goa.Endpoint
-	CreateGrpsioMailingListEndpoint       goa.Endpoint
-	GetGrpsioMailingListEndpoint          goa.Endpoint
-	UpdateGrpsioMailingListEndpoint       goa.Endpoint
-	DeleteGrpsioMailingListEndpoint       goa.Endpoint
-	CreateGrpsioMailingListMemberEndpoint goa.Endpoint
-	GetGrpsioMailingListMemberEndpoint    goa.Endpoint
-	UpdateGrpsioMailingListMemberEndpoint goa.Endpoint
-	DeleteGrpsioMailingListMemberEndpoint goa.Endpoint
-	GroupsioWebhookEndpoint               goa.Endpoint
+	LivezEndpoint                           goa.Endpoint
+	ReadyzEndpoint                          goa.Endpoint
+	CreateGrpsioServiceEndpoint             goa.Endpoint
+	GetGrpsioServiceEndpoint                goa.Endpoint
+	UpdateGrpsioServiceEndpoint             goa.Endpoint
+	DeleteGrpsioServiceEndpoint             goa.Endpoint
+	GetGrpsioServiceSettingsEndpoint        goa.Endpoint
+	UpdateGrpsioServiceSettingsEndpoint     goa.Endpoint
+	CreateGrpsioMailingListEndpoint         goa.Endpoint
+	GetGrpsioMailingListEndpoint            goa.Endpoint
+	UpdateGrpsioMailingListEndpoint         goa.Endpoint
+	DeleteGrpsioMailingListEndpoint         goa.Endpoint
+	GetGrpsioMailingListSettingsEndpoint    goa.Endpoint
+	UpdateGrpsioMailingListSettingsEndpoint goa.Endpoint
+	CreateGrpsioMailingListMemberEndpoint   goa.Endpoint
+	GetGrpsioMailingListMemberEndpoint      goa.Endpoint
+	UpdateGrpsioMailingListMemberEndpoint   goa.Endpoint
+	DeleteGrpsioMailingListMemberEndpoint   goa.Endpoint
+	GroupsioWebhookEndpoint                 goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, getGrpsioServiceSettings, updateGrpsioServiceSettings, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
+func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, getGrpsioServiceSettings, updateGrpsioServiceSettings, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, getGrpsioMailingListSettings, updateGrpsioMailingListSettings, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:                         livez,
-		ReadyzEndpoint:                        readyz,
-		CreateGrpsioServiceEndpoint:           createGrpsioService,
-		GetGrpsioServiceEndpoint:              getGrpsioService,
-		UpdateGrpsioServiceEndpoint:           updateGrpsioService,
-		DeleteGrpsioServiceEndpoint:           deleteGrpsioService,
-		GetGrpsioServiceSettingsEndpoint:      getGrpsioServiceSettings,
-		UpdateGrpsioServiceSettingsEndpoint:   updateGrpsioServiceSettings,
-		CreateGrpsioMailingListEndpoint:       createGrpsioMailingList,
-		GetGrpsioMailingListEndpoint:          getGrpsioMailingList,
-		UpdateGrpsioMailingListEndpoint:       updateGrpsioMailingList,
-		DeleteGrpsioMailingListEndpoint:       deleteGrpsioMailingList,
-		CreateGrpsioMailingListMemberEndpoint: createGrpsioMailingListMember,
-		GetGrpsioMailingListMemberEndpoint:    getGrpsioMailingListMember,
-		UpdateGrpsioMailingListMemberEndpoint: updateGrpsioMailingListMember,
-		DeleteGrpsioMailingListMemberEndpoint: deleteGrpsioMailingListMember,
-		GroupsioWebhookEndpoint:               groupsioWebhook,
+		LivezEndpoint:                           livez,
+		ReadyzEndpoint:                          readyz,
+		CreateGrpsioServiceEndpoint:             createGrpsioService,
+		GetGrpsioServiceEndpoint:                getGrpsioService,
+		UpdateGrpsioServiceEndpoint:             updateGrpsioService,
+		DeleteGrpsioServiceEndpoint:             deleteGrpsioService,
+		GetGrpsioServiceSettingsEndpoint:        getGrpsioServiceSettings,
+		UpdateGrpsioServiceSettingsEndpoint:     updateGrpsioServiceSettings,
+		CreateGrpsioMailingListEndpoint:         createGrpsioMailingList,
+		GetGrpsioMailingListEndpoint:            getGrpsioMailingList,
+		UpdateGrpsioMailingListEndpoint:         updateGrpsioMailingList,
+		DeleteGrpsioMailingListEndpoint:         deleteGrpsioMailingList,
+		GetGrpsioMailingListSettingsEndpoint:    getGrpsioMailingListSettings,
+		UpdateGrpsioMailingListSettingsEndpoint: updateGrpsioMailingListSettings,
+		CreateGrpsioMailingListMemberEndpoint:   createGrpsioMailingListMember,
+		GetGrpsioMailingListMemberEndpoint:      getGrpsioMailingListMember,
+		UpdateGrpsioMailingListMemberEndpoint:   updateGrpsioMailingListMember,
+		DeleteGrpsioMailingListMemberEndpoint:   deleteGrpsioMailingListMember,
+		GroupsioWebhookEndpoint:                 groupsioWebhook,
 	}
 }
 
@@ -248,6 +252,41 @@ func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMai
 func (c *Client) DeleteGrpsioMailingList(ctx context.Context, p *DeleteGrpsioMailingListPayload) (err error) {
 	_, err = c.DeleteGrpsioMailingListEndpoint(ctx, p)
 	return
+}
+
+// GetGrpsioMailingListSettings calls the "get-grpsio-mailing-list-settings"
+// endpoint of the "mailing-list" service.
+// GetGrpsioMailingListSettings may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list settings not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGrpsioMailingListSettings(ctx context.Context, p *GetGrpsioMailingListSettingsPayload) (res *GetGrpsioMailingListSettingsResult, err error) {
+	var ires any
+	ires, err = c.GetGrpsioMailingListSettingsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GetGrpsioMailingListSettingsResult), nil
+}
+
+// UpdateGrpsioMailingListSettings calls the
+// "update-grpsio-mailing-list-settings" endpoint of the "mailing-list" service.
+// UpdateGrpsioMailingListSettings may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Mailing list settings not found
+//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateGrpsioMailingListSettings(ctx context.Context, p *UpdateGrpsioMailingListSettingsPayload) (res *GrpsIoMailingListSettings, err error) {
+	var ires any
+	ires, err = c.UpdateGrpsioMailingListSettingsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GrpsIoMailingListSettings), nil
 }
 
 // CreateGrpsioMailingListMember calls the "create-grpsio-mailing-list-member"

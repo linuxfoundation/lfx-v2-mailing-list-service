@@ -140,8 +140,6 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 		ProjectUID:     &ml.ProjectUID,  // This is inherited from parent in orchestrator
 		ProjectName:    &ml.ProjectName, // Inherited from parent service
 		ProjectSlug:    &ml.ProjectSlug, // Inherited from parent service
-		Writers:        ml.Writers,
-		Auditors:       ml.Auditors,
 	}
 
 	// Handle timestamps
@@ -154,9 +152,6 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 		updatedAt := ml.UpdatedAt.Format(time.RFC3339)
 		result.UpdatedAt = &updatedAt
 	}
-
-	result.LastReviewedAt = ml.LastReviewedAt
-	result.LastReviewedBy = ml.LastReviewedBy
 
 	return result
 }
@@ -198,8 +193,6 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(ma
 		ProjectUID:     stringToPointer(mailingList.ProjectUID),
 		ProjectName:    stringToPointer(mailingList.ProjectName),
 		ProjectSlug:    stringToPointer(mailingList.ProjectSlug),
-		Writers:        mailingList.Writers,
-		Auditors:       mailingList.Auditors,
 	}
 
 	// Convert timestamps
@@ -361,4 +354,24 @@ func convertUserInfoDomainToResponse(domainUsers []model.UserInfo) []*mailinglis
 		}
 	}
 	return users
+}
+
+// convertGrpsIOMailingListSettingsDomainToResponse converts domain mailing list settings to GOA response
+func (s *mailingListService) convertGrpsIOMailingListSettingsDomainToResponse(settings *model.GrpsIOMailingListSettings) *mailinglistservice.GrpsIoMailingListSettings {
+	createdAt := settings.CreatedAt.Format(time.RFC3339)
+	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
+
+	response := &mailinglistservice.GrpsIoMailingListSettings{
+		UID:             &settings.UID,
+		Writers:         convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:        convertUserInfoDomainToResponse(settings.Auditors),
+		LastReviewedAt:  settings.LastReviewedAt,
+		LastReviewedBy:  settings.LastReviewedBy,
+		LastAuditedBy:   settings.LastAuditedBy,
+		LastAuditedTime: settings.LastAuditedTime,
+		CreatedAt:       &createdAt,
+		UpdatedAt:       &updatedAt,
+	}
+
+	return response
 }

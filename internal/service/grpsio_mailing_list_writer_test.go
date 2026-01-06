@@ -666,6 +666,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 	testCases := []struct {
 		name        string
 		mailingList *model.GrpsIOMailingList
+		settings    *model.GrpsIOMailingListSettings
 		expected    *model.AccessMessage
 	}{
 		{
@@ -709,13 +710,19 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			},
 		},
 		{
-			name: "mailing list with writers",
+			name: "mailing list with writers from settings",
 			mailingList: &model.GrpsIOMailingList{
 				UID:        "list-3",
 				ServiceUID: "service-3",
 				ProjectUID: "project-3",
 				Public:     true,
-				Writers:    []string{"user1", "user2"},
+			},
+			settings: &model.GrpsIOMailingListSettings{
+				UID: "list-3",
+				Writers: []model.UserInfo{
+					{Username: "user1"},
+					{Username: "user2"},
+				},
 			},
 			expected: &model.AccessMessage{
 				UID:        "list-3",
@@ -737,7 +744,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			orchestrator := &grpsIOWriterOrchestrator{}
 
 			// Execute
-			result := orchestrator.buildMailingListAccessControlMessage(tc.mailingList)
+			result := orchestrator.buildMailingListAccessControlMessage(tc.mailingList, tc.settings)
 
 			// Validate
 			assert.Equal(t, tc.expected, result)

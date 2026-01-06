@@ -123,8 +123,6 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				Title:       "Test Mailing List",
 				SubjectTag:  stringPtr("[TEST]"),
 				ServiceUID:  "parent-service-456",
-				Writers:     []string{"writer1", "writer2"},
-				Auditors:    []string{"auditor1", "auditor2"},
 			},
 			expected: &model.GrpsIOMailingList{
 				GroupName: "test-mailing-list",
@@ -137,8 +135,6 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				Title:       "Test Mailing List",
 				SubjectTag:  "[TEST]",
 				ServiceUID:  "parent-service-456",
-				Writers:     []string{"writer1", "writer2"},
-				Auditors:    []string{"auditor1", "auditor2"},
 			},
 		},
 		{
@@ -160,8 +156,6 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 				Title:       "Minimal List",
 				SubjectTag:  "",
 				ServiceUID:  "parent-789",
-				Writers:     nil,
-				Auditors:    nil,
 			},
 		},
 		{
@@ -189,8 +183,6 @@ func TestConvertMailingListPayloadToDomain(t *testing.T) {
 			assert.Equal(t, tt.expected.Title, result.Title)
 			assert.Equal(t, tt.expected.SubjectTag, result.SubjectTag)
 			assert.Equal(t, tt.expected.ServiceUID, result.ServiceUID)
-			assert.Equal(t, tt.expected.Writers, result.Writers)
-			assert.Equal(t, tt.expected.Auditors, result.Auditors)
 
 			// Verify timestamps are set for non-nil payloads
 			if tt.payload != nil {
