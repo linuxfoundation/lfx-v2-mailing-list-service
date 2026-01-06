@@ -13,6 +13,9 @@ const (
 	// KVBucketNameGroupsIOMailingLists is the name of the KV bucket for mailing lists.
 	KVBucketNameGroupsIOMailingLists = "groupsio-mailing-lists"
 
+	// KVBucketNameGroupsIOMailingListSettings is the name of the KV bucket for mailing list settings.
+	KVBucketNameGroupsIOMailingListSettings = "groupsio-mailing-list-settings"
+
 	// KVBucketNameGroupsIOMembers is the name of the KV bucket for members.
 	KVBucketNameGroupsIOMembers = "groupsio-members"
 

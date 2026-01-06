@@ -27,4 +27,10 @@ type GrpsIOMailingListWriter interface {
 
 	// UniqueMailingListGroupName validates that group name is unique within parent service
 	UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error)
+
+	// CreateGrpsIOMailingListSettings creates new mailing list settings and returns the settings with revision
+	CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error)
+
+	// UpdateGrpsIOMailingListSettings updates mailing list settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error)
 }

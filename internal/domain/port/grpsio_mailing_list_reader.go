@@ -30,4 +30,10 @@ type GrpsIOMailingListReader interface {
 	// Used by committee sync service to find lists that need member updates
 	// Returns empty slice if no mailing lists found for the committee
 	GetMailingListsByCommittee(ctx context.Context, committeeUID string) ([]*model.GrpsIOMailingList, error)
+
+	// GetGrpsIOMailingListSettings retrieves mailing list settings by UID and returns ETag revision
+	GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error)
+
+	// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
+	GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error)
 }
