@@ -328,6 +328,10 @@ func stringToPointer(s string) *string {
 
 // convertGrpsIOServiceSettingsDomainToResponse converts domain settings to GOA response
 func (s *mailingListService) convertGrpsIOServiceSettingsDomainToResponse(settings *model.GrpsIOServiceSettings) *mailinglistservice.GrpsIoServiceSettings {
+	if settings == nil {
+		return &mailinglistservice.GrpsIoServiceSettings{}
+	}
+
 	createdAt := settings.CreatedAt.Format(time.RFC3339)
 	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
 
@@ -375,6 +379,10 @@ func convertUserInfoDomainToResponse(domainUsers []model.UserInfo) []*mailinglis
 
 // convertGrpsIOMailingListSettingsDomainToResponse converts domain mailing list settings to GOA response
 func (s *mailingListService) convertGrpsIOMailingListSettingsDomainToResponse(settings *model.GrpsIOMailingListSettings) *mailinglistservice.GrpsIoMailingListSettings {
+	if settings == nil {
+		return &mailinglistservice.GrpsIoMailingListSettings{}
+	}
+
 	createdAt := settings.CreatedAt.Format(time.RFC3339)
 	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
 
