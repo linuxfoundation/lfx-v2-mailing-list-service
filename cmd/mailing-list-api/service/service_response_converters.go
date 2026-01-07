@@ -12,46 +12,49 @@ import (
 
 // convertGrpsIOServiceDomainToFullResponse converts domain model to full response (for CREATE operations)
 // Following convertGrpsIOServiceDomainToFullResponse
-func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) *mailinglistservice.GrpsIoServiceFull {
+func (s *mailingListService) convertGrpsIOServiceFullDomainToResponse(service *model.GrpsIOServiceFull) *mailinglistservice.GrpsIoServiceFull {
 	if service == nil {
 		return &mailinglistservice.GrpsIoServiceFull{}
 	}
 
+	if service.Base == nil {
+		service.Base = &model.GrpsIOService{}
+	}
+	if service.Settings == nil {
+		service.Settings = &model.GrpsIOServiceSettings{}
+	}
+
 	result := &mailinglistservice.GrpsIoServiceFull{
-		UID:          &service.UID,
-		Type:         service.Type,
-		Domain:       &service.Domain,
-		GroupID:      service.GroupID,
-		Status:       &service.Status,
-		GlobalOwners: service.GlobalOwners,
-		Prefix:       &service.Prefix,
-		ProjectSlug:  &service.ProjectSlug,
-		ProjectName:  &service.ProjectName,
-		ProjectUID:   service.ProjectUID,
-		URL:          &service.URL,
-		GroupName:    &service.GroupName,
-		Public:       service.Public,
+		UID:          &service.Base.UID,
+		Type:         service.Base.Type,
+		Domain:       &service.Base.Domain,
+		GroupID:      service.Base.GroupID,
+		Status:       &service.Base.Status,
+		GlobalOwners: service.Base.GlobalOwners,
+		Prefix:       &service.Base.Prefix,
+		ProjectSlug:  &service.Base.ProjectSlug,
+		ProjectName:  &service.Base.ProjectName,
+		ProjectUID:   service.Base.ProjectUID,
+		URL:          &service.Base.URL,
+		GroupName:    &service.Base.GroupName,
+		Public:       service.Base.Public,
+		Writers:      convertUserInfoDomainToResponse(service.Settings.Writers),
+		Auditors:     convertUserInfoDomainToResponse(service.Settings.Auditors),
 	}
 
 	// Only set ParentServiceUID if it's non-empty
-	if service.ParentServiceUID != "" {
-		result.ParentServiceUID = &service.ParentServiceUID
-	}
-
-	// Populate writers and auditors from settings
-	if settings != nil {
-		result.Writers = convertUserInfoDomainToResponse(settings.Writers)
-		result.Auditors = convertUserInfoDomainToResponse(settings.Auditors)
+	if service.Base.ParentServiceUID != "" {
+		result.ParentServiceUID = &service.Base.ParentServiceUID
 	}
 
 	// Handle timestamps
-	if !service.CreatedAt.IsZero() {
-		createdAt := service.CreatedAt.Format(time.RFC3339)
+	if !service.Base.CreatedAt.IsZero() {
+		createdAt := service.Base.CreatedAt.Format(time.RFC3339)
 		result.CreatedAt = &createdAt
 	}
 
-	if !service.UpdatedAt.IsZero() {
-		updatedAt := service.UpdatedAt.Format(time.RFC3339)
+	if !service.Base.UpdatedAt.IsZero() {
+		updatedAt := service.Base.UpdatedAt.Format(time.RFC3339)
 		result.UpdatedAt = &updatedAt
 	}
 

@@ -185,7 +185,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, settings, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
+			fullResult, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -193,9 +193,15 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService(t *testing.T) {
 				assert.IsType(t, tc.expectedError, err)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, result)
+				require.NotNil(t, fullResult)
 			}
 
+			var result *model.GrpsIOService
+			var settings *model.GrpsIOServiceSettings
+			if fullResult != nil {
+				result = fullResult.Base
+				settings = fullResult.Settings
+			}
 			tc.validate(t, result, settings, revision, mockRepo)
 		})
 	}
@@ -268,18 +274,19 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOService_PublishingErrors(t *testin
 
 			// Execute
 			ctx := context.Background()
-			result, _, revision, err := orchestrator.CreateGrpsIOService(ctx, service, nil)
+			fullResult, revision, err := orchestrator.CreateGrpsIOService(ctx, service, nil)
 
 			// Validate
 			if tc.expectComplete {
 				assert.NoError(t, err)
-				assert.NotNil(t, result)
+				assert.NotNil(t, fullResult)
+				result := fullResult.Base
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, uint64(1), revision)
 				assert.Equal(t, 1, mockRepo.GetServiceCount())
 			} else {
 				assert.Error(t, err)
-				assert.Nil(t, result)
+				assert.Nil(t, fullResult)
 				assert.Equal(t, uint64(0), revision)
 			}
 		})
@@ -937,7 +944,7 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, settings, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
+			fullResult, revision, err := orchestrator.CreateGrpsIOService(ctx, tc.inputService, nil)
 
 			// Assert
 			if tc.expectedError {
@@ -945,11 +952,17 @@ func TestGrpsIOWriterOrchestrator_CreateSharedServiceWithParent(t *testing.T) {
 				if tc.errorContains != "" {
 					assert.Contains(t, err.Error(), tc.errorContains)
 				}
-				assert.Nil(t, result)
+				assert.Nil(t, fullResult)
 				assert.Equal(t, uint64(0), revision)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, result)
+				require.NotNil(t, fullResult)
+				var result *model.GrpsIOService
+				var settings *model.GrpsIOServiceSettings
+				if fullResult != nil {
+					result = fullResult.Base
+					settings = fullResult.Settings
+				}
 				if tc.validate != nil {
 					tc.validate(t, result, settings, revision, mockRepo)
 				}

@@ -18,27 +18,34 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		domain   *model.GrpsIOService
+		domain   *model.GrpsIOServiceFull
 		expected *mailinglistservice.GrpsIoServiceFull
 	}{
 		{
 			name: "complete domain to full response conversion",
-			domain: &model.GrpsIOService{
-				UID:          "service-123",
-				Type:         "primary",
-				Domain:       "example.groups.io",
-				GroupID:      int64Ptr(12345),
-				Status:       "active",
-				GlobalOwners: []string{"owner1@example.com", "owner2@example.com"},
-				Prefix:       "",
-				ProjectSlug:  "test-project",
-				ProjectName:  "Test Project",
-				ProjectUID:   "project-123",
-				URL:          "https://example.groups.io/g/test",
-				GroupName:    "test-group",
-				Public:       true,
-				CreatedAt:    createdAt,
-				UpdatedAt:    updatedAt,
+			domain: &model.GrpsIOServiceFull{
+				Base: &model.GrpsIOService{
+					UID:          "service-123",
+					Type:         "primary",
+					Domain:       "example.groups.io",
+					GroupID:      int64Ptr(12345),
+					Status:       "active",
+					GlobalOwners: []string{"owner1@example.com", "owner2@example.com"},
+					Prefix:       "",
+					ProjectSlug:  "test-project",
+					ProjectName:  "Test Project",
+					ProjectUID:   "project-123",
+					URL:          "https://example.groups.io/g/test",
+					GroupName:    "test-group",
+					Public:       true,
+					CreatedAt:    createdAt,
+					UpdatedAt:    updatedAt,
+				},
+				Settings: &model.GrpsIOServiceSettings{
+					UID:      "service-123",
+					Writers:  []model.UserInfo{},
+					Auditors: []model.UserInfo{},
+				},
 			},
 			expected: &mailinglistservice.GrpsIoServiceFull{
 				UID:          stringPtr("service-123"),
@@ -56,16 +63,21 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 				Public:       true,
 				CreatedAt:    stringPtr("2023-01-01T12:00:00Z"),
 				UpdatedAt:    stringPtr("2023-01-02T12:00:00Z"),
+				Writers:      []*mailinglistservice.UserInfo{},
+				Auditors:     []*mailinglistservice.UserInfo{},
 			},
 		},
 		{
 			name: "minimal domain to full response conversion",
-			domain: &model.GrpsIOService{
-				Type:       "formation",
-				ProjectUID: "project-456",
-				Public:     false,
-				CreatedAt:  time.Time{}, // Zero timestamp
-				UpdatedAt:  time.Time{}, // Zero timestamp
+			domain: &model.GrpsIOServiceFull{
+				Base: &model.GrpsIOService{
+					Type:       "formation",
+					ProjectUID: "project-456",
+					Public:     false,
+					CreatedAt:  time.Time{}, // Zero timestamp
+					UpdatedAt:  time.Time{}, // Zero timestamp
+				},
+				Settings: nil,
 			},
 			expected: &mailinglistservice.GrpsIoServiceFull{
 				UID:          stringPtr(""),
@@ -84,6 +96,8 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
 				CreatedAt: nil,
 				UpdatedAt: nil,
+				Writers:   []*mailinglistservice.UserInfo{},
+				Auditors:  []*mailinglistservice.UserInfo{},
 			},
 		},
 		{
@@ -96,7 +110,7 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertGrpsIOServiceDomainToFullResponse(tt.domain, nil)
+			result := svc.convertGrpsIOServiceFullDomainToResponse(tt.domain)
 
 			assert.Equal(t, tt.expected, result)
 		})

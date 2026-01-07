@@ -64,7 +64,7 @@ type GrpsIOWriter interface {
 // GrpsIOServiceWriter defines the interface for service write operations
 type GrpsIOServiceWriter interface {
 	// CreateGrpsIOService creates a new service and its settings, and returns the service, settings, and revision
-	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error)
+	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceFull, uint64, error)
 
 	// UpdateGrpsIOService updates an existing service with expected revision and returns updated service with new revision
 	UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error)

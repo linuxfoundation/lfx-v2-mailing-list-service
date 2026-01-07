@@ -27,6 +27,11 @@ type UserInfo struct {
 	Avatar   *string `json:"avatar,omitempty"`
 }
 
+type GrpsIOServiceFull struct {
+	Base     *GrpsIOService         `json:"base"`
+	Settings *GrpsIOServiceSettings `json:"settings"`
+}
+
 // GrpsIOServiceSettings represents the settings for a GroupsIO service (user management).
 type GrpsIOServiceSettings struct {
 	UID             string     `json:"uid"`

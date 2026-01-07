@@ -19,7 +19,7 @@ import (
 )
 
 // CreateGrpsIOService creates a new service and its settings with transactional operations and rollback
-func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
+func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceFull, uint64, error) {
 	slog.DebugContext(ctx, "executing create service use case",
 		"service_type", service.Type,
 		"service_domain", service.Domain,
@@ -64,7 +64,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"error", err,
 			"project_uid", service.ProjectUID,
 		)
-		return nil, nil, 0, err
+		return nil, 0, err
 	}
 
 	slog.DebugContext(ctx, "project validation successful",
@@ -80,7 +80,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 				"error", err,
 				"project_uid", service.ProjectUID,
 			)
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 
 		slog.DebugContext(ctx, "parent service found and validated",
@@ -92,7 +92,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 	constraintKey, err := sw.reserveUniqueConstraints(ctx, service)
 	if err != nil {
 		rollbackRequired = true
-		return nil, nil, 0, err
+		return nil, 0, err
 	}
 	if constraintKey != "" {
 		keys = append(keys, constraintKey)
@@ -100,7 +100,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 
 	// Step 4: Validate source (Service only supports API and Mock, not webhook)
 	if service.Source != constants.SourceAPI && service.Source != constants.SourceMock {
-		return nil, nil, 0, errors.NewValidation(
+		return nil, 0, errors.NewValidation(
 			fmt.Sprintf("service only supports api or mock source, got: %s", service.Source))
 	}
 
@@ -115,7 +115,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		groupID, requiresCleanup, err = sw.handleAPISourceService(ctx, service)
 		if err != nil {
 			rollbackRequired = true
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		if requiresCleanup {
 			serviceID = groupID
@@ -133,7 +133,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 
 	default:
 		// Should never reach here due to validation above
-		return nil, nil, 0, errors.NewValidation(
+		return nil, 0, errors.NewValidation(
 			fmt.Sprintf("unsupported source for service: %s", service.Source))
 	}
 
@@ -148,7 +148,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 			"service_domain", service.Domain,
 		)
 		rollbackRequired = true
-		return nil, nil, 0, err
+		return nil, 0, err
 	}
 
 	slog.DebugContext(ctx, "service created successfully",
@@ -166,7 +166,7 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 				"service_uid", createdService.UID,
 			)
 			rollbackRequired = true
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 
 		slog.DebugContext(ctx, "service settings created successfully",
@@ -191,7 +191,10 @@ func (sw *grpsIOWriterOrchestrator) CreateGrpsIOService(ctx context.Context, ser
 		}
 	}
 
-	return createdService, createdSettings, revision, nil
+	return &model.GrpsIOServiceFull{
+		Base:     createdService,
+		Settings: createdSettings,
+	}, revision, nil
 }
 
 // createServiceInGroupsIO handles Groups.io group creation and returns the ID
