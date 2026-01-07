@@ -1352,10 +1352,6 @@ definitions:
         title: GrpsIoMailingListFull
         type: object
         properties:
-            allow_attachments:
-                type: boolean
-                description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
-                example: true
             audience_access:
                 type: string
                 description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -1491,7 +1487,6 @@ definitions:
                       name: Temporibus assumenda error.
                       username: Ducimus ex et.
         example:
-            allow_attachments: true
             audience_access: public
             auditors:
                 - avatar: http://leuschke.com/pietro
@@ -1667,10 +1662,6 @@ definitions:
         title: GrpsIoMailingListWithReadonlyAttributes
         type: object
         properties:
-            allow_attachments:
-                type: boolean
-                description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
-                example: true
             audience_access:
                 type: string
                 description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -1780,7 +1771,6 @@ definitions:
                 format: date-time
         description: A representation of GroupsIO mailing lists with readonly attributes.
         example:
-            allow_attachments: true
             audience_access: public
             committees:
                 - allowed_voting_statuses:
@@ -2764,10 +2754,6 @@ definitions:
         title: MailingListCreateGrpsioMailingListRequestBody
         type: object
         properties:
-            allow_attachments:
-                type: boolean
-                description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
-                example: true
             audience_access:
                 type: string
                 description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -2880,7 +2866,6 @@ definitions:
                       name: Eos non id at perspiciatis.
                       username: Eaque quis possimus velit quasi quis occaecati.
         example:
-            allow_attachments: true
             audience_access: public
             auditors:
                 - avatar: http://goldner.info/perry
@@ -3156,10 +3141,6 @@ definitions:
         title: MailingListUpdateGrpsioMailingListRequestBody
         type: object
         properties:
-            allow_attachments:
-                type: boolean
-                description: If true, attachments are allowed (group_attachments_normal). If false, attachments are bounced (group_attachments_bounced).
-                example: true
             audience_access:
                 type: string
                 description: 'public: Anyone can join. approval_required: Users must request to join and be approved. invite_only: Only invited users can join.'
@@ -3238,7 +3219,6 @@ definitions:
                     - discussion_moderated
                     - discussion_open
         example:
-            allow_attachments: true
             audience_access: public
             committees:
                 - allowed_voting_statuses:

@@ -108,9 +108,6 @@ type CreateGrpsioMailingListRequestBody struct {
 	Title string `form:"title" json:"title" xml:"title"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
-	// If true, attachments are allowed (group_attachments_normal). If false,
-	// attachments are bounced (group_attachments_bounced).
-	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
 	// Manager users who can edit/modify this resource
@@ -139,9 +136,6 @@ type UpdateGrpsioMailingListRequestBody struct {
 	Title string `form:"title" json:"title" xml:"title"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
-	// If true, attachments are allowed (group_attachments_normal). If false,
-	// attachments are bounced (group_attachments_bounced).
-	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
 }
@@ -353,9 +347,6 @@ type CreateGrpsioMailingListResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
-	// If true, attachments are allowed (group_attachments_normal). If false,
-	// attachments are bounced (group_attachments_bounced).
-	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -400,9 +391,6 @@ type UpdateGrpsioMailingListResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
-	// If true, attachments are allowed (group_attachments_normal). If false,
-	// attachments are bounced (group_attachments_bounced).
-	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -1294,9 +1282,6 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	Title *string `form:"title,omitempty" json:"title,omitempty" xml:"title,omitempty"`
 	// Subject tag prefix
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
-	// If true, attachments are allowed (group_attachments_normal). If false,
-	// attachments are bounced (group_attachments_bounced).
-	AllowAttachments *bool `form:"allow_attachments,omitempty" json:"allow_attachments,omitempty" xml:"allow_attachments,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
@@ -1480,15 +1465,14 @@ func NewUpdateGrpsioServiceSettingsRequestBody(p *mailinglist.UpdateGrpsioServic
 // service.
 func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingListPayload) *CreateGrpsioMailingListRequestBody {
 	body := &CreateGrpsioMailingListRequestBody{
-		GroupName:        p.GroupName,
-		Public:           p.Public,
-		Type:             p.Type,
-		AudienceAccess:   p.AudienceAccess,
-		Description:      p.Description,
-		Title:            p.Title,
-		SubjectTag:       p.SubjectTag,
-		AllowAttachments: p.AllowAttachments,
-		ServiceUID:       p.ServiceUID,
+		GroupName:      p.GroupName,
+		Public:         p.Public,
+		Type:           p.Type,
+		AudienceAccess: p.AudienceAccess,
+		Description:    p.Description,
+		Title:          p.Title,
+		SubjectTag:     p.SubjectTag,
+		ServiceUID:     p.ServiceUID,
 	}
 	{
 		var zero string
@@ -1522,15 +1506,14 @@ func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingLis
 // service.
 func NewUpdateGrpsioMailingListRequestBody(p *mailinglist.UpdateGrpsioMailingListPayload) *UpdateGrpsioMailingListRequestBody {
 	body := &UpdateGrpsioMailingListRequestBody{
-		GroupName:        p.GroupName,
-		Public:           p.Public,
-		Type:             p.Type,
-		AudienceAccess:   p.AudienceAccess,
-		Description:      p.Description,
-		Title:            p.Title,
-		SubjectTag:       p.SubjectTag,
-		AllowAttachments: p.AllowAttachments,
-		ServiceUID:       p.ServiceUID,
+		GroupName:      p.GroupName,
+		Public:         p.Public,
+		Type:           p.Type,
+		AudienceAccess: p.AudienceAccess,
+		Description:    p.Description,
+		Title:          p.Title,
+		SubjectTag:     p.SubjectTag,
+		ServiceUID:     p.ServiceUID,
 	}
 	{
 		var zero string
@@ -2149,19 +2132,18 @@ func NewUpdateGrpsioServiceSettingsServiceUnavailable(body *UpdateGrpsioServiceS
 // HTTP "Created" response.
 func NewCreateGrpsioMailingListGrpsIoMailingListFullCreated(body *CreateGrpsioMailingListResponseBody) *mailinglist.GrpsIoMailingListFull {
 	v := &mailinglist.GrpsIoMailingListFull{
-		UID:              body.UID,
-		GroupName:        body.GroupName,
-		Type:             body.Type,
-		Description:      body.Description,
-		Title:            body.Title,
-		SubjectTag:       body.SubjectTag,
-		AllowAttachments: body.AllowAttachments,
-		ServiceUID:       body.ServiceUID,
-		ProjectUID:       body.ProjectUID,
-		ProjectName:      body.ProjectName,
-		ProjectSlug:      body.ProjectSlug,
-		CreatedAt:        body.CreatedAt,
-		UpdatedAt:        body.UpdatedAt,
+		UID:         body.UID,
+		GroupName:   body.GroupName,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
+		ProjectUID:  body.ProjectUID,
+		ProjectName: body.ProjectName,
+		ProjectSlug: body.ProjectSlug,
+		CreatedAt:   body.CreatedAt,
+		UpdatedAt:   body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2251,19 +2233,18 @@ func NewCreateGrpsioMailingListServiceUnavailable(body *CreateGrpsioMailingListS
 // "get-grpsio-mailing-list" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioMailingListResultOK(body *GetGrpsioMailingListResponseBody, etag *string) *mailinglist.GetGrpsioMailingListResult {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:              body.UID,
-		GroupName:        body.GroupName,
-		Type:             body.Type,
-		Description:      body.Description,
-		Title:            body.Title,
-		SubjectTag:       body.SubjectTag,
-		AllowAttachments: body.AllowAttachments,
-		ServiceUID:       body.ServiceUID,
-		ProjectUID:       body.ProjectUID,
-		ProjectName:      body.ProjectName,
-		ProjectSlug:      body.ProjectSlug,
-		CreatedAt:        body.CreatedAt,
-		UpdatedAt:        body.UpdatedAt,
+		UID:         body.UID,
+		GroupName:   body.GroupName,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
+		ProjectUID:  body.ProjectUID,
+		ProjectName: body.ProjectName,
+		ProjectSlug: body.ProjectSlug,
+		CreatedAt:   body.CreatedAt,
+		UpdatedAt:   body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2336,19 +2317,18 @@ func NewGetGrpsioMailingListServiceUnavailable(body *GetGrpsioMailingListService
 // HTTP "OK" response.
 func NewUpdateGrpsioMailingListGrpsIoMailingListWithReadonlyAttributesOK(body *UpdateGrpsioMailingListResponseBody) *mailinglist.GrpsIoMailingListWithReadonlyAttributes {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:              body.UID,
-		GroupName:        body.GroupName,
-		Type:             body.Type,
-		Description:      body.Description,
-		Title:            body.Title,
-		SubjectTag:       body.SubjectTag,
-		AllowAttachments: body.AllowAttachments,
-		ServiceUID:       body.ServiceUID,
-		ProjectUID:       body.ProjectUID,
-		ProjectName:      body.ProjectName,
-		ProjectSlug:      body.ProjectSlug,
-		CreatedAt:        body.CreatedAt,
-		UpdatedAt:        body.UpdatedAt,
+		UID:         body.UID,
+		GroupName:   body.GroupName,
+		Type:        body.Type,
+		Description: body.Description,
+		Title:       body.Title,
+		SubjectTag:  body.SubjectTag,
+		ServiceUID:  body.ServiceUID,
+		ProjectUID:  body.ProjectUID,
+		ProjectName: body.ProjectName,
+		ProjectSlug: body.ProjectSlug,
+		CreatedAt:   body.CreatedAt,
+		UpdatedAt:   body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public

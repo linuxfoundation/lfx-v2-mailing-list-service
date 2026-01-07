@@ -230,9 +230,8 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				},
 				Description:      "This is a comprehensive test mailing list",
 				Title:            "Test Mailing List",
-				SubjectTag:       "[TEST]",
-				AllowAttachments: false,
-				ServiceUID:       "parent-service-456",
+				SubjectTag: "[TEST]",
+				ServiceUID: "parent-service-456",
 				ProjectUID:       "project-789",
 				ProjectName:      "Test Project",
 				ProjectSlug:      "test-project",
@@ -249,9 +248,8 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				},
 				Description:      stringPtr("This is a comprehensive test mailing list"),
 				Title:            stringPtr("Test Mailing List"),
-				SubjectTag:       stringPtr("[TEST]"),
-				AllowAttachments: boolPtr(false),
-				ServiceUID:       stringPtr("parent-service-456"),
+				SubjectTag: stringPtr("[TEST]"),
+				ServiceUID: stringPtr("parent-service-456"),
 				ProjectUID:       stringPtr("project-789"),
 				ProjectName:      stringPtr("Test Project"),
 				ProjectSlug:      stringPtr("test-project"),
@@ -262,31 +260,29 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 		{
 			name: "minimal mailing list domain to response conversion",
 			domain: &model.GrpsIOMailingList{
-				UID:              "ml-456",
-				GroupName:        "minimal-list",
-				Public:           false,
-				Type:             "announcement",
-				Description:      "Minimal mailing list",
-				Title:            "Minimal List",
-				AllowAttachments: false,
-				ServiceUID:       "parent-789",
-				CreatedAt:        time.Time{}, // Zero timestamp
-				UpdatedAt:        time.Time{}, // Zero timestamp
+				UID:         "ml-456",
+				GroupName:   "minimal-list",
+				Public:      false,
+				Type:        "announcement",
+				Description: "Minimal mailing list",
+				Title:       "Minimal List",
+				ServiceUID:  "parent-789",
+				CreatedAt:   time.Time{}, // Zero timestamp
+				UpdatedAt:   time.Time{}, // Zero timestamp
 			},
 			expected: &mailinglistservice.GrpsIoMailingListFull{
-				UID:              stringPtr("ml-456"),
-				GroupName:        stringPtr("minimal-list"),
-				Public:           false,
-				Type:             stringPtr("announcement"),
-				Committees:       nil, // No committees
-				Description:      stringPtr("Minimal mailing list"),
-				Title:            stringPtr("Minimal List"),
-				SubjectTag:       nil, // Empty string converts to nil
-				AllowAttachments: boolPtr(false),
-				ServiceUID:       stringPtr("parent-789"),
-				ProjectUID:       stringPtr(""),
-				ProjectName:      stringPtr(""),
-				ProjectSlug:      stringPtr(""),
+				UID:         stringPtr("ml-456"),
+				GroupName:   stringPtr("minimal-list"),
+				Public:      false,
+				Type:        stringPtr("announcement"),
+				Committees:  nil, // No committees
+				Description: stringPtr("Minimal mailing list"),
+				Title:       stringPtr("Minimal List"),
+				SubjectTag:  nil, // Empty string converts to nil
+				ServiceUID:  stringPtr("parent-789"),
+				ProjectUID:  stringPtr(""),
+				ProjectName: stringPtr(""),
+				ProjectSlug: stringPtr(""),
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
 				CreatedAt: nil,
 				UpdatedAt: nil,
