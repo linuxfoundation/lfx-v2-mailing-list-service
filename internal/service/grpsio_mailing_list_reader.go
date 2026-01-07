@@ -84,3 +84,51 @@ func (mlr *grpsIOReaderOrchestrator) GetMailingListByGroupID(ctx context.Context
 
 	return mailingList, revision, nil
 }
+
+// GetGrpsIOMailingListSettings retrieves mailing list settings by UID with revision
+func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "executing get mailing list settings use case",
+		"mailing_list_uid", uid,
+	)
+
+	// Get settings from storage
+	settings, revision, err := mlr.grpsIOReader.GetGrpsIOMailingListSettings(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list settings",
+			"error", err,
+			"mailing_list_uid", uid,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "mailing list settings retrieved successfully",
+		"mailing_list_uid", uid,
+		"revision", revision,
+	)
+
+	return settings, revision, nil
+}
+
+// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
+func (mlr *grpsIOReaderOrchestrator) GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "executing get mailing list settings revision use case",
+		"mailing_list_uid", uid,
+	)
+
+	// Get revision from storage
+	revision, err := mlr.grpsIOReader.GetMailingListSettingsRevision(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list settings revision",
+			"error", err,
+			"mailing_list_uid", uid,
+		)
+		return 0, err
+	}
+
+	slog.DebugContext(ctx, "mailing list settings revision retrieved successfully",
+		"mailing_list_uid", uid,
+		"revision", revision,
+	)
+
+	return revision, nil
+}

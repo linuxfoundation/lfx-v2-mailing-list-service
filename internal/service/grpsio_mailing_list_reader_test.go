@@ -38,10 +38,6 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 		ProjectUID:     "test-project-uid",
 		ProjectName:    "Test Project",
 		ProjectSlug:    "test-project",
-		LastReviewedAt: mailingListStringPtr("2024-01-01T00:00:00Z"),
-		LastReviewedBy: mailingListStringPtr("reviewer-uid"),
-		Writers:        []string{"dev-admin@testproject.org"},
-		Auditors:       []string{"auditor@testproject.org"},
 		CreatedAt:      time.Now().Add(-18 * time.Hour),
 		UpdatedAt:      time.Now().Add(-2 * time.Hour),
 	}
@@ -80,12 +76,6 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOMailingList(t *testing.T) {
 				assert.Equal(t, "test-project-uid", mailingList.ProjectUID)
 				assert.Equal(t, "Test Project", mailingList.ProjectName)
 				assert.Equal(t, "test-project", mailingList.ProjectSlug)
-				assert.NotNil(t, mailingList.LastReviewedAt)
-				assert.Equal(t, "2024-01-01T00:00:00Z", *mailingList.LastReviewedAt)
-				assert.NotNil(t, mailingList.LastReviewedBy)
-				assert.Equal(t, "reviewer-uid", *mailingList.LastReviewedBy)
-				assert.Equal(t, []string{"dev-admin@testproject.org"}, mailingList.Writers)
-				assert.Equal(t, []string{"auditor@testproject.org"}, mailingList.Auditors)
 				assert.NotZero(t, mailingList.CreatedAt)
 				assert.NotZero(t, mailingList.UpdatedAt)
 			},
@@ -171,10 +161,6 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 			ProjectUID:     projectUID,
 			ProjectName:    "Integration Test Project",
 			ProjectSlug:    "integration-test-project",
-			LastReviewedAt: mailingListStringPtr("2024-03-01T15:00:00Z"),
-			LastReviewedBy: mailingListStringPtr("integration-reviewer"),
-			Writers:        []string{"integration-dev-admin@testproject.org", "integration-lead@testproject.org"},
-			Auditors:       []string{"integration-auditor1@testproject.org", "integration-auditor2@testproject.org"},
 			CreatedAt:      time.Now().Add(-48 * time.Hour),
 			UpdatedAt:      time.Now().Add(-3 * time.Hour),
 		},
@@ -190,10 +176,6 @@ func TestGrpsIOReaderOrchestratorMailingListIntegration(t *testing.T) {
 			ProjectUID:     projectUID,
 			ProjectName:    "Integration Test Project",
 			ProjectSlug:    "integration-test-project",
-			LastReviewedAt: mailingListStringPtr("2024-03-02T10:30:00Z"),
-			LastReviewedBy: mailingListStringPtr("integration-admin"),
-			Writers:        []string{"integration-admin@testproject.org"},
-			Auditors:       []string{"integration-auditor1@testproject.org"},
 			CreatedAt:      time.Now().Add(-36 * time.Hour),
 			UpdatedAt:      time.Now().Add(-1 * time.Hour),
 		},

@@ -36,9 +36,11 @@ spec:
                 {{- toYaml $config.valueFrom | nindent 16 }}
               {{- end }}
             {{- end }}
+          {{- if .Values.externalSecretsOperator.enabled }}
           envFrom:
             - secretRef:
                 name: {{ .Chart.Name }}
+          {{- end }}
           ports:
             - containerPort: {{.Values.service.port}}
               name: web

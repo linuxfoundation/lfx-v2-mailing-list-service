@@ -127,17 +127,20 @@ func (s *mailingListService) CreateGrpsioService(ctx context.Context, payload *m
 	domainService := s.convertGrpsIOServiceCreatePayloadToDomain(payload)
 	domainService.UID = serviceUID
 
+	// Extract settings from payload (writers/auditors)
+	domainSettings := s.convertGrpsIOServiceCreatePayloadToSettings(payload, serviceUID)
+
 	// Execute use case
-	createdService, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOService(ctx, domainService)
+	createdServiceFull, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOService(ctx, domainService, domainSettings)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service", "error", err, "service_type", payload.Type)
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response
-	result = s.convertGrpsIOServiceDomainToFullResponse(createdService)
+	// Convert domain model to GOA response, including settings
+	result = s.convertGrpsIOServiceFullDomainToResponse(createdServiceFull)
 
-	slog.InfoContext(ctx, "successfully created service", "service_uid", createdService.UID, "revision", revision)
+	slog.InfoContext(ctx, "successfully created service", "service_uid", createdServiceFull.Base.UID, "revision", revision)
 	return result, nil
 }
 
@@ -189,6 +192,59 @@ func (s *mailingListService) UpdateGrpsioService(ctx context.Context, payload *m
 	result = s.convertGrpsIOServiceDomainToStandardResponse(updatedService)
 
 	slog.InfoContext(ctx, "successfully updated service", "service_uid", payload.UID, "revision", revision)
+	return result, nil
+}
+
+// GetGrpsioServiceSettings retrieves service settings (writers and auditors)
+func (s *mailingListService) GetGrpsioServiceSettings(ctx context.Context, payload *mailinglistservice.GetGrpsioServiceSettingsPayload) (result *mailinglistservice.GetGrpsioServiceSettingsResult, err error) {
+	slog.DebugContext(ctx, "mailingListService.get-grpsio-service-settings", "service_uid", payload.UID)
+
+	// Execute use case
+	settings, revision, err := s.grpsIOReaderOrchestrator.GetGrpsIOServiceSettings(ctx, *payload.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get service settings", "error", err, "service_uid", payload.UID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	goaSettings := s.convertGrpsIOServiceSettingsDomainToResponse(settings)
+
+	// Create result with ETag (using revision from NATS)
+	revisionStr := fmt.Sprintf("%d", revision)
+	result = &mailinglistservice.GetGrpsioServiceSettingsResult{
+		ServiceSettings: goaSettings,
+		Etag:            &revisionStr,
+	}
+
+	slog.InfoContext(ctx, "successfully retrieved service settings", "service_uid", payload.UID, "etag", revisionStr)
+	return result, nil
+}
+
+// UpdateGrpsioServiceSettings updates service settings (writers and auditors)
+func (s *mailingListService) UpdateGrpsioServiceSettings(ctx context.Context, payload *mailinglistservice.UpdateGrpsioServiceSettingsPayload) (result *mailinglistservice.GrpsIoServiceSettings, err error) {
+	slog.DebugContext(ctx, "mailingListService.update-grpsio-service-settings", "service_uid", payload.UID)
+
+	// Parse expected revision from ETag
+	expectedRevision, err := etagValidator(payload.IfMatch)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid if-match", "error", err, "if_match", payload.IfMatch)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert GOA payload to domain model
+	domainSettings := s.convertGrpsIOServiceSettingsPayloadToDomain(payload)
+
+	// Execute use case
+	updatedSettings, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOServiceSettings(ctx, domainSettings, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update service settings", "error", err, "service_uid", payload.UID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	result = s.convertGrpsIOServiceSettingsDomainToResponse(updatedSettings)
+
+	slog.InfoContext(ctx, "successfully updated service settings", "service_uid", payload.UID, "revision", revision)
 	return result, nil
 }
 
@@ -244,15 +300,21 @@ func (s *mailingListService) CreateGrpsioMailingList(ctx context.Context, payloa
 	domainMailingList := s.convertGrpsIOMailingListPayloadToDomain(payload)
 	domainMailingList.UID = mailingListUID
 
+	// Extract writers and auditors from payload and create settings
+	domainSettings := &model.GrpsIOMailingListSettings{
+		Writers:  convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors: convertUserInfoPayloadToDomain(payload.Auditors),
+	}
+
 	// Execute use case
-	createdMailingList, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList)
+	createdMailingList, revision, err := s.grpsIOWriterOrchestrator.CreateGrpsIOMailingList(ctx, domainMailingList, domainSettings)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list", "error", err, "group_name", payload.GroupName)
 		return nil, wrapError(ctx, err)
 	}
 
-	// Convert domain model to GOA response
-	result = s.convertGrpsIOMailingListDomainToResponse(createdMailingList)
+	// Convert domain model to GOA response with settings
+	result = s.convertGrpsIOMailingListDomainToResponse(createdMailingList, domainSettings)
 
 	slog.InfoContext(ctx, "successfully created mailing list", "mailing_list_uid", createdMailingList.UID, "group_name", createdMailingList.GroupName, "project_uid", createdMailingList.ProjectUID, "revision", revision)
 	return result, nil
@@ -381,6 +443,59 @@ func (s *mailingListService) DeleteGrpsioMailingList(ctx context.Context, payloa
 
 	slog.InfoContext(ctx, "successfully deleted mailing list", "mailing_list_uid", payload.UID, "group_name", existingMailingList.GroupName)
 	return nil
+}
+
+// GetGrpsioMailingListSettings retrieves mailing list settings (writers and auditors)
+func (s *mailingListService) GetGrpsioMailingListSettings(ctx context.Context, payload *mailinglistservice.GetGrpsioMailingListSettingsPayload) (result *mailinglistservice.GetGrpsioMailingListSettingsResult, err error) {
+	slog.DebugContext(ctx, "mailingListService.get-grpsio-mailing-list-settings", "mailing_list_uid", payload.UID)
+
+	// Execute use case
+	settings, revision, err := s.grpsIOReaderOrchestrator.GetGrpsIOMailingListSettings(ctx, *payload.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get mailing list settings", "error", err, "mailing_list_uid", payload.UID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	goaSettings := s.convertGrpsIOMailingListSettingsDomainToResponse(settings)
+
+	// Create result with ETag (using revision from NATS)
+	revisionStr := fmt.Sprintf("%d", revision)
+	result = &mailinglistservice.GetGrpsioMailingListSettingsResult{
+		MailingListSettings: goaSettings,
+		Etag:                &revisionStr,
+	}
+
+	slog.InfoContext(ctx, "successfully retrieved mailing list settings", "mailing_list_uid", payload.UID, "etag", revisionStr)
+	return result, nil
+}
+
+// UpdateGrpsioMailingListSettings updates mailing list settings (writers and auditors)
+func (s *mailingListService) UpdateGrpsioMailingListSettings(ctx context.Context, payload *mailinglistservice.UpdateGrpsioMailingListSettingsPayload) (result *mailinglistservice.GrpsIoMailingListSettings, err error) {
+	slog.DebugContext(ctx, "mailingListService.update-grpsio-mailing-list-settings", "mailing_list_uid", payload.UID)
+
+	// Parse expected revision from ETag
+	expectedRevision, err := etagValidator(payload.IfMatch)
+	if err != nil {
+		slog.ErrorContext(ctx, "invalid if-match", "error", err, "if_match", payload.IfMatch)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert GOA payload to domain model
+	domainSettings := s.convertGrpsIOMailingListSettingsPayloadToDomain(payload)
+
+	// Execute use case
+	updatedSettings, revision, err := s.grpsIOWriterOrchestrator.UpdateGrpsIOMailingListSettings(ctx, domainSettings, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update mailing list settings", "error", err, "mailing_list_uid", payload.UID)
+		return nil, wrapError(ctx, err)
+	}
+
+	// Convert domain model to GOA response
+	result = s.convertGrpsIOMailingListSettingsDomainToResponse(updatedSettings)
+
+	slog.InfoContext(ctx, "successfully updated mailing list settings", "mailing_list_uid", payload.UID, "revision", revision)
+	return result, nil
 }
 
 // CreateGrpsioMailingListMember creates a new member for a GroupsIO mailing list

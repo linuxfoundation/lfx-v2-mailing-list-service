@@ -39,12 +39,6 @@ type GrpsIOMailingList struct {
 	ProjectName      string `json:"project_name"`      // Inherited from parent service
 	ProjectSlug      string `json:"project_slug"`      // Inherited from parent service
 
-	// Audit trail fields (following GrpsIOService pattern)
-	LastReviewedAt *string  `json:"last_reviewed_at"` // Nullable timestamp
-	LastReviewedBy *string  `json:"last_reviewed_by"` // Nullable user ID
-	Writers        []string `json:"writers"`          // Manager user IDs who can edit
-	Auditors       []string `json:"auditors"`         // Auditor user IDs who can audit
-
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -215,6 +209,48 @@ func (ml *GrpsIOMailingList) BuildIndexKey(ctx context.Context) string {
 	return key
 }
 
+// GrpsIOMailingListSettings represents the settings for a GroupsIO mailing list (user management).
+type GrpsIOMailingListSettings struct {
+	UID             string     `json:"uid"`
+	Writers         []UserInfo `json:"writers"`
+	Auditors        []UserInfo `json:"auditors"`
+	LastReviewedAt  *string    `json:"last_reviewed_at,omitempty"`
+	LastReviewedBy  *string    `json:"last_reviewed_by,omitempty"`
+	LastAuditedBy   *string    `json:"last_audited_by,omitempty"`
+	LastAuditedTime *string    `json:"last_audited_time,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// Tags generates a consistent set of tags for the GrpsIO mailing list settings
+func (s *GrpsIOMailingListSettings) Tags() []string {
+	var tags []string
+
+	if s == nil {
+		return nil
+	}
+
+	if s.UID != "" {
+		tags = append(tags, s.UID)
+		tag := fmt.Sprintf("mailing_list_uid:%s", s.UID)
+		tags = append(tags, tag)
+	}
+
+	return tags
+}
+
+// ValidateLastReviewedAt validates the LastReviewedAt timestamp format for mailing list settings.
+// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
+func (s *GrpsIOMailingListSettings) ValidateLastReviewedAt() error {
+	return utils.ValidateRFC3339Ptr(s.LastReviewedAt)
+}
+
+// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer for mailing list settings.
+// Returns nil if the field is nil or empty, or the parsed time if valid.
+func (s *GrpsIOMailingListSettings) GetLastReviewedAtTime() (*time.Time, error) {
+	return utils.ParseTimestampPtr(s.LastReviewedAt)
+}
+
 // Tags generates a consistent set of tags for the mailing list
 func (ml *GrpsIOMailingList) Tags() []string {
 	var tags []string
@@ -269,18 +305,6 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	return tags
-}
-
-// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
-// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
-func (ml *GrpsIOMailingList) ValidateLastReviewedAt() error {
-	return utils.ValidateRFC3339Ptr(ml.LastReviewedAt)
-}
-
-// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
-// Returns nil if the field is nil or empty, or the parsed time if valid.
-func (ml *GrpsIOMailingList) GetLastReviewedAtTime() (*time.Time, error) {
-	return utils.ParseTimestampPtr(ml.LastReviewedAt)
 }
 
 // Helper functions for validation

@@ -600,6 +600,143 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{uid}/settings:
+        get:
+            tags:
+                - mailing-list
+            summary: get-grpsio-mailing-list-settings mailing-list
+            description: Get GroupsIO mailing list settings (writers and auditors)
+            operationId: mailing-list#get-grpsio-mailing-list-settings
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/MailingListGetGrpsioMailingListSettingsResponseBody'
+                    headers:
+                        ETag:
+                            description: ETag header value
+                            type: string
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-grpsio-mailing-list-settings mailing-list
+            description: Update GroupsIO mailing list settings (writers and auditors)
+            operationId: mailing-list#update-grpsio-mailing-list-settings
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: true
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Mailing list UID -- unique identifier for the mailing list
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+                - name: Update-Grpsio-Mailing-List-SettingsRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioMailingListSettingsRequestBody'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GrpsIoMailingListSettings'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services:
         post:
             tags:
@@ -883,6 +1020,143 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/services/{uid}/settings:
+        get:
+            tags:
+                - mailing-list
+            summary: get-grpsio-service-settings mailing-list
+            description: Get GroupsIO service settings (writers and auditors)
+            operationId: mailing-list#get-grpsio-service-settings
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: false
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/MailingListGetGrpsioServiceSettingsResponseBody'
+                    headers:
+                        ETag:
+                            description: ETag header value
+                            type: string
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-grpsio-service-settings mailing-list
+            description: Update GroupsIO service settings (writers and auditors)
+            operationId: mailing-list#update-grpsio-service-settings
+            parameters:
+                - name: v
+                  in: query
+                  description: Version of the API
+                  required: true
+                  type: string
+                  enum:
+                    - "1"
+                - name: uid
+                  in: path
+                  description: Service UID -- unique identifier for the service
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: If-Match
+                  in: header
+                  description: If-Match header value for conditional requests
+                  required: false
+                  type: string
+                - name: Update-Grpsio-Service-SettingsRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGrpsioServiceSettingsRequestBody'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GrpsIoServiceSettings'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /livez:
         get:
             tags:
@@ -995,7 +1269,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Emeritus
+                    example: Alternate Voting Rep
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -1009,7 +1283,7 @@ definitions:
             name:
                 type: string
                 description: Committee name (read-only, populated by server)
-                example: Molestias ut soluta veritatis veniam consectetur magni.
+                example: Blanditiis libero rerum quasi.
             uid:
                 type: string
                 description: Committee UUID
@@ -1020,7 +1294,7 @@ definitions:
             allowed_voting_statuses:
                 - Voting Rep
                 - Alternate Voting Rep
-            name: Dolorem quas eum qui.
+            name: Voluptatem itaque deleniti possimus distinctio magnam.
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
         required:
             - uid
@@ -1054,24 +1328,24 @@ definitions:
             extra:
                 type: string
                 description: Extra data field (subgroup suffix)
-                example: Optio molestias ullam porro aut.
+                example: Inventore in.
             extra_id:
                 type: integer
                 description: Extra ID field (subgroup ID for deletion)
-                example: 2343783012775007402
+                example: 9053037415002072244
                 format: int64
             group:
                 description: Contains subgroup data from Groups.io
-                example: Exercitationem dolorum nobis voluptatibus recusandae ad dolorem.
+                example: Eligendi esse vel aut dolor repellendus tempore.
             member_info:
                 description: Contains member data from Groups.io
-                example: Molestias aliquam sit nesciunt sint praesentium.
+                example: Commodi placeat aliquam molestiae voluptas neque velit.
         example:
             action: created_subgroup
-            extra: Sint rerum laboriosam consequatur ut explicabo saepe.
-            extra_id: 500672409584855543
-            group: Repellat velit qui.
-            member_info: Totam cumque totam alias.
+            extra: Et aut iste quaerat sit porro molestias.
+            extra_id: 8238369577073719666
+            group: Deleniti magnam.
+            member_info: Aliquid distinctio mollitia.
         required:
             - action
     GrpsIoMailingListFull:
@@ -1094,12 +1368,17 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Quod ducimus ex et velit dolore.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
             committees:
                 type: array
                 items:
@@ -1109,12 +1388,17 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Itaque repudiandae.
+                      name: Qui consequuntur.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Itaque repudiandae.
+                      name: Qui consequuntur.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Qui consequuntur.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
@@ -1134,15 +1418,6 @@ definitions:
                 pattern: ^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$
                 minLength: 3
                 maxLength: 34
-            last_reviewed_at:
-                type: string
-                description: The timestamp when the service was last reviewed in RFC3339 format
-                example: "2025-08-04T09:00:00Z"
-                format: date-time
-            last_reviewed_by:
-                type: string
-                description: The user ID who last reviewed this service
-                example: user_id_12345
             project_name:
                 type: string
                 description: Project name (read-only)
@@ -1200,34 +1475,51 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Sint quos laudantium eligendi.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
         example:
             allow_attachments: true
             audience_access: public
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
             committees:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
             group_name: technical-steering-committee
-            last_reviewed_at: "2025-08-04T09:00:00Z"
-            last_reviewed_by: user_id_12345
             project_name: Cloud Native Computing Foundation
             project_slug: cncf
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
@@ -1239,8 +1531,138 @@ definitions:
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             updated_at: "2023-06-20T14:45:30Z"
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+    GrpsIoMailingListSettings:
+        title: GrpsIoMailingListSettings
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
+                example:
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+            created_at:
+                type: string
+                description: The timestamp when the service was created (read-only)
+                example: "2023-01-15T10:30:00Z"
+                format: date-time
+            last_audited_by:
+                type: string
+                description: The user ID who last audited the service
+                example: user_id_12345
+            last_audited_time:
+                type: string
+                description: The timestamp when the service was last audited
+                example: "2023-05-10T09:15:00Z"
+                format: date-time
+            last_reviewed_at:
+                type: string
+                description: The timestamp when the service was last reviewed in RFC3339 format
+                example: "2025-08-04T09:00:00Z"
+                format: date-time
+            last_reviewed_by:
+                type: string
+                description: The user ID who last reviewed this service
+                example: user_id_12345
+            uid:
+                type: string
+                description: Mailing list UID -- unique identifier for the mailing list
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            updated_at:
+                type: string
+                description: The timestamp when the service was last updated (read-only)
+                example: "2023-06-20T14:45:30Z"
+                format: date-time
+            writers:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
+                example:
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+        description: A representation of GroupsIO mailing list settings for user management.
+        example:
+            auditors:
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+            created_at: "2023-01-15T10:30:00Z"
+            last_audited_by: user_id_12345
+            last_audited_time: "2023-05-10T09:15:00Z"
+            last_reviewed_at: "2025-08-04T09:00:00Z"
+            last_reviewed_by: user_id_12345
+            uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            updated_at: "2023-06-20T14:45:30Z"
+            writers:
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
     GrpsIoMailingListWithReadonlyAttributes:
         title: GrpsIoMailingListWithReadonlyAttributes
         type: object
@@ -1258,15 +1680,6 @@ definitions:
                     - public
                     - approval_required
                     - invite_only
-            auditors:
-                type: array
-                items:
-                    type: string
-                    example: In reprehenderit.
-                description: Auditor user IDs who can audit this service
-                example:
-                    - auditor_user_id1
-                    - auditor_user_id2
             committees:
                 type: array
                 items:
@@ -1276,12 +1689,22 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Itaque repudiandae.
+                      name: Qui consequuntur.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Itaque repudiandae.
+                      name: Qui consequuntur.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Qui consequuntur.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Qui consequuntur.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at:
                 type: string
@@ -1355,42 +1778,30 @@ definitions:
                 description: The timestamp when the service was last updated (read-only)
                 example: "2023-06-20T14:45:30Z"
                 format: date-time
-            writers:
-                type: array
-                items:
-                    type: string
-                    example: Saepe sit saepe qui.
-                description: Manager user IDs who can edit/modify this service
-                example:
-                    - manager_user_id1
-                    - manager_user_id2
         description: A representation of GroupsIO mailing lists with readonly attributes.
         example:
             allow_attachments: true
             audience_access: public
-            auditors:
-                - auditor_user_id1
-                - auditor_user_id2
             committees:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Itaque repudiandae.
+                  name: Qui consequuntur.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
@@ -1405,9 +1816,6 @@ definitions:
             type: discussion_moderated
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             updated_at: "2023-06-20T14:45:30Z"
-            writers:
-                - manager_user_id1
-                - manager_user_id2
     GrpsIoMemberFull:
         title: GrpsIoMemberFull
         type: object
@@ -1415,12 +1823,17 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Ut rerum quam repellat eum.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1430,7 +1843,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: none
+                example: normal
                 enum:
                     - normal
                     - digest
@@ -1525,18 +1938,41 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Veniam nulla eaque voluptatem consequatur quibusdam.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: digest
+            delivery_mode: normal
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1547,15 +1983,25 @@ definitions:
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             member_type: direct
-            mod_status: moderator
+            mod_status: owner
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
             updated_at: "2023-06-20T14:45:30Z"
             username: jdoe
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
         required:
             - uid
             - mailing_list_uid
@@ -1575,12 +2021,21 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Velit rerum ea nesciunt maiores quibusdam.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1590,7 +2045,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: digest
+                example: normal
                 enum:
                     - normal
                     - digest
@@ -1645,7 +2100,7 @@ definitions:
                 type: string
                 description: Member type
                 default: direct
-                example: committee
+                example: direct
                 enum:
                     - committee
                     - direct
@@ -1653,7 +2108,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: owner
+                example: none
                 enum:
                     - none
                     - moderator
@@ -1685,19 +2140,38 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Doloribus aliquid aliquid ipsam voluptatibus corporis qui.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
         description: A representation of GroupsIO mailing list members with readonly attributes.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
             created_at: "2023-01-15T10:30:00Z"
-            delivery_mode: normal
+            delivery_mode: none
             email: john.doe@example.com
             first_name: John
             groupsio_group_id: 67890
@@ -1708,15 +2182,25 @@ definitions:
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             member_type: direct
-            mod_status: none
+            mod_status: moderator
             organization: Example Corp
             status: pending
             uid: f47ac10b-58cc-4372-a567-0e02b2c3d479
             updated_at: "2023-06-20T14:45:30Z"
             username: jdoe
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
     GrpsIoServiceFull:
         title: GrpsIoServiceFull
         type: object
@@ -1724,12 +2208,21 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Cupiditate sit debitis assumenda.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1743,7 +2236,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: tomasa.moen@mosciskiwaelchi.org
+                    example: nettie@schoenharvey.org
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1757,24 +2250,6 @@ definitions:
                 type: string
                 description: GroupsIO group name
                 example: project-name
-            last_audited_by:
-                type: string
-                description: The user ID who last audited the service
-                example: user_id_12345
-            last_audited_time:
-                type: string
-                description: The timestamp when the service was last audited
-                example: "2023-05-10T09:15:00Z"
-                format: date-time
-            last_reviewed_at:
-                type: string
-                description: The timestamp when the service was last reviewed in RFC3339 format
-                example: "2025-08-04T09:00:00Z"
-                format: date-time
-            last_reviewed_by:
-                type: string
-                description: The user ID who last reviewed this service
-                example: user_id_12345
             parent_service_uid:
                 type: string
                 description: Parent primary service UID (automatically set for shared type services)
@@ -1834,26 +2309,37 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Deserunt iure.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
             created_at: "2023-01-15T10:30:00Z"
             domain: lists.project.org
             global_owners:
                 - admin@example.com
             group_id: 12345
             group_name: project-name
-            last_audited_by: user_id_12345
-            last_audited_time: "2023-05-10T09:15:00Z"
-            last_reviewed_at: "2025-08-04T09:00:00Z"
-            last_reviewed_by: user_id_12345
             parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_name: Cloud Native Computing Foundation
@@ -1866,11 +2352,137 @@ definitions:
             updated_at: "2023-06-20T14:45:30Z"
             url: https://lists.project.org
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
         required:
             - type
             - project_uid
+    GrpsIoServiceSettings:
+        title: GrpsIoServiceSettings
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
+                example:
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+            created_at:
+                type: string
+                description: The timestamp when the service was created (read-only)
+                example: "2023-01-15T10:30:00Z"
+                format: date-time
+            last_audited_by:
+                type: string
+                description: The user ID who last audited the service
+                example: user_id_12345
+            last_audited_time:
+                type: string
+                description: The timestamp when the service was last audited
+                example: "2023-05-10T09:15:00Z"
+                format: date-time
+            last_reviewed_at:
+                type: string
+                description: The timestamp when the service was last reviewed in RFC3339 format
+                example: "2025-08-04T09:00:00Z"
+                format: date-time
+            last_reviewed_by:
+                type: string
+                description: The user ID who last reviewed this service
+                example: user_id_12345
+            uid:
+                type: string
+                description: Service UID -- unique identifier for the service
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            updated_at:
+                type: string
+                description: The timestamp when the service was last updated (read-only)
+                example: "2023-06-20T14:45:30Z"
+                format: date-time
+            writers:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
+                example:
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+        description: A representation of GroupsIO service settings for user management.
+        example:
+            auditors:
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+            created_at: "2023-01-15T10:30:00Z"
+            last_audited_by: user_id_12345
+            last_audited_time: "2023-05-10T09:15:00Z"
+            last_reviewed_at: "2025-08-04T09:00:00Z"
+            last_reviewed_by: user_id_12345
+            uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            updated_at: "2023-06-20T14:45:30Z"
+            writers:
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
     GrpsIoServiceWithReadonlyAttributes:
         title: GrpsIoServiceWithReadonlyAttributes
         type: object
@@ -1878,12 +2490,25 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Nam eaque et quas voluptatem.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
             created_at:
                 type: string
                 description: The timestamp when the service was created (read-only)
@@ -1897,7 +2522,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: scot.mayer@abshire.net
+                    example: suzanne@dooley.com
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -1911,24 +2536,6 @@ definitions:
                 type: string
                 description: GroupsIO group name
                 example: project-name
-            last_audited_by:
-                type: string
-                description: The user ID who last audited the service
-                example: user_id_12345
-            last_audited_time:
-                type: string
-                description: The timestamp when the service was last audited
-                example: "2023-05-10T09:15:00Z"
-                format: date-time
-            last_reviewed_at:
-                type: string
-                description: The timestamp when the service was last reviewed in RFC3339 format
-                example: "2025-08-04T09:00:00Z"
-                format: date-time
-            last_reviewed_by:
-                type: string
-                description: The user ID who last reviewed this service
-                example: user_id_12345
             parent_service_uid:
                 type: string
                 description: Parent primary service UID (automatically set for shared type services)
@@ -1988,27 +2595,50 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Autem tempora.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
+                    - avatar: http://leuschke.com/pietro
+                      email: pierre.wolf@stroman.info
+                      name: Temporibus assumenda error.
+                      username: Ducimus ex et.
         description: A representation of GroupsIO services with readonly attributes.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
             created_at: "2023-01-15T10:30:00Z"
             domain: lists.project.org
             global_owners:
                 - admin@example.com
             group_id: 12345
             group_name: project-name
-            last_audited_by: user_id_12345
-            last_audited_time: "2023-05-10T09:15:00Z"
-            last_reviewed_at: "2025-08-04T09:00:00Z"
-            last_reviewed_by: user_id_12345
             parent_service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             prefix: formation
             project_name: Cloud Native Computing Foundation
@@ -2021,8 +2651,14 @@ definitions:
             updated_at: "2023-06-20T14:45:30Z"
             url: https://lists.project.org
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
+                - avatar: http://leuschke.com/pietro
+                  email: pierre.wolf@stroman.info
+                  name: Temporibus assumenda error.
+                  username: Ducimus ex et.
         required:
             - type
             - project_uid
@@ -2047,7 +2683,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: digest
+                example: none
                 enum:
                     - normal
                     - digest
@@ -2118,7 +2754,7 @@ definitions:
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
-            member_type: committee
+            member_type: direct
             mod_status: moderator
             organization: Example Corp
             username: jdoe
@@ -2144,12 +2780,25 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Alias quisquam sunt molestias sint accusamus.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
             committees:
                 type: array
                 items:
@@ -2159,17 +2808,12 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
-                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    - allowed_voting_statuses:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
@@ -2216,38 +2860,51 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Vel repudiandae.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
         example:
             allow_attachments: true
             audience_access: public
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
             committees:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
+                  name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
-                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - allowed_voting_statuses:
-                    - Voting Rep
-                    - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
-                  uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                - allowed_voting_statuses:
-                    - Voting Rep
-                    - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
+                  name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -2257,8 +2914,22 @@ definitions:
             title: Technical Steering Committee
             type: discussion_moderated
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
         required:
             - group_name
             - public
@@ -2273,12 +2944,25 @@ definitions:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Unde quis amet.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
             domain:
                 type: string
                 description: Service domain
@@ -2287,7 +2971,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: dannie_weimann@greenfelder.biz
+                    example: nat@hickle.biz
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2346,16 +3030,27 @@ definitions:
             writers:
                 type: array
                 items:
-                    type: string
-                    example: Non cupiditate et quasi modi quas eum.
-                description: Manager user IDs who can edit/modify this service
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
                 example:
-                    - manager_user_id1
-                    - manager_user_id2
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
         example:
             auditors:
-                - auditor_user_id1
-                - auditor_user_id2
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
             domain: lists.project.org
             global_owners:
                 - admin@example.com
@@ -2370,8 +3065,18 @@ definitions:
             type: primary
             url: https://lists.project.org
             writers:
-                - manager_user_id1
-                - manager_user_id2
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
         required:
             - type
             - project_uid
@@ -2381,9 +3086,15 @@ definitions:
     MailingListGetGrpsioMailingListResponseBody:
         title: MailingListGetGrpsioMailingListResponseBody
         $ref: '#/definitions/GrpsIoMailingListWithReadonlyAttributes'
+    MailingListGetGrpsioMailingListSettingsResponseBody:
+        title: MailingListGetGrpsioMailingListSettingsResponseBody
+        $ref: '#/definitions/GrpsIoMailingListSettings'
     MailingListGetGrpsioServiceResponseBody:
         title: MailingListGetGrpsioServiceResponseBody
         $ref: '#/definitions/GrpsIoServiceWithReadonlyAttributes'
+    MailingListGetGrpsioServiceSettingsResponseBody:
+        title: MailingListGetGrpsioServiceSettingsResponseBody
+        $ref: '#/definitions/GrpsIoServiceSettings'
     MailingListUpdateGrpsioMailingListMemberRequestBody:
         title: MailingListUpdateGrpsioMailingListMemberRequestBody
         type: object
@@ -2392,7 +3103,7 @@ definitions:
                 type: string
                 description: Email delivery mode
                 default: normal
-                example: none
+                example: normal
                 enum:
                     - normal
                     - digest
@@ -2418,7 +3129,7 @@ definitions:
                 type: string
                 description: Moderation status
                 default: none
-                example: moderator
+                example: owner
                 enum:
                     - none
                     - moderator
@@ -2434,7 +3145,7 @@ definitions:
                 example: jdoe
                 maxLength: 255
         example:
-            delivery_mode: none
+            delivery_mode: digest
             first_name: John
             job_title: Software Engineer
             last_name: Doe
@@ -2458,15 +3169,6 @@ definitions:
                     - public
                     - approval_required
                     - invite_only
-            auditors:
-                type: array
-                items:
-                    type: string
-                    example: Ipsam delectus aliquam repudiandae sequi nemo quia.
-                description: Auditor user IDs who can audit this service
-                example:
-                    - auditor_user_id1
-                    - auditor_user_id2
             committees:
                 type: array
                 items:
@@ -2476,17 +3178,22 @@ definitions:
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                     - allowed_voting_statuses:
                         - Voting Rep
                         - Alternate Voting Rep
-                      name: Odit quis sed nesciunt incidunt quia ut.
+                      name: Aliquid aliquid.
+                      uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    - allowed_voting_statuses:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      name: Aliquid aliquid.
                       uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description:
                 type: string
@@ -2530,36 +3237,24 @@ definitions:
                     - announcement
                     - discussion_moderated
                     - discussion_open
-            writers:
-                type: array
-                items:
-                    type: string
-                    example: Est blanditiis incidunt explicabo sed corporis dolorem.
-                description: Manager user IDs who can edit/modify this service
-                example:
-                    - manager_user_id1
-                    - manager_user_id2
         example:
             allow_attachments: true
             audience_access: public
-            auditors:
-                - auditor_user_id1
-                - auditor_user_id2
             committees:
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
+                  name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
+                  name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 - allowed_voting_statuses:
                     - Voting Rep
                     - Alternate Voting Rep
-                  name: Odit quis sed nesciunt incidunt quia ut.
+                  name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
             group_name: technical-steering-committee
@@ -2568,9 +3263,6 @@ definitions:
             subject_tag: '[TSC]'
             title: Technical Steering Committee
             type: discussion_moderated
-            writers:
-                - manager_user_id1
-                - manager_user_id2
         required:
             - group_name
             - public
@@ -2578,19 +3270,81 @@ definitions:
             - description
             - title
             - service_uid
-    MailingListUpdateGrpsioServiceRequestBody:
-        title: MailingListUpdateGrpsioServiceRequestBody
+    MailingListUpdateGrpsioMailingListSettingsRequestBody:
+        title: MailingListUpdateGrpsioMailingListSettingsRequestBody
         type: object
         properties:
             auditors:
                 type: array
                 items:
-                    type: string
-                    example: Voluptatem ipsum similique.
-                description: Auditor user IDs who can audit this service
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
                 example:
-                    - auditor_user_id1
-                    - auditor_user_id2
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+            writers:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
+                example:
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+        example:
+            auditors:
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+            writers:
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+    MailingListUpdateGrpsioServiceRequestBody:
+        title: MailingListUpdateGrpsioServiceRequestBody
+        type: object
+        properties:
             domain:
                 type: string
                 description: Service domain
@@ -2599,7 +3353,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: bridie@dickens.net
+                    example: korey@ryan.net
                     format: email
                 description: List of global owner email addresses (required for primary, forbidden for shared)
                 example:
@@ -2655,19 +3409,7 @@ definitions:
                 description: Service URL
                 example: https://lists.project.org
                 format: uri
-            writers:
-                type: array
-                items:
-                    type: string
-                    example: Nihil autem.
-                description: Manager user IDs who can edit/modify this service
-                example:
-                    - manager_user_id1
-                    - manager_user_id2
         example:
-            auditors:
-                - auditor_user_id1
-                - auditor_user_id2
             domain: lists.project.org
             global_owners:
                 - admin@example.com
@@ -2681,12 +3423,76 @@ definitions:
             status: created
             type: primary
             url: https://lists.project.org
-            writers:
-                - manager_user_id1
-                - manager_user_id2
         required:
             - type
             - project_uid
+    MailingListUpdateGrpsioServiceSettingsRequestBody:
+        title: MailingListUpdateGrpsioServiceSettingsRequestBody
+        type: object
+        properties:
+            auditors:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Auditor users who can audit this resource
+                example:
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+            writers:
+                type: array
+                items:
+                    $ref: '#/definitions/UserInfo'
+                description: Manager users who can edit/modify this resource
+                example:
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+                    - avatar: http://goldner.info/perry
+                      email: ernie.lueilwitz@altenwerth.info
+                      name: Eos non id at perspiciatis.
+                      username: Eaque quis possimus velit quasi quis occaecati.
+        example:
+            auditors:
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+            writers:
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
+                - avatar: http://goldner.info/perry
+                  email: ernie.lueilwitz@altenwerth.info
+                  name: Eos non id at perspiciatis.
+                  username: Eaque quis possimus velit quasi quis occaecati.
     NotFoundError:
         title: NotFoundError
         type: object
@@ -2726,6 +3532,34 @@ definitions:
             message: Unauthorized access.
         required:
             - message
+    UserInfo:
+        title: UserInfo
+        type: object
+        properties:
+            avatar:
+                type: string
+                description: The avatar URL of the user
+                example: http://feest.org/elody.zulauf
+                format: uri
+            email:
+                type: string
+                description: The email address of the user
+                example: tom@raynor.com
+                format: email
+            name:
+                type: string
+                description: The full name of the user
+                example: Hic tempore non atque ut quis ut.
+            username:
+                type: string
+                description: The username/LFID of the user
+                example: Sint neque et.
+        description: User information including profile details.
+        example:
+            avatar: http://schultz.org/josue
+            email: velma@rathtowne.biz
+            name: Consequatur molestias omnis aliquid aspernatur.
+            username: Voluptate dignissimos expedita quis sapiente asperiores magnam.
 securityDefinitions:
     jwt_header_Authorization:
         type: apiKey

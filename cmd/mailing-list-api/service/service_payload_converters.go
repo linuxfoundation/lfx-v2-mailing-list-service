@@ -34,14 +34,30 @@ func (s *mailingListService) convertGrpsIOServiceCreatePayloadToDomain(p *mailin
 		URL:              payloadStringValue(p.URL),
 		GroupName:        payloadStringValue(p.GroupName),
 		Public:           p.Public,
-		Writers:          p.Writers,
-		Auditors:         p.Auditors,
 		Source:           constants.SourceAPI, // API operations always use api source
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
 
 	return service
+}
+
+// convertGrpsIOServiceCreatePayloadToSettings extracts writers/auditors from create payload to settings model
+func (s *mailingListService) convertGrpsIOServiceCreatePayloadToSettings(p *mailinglistservice.CreateGrpsioServicePayload, serviceUID string) *model.GrpsIOServiceSettings {
+	if p == nil {
+		return nil
+	}
+
+	now := time.Now()
+	settings := &model.GrpsIOServiceSettings{
+		UID:       serviceUID,
+		Writers:   convertUserInfoPayloadToDomain(p.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(p.Auditors),
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	return settings
 }
 
 // convertGrpsIOMailingListPayloadToDomain converts GOA mailing list payload to domain model
@@ -72,8 +88,6 @@ func (s *mailingListService) convertGrpsIOMailingListPayloadToDomain(p *mailingl
 		ServiceUID:       p.ServiceUID,
 		// project_uid is intentionally NOT set here - it will be inherited from parent in orchestrator
 		Source:    constants.SourceAPI, // API operations always use api source
-		Writers:   p.Writers,
-		Auditors:  p.Auditors,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -122,16 +136,12 @@ func (s *mailingListService) convertGrpsIOServiceUpdatePayloadToDomain(existing 
 		URL:              existing.URL,       // Fixed: add missing field preservation
 		GroupName:        existing.GroupName, // Fixed: add missing field preservation
 		CreatedAt:        existing.CreatedAt,
-		LastReviewedAt:   existing.LastReviewedAt,
-		LastReviewedBy:   existing.LastReviewedBy,
 
 		// Update mutable fields (PUT semantics - complete replacement)
 		Status:       payloadStringValue(p.Status), // nil → ""
 		ProjectUID:   existing.ProjectUID,          // IMMUTABLE (keep as is)
 		Public:       p.Public,                     // Direct assignment
 		GlobalOwners: p.GlobalOwners,               // nil → nil
-		Writers:      p.Writers,                    // nil → nil
-		Auditors:     p.Auditors,                   // nil → nil
 		UpdatedAt:    now,
 	}
 }
@@ -147,16 +157,14 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 	// Create updated mailing list from payload data (PUT semantics)
 	return &model.GrpsIOMailingList{
 		// Preserve immutable/readonly fields
-		UID:            existing.UID,
-		SubgroupID:     existing.SubgroupID, // Preserve Groups.io subgroup ID
-		GroupName:      existing.GroupName,  // Fixed: GroupName is immutable, preserve from existing
-		ProjectUID:     existing.ProjectUID,
-		ProjectName:    existing.ProjectName,
-		ProjectSlug:    existing.ProjectSlug,
-		Source:         existing.Source, // Preserve source tracking
-		CreatedAt:      existing.CreatedAt,
-		LastReviewedAt: existing.LastReviewedAt,
-		LastReviewedBy: existing.LastReviewedBy,
+		UID:         existing.UID,
+		SubgroupID:  existing.SubgroupID, // Preserve Groups.io subgroup ID
+		GroupName:   existing.GroupName,  // Fixed: GroupName is immutable, preserve from existing
+		ProjectUID:  existing.ProjectUID,
+		ProjectName: existing.ProjectName,
+		ProjectSlug: existing.ProjectSlug,
+		Source:      existing.Source, // Preserve source tracking
+		CreatedAt:   existing.CreatedAt,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
 		Public:           payload.Public,                                // Direct assignment
@@ -165,11 +173,9 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 		Description:      payload.Description,                           // Direct assignment
 		Title:            payload.Title,                                 // Direct assignment
 		ServiceUID:       payload.ServiceUID,                            // Direct assignment
+		AllowAttachments: allowAttachments,                              // Default to false if not provided
 		Committees:       convertCommitteesToDomain(payload.Committees), // nil → nil
 		SubjectTag:       payloadStringValue(payload.SubjectTag),        // nil → ""
-		AllowAttachments: allowAttachments,                              // Default to false if not provided
-		Writers:          payload.Writers,                               // nil → nil
-		Auditors:         payload.Auditors,                              // nil → nil
 		UpdatedAt:        time.Now().UTC(),
 	}
 }
@@ -322,4 +328,52 @@ func (s *mailingListService) convertWebhookMemberInfo(m map[string]any) (*model.
 	}
 
 	return member, nil
+}
+
+// convertGrpsIOServiceSettingsPayloadToDomain converts GOA settings payload to domain model
+func (s *mailingListService) convertGrpsIOServiceSettingsPayloadToDomain(payload *mailinglistservice.UpdateGrpsioServiceSettingsPayload) *model.GrpsIOServiceSettings {
+	settings := &model.GrpsIOServiceSettings{
+		UID:       payload.UID,
+		Writers:   convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(payload.Auditors),
+		UpdatedAt: time.Now().UTC(),
+	}
+
+	return settings
+}
+
+// convertUserInfoPayloadToDomain converts GOA UserInfo array to domain UserInfo array
+func convertUserInfoPayloadToDomain(goaUsers []*mailinglistservice.UserInfo) []model.UserInfo {
+	if goaUsers == nil {
+		return []model.UserInfo{}
+	}
+
+	users := make([]model.UserInfo, 0, len(goaUsers))
+	for _, u := range goaUsers {
+		// Skip nil entries to avoid panic
+		if u == nil {
+			continue
+		}
+
+		user := model.UserInfo{
+			Name:     u.Name,
+			Email:    u.Email,
+			Username: u.Username,
+			Avatar:   u.Avatar,
+		}
+		users = append(users, user)
+	}
+	return users
+}
+
+// convertGrpsIOMailingListSettingsPayloadToDomain converts GOA mailing list settings payload to domain model
+func (s *mailingListService) convertGrpsIOMailingListSettingsPayloadToDomain(payload *mailinglistservice.UpdateGrpsioMailingListSettingsPayload) *model.GrpsIOMailingListSettings {
+	settings := &model.GrpsIOMailingListSettings{
+		UID:       payload.UID,
+		Writers:   convertUserInfoPayloadToDomain(payload.Writers),
+		Auditors:  convertUserInfoPayloadToDomain(payload.Auditors),
+		UpdatedAt: time.Now().UTC(),
+	}
+
+	return settings
 }

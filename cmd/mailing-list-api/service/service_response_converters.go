@@ -12,47 +12,51 @@ import (
 
 // convertGrpsIOServiceDomainToFullResponse converts domain model to full response (for CREATE operations)
 // Following convertGrpsIOServiceDomainToFullResponse
-func (s *mailingListService) convertGrpsIOServiceDomainToFullResponse(service *model.GrpsIOService) *mailinglistservice.GrpsIoServiceFull {
+func (s *mailingListService) convertGrpsIOServiceFullDomainToResponse(service *model.GrpsIOServiceFull) *mailinglistservice.GrpsIoServiceFull {
 	if service == nil {
 		return &mailinglistservice.GrpsIoServiceFull{}
 	}
 
+	if service.Base == nil {
+		service.Base = &model.GrpsIOService{}
+	}
+	if service.Settings == nil {
+		service.Settings = &model.GrpsIOServiceSettings{}
+	}
+
 	result := &mailinglistservice.GrpsIoServiceFull{
-		UID:          &service.UID,
-		Type:         service.Type,
-		Domain:       &service.Domain,
-		GroupID:      service.GroupID,
-		Status:       &service.Status,
-		GlobalOwners: service.GlobalOwners,
-		Prefix:       &service.Prefix,
-		ProjectSlug:  &service.ProjectSlug,
-		ProjectName:  &service.ProjectName,
-		ProjectUID:   service.ProjectUID,
-		URL:          &service.URL,
-		GroupName:    &service.GroupName,
-		Public:       service.Public,
+		UID:          &service.Base.UID,
+		Type:         service.Base.Type,
+		Domain:       &service.Base.Domain,
+		GroupID:      service.Base.GroupID,
+		Status:       &service.Base.Status,
+		GlobalOwners: service.Base.GlobalOwners,
+		Prefix:       &service.Base.Prefix,
+		ProjectSlug:  &service.Base.ProjectSlug,
+		ProjectName:  &service.Base.ProjectName,
+		ProjectUID:   service.Base.ProjectUID,
+		URL:          &service.Base.URL,
+		GroupName:    &service.Base.GroupName,
+		Public:       service.Base.Public,
+		Writers:      convertUserInfoDomainToResponse(service.Settings.Writers),
+		Auditors:     convertUserInfoDomainToResponse(service.Settings.Auditors),
 	}
 
 	// Only set ParentServiceUID if it's non-empty
-	if service.ParentServiceUID != "" {
-		result.ParentServiceUID = &service.ParentServiceUID
+	if service.Base.ParentServiceUID != "" {
+		result.ParentServiceUID = &service.Base.ParentServiceUID
 	}
 
 	// Handle timestamps
-	if !service.CreatedAt.IsZero() {
-		createdAt := service.CreatedAt.Format(time.RFC3339)
+	if !service.Base.CreatedAt.IsZero() {
+		createdAt := service.Base.CreatedAt.Format(time.RFC3339)
 		result.CreatedAt = &createdAt
 	}
 
-	if !service.UpdatedAt.IsZero() {
-		updatedAt := service.UpdatedAt.Format(time.RFC3339)
+	if !service.Base.UpdatedAt.IsZero() {
+		updatedAt := service.Base.UpdatedAt.Format(time.RFC3339)
 		result.UpdatedAt = &updatedAt
 	}
-
-	result.Writers = service.Writers
-	result.Auditors = service.Auditors
-	result.LastReviewedAt = service.LastReviewedAt
-	result.LastReviewedBy = service.LastReviewedBy
 
 	return result
 }
@@ -96,16 +100,11 @@ func (s *mailingListService) convertGrpsIOServiceDomainToStandardResponse(servic
 		result.UpdatedAt = &updatedAt
 	}
 
-	result.LastReviewedAt = service.LastReviewedAt
-	result.LastReviewedBy = service.LastReviewedBy
-	result.Writers = service.Writers
-	result.Auditors = service.Auditors
-
 	return result
 }
 
 // convertGrpsIOMailingListDomainToResponse converts domain mailing list to full response (for CREATE operations)
-func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.GrpsIOMailingList) *mailinglistservice.GrpsIoMailingListFull {
+func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) *mailinglistservice.GrpsIoMailingListFull {
 	if ml == nil {
 		return &mailinglistservice.GrpsIoMailingListFull{}
 	}
@@ -125,8 +124,12 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 		ProjectUID:       &ml.ProjectUID,  // This is inherited from parent in orchestrator
 		ProjectName:      &ml.ProjectName, // Inherited from parent service
 		ProjectSlug:      &ml.ProjectSlug, // Inherited from parent service
-		Writers:          ml.Writers,
-		Auditors:         ml.Auditors,
+	}
+
+	// Add writers and auditors from settings
+	if settings != nil {
+		result.Writers = convertUserInfoDomainToResponse(settings.Writers)
+		result.Auditors = convertUserInfoDomainToResponse(settings.Auditors)
 	}
 
 	// Handle timestamps
@@ -139,9 +142,6 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 		updatedAt := ml.UpdatedAt.Format(time.RFC3339)
 		result.UpdatedAt = &updatedAt
 	}
-
-	result.LastReviewedAt = ml.LastReviewedAt
-	result.LastReviewedBy = ml.LastReviewedBy
 
 	return result
 }
@@ -184,8 +184,6 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(ma
 		ProjectUID:       stringToPointer(mailingList.ProjectUID),
 		ProjectName:      stringToPointer(mailingList.ProjectName),
 		ProjectSlug:      stringToPointer(mailingList.ProjectSlug),
-		Writers:          mailingList.Writers,
-		Auditors:         mailingList.Auditors,
 	}
 
 	// Convert timestamps
@@ -309,4 +307,88 @@ func stringToPointer(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+// convertGrpsIOServiceSettingsDomainToResponse converts domain settings to GOA response
+func (s *mailingListService) convertGrpsIOServiceSettingsDomainToResponse(settings *model.GrpsIOServiceSettings) *mailinglistservice.GrpsIoServiceSettings {
+	if settings == nil {
+		return &mailinglistservice.GrpsIoServiceSettings{}
+	}
+
+	createdAt := settings.CreatedAt.Format(time.RFC3339)
+	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
+
+	response := &mailinglistservice.GrpsIoServiceSettings{
+		UID:       &settings.UID,
+		Writers:   convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:  convertUserInfoDomainToResponse(settings.Auditors),
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	}
+
+	if settings.LastReviewedAt != nil {
+		response.LastReviewedAt = settings.LastReviewedAt
+	}
+	if settings.LastReviewedBy != nil {
+		response.LastReviewedBy = settings.LastReviewedBy
+	}
+	if settings.LastAuditedTime != nil {
+		response.LastAuditedTime = settings.LastAuditedTime
+	}
+	if settings.LastAuditedBy != nil {
+		response.LastAuditedBy = settings.LastAuditedBy
+	}
+
+	return response
+}
+
+// convertUserInfoDomainToResponse converts domain UserInfo array to GOA UserInfo array
+func convertUserInfoDomainToResponse(domainUsers []model.UserInfo) []*mailinglistservice.UserInfo {
+	if domainUsers == nil {
+		return []*mailinglistservice.UserInfo{}
+	}
+
+	users := make([]*mailinglistservice.UserInfo, len(domainUsers))
+	for i, u := range domainUsers {
+		users[i] = &mailinglistservice.UserInfo{
+			Name:     u.Name,
+			Email:    u.Email,
+			Username: u.Username,
+			Avatar:   u.Avatar,
+		}
+	}
+	return users
+}
+
+// convertGrpsIOMailingListSettingsDomainToResponse converts domain mailing list settings to GOA response
+func (s *mailingListService) convertGrpsIOMailingListSettingsDomainToResponse(settings *model.GrpsIOMailingListSettings) *mailinglistservice.GrpsIoMailingListSettings {
+	if settings == nil {
+		return &mailinglistservice.GrpsIoMailingListSettings{}
+	}
+
+	createdAt := settings.CreatedAt.Format(time.RFC3339)
+	updatedAt := settings.UpdatedAt.Format(time.RFC3339)
+
+	response := &mailinglistservice.GrpsIoMailingListSettings{
+		UID:       &settings.UID,
+		Writers:   convertUserInfoDomainToResponse(settings.Writers),
+		Auditors:  convertUserInfoDomainToResponse(settings.Auditors),
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	}
+
+	if settings.LastReviewedAt != nil {
+		response.LastReviewedAt = settings.LastReviewedAt
+	}
+	if settings.LastReviewedBy != nil {
+		response.LastReviewedBy = settings.LastReviewedBy
+	}
+	if settings.LastAuditedTime != nil {
+		response.LastAuditedTime = settings.LastAuditedTime
+	}
+	if settings.LastAuditedBy != nil {
+		response.LastAuditedBy = settings.LastAuditedBy
+	}
+
+	return response
 }

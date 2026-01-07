@@ -25,7 +25,7 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
@@ -45,6 +45,20 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", body.ProjectUID, goa.FormatUUID))
 		if body.URL != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.url", *body.URL, goa.FormatURI))
+		}
+		for _, e := range body.Writers {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Auditors {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
 		}
 		if err != nil {
 			return nil, err
@@ -92,15 +106,15 @@ func BuildCreateGrpsioServicePayload(mailingListCreateGrpsioServiceBody string, 
 		}
 	}
 	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
 		for i, val := range body.Writers {
-			v.Writers[i] = val
+			v.Writers[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
 		for i, val := range body.Auditors {
-			v.Auditors[i] = val
+			v.Auditors[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	v.Version = version
@@ -155,7 +169,7 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"lists.project.org\",\n      \"global_owners\": [\n         \"admin@example.com\"\n      ],\n      \"group_id\": 12345,\n      \"group_name\": \"project-name\",\n      \"parent_service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"prefix\": \"formation\",\n      \"project_slug\": \"cncf\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"public\": true,\n      \"status\": \"created\",\n      \"type\": \"primary\",\n      \"url\": \"https://lists.project.org\"\n   }'")
 		}
 		if !(body.Type == "primary" || body.Type == "formation" || body.Type == "shared") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"primary", "formation", "shared"}))
@@ -235,18 +249,6 @@ func BuildUpdateGrpsioServicePayload(mailingListUpdateGrpsioServiceBody string, 
 			v.Public = false
 		}
 	}
-	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
-		for i, val := range body.Writers {
-			v.Writers[i] = val
-		}
-	}
-	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
-		for i, val := range body.Auditors {
-			v.Auditors[i] = val
-		}
-	}
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
@@ -300,6 +302,123 @@ func BuildDeleteGrpsioServicePayload(mailingListDeleteGrpsioServiceUID string, m
 	return v, nil
 }
 
+// BuildGetGrpsioServiceSettingsPayload builds the payload for the mailing-list
+// get-grpsio-service-settings endpoint from CLI flags.
+func BuildGetGrpsioServiceSettingsPayload(mailingListGetGrpsioServiceSettingsUID string, mailingListGetGrpsioServiceSettingsVersion string, mailingListGetGrpsioServiceSettingsBearerToken string) (*mailinglist.GetGrpsioServiceSettingsPayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListGetGrpsioServiceSettingsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListGetGrpsioServiceSettingsVersion != "" {
+			version = &mailingListGetGrpsioServiceSettingsVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGrpsioServiceSettingsBearerToken != "" {
+			bearerToken = &mailingListGetGrpsioServiceSettingsBearerToken
+		}
+	}
+	v := &mailinglist.GetGrpsioServiceSettingsPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildUpdateGrpsioServiceSettingsPayload builds the payload for the
+// mailing-list update-grpsio-service-settings endpoint from CLI flags.
+func BuildUpdateGrpsioServiceSettingsPayload(mailingListUpdateGrpsioServiceSettingsBody string, mailingListUpdateGrpsioServiceSettingsUID string, mailingListUpdateGrpsioServiceSettingsVersion string, mailingListUpdateGrpsioServiceSettingsBearerToken string, mailingListUpdateGrpsioServiceSettingsIfMatch string) (*mailinglist.UpdateGrpsioServiceSettingsPayload, error) {
+	var err error
+	var body UpdateGrpsioServiceSettingsRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListUpdateGrpsioServiceSettingsBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
+		}
+		for _, e := range body.Writers {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Auditors {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var uid string
+	{
+		uid = mailingListUpdateGrpsioServiceSettingsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version string
+	{
+		version = mailingListUpdateGrpsioServiceSettingsVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListUpdateGrpsioServiceSettingsBearerToken != "" {
+			bearerToken = &mailingListUpdateGrpsioServiceSettingsBearerToken
+		}
+	}
+	var ifMatch *string
+	{
+		if mailingListUpdateGrpsioServiceSettingsIfMatch != "" {
+			ifMatch = &mailingListUpdateGrpsioServiceSettingsIfMatch
+		}
+	}
+	v := &mailinglist.UpdateGrpsioServiceSettingsPayload{}
+	if body.Writers != nil {
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
+		}
+	}
+	v.UID = uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
 // BuildCreateGrpsioMailingListPayload builds the payload for the mailing-list
 // create-grpsio-mailing-list endpoint from CLI flags.
 func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody string, mailingListCreateGrpsioMailingListVersion string, mailingListCreateGrpsioMailingListBearerToken string) (*mailinglist.CreateGrpsioMailingListPayload, error) {
@@ -308,7 +427,7 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_attachments\": true,\n      \"audience_access\": \"public\",\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_attachments\": true,\n      \"audience_access\": \"public\",\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -348,6 +467,20 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 			}
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
+		for _, e := range body.Writers {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Auditors {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -392,15 +525,15 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 		}
 	}
 	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
 		for i, val := range body.Writers {
-			v.Writers[i] = val
+			v.Writers[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
 		for i, val := range body.Auditors {
-			v.Auditors[i] = val
+			v.Auditors[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
 		}
 	}
 	v.Version = version
@@ -451,7 +584,7 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_attachments\": true,\n      \"audience_access\": \"public\",\n      \"auditors\": [\n         \"auditor_user_id1\",\n         \"auditor_user_id2\"\n      ],\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Odit quis sed nesciunt incidunt quia ut.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         \"manager_user_id1\",\n         \"manager_user_id2\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_attachments\": true,\n      \"audience_access\": \"public\",\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -548,18 +681,6 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 			v.Committees[i] = marshalCommitteeRequestBodyToMailinglistCommittee(val)
 		}
 	}
-	if body.Writers != nil {
-		v.Writers = make([]string, len(body.Writers))
-		for i, val := range body.Writers {
-			v.Writers[i] = val
-		}
-	}
-	if body.Auditors != nil {
-		v.Auditors = make([]string, len(body.Auditors))
-		for i, val := range body.Auditors {
-			v.Auditors[i] = val
-		}
-	}
 	v.UID = &uid
 	v.Version = version
 	v.BearerToken = bearerToken
@@ -613,6 +734,123 @@ func BuildDeleteGrpsioMailingListPayload(mailingListDeleteGrpsioMailingListUID s
 	return v, nil
 }
 
+// BuildGetGrpsioMailingListSettingsPayload builds the payload for the
+// mailing-list get-grpsio-mailing-list-settings endpoint from CLI flags.
+func BuildGetGrpsioMailingListSettingsPayload(mailingListGetGrpsioMailingListSettingsUID string, mailingListGetGrpsioMailingListSettingsVersion string, mailingListGetGrpsioMailingListSettingsBearerToken string) (*mailinglist.GetGrpsioMailingListSettingsPayload, error) {
+	var err error
+	var uid string
+	{
+		uid = mailingListGetGrpsioMailingListSettingsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version *string
+	{
+		if mailingListGetGrpsioMailingListSettingsVersion != "" {
+			version = &mailingListGetGrpsioMailingListSettingsVersion
+			if !(*version == "1") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGrpsioMailingListSettingsBearerToken != "" {
+			bearerToken = &mailingListGetGrpsioMailingListSettingsBearerToken
+		}
+	}
+	v := &mailinglist.GetGrpsioMailingListSettingsPayload{}
+	v.UID = &uid
+	v.Version = version
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildUpdateGrpsioMailingListSettingsPayload builds the payload for the
+// mailing-list update-grpsio-mailing-list-settings endpoint from CLI flags.
+func BuildUpdateGrpsioMailingListSettingsPayload(mailingListUpdateGrpsioMailingListSettingsBody string, mailingListUpdateGrpsioMailingListSettingsUID string, mailingListUpdateGrpsioMailingListSettingsVersion string, mailingListUpdateGrpsioMailingListSettingsBearerToken string, mailingListUpdateGrpsioMailingListSettingsIfMatch string) (*mailinglist.UpdateGrpsioMailingListSettingsPayload, error) {
+	var err error
+	var body UpdateGrpsioMailingListSettingsRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListSettingsBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
+		}
+		for _, e := range body.Writers {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Auditors {
+			if e != nil {
+				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var uid string
+	{
+		uid = mailingListUpdateGrpsioMailingListSettingsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var version string
+	{
+		version = mailingListUpdateGrpsioMailingListSettingsVersion
+		if !(version == "1") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var bearerToken *string
+	{
+		if mailingListUpdateGrpsioMailingListSettingsBearerToken != "" {
+			bearerToken = &mailingListUpdateGrpsioMailingListSettingsBearerToken
+		}
+	}
+	var ifMatch *string
+	{
+		if mailingListUpdateGrpsioMailingListSettingsIfMatch != "" {
+			ifMatch = &mailingListUpdateGrpsioMailingListSettingsIfMatch
+		}
+	}
+	v := &mailinglist.UpdateGrpsioMailingListSettingsPayload{}
+	if body.Writers != nil {
+		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
+		for i, val := range body.Writers {
+			v.Writers[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
+		}
+	}
+	if body.Auditors != nil {
+		v.Auditors = make([]*mailinglist.UserInfo, len(body.Auditors))
+		for i, val := range body.Auditors {
+			v.Auditors[i] = marshalUserInfoRequestBodyToMailinglistUserInfo(val)
+		}
+	}
+	v.UID = uid
+	v.Version = version
+	v.BearerToken = bearerToken
+	v.IfMatch = ifMatch
+
+	return v, nil
+}
+
 // BuildCreateGrpsioMailingListMemberPayload builds the payload for the
 // mailing-list create-grpsio-mailing-list-member endpoint from CLI flags.
 func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingListMemberBody string, mailingListCreateGrpsioMailingListMemberUID string, mailingListCreateGrpsioMailingListMemberVersion string, mailingListCreateGrpsioMailingListMemberBearerToken string) (*mailinglist.CreateGrpsioMailingListMemberPayload, error) {
@@ -621,7 +859,7 @@ func BuildCreateGrpsioMailingListMemberPayload(mailingListCreateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"digest\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"none\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"none\",\n      \"email\": \"john.doe@example.com\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"last_reviewed_at\": \"2023-01-15T14:30:00Z\",\n      \"last_reviewed_by\": \"admin@example.com\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -784,7 +1022,7 @@ func BuildUpdateGrpsioMailingListMemberPayload(mailingListUpdateGrpsioMailingLis
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"normal\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"moderator\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"none\",\n      \"first_name\": \"John\",\n      \"job_title\": \"Software Engineer\",\n      \"last_name\": \"Doe\",\n      \"mod_status\": \"none\",\n      \"organization\": \"Example Corp\",\n      \"username\": \"jdoe\"\n   }'")
 		}
 		if body.Username != nil {
 			if utf8.RuneCountInString(*body.Username) > 255 {
@@ -951,7 +1189,7 @@ func BuildGroupsioWebhookPayload(mailingListGroupsioWebhookBody string, mailingL
 	{
 		err = json.Unmarshal([]byte(mailingListGroupsioWebhookBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"action\": \"created_subgroup\",\n      \"extra\": \"Ut id laboriosam aut aut eos sequi.\",\n      \"extra_id\": 2981127877810673139,\n      \"group\": \"Hic repellendus.\",\n      \"member_info\": \"Adipisci quia laudantium qui aut sunt.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"action\": \"created_subgroup\",\n      \"extra\": \"Sint rerum laboriosam consequatur ut explicabo saepe.\",\n      \"extra_id\": 500672409584855543,\n      \"group\": \"Aut consequatur nihil repellat velit qui.\",\n      \"member_info\": \"Totam cumque totam alias.\"\n   }'")
 		}
 		if !(body.Action == "created_subgroup" || body.Action == "deleted_subgroup" || body.Action == "added_member" || body.Action == "removed_member" || body.Action == "ban_members") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.action", body.Action, []any{"created_subgroup", "deleted_subgroup", "added_member", "removed_member", "ban_members"}))

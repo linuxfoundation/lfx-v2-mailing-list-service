@@ -65,7 +65,8 @@ func (ml *grpsIOWriterOrchestrator) ensureMailingListIdempotent(
 }
 
 // CreateGrpsIOMailingList creates a new mailing list with comprehensive validation and messaging
-func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
+// The settings parameter contains writers and auditors to be stored separately
+func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingList, uint64, error) {
 	slog.DebugContext(ctx, "orchestrator: creating mailing list",
 		"group_name", request.GroupName,
 		"parent_uid", request.ServiceUID,
@@ -104,16 +105,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		}
 	}()
 
-	// Step 1: Validate timestamps
-	if err := request.ValidateLastReviewedAt(); err != nil {
-		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
-			"error", err,
-			"last_reviewed_at", request.LastReviewedAt,
-		)
-		return nil, 0, errors.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
-	}
-
-	// Step 2: Generate UID and set timestamps
+	// Step 1: Generate UID and set timestamps
 	request.UID = uuid.New().String()
 	now := time.Now()
 	request.CreatedAt = now
@@ -216,7 +208,36 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	}
 	keys = append(keys, createdMailingList.UID)
 
-	// Step 11: Create secondary indices for the mailing list
+	// Step 11: Create mailing list settings with provided writers/auditors
+	if settings == nil {
+		// Initialize empty settings if none provided (webhook/mock sources)
+		settings = &model.GrpsIOMailingListSettings{
+			Writers:  []model.UserInfo{},
+			Auditors: []model.UserInfo{},
+		}
+	}
+	settings.UID = createdMailingList.UID
+	settings.CreatedAt = now
+	settings.UpdatedAt = now
+
+	_, _, err = ml.grpsIOWriter.CreateGrpsIOMailingListSettings(ctx, settings)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create mailing list settings",
+			"error", err,
+			"mailing_list_uid", createdMailingList.UID,
+		)
+		rollbackRequired = true
+		return nil, 0, err
+	}
+	keys = append(keys, createdMailingList.UID) // Settings use same UID as key
+
+	slog.DebugContext(ctx, "mailing list settings created successfully",
+		"mailing_list_uid", createdMailingList.UID,
+		"writers_count", len(settings.Writers),
+		"auditors_count", len(settings.Auditors),
+	)
+
+	// Step 12: Create secondary indices for the mailing list
 	secondaryKeys, err := ml.createMailingListSecondaryIndices(ctx, createdMailingList)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list secondary indices", "error", err)
@@ -228,7 +249,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	keys = append(keys, secondaryKeys...)
 
 	// Step 12: Publish messages concurrently (indexer + access control)
-	if err := ml.publishMailingListMessages(ctx, createdMailingList); err != nil {
+	if err := ml.publishMailingListMessages(ctx, createdMailingList, settings); err != nil {
 		// Log warning but don't fail the operation - mailing list is already created
 		slog.WarnContext(ctx, "failed to publish messages", "error", err, "mailing_list_uid", createdMailingList.UID)
 	}
@@ -406,18 +427,28 @@ func (ml *grpsIOWriterOrchestrator) reserveMailingListConstraints(ctx context.Co
 }
 
 // publishMailingListMessages publishes indexer and access control messages for mailing list creation
-func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Context, mailingList *model.GrpsIOMailingList) error {
+func (ml *grpsIOWriterOrchestrator) publishMailingListMessages(ctx context.Context, mailingList *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) error {
 	if ml.publisher == nil {
 		slog.DebugContext(ctx, "publisher not configured, skipping message publishing",
 			"mailing_list_uid", mailingList.UID)
 		return nil
 	}
-	return ml.publishMailingListChange(ctx, nil, mailingList, model.ActionCreated)
+	return ml.publishMailingListChange(ctx, nil, mailingList, settings, model.ActionCreated)
 }
 
 // publishMailingListUpdateMessages publishes update messages for indexer and access control
 func (ml *grpsIOWriterOrchestrator) publishMailingListUpdateMessages(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList) error {
-	return ml.publishMailingListChange(ctx, oldMailingList, newMailingList, model.ActionUpdated)
+	// Fetch real settings to include current writers/auditors in access control message
+	// If settings retrieval fails, we'll still publish the indexer message but skip ACL message
+	settings, _, err := ml.grpsIOReader.GetGrpsIOMailingListSettings(ctx, newMailingList.UID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to fetch mailing list settings for update messages, will skip access control message",
+			"error", err,
+			"mailing_list_uid", newMailingList.UID)
+		settings = nil // Explicitly set to nil so access control message is skipped
+	}
+
+	return ml.publishMailingListChange(ctx, oldMailingList, newMailingList, settings, model.ActionUpdated)
 }
 
 // publishMailingListDeleteMessages publishes delete messages for indexer and access control
@@ -437,7 +468,8 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListIndexerMessage(ctx context.C
 }
 
 // buildMailingListAccessControlMessage builds an access control message for OpenFGA
-func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailingList *model.GrpsIOMailingList) *model.AccessMessage {
+// settings parameter contains writers/auditors that should be included in the access control message
+func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailingList *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) *model.AccessMessage {
 	references := map[string][]string{
 		constants.RelationGroupsIOService: {mailingList.ServiceUID}, // Required for service-level permission inheritance (project inherited through service)
 	}
@@ -451,11 +483,30 @@ func (ml *grpsIOWriterOrchestrator) buildMailingListAccessControlMessage(mailing
 	}
 
 	relations := map[string][]string{}
-	if len(mailingList.Writers) > 0 {
-		relations[constants.RelationWriter] = mailingList.Writers
-	}
-	if len(mailingList.Auditors) > 0 {
-		relations[constants.RelationAuditor] = mailingList.Auditors
+	if settings != nil {
+		// Convert UserInfo arrays to username strings for access control
+		if len(settings.Writers) > 0 {
+			writers := make([]string, 0, len(settings.Writers))
+			for _, w := range settings.Writers {
+				if w.Username != nil && *w.Username != "" {
+					writers = append(writers, *w.Username)
+				}
+			}
+			if len(writers) > 0 {
+				relations[constants.RelationWriter] = writers
+			}
+		}
+		if len(settings.Auditors) > 0 {
+			auditors := make([]string, 0, len(settings.Auditors))
+			for _, a := range settings.Auditors {
+				if a.Username != nil && *a.Username != "" {
+					auditors = append(auditors, *a.Username)
+				}
+			}
+			if len(auditors) > 0 {
+				relations[constants.RelationAuditor] = auditors
+			}
+		}
 	}
 
 	return &model.AccessMessage{
@@ -473,17 +524,7 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 		"mailing_list_uid", uid,
 		"expected_revision", expectedRevision)
 
-	// Step 1: Validate timestamps in input
-	if err := mailingList.ValidateLastReviewedAt(); err != nil {
-		slog.ErrorContext(ctx, "invalid LastReviewedAt timestamp",
-			"error", err,
-			"last_reviewed_at", mailingList.LastReviewedAt,
-			"mailing_list_uid", uid,
-		)
-		return nil, 0, errors.NewValidation(fmt.Sprintf("invalid LastReviewedAt: %s", err.Error()))
-	}
-
-	// Step 2: Retrieve existing mailing list to validate and merge data
+	// Step 1: Retrieve existing mailing list to validate and merge data
 	existing, existingRevision, err := ml.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to retrieve existing mailing list",
@@ -594,7 +635,7 @@ func (ml *grpsIOWriterOrchestrator) publishIndexerMessage(ctx context.Context, m
 }
 
 // publishMailingListChange publishes indexer, access control, and event notification messages for create/update operations
-func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList, action model.MessageAction) error {
+func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context, oldMailingList, newMailingList *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings, action model.MessageAction) error {
 	// For creates, newMailingList is the created list and oldMailingList is nil
 	// For updates, both are provided
 	mailingList := newMailingList
@@ -613,11 +654,19 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListChange(ctx context.Context
 		return err
 	}
 
-	// Publish access control message
-	accessMessage := ml.buildMailingListAccessControlMessage(mailingList)
-	if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
-		slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
-		return fmt.Errorf("failed to publish %s access control message: %w", action, err)
+	// Only publish access control message if settings are available
+	// This ensures we only emit ACL messages with real writers/auditors data
+	if settings != nil {
+		// Publish access control message with current writers/auditors from settings
+		accessMessage := ml.buildMailingListAccessControlMessage(mailingList, settings)
+		if err := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); err != nil {
+			slog.ErrorContext(ctx, "failed to publish access control message", "error", err, "action", action)
+			return fmt.Errorf("failed to publish %s access control message: %w", action, err)
+		}
+	} else {
+		slog.DebugContext(ctx, "skipping access control message - settings not available",
+			"action", action,
+			"mailing_list_uid", mailingList.UID)
 	}
 
 	// Publish mailing list event notification for committee sync
@@ -883,4 +932,103 @@ func (ml *grpsIOWriterOrchestrator) publishMailingListEventNotification(ctx cont
 		"action", action)
 
 	return nil
+}
+
+// UpdateGrpsIOMailingListSettings updates mailing list settings and publishes indexer message
+func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "executing update mailing list settings use case",
+		"mailing_list_uid", settings.UID,
+		"expected_revision", expectedRevision,
+	)
+
+	// Fetch existing settings to preserve created_at timestamp
+	existingSettings, existingRevision, err := ml.grpsIOReader.GetGrpsIOMailingListSettings(ctx, settings.UID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to retrieve existing mailing list settings",
+			"error", err,
+			"mailing_list_uid", settings.UID,
+		)
+		return nil, 0, err
+	}
+
+	// Verify revision matches to ensure optimistic locking
+	if existingRevision != expectedRevision {
+		slog.WarnContext(ctx, "revision mismatch during settings update",
+			"expected_revision", expectedRevision,
+			"current_revision", existingRevision,
+			"mailing_list_uid", settings.UID,
+		)
+		return nil, 0, errors.NewConflict("mailing list settings have been modified by another process")
+	}
+
+	// Preserve created_at and update updated_at
+	settings.CreatedAt = existingSettings.CreatedAt
+	settings.UpdatedAt = time.Now()
+
+	// Update settings in storage
+	updatedSettings, revision, err := ml.grpsIOWriter.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to update mailing list settings",
+			"error", err,
+			"mailing_list_uid", settings.UID,
+			"expected_revision", expectedRevision,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "mailing list settings updated successfully",
+		"mailing_list_uid", settings.UID,
+		"revision", revision,
+	)
+
+	// Publish settings indexer message
+	if ml.publisher != nil {
+		settingsIndexerMessage := &model.IndexerMessage{
+			Action: model.ActionUpdated,
+			Tags:   updatedSettings.Tags(),
+		}
+		builtMessage, errBuild := settingsIndexerMessage.Build(ctx, updatedSettings)
+		if errBuild != nil {
+			slog.ErrorContext(ctx, "failed to build settings indexer message",
+				"error", errBuild,
+				"mailing_list_uid", settings.UID,
+			)
+			// Don't fail the update on message building errors
+		} else {
+			if errPublish := ml.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSettingsSubject, builtMessage); errPublish != nil {
+				slog.ErrorContext(ctx, "failed to publish settings indexer message",
+					"error", errPublish,
+					"mailing_list_uid", settings.UID,
+				)
+				// Don't fail the update on message publishing errors
+			}
+		}
+
+		// Also publish updated access control message with new writers/auditors
+		mailingList, _, errMailingList := ml.grpsIOReader.GetGrpsIOMailingList(ctx, settings.UID)
+		if errMailingList != nil {
+			slog.WarnContext(ctx, "failed to get mailing list for access control update",
+				"error", errMailingList,
+				"mailing_list_uid", settings.UID,
+			)
+		} else {
+			// Build access control message using updated settings
+			accessMessage := ml.buildMailingListAccessControlMessage(mailingList, updatedSettings)
+
+			if errAccess := ml.publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMessage); errAccess != nil {
+				slog.ErrorContext(ctx, "failed to publish access control message",
+					"error", errAccess,
+					"mailing_list_uid", settings.UID,
+				)
+				// Don't fail the update on message publishing errors
+			}
+		}
+	}
+
+	slog.InfoContext(ctx, "mailing list settings update completed",
+		"mailing_list_uid", settings.UID,
+		"revision", revision,
+	)
+
+	return updatedSettings, revision, nil
 }

@@ -40,6 +40,14 @@ type Client struct {
 	// delete-grpsio-service endpoint.
 	DeleteGrpsioServiceDoer goahttp.Doer
 
+	// GetGrpsioServiceSettings Doer is the HTTP client used to make requests to
+	// the get-grpsio-service-settings endpoint.
+	GetGrpsioServiceSettingsDoer goahttp.Doer
+
+	// UpdateGrpsioServiceSettings Doer is the HTTP client used to make requests to
+	// the update-grpsio-service-settings endpoint.
+	UpdateGrpsioServiceSettingsDoer goahttp.Doer
+
 	// CreateGrpsioMailingList Doer is the HTTP client used to make requests to the
 	// create-grpsio-mailing-list endpoint.
 	CreateGrpsioMailingListDoer goahttp.Doer
@@ -55,6 +63,14 @@ type Client struct {
 	// DeleteGrpsioMailingList Doer is the HTTP client used to make requests to the
 	// delete-grpsio-mailing-list endpoint.
 	DeleteGrpsioMailingListDoer goahttp.Doer
+
+	// GetGrpsioMailingListSettings Doer is the HTTP client used to make requests
+	// to the get-grpsio-mailing-list-settings endpoint.
+	GetGrpsioMailingListSettingsDoer goahttp.Doer
+
+	// UpdateGrpsioMailingListSettings Doer is the HTTP client used to make
+	// requests to the update-grpsio-mailing-list-settings endpoint.
+	UpdateGrpsioMailingListSettingsDoer goahttp.Doer
 
 	// CreateGrpsioMailingListMember Doer is the HTTP client used to make requests
 	// to the create-grpsio-mailing-list-member endpoint.
@@ -96,26 +112,30 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:                         doer,
-		ReadyzDoer:                        doer,
-		CreateGrpsioServiceDoer:           doer,
-		GetGrpsioServiceDoer:              doer,
-		UpdateGrpsioServiceDoer:           doer,
-		DeleteGrpsioServiceDoer:           doer,
-		CreateGrpsioMailingListDoer:       doer,
-		GetGrpsioMailingListDoer:          doer,
-		UpdateGrpsioMailingListDoer:       doer,
-		DeleteGrpsioMailingListDoer:       doer,
-		CreateGrpsioMailingListMemberDoer: doer,
-		GetGrpsioMailingListMemberDoer:    doer,
-		UpdateGrpsioMailingListMemberDoer: doer,
-		DeleteGrpsioMailingListMemberDoer: doer,
-		GroupsioWebhookDoer:               doer,
-		RestoreResponseBody:               restoreBody,
-		scheme:                            scheme,
-		host:                              host,
-		decoder:                           dec,
-		encoder:                           enc,
+		LivezDoer:                           doer,
+		ReadyzDoer:                          doer,
+		CreateGrpsioServiceDoer:             doer,
+		GetGrpsioServiceDoer:                doer,
+		UpdateGrpsioServiceDoer:             doer,
+		DeleteGrpsioServiceDoer:             doer,
+		GetGrpsioServiceSettingsDoer:        doer,
+		UpdateGrpsioServiceSettingsDoer:     doer,
+		CreateGrpsioMailingListDoer:         doer,
+		GetGrpsioMailingListDoer:            doer,
+		UpdateGrpsioMailingListDoer:         doer,
+		DeleteGrpsioMailingListDoer:         doer,
+		GetGrpsioMailingListSettingsDoer:    doer,
+		UpdateGrpsioMailingListSettingsDoer: doer,
+		CreateGrpsioMailingListMemberDoer:   doer,
+		GetGrpsioMailingListMemberDoer:      doer,
+		UpdateGrpsioMailingListMemberDoer:   doer,
+		DeleteGrpsioMailingListMemberDoer:   doer,
+		GroupsioWebhookDoer:                 doer,
+		RestoreResponseBody:                 restoreBody,
+		scheme:                              scheme,
+		host:                                host,
+		decoder:                             dec,
+		encoder:                             enc,
 	}
 }
 
@@ -253,6 +273,54 @@ func (c *Client) DeleteGrpsioService() goa.Endpoint {
 	}
 }
 
+// GetGrpsioServiceSettings returns an endpoint that makes HTTP requests to the
+// mailing-list service get-grpsio-service-settings server.
+func (c *Client) GetGrpsioServiceSettings() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGrpsioServiceSettingsRequest(c.encoder)
+		decodeResponse = DecodeGetGrpsioServiceSettingsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGrpsioServiceSettingsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGrpsioServiceSettingsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-service-settings", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateGrpsioServiceSettings returns an endpoint that makes HTTP requests to
+// the mailing-list service update-grpsio-service-settings server.
+func (c *Client) UpdateGrpsioServiceSettings() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateGrpsioServiceSettingsRequest(c.encoder)
+		decodeResponse = DecodeUpdateGrpsioServiceSettingsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateGrpsioServiceSettingsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateGrpsioServiceSettingsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-service-settings", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
 // CreateGrpsioMailingList returns an endpoint that makes HTTP requests to the
 // mailing-list service create-grpsio-mailing-list server.
 func (c *Client) CreateGrpsioMailingList() goa.Endpoint {
@@ -344,6 +412,54 @@ func (c *Client) DeleteGrpsioMailingList() goa.Endpoint {
 		resp, err := c.DeleteGrpsioMailingListDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGrpsioMailingListSettings returns an endpoint that makes HTTP requests to
+// the mailing-list service get-grpsio-mailing-list-settings server.
+func (c *Client) GetGrpsioMailingListSettings() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGrpsioMailingListSettingsRequest(c.encoder)
+		decodeResponse = DecodeGetGrpsioMailingListSettingsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGrpsioMailingListSettingsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGrpsioMailingListSettingsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-mailing-list-settings", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateGrpsioMailingListSettings returns an endpoint that makes HTTP requests
+// to the mailing-list service update-grpsio-mailing-list-settings server.
+func (c *Client) UpdateGrpsioMailingListSettings() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateGrpsioMailingListSettingsRequest(c.encoder)
+		decodeResponse = DecodeUpdateGrpsioMailingListSettingsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateGrpsioMailingListSettingsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateGrpsioMailingListSettingsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-mailing-list-settings", err)
 		}
 		return decodeResponse(resp)
 	}

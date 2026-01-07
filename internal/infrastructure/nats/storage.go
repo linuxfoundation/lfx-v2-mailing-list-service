@@ -93,6 +93,95 @@ func (s *storage) GetRevision(ctx context.Context, uid string) (uint64, error) {
 	return rev, nil
 }
 
+// GetGrpsIOServiceSettings retrieves service settings by UID and returns ETag revision
+func (s *storage) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting service settings",
+		"service_uid", uid)
+
+	settings := &model.GrpsIOServiceSettings{}
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOServiceSettings, uid, settings, false)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "service settings not found", "service_uid", uid, "error", err)
+			return nil, 0, errs.NewNotFound("service settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get service settings", "error", err, "service_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to get service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings retrieved",
+		"service_uid", uid,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
+// GetSettingsRevision retrieves only the revision for service settings
+func (s *storage) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting service settings revision",
+		"service_uid", uid)
+
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOServiceSettings, uid, &model.GrpsIOServiceSettings{}, true)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "service settings not found for revision", "service_uid", uid, "error", err)
+			return 0, errs.NewNotFound("service settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get service settings revision", "error", err, "service_uid", uid)
+		return 0, errs.NewServiceUnavailable("failed to get service settings revision")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings revision retrieved",
+		"service_uid", uid,
+		"revision", rev)
+
+	return rev, nil
+}
+
+// CreateGrpsIOServiceSettings creates new service settings in NATS KV store
+func (s *storage) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: creating service settings",
+		"service_uid", settings.UID)
+
+	rev, err := s.put(ctx, constants.KVBucketNameGroupsIOServiceSettings, settings.UID, settings)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create service settings", "error", err, "service_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to create service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings created",
+		"service_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
+func (s *storage) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: updating service settings",
+		"service_uid", settings.UID,
+		"expected_revision", expectedRevision)
+
+	rev, err := s.putWithRevision(ctx, constants.KVBucketNameGroupsIOServiceSettings, settings.UID, settings, expectedRevision)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "service settings not found on update", "service_uid", settings.UID)
+			return nil, 0, errs.NewNotFound("service settings not found")
+		}
+		if s.isRevisionMismatch(err) {
+			slog.WarnContext(ctx, "revision mismatch on update", "service_uid", settings.UID, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
+		slog.ErrorContext(ctx, "failed to update service settings", "error", err, "service_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to update service settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: service settings updated",
+		"service_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
 // get retrieves a model from the NATS KV store by bucket and UID.
 // It unmarshals the data into the provided model and returns the revision.
 // If the UID is empty, it returns a validation error.
@@ -140,7 +229,7 @@ func (s *storage) GetServiceRevision(ctx context.Context, bucket, uid string) (u
 }
 
 // CreateGrpsIOService creates a new service in NATS KV store
-func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error) {
+func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "nats storage: creating service",
 		"service_id", service.UID,
 		"service_type", service.Type)
@@ -148,14 +237,14 @@ func (s *storage) CreateGrpsIOService(ctx context.Context, service *model.GrpsIO
 	rev, err := s.put(ctx, constants.KVBucketNameGroupsIOServices, service.UID, service)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create service", "error", err, "service_id", service.UID)
-		return nil, 0, errs.NewServiceUnavailable("failed to create service")
+		return nil, nil, 0, errs.NewServiceUnavailable("failed to create service")
 	}
 
 	slog.DebugContext(ctx, "nats storage: service created",
 		"service_id", service.UID,
 		"revision", rev)
 
-	return service, rev, nil
+	return service, settings, rev, nil
 }
 
 // CreateServiceSecondaryIndices creates all secondary indices for the service (public interface)
@@ -826,6 +915,96 @@ func (s *storage) UpdateGrpsIOMailingList(ctx context.Context, uid string, maili
 		"revision", rev)
 
 	return mailingList, rev, nil
+}
+
+// GetGrpsIOMailingListSettings retrieves mailing list settings by UID and returns ETag revision
+func (s *storage) GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting mailing list settings",
+		"mailing_list_uid", uid)
+
+	settings := &model.GrpsIOMailingListSettings{}
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOMailingListSettings, uid, settings, false)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "mailing list settings not found", "mailing_list_uid", uid, "error", err)
+			return nil, 0, errs.NewNotFound("mailing list settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get mailing list settings", "error", err, "mailing_list_uid", uid)
+		return nil, 0, errs.NewServiceUnavailable("failed to get mailing list settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list settings retrieved",
+		"mailing_list_uid", uid,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
+// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
+func (s *storage) GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "nats storage: getting mailing list settings revision",
+		"mailing_list_uid", uid)
+
+	rev, err := s.get(ctx, constants.KVBucketNameGroupsIOMailingListSettings, uid, &model.GrpsIOMailingListSettings{}, true)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "mailing list settings not found for revision", "mailing_list_uid", uid, "error", err)
+			return 0, errs.NewNotFound("mailing list settings not found")
+		}
+		slog.ErrorContext(ctx, "failed to get mailing list settings revision", "error", err, "mailing_list_uid", uid)
+		return 0, errs.NewServiceUnavailable("failed to get mailing list settings revision")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list settings revision retrieved",
+		"mailing_list_uid", uid,
+		"revision", rev)
+
+	return rev, nil
+}
+
+// CreateGrpsIOMailingListSettings creates new mailing list settings in NATS KV store
+func (s *storage) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: creating mailing list settings",
+		"mailing_list_uid", settings.UID)
+
+	rev, err := s.put(ctx, constants.KVBucketNameGroupsIOMailingListSettings, settings.UID, settings)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create mailing list settings", "error", err, "mailing_list_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to create mailing list settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list settings created",
+		"mailing_list_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
+}
+
+// UpdateGrpsIOMailingListSettings updates existing mailing list settings with revision checking
+func (s *storage) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+	slog.DebugContext(ctx, "nats storage: updating mailing list settings",
+		"mailing_list_uid", settings.UID,
+		"expected_revision", expectedRevision)
+
+	rev, err := s.putWithRevision(ctx, constants.KVBucketNameGroupsIOMailingListSettings, settings.UID, settings, expectedRevision)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			slog.WarnContext(ctx, "mailing list settings not found on update", "mailing_list_uid", settings.UID)
+			return nil, 0, errs.NewNotFound("mailing list settings not found")
+		}
+		if s.isRevisionMismatch(err) {
+			slog.WarnContext(ctx, "revision mismatch on update", "mailing_list_uid", settings.UID, "expected_revision", expectedRevision)
+			return nil, 0, errs.NewConflict("revision mismatch")
+		}
+		slog.ErrorContext(ctx, "failed to update mailing list settings", "error", err, "mailing_list_uid", settings.UID)
+		return nil, 0, errs.NewServiceUnavailable("failed to update mailing list settings")
+	}
+
+	slog.DebugContext(ctx, "nats storage: mailing list settings updated",
+		"mailing_list_uid", settings.UID,
+		"revision", rev)
+
+	return settings, rev, nil
 }
 
 // DeleteGrpsIOMailingList deletes a mailing list with optimistic concurrency control

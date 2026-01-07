@@ -469,7 +469,11 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList(t *testing.T) {
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList)
+			settings := &model.GrpsIOMailingListSettings{
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			}
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, tc.inputMailingList, settings)
 
 			// Validate
 			if tc.expectedError != nil {
@@ -591,7 +595,11 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMailingList_PublishingErrors(t *te
 
 			// Execute
 			ctx := context.Background()
-			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList)
+			settings := &model.GrpsIOMailingListSettings{
+				Writers:  []model.UserInfo{},
+				Auditors: []model.UserInfo{},
+			}
+			result, revision, err := orchestrator.CreateGrpsIOMailingList(ctx, mailingList, settings)
 
 			// Validate
 			if tc.expectComplete {
@@ -666,6 +674,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 	testCases := []struct {
 		name        string
 		mailingList *model.GrpsIOMailingList
+		settings    *model.GrpsIOMailingListSettings
 		expected    *model.AccessMessage
 	}{
 		{
@@ -709,13 +718,19 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			},
 		},
 		{
-			name: "mailing list with writers",
+			name: "mailing list with writers from settings",
 			mailingList: &model.GrpsIOMailingList{
 				UID:        "list-3",
 				ServiceUID: "service-3",
 				ProjectUID: "project-3",
 				Public:     true,
-				Writers:    []string{"user1", "user2"},
+			},
+			settings: &model.GrpsIOMailingListSettings{
+				UID: "list-3",
+				Writers: []model.UserInfo{
+					{Username: stringPtr("user1")},
+					{Username: stringPtr("user2")},
+				},
 			},
 			expected: &model.AccessMessage{
 				UID:        "list-3",
@@ -737,7 +752,7 @@ func TestGrpsIOWriterOrchestrator_buildMailingListAccessControlMessage(t *testin
 			orchestrator := &grpsIOWriterOrchestrator{}
 
 			// Execute
-			result := orchestrator.buildMailingListAccessControlMessage(tc.mailingList)
+			result := orchestrator.buildMailingListAccessControlMessage(tc.mailingList, tc.settings)
 
 			// Validate
 			assert.Equal(t, tc.expected, result)
@@ -1140,6 +1155,11 @@ func TestAudienceAccessToGroupsIO(t *testing.T) {
 			assert.Equal(t, tt.expectedInviteOnly, *inviteOnly, "inviteOnly flag mismatch")
 		})
 	}
+}
+
+// stringPtr is a helper function that returns a pointer to a string value
+func stringPtr(s string) *string {
+	return &s
 }
 
 // Helper functions (if needed in future)

@@ -34,15 +34,11 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 		ProjectSlug:    "test-project",
 		ProjectName:    "Test Project",
 		ProjectUID:     "test-project-uid",
-		URL:            "https://lists.testproject.org",
-		GroupName:      "test-project",
-		Public:         true,
-		LastReviewedAt: serviceStringPtr("2024-01-01T00:00:00Z"),
-		LastReviewedBy: serviceStringPtr("reviewer-uid"),
-		Writers:        []string{"writer1", "writer2"},
-		Auditors:       []string{"auditor1"},
-		CreatedAt:      time.Now().Add(-24 * time.Hour),
-		UpdatedAt:      time.Now(),
+		URL:        "https://lists.testproject.org",
+		GroupName:  "test-project",
+		Public:     true,
+		CreatedAt:  time.Now().Add(-24 * time.Hour),
+		UpdatedAt:  time.Now(),
 	}
 
 	tests := []struct {
@@ -77,12 +73,6 @@ func TestGrpsIOReaderOrchestratorGetGrpsIOService(t *testing.T) {
 				assert.Equal(t, "https://lists.testproject.org", service.URL)
 				assert.Equal(t, "test-project", service.GroupName)
 				assert.True(t, service.Public)
-				assert.NotNil(t, service.LastReviewedAt)
-				assert.Equal(t, "2024-01-01T00:00:00Z", *service.LastReviewedAt)
-				assert.NotNil(t, service.LastReviewedBy)
-				assert.Equal(t, "reviewer-uid", *service.LastReviewedBy)
-				assert.Equal(t, []string{"writer1", "writer2"}, service.Writers)
-				assert.Equal(t, []string{"auditor1"}, service.Auditors)
 				assert.NotZero(t, service.CreatedAt)
 				assert.NotZero(t, service.UpdatedAt)
 				assert.Equal(t, uint64(1), revision) // Mock returns revision 1
@@ -303,15 +293,11 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		ProjectSlug:    "integration-test-project",
 		ProjectName:    "Integration Test Project",
 		ProjectUID:     "integration-test-project-uid",
-		URL:            "https://lists.formation.testproject.org",
-		GroupName:      "integration-test-project-formation",
-		Public:         false,
-		LastReviewedAt: serviceStringPtr("2024-02-01T12:00:00Z"),
-		LastReviewedBy: serviceStringPtr("integration-reviewer"),
-		Writers:        []string{"integration-writer1", "integration-writer2", "integration-writer3"},
-		Auditors:       []string{"integration-auditor1", "integration-auditor2"},
-		CreatedAt:      time.Now().Add(-48 * time.Hour),
-		UpdatedAt:      time.Now().Add(-1 * time.Hour),
+		URL:        "https://lists.formation.testproject.org",
+		GroupName:  "integration-test-project-formation",
+		Public:     false,
+		CreatedAt:  time.Now().Add(-48 * time.Hour),
+		UpdatedAt:  time.Now().Add(-1 * time.Hour),
 	}
 
 	// Store the service
@@ -349,14 +335,6 @@ func TestGrpsIOReaderOrchestratorIntegration(t *testing.T) {
 		assert.Equal(t, "https://lists.formation.testproject.org", service.URL)
 		assert.Equal(t, "integration-test-project-formation", service.GroupName)
 		assert.False(t, service.Public)
-
-		// Validate audit fields
-		assert.NotNil(t, service.LastReviewedAt)
-		assert.Equal(t, "2024-02-01T12:00:00Z", *service.LastReviewedAt)
-		assert.NotNil(t, service.LastReviewedBy)
-		assert.Equal(t, "integration-reviewer", *service.LastReviewedBy)
-		assert.Equal(t, []string{"integration-writer1", "integration-writer2", "integration-writer3"}, service.Writers)
-		assert.Equal(t, []string{"integration-auditor1", "integration-auditor2"}, service.Auditors)
 
 		// Validate timestamps
 		assert.False(t, service.CreatedAt.IsZero())

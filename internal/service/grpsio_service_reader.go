@@ -105,3 +105,51 @@ func (sr *grpsIOReaderOrchestrator) GetServicesByProjectUID(ctx context.Context,
 
 	return services, nil
 }
+
+// GetGrpsIOServiceSettings retrieves service settings by service UID
+func (sr *grpsIOReaderOrchestrator) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
+	slog.DebugContext(ctx, "executing get service settings use case",
+		"service_uid", uid,
+	)
+
+	// Get settings from storage
+	settings, revision, err := sr.grpsIOReader.GetGrpsIOServiceSettings(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get service settings",
+			"error", err,
+			"service_uid", uid,
+		)
+		return nil, 0, err
+	}
+
+	slog.DebugContext(ctx, "service settings retrieved successfully",
+		"service_uid", uid,
+		"revision", revision,
+	)
+
+	return settings, revision, nil
+}
+
+// GetSettingsRevision retrieves only the revision for service settings
+func (sr *grpsIOReaderOrchestrator) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
+	slog.DebugContext(ctx, "executing get settings revision use case",
+		"service_uid", uid,
+	)
+
+	// Get revision from storage
+	revision, err := sr.grpsIOReader.GetSettingsRevision(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to get service settings revision",
+			"error", err,
+			"service_uid", uid,
+		)
+		return 0, err
+	}
+
+	slog.DebugContext(ctx, "service settings revision retrieved successfully",
+		"service_uid", uid,
+		"revision", revision,
+	)
+
+	return revision, nil
+}

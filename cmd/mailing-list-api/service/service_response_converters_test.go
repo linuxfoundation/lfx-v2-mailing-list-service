@@ -18,62 +18,66 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		domain   *model.GrpsIOService
+		domain   *model.GrpsIOServiceFull
 		expected *mailinglistservice.GrpsIoServiceFull
 	}{
 		{
 			name: "complete domain to full response conversion",
-			domain: &model.GrpsIOService{
-				UID:            "service-123",
-				Type:           "primary",
-				Domain:         "example.groups.io",
-				GroupID:        int64Ptr(12345),
-				Status:         "active",
-				GlobalOwners:   []string{"owner1@example.com", "owner2@example.com"},
-				Prefix:         "",
-				ProjectSlug:    "test-project",
-				ProjectName:    "Test Project",
-				ProjectUID:     "project-123",
-				URL:            "https://example.groups.io/g/test",
-				GroupName:      "test-group",
-				Public:         true,
-				CreatedAt:      createdAt,
-				UpdatedAt:      updatedAt,
-				LastReviewedAt: stringPtr("2023-01-01T10:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-123"),
-				Writers:        []string{"writer1", "writer2"},
-				Auditors:       []string{"auditor1", "auditor2"},
+			domain: &model.GrpsIOServiceFull{
+				Base: &model.GrpsIOService{
+					UID:          "service-123",
+					Type:         "primary",
+					Domain:       "example.groups.io",
+					GroupID:      int64Ptr(12345),
+					Status:       "active",
+					GlobalOwners: []string{"owner1@example.com", "owner2@example.com"},
+					Prefix:       "",
+					ProjectSlug:  "test-project",
+					ProjectName:  "Test Project",
+					ProjectUID:   "project-123",
+					URL:          "https://example.groups.io/g/test",
+					GroupName:    "test-group",
+					Public:       true,
+					CreatedAt:    createdAt,
+					UpdatedAt:    updatedAt,
+				},
+				Settings: &model.GrpsIOServiceSettings{
+					UID:      "service-123",
+					Writers:  []model.UserInfo{},
+					Auditors: []model.UserInfo{},
+				},
 			},
 			expected: &mailinglistservice.GrpsIoServiceFull{
-				UID:            stringPtr("service-123"),
-				Type:           "primary",
-				Domain:         stringPtr("example.groups.io"),
-				GroupID:        int64Ptr(12345),
-				Status:         stringPtr("active"),
-				GlobalOwners:   []string{"owner1@example.com", "owner2@example.com"},
-				Prefix:         stringPtr(""),
-				ProjectSlug:    stringPtr("test-project"),
-				ProjectName:    stringPtr("Test Project"),
-				ProjectUID:     "project-123",
-				URL:            stringPtr("https://example.groups.io/g/test"),
-				GroupName:      stringPtr("test-group"),
-				Public:         true,
-				CreatedAt:      stringPtr("2023-01-01T12:00:00Z"),
-				UpdatedAt:      stringPtr("2023-01-02T12:00:00Z"),
-				LastReviewedAt: stringPtr("2023-01-01T10:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-123"),
-				Writers:        []string{"writer1", "writer2"},
-				Auditors:       []string{"auditor1", "auditor2"},
+				UID:          stringPtr("service-123"),
+				Type:         "primary",
+				Domain:       stringPtr("example.groups.io"),
+				GroupID:      int64Ptr(12345),
+				Status:       stringPtr("active"),
+				GlobalOwners: []string{"owner1@example.com", "owner2@example.com"},
+				Prefix:       stringPtr(""),
+				ProjectSlug:  stringPtr("test-project"),
+				ProjectName:  stringPtr("Test Project"),
+				ProjectUID:   "project-123",
+				URL:          stringPtr("https://example.groups.io/g/test"),
+				GroupName:    stringPtr("test-group"),
+				Public:       true,
+				CreatedAt:    stringPtr("2023-01-01T12:00:00Z"),
+				UpdatedAt:    stringPtr("2023-01-02T12:00:00Z"),
+				Writers:      []*mailinglistservice.UserInfo{},
+				Auditors:     []*mailinglistservice.UserInfo{},
 			},
 		},
 		{
 			name: "minimal domain to full response conversion",
-			domain: &model.GrpsIOService{
-				Type:       "formation",
-				ProjectUID: "project-456",
-				Public:     false,
-				CreatedAt:  time.Time{}, // Zero timestamp
-				UpdatedAt:  time.Time{}, // Zero timestamp
+			domain: &model.GrpsIOServiceFull{
+				Base: &model.GrpsIOService{
+					Type:       "formation",
+					ProjectUID: "project-456",
+					Public:     false,
+					CreatedAt:  time.Time{}, // Zero timestamp
+					UpdatedAt:  time.Time{}, // Zero timestamp
+				},
+				Settings: nil,
 			},
 			expected: &mailinglistservice.GrpsIoServiceFull{
 				UID:          stringPtr(""),
@@ -90,12 +94,10 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 				GroupName:    stringPtr(""),
 				Public:       false,
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
-				CreatedAt:      nil,
-				UpdatedAt:      nil,
-				LastReviewedAt: nil,
-				LastReviewedBy: nil,
-				Writers:        nil,
-				Auditors:       nil,
+				CreatedAt: nil,
+				UpdatedAt: nil,
+				Writers:   []*mailinglistservice.UserInfo{},
+				Auditors:  []*mailinglistservice.UserInfo{},
 			},
 		},
 		{
@@ -108,7 +110,7 @@ func TestConvertDomainToFullResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertGrpsIOServiceDomainToFullResponse(tt.domain)
+			result := svc.convertGrpsIOServiceFullDomainToResponse(tt.domain)
 
 			assert.Equal(t, tt.expected, result)
 		})
@@ -127,46 +129,38 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 		{
 			name: "complete domain to standard response conversion",
 			domain: &model.GrpsIOService{
-				UID:            "service-123",
-				Type:           "shared",
-				Domain:         "shared.groups.io",
-				GroupID:        int64Ptr(67890),
-				Status:         "inactive",
-				GlobalOwners:   []string{"shared@example.com"},
-				Prefix:         "shared-prefix",
-				ProjectSlug:    "shared-project",
-				ProjectName:    "Shared Project",
-				ProjectUID:     "project-789",
-				URL:            "https://shared.groups.io/g/shared",
-				GroupName:      "shared-group",
-				Public:         false,
-				CreatedAt:      createdAt,
-				UpdatedAt:      updatedAt,
-				LastReviewedAt: stringPtr("2023-01-01T15:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-456"),
-				Writers:        []string{"writer3", "writer4"},
-				Auditors:       []string{"auditor3"},
+				UID:          "service-123",
+				Type:         "shared",
+				Domain:       "shared.groups.io",
+				GroupID:      int64Ptr(67890),
+				Status:       "inactive",
+				GlobalOwners: []string{"shared@example.com"},
+				Prefix:       "shared-prefix",
+				ProjectSlug:  "shared-project",
+				ProjectName:  "Shared Project",
+				ProjectUID:   "project-789",
+				URL:          "https://shared.groups.io/g/shared",
+				GroupName:    "shared-group",
+				Public:       false,
+				CreatedAt:    createdAt,
+				UpdatedAt:    updatedAt,
 			},
 			expected: &mailinglistservice.GrpsIoServiceWithReadonlyAttributes{
-				UID:            stringPtr("service-123"),
-				Type:           "shared",
-				Domain:         stringPtr("shared.groups.io"),
-				GroupID:        int64Ptr(67890),
-				Status:         stringPtr("inactive"),
-				GlobalOwners:   []string{"shared@example.com"},
-				Prefix:         stringPtr("shared-prefix"),
-				ProjectSlug:    stringPtr("shared-project"),
-				ProjectName:    stringPtr("Shared Project"),
-				ProjectUID:     "project-789",
-				URL:            stringPtr("https://shared.groups.io/g/shared"),
-				GroupName:      stringPtr("shared-group"),
-				Public:         false,
-				CreatedAt:      stringPtr("2023-01-01T12:00:00Z"),
-				UpdatedAt:      stringPtr("2023-01-02T12:00:00Z"),
-				LastReviewedAt: stringPtr("2023-01-01T15:00:00Z"),
-				LastReviewedBy: stringPtr("reviewer-456"),
-				Writers:        []string{"writer3", "writer4"},
-				Auditors:       []string{"auditor3"},
+				UID:          stringPtr("service-123"),
+				Type:         "shared",
+				Domain:       stringPtr("shared.groups.io"),
+				GroupID:      int64Ptr(67890),
+				Status:       stringPtr("inactive"),
+				GlobalOwners: []string{"shared@example.com"},
+				Prefix:       stringPtr("shared-prefix"),
+				ProjectSlug:  stringPtr("shared-project"),
+				ProjectName:  stringPtr("Shared Project"),
+				ProjectUID:   "project-789",
+				URL:          stringPtr("https://shared.groups.io/g/shared"),
+				GroupName:    stringPtr("shared-group"),
+				Public:       false,
+				CreatedAt:    stringPtr("2023-01-01T12:00:00Z"),
+				UpdatedAt:    stringPtr("2023-01-02T12:00:00Z"),
 			},
 		},
 		{
@@ -194,12 +188,8 @@ func TestConvertDomainToStandardResponse(t *testing.T) {
 				GroupName:    stringPtr(""),
 				Public:       true,
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
-				CreatedAt:      nil,
-				UpdatedAt:      nil,
-				LastReviewedAt: nil,
-				LastReviewedBy: nil,
-				Writers:        nil,
-				Auditors:       nil,
+				CreatedAt: nil,
+				UpdatedAt: nil,
 			},
 		},
 		{
@@ -246,10 +236,6 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				ProjectUID:       "project-789",
 				ProjectName:      "Test Project",
 				ProjectSlug:      "test-project",
-				LastReviewedAt:   stringPtr("2023-02-01T08:00:00Z"),
-				LastReviewedBy:   stringPtr("reviewer-789"),
-				Writers:          []string{"writer5", "writer6"},
-				Auditors:         []string{"auditor4", "auditor5"},
 				CreatedAt:        createdAt,
 				UpdatedAt:        updatedAt,
 			},
@@ -269,12 +255,8 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				ProjectUID:       stringPtr("project-789"),
 				ProjectName:      stringPtr("Test Project"),
 				ProjectSlug:      stringPtr("test-project"),
-				Writers:          []string{"writer5", "writer6"},
-				Auditors:         []string{"auditor4", "auditor5"},
 				CreatedAt:        stringPtr("2023-02-01T10:00:00Z"),
 				UpdatedAt:        stringPtr("2023-02-02T10:00:00Z"),
-				LastReviewedAt:   stringPtr("2023-02-01T08:00:00Z"),
-				LastReviewedBy:   stringPtr("reviewer-789"),
 			},
 		},
 		{
@@ -305,13 +287,9 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				ProjectUID:       stringPtr(""),
 				ProjectName:      stringPtr(""),
 				ProjectSlug:      stringPtr(""),
-				Writers:          nil,
-				Auditors:         nil,
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
-				CreatedAt:      nil,
-				UpdatedAt:      nil,
-				LastReviewedAt: nil,
-				LastReviewedBy: nil,
+				CreatedAt: nil,
+				UpdatedAt: nil,
 			},
 		},
 		{
@@ -324,7 +302,7 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := &mailingListService{}
-			result := svc.convertGrpsIOMailingListDomainToResponse(tt.domain)
+			result := svc.convertGrpsIOMailingListDomainToResponse(tt.domain, nil)
 
 			assert.Equal(t, tt.expected, result)
 		})

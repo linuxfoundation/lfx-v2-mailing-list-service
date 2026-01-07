@@ -13,8 +13,8 @@ import (
 type GrpsIOServiceWriter interface {
 	BaseGrpsIOWriter
 
-	// CreateGrpsIOService creates a new service and returns the service with revision
-	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error)
+	// CreateGrpsIOService creates a new service and its settings, and returns the service, settings, and revision
+	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error)
 
 	// UpdateGrpsIOService updates an existing service with expected revision and returns updated service with new revision
 	UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error)
@@ -32,4 +32,10 @@ type GrpsIOServiceWriter interface {
 
 	// UniqueProjectGroupID validates that the group_id is unique within the project for shared services
 	UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error)
+
+	// CreateGrpsIOServiceSettings creates new service settings and returns the settings with revision
+	CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error)
+
+	// UpdateGrpsIOServiceSettings updates service settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error)
 }

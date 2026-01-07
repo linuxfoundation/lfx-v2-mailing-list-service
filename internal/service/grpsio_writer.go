@@ -63,8 +63,8 @@ type GrpsIOWriter interface {
 
 // GrpsIOServiceWriter defines the interface for service write operations
 type GrpsIOServiceWriter interface {
-	// CreateGrpsIOService creates a new service and returns the service with revision
-	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService) (*model.GrpsIOService, uint64, error)
+	// CreateGrpsIOService creates a new service and its settings, and returns the service, settings, and revision
+	CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceFull, uint64, error)
 
 	// UpdateGrpsIOService updates an existing service with expected revision and returns updated service with new revision
 	UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error)
@@ -74,18 +74,24 @@ type GrpsIOServiceWriter interface {
 	// constraint cleanup based on the current state of the service. The 'service' parameter provides
 	// necessary context for deleting related constraints or dependent records.
 	DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error
+
+	// UpdateGrpsIOServiceSettings updates service settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error)
 }
 
 // GrpsIOMailingListWriter defines the interface for mailing list write operations
 type GrpsIOMailingListWriter interface {
 	// CreateGrpsIOMailingList creates a new mailing list and returns the mailing list with revision
-	CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error)
+	CreateGrpsIOMailingList(ctx context.Context, request *model.GrpsIOMailingList, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingList, uint64, error)
 
 	// UpdateGrpsIOMailingList updates an existing mailing list with expected revision and returns updated mailing list with new revision
 	UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error)
 
 	// DeleteGrpsIOMailingList deletes a mailing list by UID with expected revision
 	DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error
+
+	// UpdateGrpsIOMailingListSettings updates mailing list settings with expected revision and returns updated settings with new revision
+	UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error)
 }
 
 // grpsIOWriterOrchestratorOption defines a function type for setting options on the composite orchestrator
