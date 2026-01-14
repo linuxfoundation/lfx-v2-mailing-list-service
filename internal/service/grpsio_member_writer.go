@@ -266,8 +266,8 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		}
 	}
 
-	// Step 11: Increment subscriber count (best-effort, non-blocking)
-	o.updateMailingListSubscriberCount(ctx, createdMember.MailingListUID, +1)
+	// Step 11: Refresh subscriber count from Groups.io (best-effort, non-blocking)
+	o.updateMailingListSubscriberCount(ctx, createdMember.MailingListUID)
 
 	return createdMember, revision, nil
 }
@@ -472,9 +472,9 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 		}
 	}
 
-	// Decrement subscriber count (best-effort, non-blocking)
+	// Refresh subscriber count from Groups.io (best-effort, non-blocking)
 	if member != nil {
-		o.updateMailingListSubscriberCount(ctx, member.MailingListUID, -1)
+		o.updateMailingListSubscriberCount(ctx, member.MailingListUID)
 	}
 
 	return nil
@@ -745,7 +745,6 @@ func (o *grpsIOWriterOrchestrator) handleMockSourceMember(
 func (o *grpsIOWriterOrchestrator) updateMailingListSubscriberCount(
 	ctx context.Context,
 	mailingListUID string,
-	delta int, // +1 for add, -1 for remove (used only for logging)
 ) {
 	const maxRetries = 3
 
@@ -780,7 +779,7 @@ func (o *grpsIOWriterOrchestrator) updateMailingListSubscriberCount(
 		}
 
 		slog.InfoContext(ctx, "subscriber count updated successfully",
-			"mailing_list_uid", mailingListUID, "delta", delta, "old_count", oldCount, "new_count", newCount)
+			"mailing_list_uid", mailingListUID, "old_count", oldCount, "new_count", newCount)
 
 		// Publish indexer message with updated subscriber count (best-effort)
 		indexerMessage := &model.IndexerMessage{
