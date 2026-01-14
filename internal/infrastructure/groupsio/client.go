@@ -19,6 +19,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-querystring/query"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/httpclient"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // groupsioBasicAuthRoundTripper implements automatic BasicAuth injection (production pattern)
@@ -249,6 +250,12 @@ func (c *Client) DirectAdd(ctx context.Context, domain string, groupID uint64, e
 	// Convert emails to comma-separated string
 	emailsStr := strings.Join(emails, ",")
 
+	// Redact emails for logging
+	redactedEmails := make([]string, len(emails))
+	for i, email := range emails {
+		redactedEmails[i] = redaction.RedactEmail(email)
+	}
+
 	// Convert subgroup IDs to comma-separated string (if provided)
 	var subgroupIDsStr string
 	if len(subgroupIDs) > 0 {
@@ -263,7 +270,7 @@ func (c *Client) DirectAdd(ctx context.Context, domain string, groupID uint64, e
 		"domain", domain,
 		"group_id", groupID,
 		"email_count", len(emails),
-		"emails", emailsStr,
+		"emails", redactedEmails,
 		"subgroup_ids", subgroupIDsStr)
 
 	data := url.Values{

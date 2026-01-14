@@ -274,7 +274,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 
 // createMemberInGroupsIO handles Groups.io member creation and returns the IDs
 func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, member *model.GrpsIOMember, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, *int64, error) {
-	if o.groupsClient == nil || mailingList.GroupID == nil {
+	if o.groupsClient == nil || mailingList == nil || mailingList.GroupID == nil || parentService == nil || parentService.GroupID == nil {
 		return nil, nil, nil // Skip Groups.io creation
 	}
 
@@ -289,7 +289,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 
 	// Prepare subgroup IDs slice (if adding to subgroup rather than main group)
 	var subgroupIDs []uint64
-	if parentService.GroupID != mailingList.GroupID {
+	if *parentService.GroupID != *mailingList.GroupID {
 		subgroupIDs = []uint64{uint64(*mailingList.GroupID)}
 	}
 
@@ -781,23 +781,24 @@ func (o *grpsIOWriterOrchestrator) updateMailingListSubscriberCount(
 		slog.InfoContext(ctx, "subscriber count updated successfully",
 			"mailing_list_uid", mailingListUID, "old_count", oldCount, "new_count", newCount)
 
-		// Publish indexer message with updated subscriber count (best-effort)
-		indexerMessage := &model.IndexerMessage{
-			Action: model.ActionUpdated,
-			Tags:   mailingList.Tags(),
-		}
+		if o.publisher != nil {
+			// Publish indexer message with updated subscriber count (best-effort)
+			indexerMessage := &model.IndexerMessage{
+				Action: model.ActionUpdated,
+				Tags:   mailingList.Tags(),
+			}
 
-		builtMessage, err := indexerMessage.Build(ctx, mailingList)
-		if err != nil {
-			slog.WarnContext(ctx, "failed to build indexer message for subscriber count update",
-				"error", err, "mailing_list_uid", mailingListUID)
-			return
-		}
-
-		if err := o.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, builtMessage); err != nil {
-			slog.WarnContext(ctx, "failed to publish indexer message for subscriber count update",
-				"error", err, "mailing_list_uid", mailingListUID)
-			// Don't fail - the count update succeeded, indexer message is best-effort
+			builtMessage, err := indexerMessage.Build(ctx, mailingList)
+			if err != nil {
+				slog.WarnContext(ctx, "failed to build indexer message for subscriber count update",
+					"error", err, "mailing_list_uid", mailingListUID)
+				return
+			}
+			if err := o.publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, builtMessage); err != nil {
+				slog.WarnContext(ctx, "failed to publish indexer message for subscriber count update",
+					"error", err, "mailing_list_uid", mailingListUID)
+				// Don't fail - the count update succeeded, indexer message is best-effort
+			}
 		}
 
 		return
