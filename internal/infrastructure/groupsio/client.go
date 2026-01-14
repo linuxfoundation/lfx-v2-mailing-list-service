@@ -93,7 +93,7 @@ type ClientInterface interface {
 	UpdateMember(ctx context.Context, domain string, memberID uint64, updates MemberUpdateOptions) error
 	UpdateGroup(ctx context.Context, domain string, groupID uint64, updates GroupUpdateOptions) error
 	UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates SubgroupUpdateOptions) error
-	RemoveMember(ctx context.Context, domain string, memberID uint64) error
+	RemoveMember(ctx context.Context, domain string, groupID uint64, memberID uint64) error
 	IsReady(ctx context.Context) error
 }
 
@@ -366,12 +366,13 @@ func (c *Client) UpdateSubgroup(ctx context.Context, domain string, subgroupID u
 }
 
 // RemoveMember removes a single member from a subgroup
-func (c *Client) RemoveMember(ctx context.Context, domain string, memberID uint64) error {
+func (c *Client) RemoveMember(ctx context.Context, domain string, groupID uint64, memberID uint64) error {
 	slog.InfoContext(ctx, "removing member from Groups.io",
 		"domain", domain, "member_id", memberID)
 
 	data := url.Values{
-		"member_id": {strconv.FormatUint(memberID, 10)},
+		"group_id":       {strconv.FormatUint(groupID, 10)},
+		"member_info_id": {strconv.FormatUint(memberID, 10)},
 	}
 
 	err := c.makeRequest(ctx, domain, http.MethodPost, "/removemember", data, nil)

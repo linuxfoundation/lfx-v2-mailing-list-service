@@ -1496,11 +1496,11 @@ func (m *MockGroupsIOClient) DirectAdd(ctx context.Context, domain string, group
 }
 
 // RemoveMember mocks the Groups.io member removal API
-func (m *MockGroupsIOClient) RemoveMember(ctx context.Context, domain string, memberID uint64) error {
-	m.CallLog = append(m.CallLog, fmt.Sprintf("RemoveMember(domain=%s, member_id=%d)", domain, memberID))
+func (m *MockGroupsIOClient) RemoveMember(ctx context.Context, domain string, groupID uint64, memberID uint64) error {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("RemoveMember(domain=%s, group_id=%d, member_id=%d)", domain, groupID, memberID))
 
 	slog.InfoContext(ctx, "[MOCK] Groups.io member removal simulated",
-		"domain", domain, "member_id", memberID)
+		"domain", domain, "group_id", groupID, "member_id", memberID)
 
 	return nil
 }
