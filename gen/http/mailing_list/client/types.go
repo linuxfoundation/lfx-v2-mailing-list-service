@@ -93,6 +93,8 @@ type UpdateGrpsioServiceSettingsRequestBody struct {
 type CreateGrpsioMailingListRequestBody struct {
 	// Mailing list group name
 	GroupName string `form:"group_name" json:"group_name" xml:"group_name"`
+	// Mailing list group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Whether the mailing list is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
@@ -110,6 +112,8 @@ type CreateGrpsioMailingListRequestBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int `form:"subscriber_count,omitempty" json:"subscriber_count,omitempty" xml:"subscriber_count,omitempty"`
 	// Manager users who can edit/modify this resource
 	Writers []*UserInfoRequestBody `form:"writers,omitempty" json:"writers,omitempty" xml:"writers,omitempty"`
 	// Auditor users who can audit this resource
@@ -121,6 +125,8 @@ type CreateGrpsioMailingListRequestBody struct {
 type UpdateGrpsioMailingListRequestBody struct {
 	// Mailing list group name
 	GroupName string `form:"group_name" json:"group_name" xml:"group_name"`
+	// Mailing list group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Whether the mailing list is publicly accessible
 	Public bool `form:"public" json:"public" xml:"public"`
 	// Mailing list type
@@ -138,6 +144,8 @@ type UpdateGrpsioMailingListRequestBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID string `form:"service_uid" json:"service_uid" xml:"service_uid"`
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int `form:"subscriber_count,omitempty" json:"subscriber_count,omitempty" xml:"subscriber_count,omitempty"`
 }
 
 // UpdateGrpsioMailingListSettingsRequestBody is the type of the "mailing-list"
@@ -332,6 +340,8 @@ type CreateGrpsioMailingListResponseBody struct {
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Mailing list group name
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Mailing list group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Whether the mailing list is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
@@ -349,6 +359,8 @@ type CreateGrpsioMailingListResponseBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int `form:"subscriber_count,omitempty" json:"subscriber_count,omitempty" xml:"subscriber_count,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// Manager users who can edit/modify this resource
@@ -376,6 +388,8 @@ type UpdateGrpsioMailingListResponseBody struct {
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Mailing list group name
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Mailing list group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Whether the mailing list is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
@@ -393,6 +407,8 @@ type UpdateGrpsioMailingListResponseBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int `form:"subscriber_count,omitempty" json:"subscriber_count,omitempty" xml:"subscriber_count,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// Project name (read-only)
@@ -465,9 +481,9 @@ type CreateGrpsioMailingListMemberResponseBody struct {
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Groups.io member ID
-	GroupsioMemberID *int64 `form:"groupsio_member_id,omitempty" json:"groupsio_member_id,omitempty" xml:"groupsio_member_id,omitempty"`
+	MemberID *int64 `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Groups.io group ID
-	GroupsioGroupID *int64 `form:"groupsio_group_id,omitempty" json:"groupsio_group_id,omitempty" xml:"groupsio_group_id,omitempty"`
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
@@ -514,9 +530,9 @@ type UpdateGrpsioMailingListMemberResponseBody struct {
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Groups.io member ID
-	GroupsioMemberID *int64 `form:"groupsio_member_id,omitempty" json:"groupsio_member_id,omitempty" xml:"groupsio_member_id,omitempty"`
+	MemberID *int64 `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Groups.io group ID
-	GroupsioGroupID *int64 `form:"groupsio_group_id,omitempty" json:"groupsio_group_id,omitempty" xml:"groupsio_group_id,omitempty"`
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
@@ -1267,6 +1283,8 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Mailing list group name
 	GroupName *string `form:"group_name,omitempty" json:"group_name,omitempty" xml:"group_name,omitempty"`
+	// Mailing list group ID
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Whether the mailing list is publicly accessible
 	Public *bool `form:"public,omitempty" json:"public,omitempty" xml:"public,omitempty"`
 	// Mailing list type
@@ -1284,6 +1302,8 @@ type GrpsIoMailingListWithReadonlyAttributesResponseBody struct {
 	SubjectTag *string `form:"subject_tag,omitempty" json:"subject_tag,omitempty" xml:"subject_tag,omitempty"`
 	// Service UUID
 	ServiceUID *string `form:"service_uid,omitempty" json:"service_uid,omitempty" xml:"service_uid,omitempty"`
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int `form:"subscriber_count,omitempty" json:"subscriber_count,omitempty" xml:"subscriber_count,omitempty"`
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// Project name (read-only)
@@ -1351,9 +1371,9 @@ type GrpsIoMemberWithReadonlyAttributesResponseBody struct {
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Groups.io member ID
-	GroupsioMemberID *int64 `form:"groupsio_member_id,omitempty" json:"groupsio_member_id,omitempty" xml:"groupsio_member_id,omitempty"`
+	MemberID *int64 `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Groups.io group ID
-	GroupsioGroupID *int64 `form:"groupsio_group_id,omitempty" json:"groupsio_group_id,omitempty" xml:"groupsio_group_id,omitempty"`
+	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The timestamp when the service was last updated (read-only)
@@ -1465,14 +1485,16 @@ func NewUpdateGrpsioServiceSettingsRequestBody(p *mailinglist.UpdateGrpsioServic
 // service.
 func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingListPayload) *CreateGrpsioMailingListRequestBody {
 	body := &CreateGrpsioMailingListRequestBody{
-		GroupName:      p.GroupName,
-		Public:         p.Public,
-		Type:           p.Type,
-		AudienceAccess: p.AudienceAccess,
-		Description:    p.Description,
-		Title:          p.Title,
-		SubjectTag:     p.SubjectTag,
-		ServiceUID:     p.ServiceUID,
+		GroupName:       p.GroupName,
+		GroupID:         p.GroupID,
+		Public:          p.Public,
+		Type:            p.Type,
+		AudienceAccess:  p.AudienceAccess,
+		Description:     p.Description,
+		Title:           p.Title,
+		SubjectTag:      p.SubjectTag,
+		ServiceUID:      p.ServiceUID,
+		SubscriberCount: p.SubscriberCount,
 	}
 	{
 		var zero string
@@ -1506,14 +1528,16 @@ func NewCreateGrpsioMailingListRequestBody(p *mailinglist.CreateGrpsioMailingLis
 // service.
 func NewUpdateGrpsioMailingListRequestBody(p *mailinglist.UpdateGrpsioMailingListPayload) *UpdateGrpsioMailingListRequestBody {
 	body := &UpdateGrpsioMailingListRequestBody{
-		GroupName:      p.GroupName,
-		Public:         p.Public,
-		Type:           p.Type,
-		AudienceAccess: p.AudienceAccess,
-		Description:    p.Description,
-		Title:          p.Title,
-		SubjectTag:     p.SubjectTag,
-		ServiceUID:     p.ServiceUID,
+		GroupName:       p.GroupName,
+		GroupID:         p.GroupID,
+		Public:          p.Public,
+		Type:            p.Type,
+		AudienceAccess:  p.AudienceAccess,
+		Description:     p.Description,
+		Title:           p.Title,
+		SubjectTag:      p.SubjectTag,
+		ServiceUID:      p.ServiceUID,
+		SubscriberCount: p.SubscriberCount,
 	}
 	{
 		var zero string
@@ -2132,18 +2156,20 @@ func NewUpdateGrpsioServiceSettingsServiceUnavailable(body *UpdateGrpsioServiceS
 // HTTP "Created" response.
 func NewCreateGrpsioMailingListGrpsIoMailingListFullCreated(body *CreateGrpsioMailingListResponseBody) *mailinglist.GrpsIoMailingListFull {
 	v := &mailinglist.GrpsIoMailingListFull{
-		UID:         body.UID,
-		GroupName:   body.GroupName,
-		Type:        body.Type,
-		Description: body.Description,
-		Title:       body.Title,
-		SubjectTag:  body.SubjectTag,
-		ServiceUID:  body.ServiceUID,
-		ProjectUID:  body.ProjectUID,
-		ProjectName: body.ProjectName,
-		ProjectSlug: body.ProjectSlug,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+		UID:             body.UID,
+		GroupName:       body.GroupName,
+		GroupID:         body.GroupID,
+		Type:            body.Type,
+		Description:     body.Description,
+		Title:           body.Title,
+		SubjectTag:      body.SubjectTag,
+		ServiceUID:      body.ServiceUID,
+		SubscriberCount: body.SubscriberCount,
+		ProjectUID:      body.ProjectUID,
+		ProjectName:     body.ProjectName,
+		ProjectSlug:     body.ProjectSlug,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2233,18 +2259,20 @@ func NewCreateGrpsioMailingListServiceUnavailable(body *CreateGrpsioMailingListS
 // "get-grpsio-mailing-list" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioMailingListResultOK(body *GetGrpsioMailingListResponseBody, etag *string) *mailinglist.GetGrpsioMailingListResult {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:         body.UID,
-		GroupName:   body.GroupName,
-		Type:        body.Type,
-		Description: body.Description,
-		Title:       body.Title,
-		SubjectTag:  body.SubjectTag,
-		ServiceUID:  body.ServiceUID,
-		ProjectUID:  body.ProjectUID,
-		ProjectName: body.ProjectName,
-		ProjectSlug: body.ProjectSlug,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+		UID:             body.UID,
+		GroupName:       body.GroupName,
+		GroupID:         body.GroupID,
+		Type:            body.Type,
+		Description:     body.Description,
+		Title:           body.Title,
+		SubjectTag:      body.SubjectTag,
+		ServiceUID:      body.ServiceUID,
+		SubscriberCount: body.SubscriberCount,
+		ProjectUID:      body.ProjectUID,
+		ProjectName:     body.ProjectName,
+		ProjectSlug:     body.ProjectSlug,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2317,18 +2345,20 @@ func NewGetGrpsioMailingListServiceUnavailable(body *GetGrpsioMailingListService
 // HTTP "OK" response.
 func NewUpdateGrpsioMailingListGrpsIoMailingListWithReadonlyAttributesOK(body *UpdateGrpsioMailingListResponseBody) *mailinglist.GrpsIoMailingListWithReadonlyAttributes {
 	v := &mailinglist.GrpsIoMailingListWithReadonlyAttributes{
-		UID:         body.UID,
-		GroupName:   body.GroupName,
-		Type:        body.Type,
-		Description: body.Description,
-		Title:       body.Title,
-		SubjectTag:  body.SubjectTag,
-		ServiceUID:  body.ServiceUID,
-		ProjectUID:  body.ProjectUID,
-		ProjectName: body.ProjectName,
-		ProjectSlug: body.ProjectSlug,
-		CreatedAt:   body.CreatedAt,
-		UpdatedAt:   body.UpdatedAt,
+		UID:             body.UID,
+		GroupName:       body.GroupName,
+		GroupID:         body.GroupID,
+		Type:            body.Type,
+		Description:     body.Description,
+		Title:           body.Title,
+		SubjectTag:      body.SubjectTag,
+		ServiceUID:      body.ServiceUID,
+		SubscriberCount: body.SubscriberCount,
+		ProjectUID:      body.ProjectUID,
+		ProjectName:     body.ProjectName,
+		ProjectSlug:     body.ProjectSlug,
+		CreatedAt:       body.CreatedAt,
+		UpdatedAt:       body.UpdatedAt,
 	}
 	if body.Public != nil {
 		v.Public = *body.Public
@@ -2610,24 +2640,24 @@ func NewUpdateGrpsioMailingListSettingsServiceUnavailable(body *UpdateGrpsioMail
 // from a HTTP "Created" response.
 func NewCreateGrpsioMailingListMemberGrpsIoMemberFullCreated(body *CreateGrpsioMailingListMemberResponseBody) *mailinglist.GrpsIoMemberFull {
 	v := &mailinglist.GrpsIoMemberFull{
-		UID:              *body.UID,
-		MailingListUID:   *body.MailingListUID,
-		Username:         body.Username,
-		FirstName:        *body.FirstName,
-		LastName:         *body.LastName,
-		Email:            *body.Email,
-		Organization:     body.Organization,
-		JobTitle:         body.JobTitle,
-		MemberType:       *body.MemberType,
-		DeliveryMode:     *body.DeliveryMode,
-		ModStatus:        *body.ModStatus,
-		LastReviewedAt:   body.LastReviewedAt,
-		LastReviewedBy:   body.LastReviewedBy,
-		Status:           *body.Status,
-		GroupsioMemberID: body.GroupsioMemberID,
-		GroupsioGroupID:  body.GroupsioGroupID,
-		CreatedAt:        *body.CreatedAt,
-		UpdatedAt:        *body.UpdatedAt,
+		UID:            *body.UID,
+		MailingListUID: *body.MailingListUID,
+		Username:       body.Username,
+		FirstName:      *body.FirstName,
+		LastName:       *body.LastName,
+		Email:          *body.Email,
+		Organization:   body.Organization,
+		JobTitle:       body.JobTitle,
+		MemberType:     *body.MemberType,
+		DeliveryMode:   *body.DeliveryMode,
+		ModStatus:      *body.ModStatus,
+		LastReviewedAt: body.LastReviewedAt,
+		LastReviewedBy: body.LastReviewedBy,
+		Status:         *body.Status,
+		MemberID:       body.MemberID,
+		GroupID:        body.GroupID,
+		CreatedAt:      *body.CreatedAt,
+		UpdatedAt:      *body.UpdatedAt,
 	}
 	if body.Writers != nil {
 		v.Writers = make([]*mailinglist.UserInfo, len(body.Writers))
@@ -2699,21 +2729,21 @@ func NewCreateGrpsioMailingListMemberServiceUnavailable(body *CreateGrpsioMailin
 // "get-grpsio-mailing-list-member" endpoint result from a HTTP "OK" response.
 func NewGetGrpsioMailingListMemberResultOK(body *GetGrpsioMailingListMemberResponseBody, etag *string) *mailinglist.GetGrpsioMailingListMemberResult {
 	v := &mailinglist.GrpsIoMemberWithReadonlyAttributes{
-		UID:              body.UID,
-		MailingListUID:   body.MailingListUID,
-		Username:         body.Username,
-		FirstName:        body.FirstName,
-		LastName:         body.LastName,
-		Email:            body.Email,
-		Organization:     body.Organization,
-		JobTitle:         body.JobTitle,
-		LastReviewedAt:   body.LastReviewedAt,
-		LastReviewedBy:   body.LastReviewedBy,
-		Status:           body.Status,
-		GroupsioMemberID: body.GroupsioMemberID,
-		GroupsioGroupID:  body.GroupsioGroupID,
-		CreatedAt:        body.CreatedAt,
-		UpdatedAt:        body.UpdatedAt,
+		UID:            body.UID,
+		MailingListUID: body.MailingListUID,
+		Username:       body.Username,
+		FirstName:      body.FirstName,
+		LastName:       body.LastName,
+		Email:          body.Email,
+		Organization:   body.Organization,
+		JobTitle:       body.JobTitle,
+		LastReviewedAt: body.LastReviewedAt,
+		LastReviewedBy: body.LastReviewedBy,
+		Status:         body.Status,
+		MemberID:       body.MemberID,
+		GroupID:        body.GroupID,
+		CreatedAt:      body.CreatedAt,
+		UpdatedAt:      body.UpdatedAt,
 	}
 	if body.MemberType != nil {
 		v.MemberType = *body.MemberType
@@ -2798,21 +2828,21 @@ func NewGetGrpsioMailingListMemberServiceUnavailable(body *GetGrpsioMailingListM
 // from a HTTP "OK" response.
 func NewUpdateGrpsioMailingListMemberGrpsIoMemberWithReadonlyAttributesOK(body *UpdateGrpsioMailingListMemberResponseBody) *mailinglist.GrpsIoMemberWithReadonlyAttributes {
 	v := &mailinglist.GrpsIoMemberWithReadonlyAttributes{
-		UID:              body.UID,
-		MailingListUID:   body.MailingListUID,
-		Username:         body.Username,
-		FirstName:        body.FirstName,
-		LastName:         body.LastName,
-		Email:            body.Email,
-		Organization:     body.Organization,
-		JobTitle:         body.JobTitle,
-		LastReviewedAt:   body.LastReviewedAt,
-		LastReviewedBy:   body.LastReviewedBy,
-		Status:           body.Status,
-		GroupsioMemberID: body.GroupsioMemberID,
-		GroupsioGroupID:  body.GroupsioGroupID,
-		CreatedAt:        body.CreatedAt,
-		UpdatedAt:        body.UpdatedAt,
+		UID:            body.UID,
+		MailingListUID: body.MailingListUID,
+		Username:       body.Username,
+		FirstName:      body.FirstName,
+		LastName:       body.LastName,
+		Email:          body.Email,
+		Organization:   body.Organization,
+		JobTitle:       body.JobTitle,
+		LastReviewedAt: body.LastReviewedAt,
+		LastReviewedBy: body.LastReviewedBy,
+		Status:         body.Status,
+		MemberID:       body.MemberID,
+		GroupID:        body.GroupID,
+		CreatedAt:      body.CreatedAt,
+		UpdatedAt:      body.UpdatedAt,
 	}
 	if body.MemberType != nil {
 		v.MemberType = *body.MemberType
@@ -3231,6 +3261,11 @@ func ValidateCreateGrpsioMailingListResponseBody(body *CreateGrpsioMailingListRe
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
 		}
 	}
+	if body.GroupID != nil {
+		if *body.GroupID < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+		}
+	}
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -3275,6 +3310,11 @@ func ValidateCreateGrpsioMailingListResponseBody(body *CreateGrpsioMailingListRe
 	}
 	if body.ServiceUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", *body.ServiceUID, goa.FormatUUID))
+	}
+	if body.SubscriberCount != nil {
+		if *body.SubscriberCount < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+		}
 	}
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -3327,6 +3367,11 @@ func ValidateGetGrpsioMailingListResponseBody(body *GetGrpsioMailingListResponse
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
 		}
 	}
+	if body.GroupID != nil {
+		if *body.GroupID < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+		}
+	}
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -3371,6 +3416,11 @@ func ValidateGetGrpsioMailingListResponseBody(body *GetGrpsioMailingListResponse
 	}
 	if body.ServiceUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", *body.ServiceUID, goa.FormatUUID))
+	}
+	if body.SubscriberCount != nil {
+		if *body.SubscriberCount < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+		}
 	}
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -3409,6 +3459,11 @@ func ValidateUpdateGrpsioMailingListResponseBody(body *UpdateGrpsioMailingListRe
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
 		}
 	}
+	if body.GroupID != nil {
+		if *body.GroupID < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+		}
+	}
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -3453,6 +3508,11 @@ func ValidateUpdateGrpsioMailingListResponseBody(body *UpdateGrpsioMailingListRe
 	}
 	if body.ServiceUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", *body.ServiceUID, goa.FormatUUID))
+	}
+	if body.SubscriberCount != nil {
+		if *body.SubscriberCount < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+		}
 	}
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -4750,6 +4810,11 @@ func ValidateGrpsIoMailingListWithReadonlyAttributesResponseBody(body *GrpsIoMai
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", *body.GroupName, utf8.RuneCountInString(*body.GroupName), 34, false))
 		}
 	}
+	if body.GroupID != nil {
+		if *body.GroupID < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+		}
+	}
 	if body.Type != nil {
 		if !(*body.Type == "announcement" || *body.Type == "discussion_moderated" || *body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -4794,6 +4859,11 @@ func ValidateGrpsIoMailingListWithReadonlyAttributesResponseBody(body *GrpsIoMai
 	}
 	if body.ServiceUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", *body.ServiceUID, goa.FormatUUID))
+	}
+	if body.SubscriberCount != nil {
+		if *body.SubscriberCount < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+		}
 	}
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))

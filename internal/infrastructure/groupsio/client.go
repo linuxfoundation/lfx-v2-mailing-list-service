@@ -87,7 +87,8 @@ type ClientInterface interface {
 	DeleteGroup(ctx context.Context, domain string, groupID uint64) error
 	CreateSubgroup(ctx context.Context, domain string, parentGroupID uint64, options SubgroupCreateOptions) (*SubgroupObject, error)
 	DeleteSubgroup(ctx context.Context, domain string, subgroupID uint64) error
-	AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*MemberObject, error)
+	GetGroup(ctx context.Context, domain string, groupID uint64) (*GroupObject, error)
+	DirectAdd(ctx context.Context, domain string, groupID uint64, emails []string, subgroupIDs []uint64) (*DirectAddResultsObject, error)
 	UpdateMember(ctx context.Context, domain string, memberID uint64, updates MemberUpdateOptions) error
 	UpdateGroup(ctx context.Context, domain string, groupID uint64, updates GroupUpdateOptions) error
 	UpdateSubgroup(ctx context.Context, domain string, subgroupID uint64, updates SubgroupUpdateOptions) error
@@ -214,25 +215,79 @@ func (c *Client) DeleteSubgroup(ctx context.Context, domain string, subgroupID u
 	return c.makeRequest(ctx, domain, http.MethodPost, "/deletesubgroup", data, nil)
 }
 
-// AddMember adds a single member to a subgroup
-func (c *Client) AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*MemberObject, error) {
-	slog.InfoContext(ctx, "adding member to Groups.io",
-		"domain", domain, "subgroup_id", subgroupID, "email", email)
+// GetGroup retrieves group details from Groups.io (works for both main groups and subgroups)
+func (c *Client) GetGroup(ctx context.Context, domain string, groupID uint64) (*GroupObject, error) {
+	slog.InfoContext(ctx, "getting group from Groups.io",
+		"domain", domain, "group_id", groupID)
 
 	data := url.Values{
-		"subgroup_id": {strconv.FormatUint(subgroupID, 10)},
-		"email":       {email},
-		"name":        {name},
+		"group_id": {strconv.FormatUint(groupID, 10)},
 	}
 
-	var result MemberObject
-	err := c.makeRequest(ctx, domain, http.MethodPost, "/addmember", data, &result)
+	var response GroupObject
+	err := c.makeRequest(ctx, domain, http.MethodGet, "/getgroup", data, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.InfoContext(ctx, "member added successfully to Groups.io",
-		"member_id", result.ID, "subgroup_id", subgroupID, "email", email)
+	slog.InfoContext(ctx, "group retrieved successfully from Groups.io",
+		"group_id", response.ID,
+		"subscriber_count", response.SubsCount)
+
+	return &response, nil
+}
+
+// DirectAdd adds one or more members to a group or subgroup using the direct_add endpoint
+// emails: slice of email addresses to add (comma-separated in API call)
+// subgroupIDs: optional slice of subgroup IDs, one per email (comma-separated in API call)
+// Returns the full DirectAddResultsObject with all added members and any errors
+func (c *Client) DirectAdd(ctx context.Context, domain string, groupID uint64, emails []string, subgroupIDs []uint64) (*DirectAddResultsObject, error) {
+	if len(emails) == 0 {
+		return nil, fmt.Errorf("at least one email is required")
+	}
+
+	// Convert emails to comma-separated string
+	emailsStr := strings.Join(emails, ",")
+
+	// Convert subgroup IDs to comma-separated string (if provided)
+	var subgroupIDsStr string
+	if len(subgroupIDs) > 0 {
+		ids := make([]string, len(subgroupIDs))
+		for i, id := range subgroupIDs {
+			ids[i] = strconv.FormatUint(id, 10)
+		}
+		subgroupIDsStr = strings.Join(ids, ",")
+	}
+
+	slog.InfoContext(ctx, "adding members to Groups.io via direct_add",
+		"domain", domain,
+		"group_id", groupID,
+		"email_count", len(emails),
+		"emails", emailsStr,
+		"subgroup_ids", subgroupIDsStr)
+
+	data := url.Values{
+		"group_id": {strconv.FormatUint(groupID, 10)},
+		"emails":   {emailsStr},
+	}
+
+	// Only add subgroup IDs if provided (for adding to subgroups rather than main group)
+	if subgroupIDsStr != "" {
+		data.Set("subgroupids", subgroupIDsStr)
+	}
+
+	var result DirectAddResultsObject
+	err := c.makeRequest(ctx, domain, http.MethodPost, "/directadd", data, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "direct_add completed",
+		"domain", domain,
+		"group_id", groupID,
+		"total_emails", result.TotalEmails,
+		"added_count", len(result.AddedMembers),
+		"error_count", len(result.Errors))
 
 	return &result, nil
 }

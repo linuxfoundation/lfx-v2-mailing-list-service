@@ -36,4 +36,9 @@ type GrpsIOMailingListReader interface {
 
 	// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
 	GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error)
+
+	// CountMembersInMailingList returns the count of members in a mailing list
+	// Used to populate subscriber_count field during create/update operations
+	// Fallback when Groups.io client is unavailable (mock mode, errors)
+	CountMembersInMailingList(ctx context.Context, mailingListUID string) (int, error)
 }

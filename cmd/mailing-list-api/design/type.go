@@ -322,6 +322,10 @@ func GrpsIOMailingListBaseAttributes() {
 		dsl.MinLength(3)
 		dsl.MaxLength(34)
 	})
+	dsl.Attribute("group_id", dsl.Int64, "Mailing list group ID", func() {
+		dsl.Example(12345)
+		dsl.Minimum(0)
+	})
 	dsl.Attribute("public", dsl.Boolean, "Whether the mailing list is publicly accessible", func() {
 		dsl.Default(false)
 		dsl.Example(false)
@@ -357,6 +361,10 @@ func GrpsIOMailingListBaseAttributes() {
 	dsl.Attribute("service_uid", dsl.String, "Service UUID", func() {
 		dsl.Format(dsl.FormatUUID)
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	dsl.Attribute("subscriber_count", dsl.Int, "Number of subscribers in this mailing list (read-only, maintained by service)", func() {
+		dsl.Example(42)
+		dsl.Minimum(0)
 	})
 
 }
@@ -498,11 +506,11 @@ var GrpsIOMemberWithReadonlyAttributes = dsl.Type("grps-io-member-with-readonly-
 		dsl.Example("pending")
 	})
 
-	dsl.Attribute("groupsio_member_id", dsl.Int64, "Groups.io member ID", func() {
+	dsl.Attribute("member_id", dsl.Int64, "Groups.io member ID", func() {
 		dsl.Example(12345)
 	})
 
-	dsl.Attribute("groupsio_group_id", dsl.Int64, "Groups.io group ID", func() {
+	dsl.Attribute("group_id", dsl.Int64, "Groups.io group ID", func() {
 		dsl.Example(67890)
 	})
 
@@ -532,11 +540,11 @@ var GrpsIOMemberFull = dsl.Type("grps-io-member-full", func() {
 		dsl.Example("pending")
 	})
 
-	dsl.Attribute("groupsio_member_id", dsl.Int64, "Groups.io member ID", func() {
+	dsl.Attribute("member_id", dsl.Int64, "Groups.io member ID", func() {
 		dsl.Example(12345)
 	})
 
-	dsl.Attribute("groupsio_group_id", dsl.Int64, "Groups.io group ID", func() {
+	dsl.Attribute("group_id", dsl.Int64, "Groups.io group ID", func() {
 		dsl.Example(67890)
 	})
 

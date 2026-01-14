@@ -1407,6 +1407,12 @@ definitions:
                 example: Technical steering committee discussions
                 minLength: 11
                 maxLength: 500
+            group_id:
+                type: integer
+                description: Mailing list group ID
+                example: 12345
+                format: int64
+                minimum: 0
             group_name:
                 type: string
                 description: Mailing list group name
@@ -1444,6 +1450,12 @@ definitions:
                 description: Subject tag prefix
                 example: '[TSC]'
                 maxLength: 50
+            subscriber_count:
+                type: integer
+                description: Number of subscribers in this mailing list (read-only, maintained by service)
+                example: 42
+                format: int64
+                minimum: 0
             title:
                 type: string
                 description: Mailing list title
@@ -1514,6 +1526,7 @@ definitions:
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
+            group_id: 12345
             group_name: technical-steering-committee
             project_name: Cloud Native Computing Foundation
             project_slug: cncf
@@ -1521,6 +1534,7 @@ definitions:
             public: false
             service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             subject_tag: '[TSC]'
+            subscriber_count: 42
             title: Technical Steering Committee
             type: discussion_moderated
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
@@ -1708,6 +1722,12 @@ definitions:
                 example: Technical steering committee discussions
                 minLength: 11
                 maxLength: 500
+            group_id:
+                type: integer
+                description: Mailing list group ID
+                example: 12345
+                format: int64
+                minimum: 0
             group_name:
                 type: string
                 description: Mailing list group name
@@ -1745,6 +1765,12 @@ definitions:
                 description: Subject tag prefix
                 example: '[TSC]'
                 maxLength: 50
+            subscriber_count:
+                type: integer
+                description: Number of subscribers in this mailing list (read-only, maintained by service)
+                example: 42
+                format: int64
+                minimum: 0
             title:
                 type: string
                 description: Mailing list title
@@ -1795,6 +1821,7 @@ definitions:
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             created_at: "2023-01-15T10:30:00Z"
             description: Technical steering committee discussions
+            group_id: 12345
             group_name: technical-steering-committee
             project_name: Cloud Native Computing Foundation
             project_slug: cncf
@@ -1802,6 +1829,7 @@ definitions:
             public: false
             service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             subject_tag: '[TSC]'
+            subscriber_count: 42
             title: Technical Steering Committee
             type: discussion_moderated
             uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
@@ -1849,15 +1877,10 @@ definitions:
                 example: John
                 minLength: 1
                 maxLength: 255
-            groupsio_group_id:
+            group_id:
                 type: integer
                 description: Groups.io group ID
                 example: 67890
-                format: int64
-            groupsio_member_id:
-                type: integer
-                description: Groups.io member ID
-                example: 12345
                 format: int64
             job_title:
                 type: string
@@ -1884,6 +1907,11 @@ definitions:
                 description: Mailing list UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            member_id:
+                type: integer
+                description: Groups.io member ID
+                example: 12345
+                format: int64
             member_type:
                 type: string
                 description: Member type
@@ -1965,13 +1993,13 @@ definitions:
             delivery_mode: normal
             email: john.doe@example.com
             first_name: John
-            groupsio_group_id: 67890
-            groupsio_member_id: 12345
+            group_id: 67890
             job_title: Software Engineer
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            member_id: 12345
             member_type: direct
             mod_status: owner
             organization: Example Corp
@@ -2051,15 +2079,10 @@ definitions:
                 example: John
                 minLength: 1
                 maxLength: 255
-            groupsio_group_id:
+            group_id:
                 type: integer
                 description: Groups.io group ID
                 example: 67890
-                format: int64
-            groupsio_member_id:
-                type: integer
-                description: Groups.io member ID
-                example: 12345
                 format: int64
             job_title:
                 type: string
@@ -2086,6 +2109,11 @@ definitions:
                 description: Mailing list UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            member_id:
+                type: integer
+                description: Groups.io member ID
+                example: 12345
+                format: int64
             member_type:
                 type: string
                 description: Member type
@@ -2164,13 +2192,13 @@ definitions:
             delivery_mode: none
             email: john.doe@example.com
             first_name: John
-            groupsio_group_id: 67890
-            groupsio_member_id: 12345
+            group_id: 67890
             job_title: Software Engineer
             last_name: Doe
             last_reviewed_at: "2023-01-15T14:30:00Z"
             last_reviewed_by: admin@example.com
             mailing_list_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            member_id: 12345
             member_type: direct
             mod_status: moderator
             organization: Example Corp
@@ -2807,6 +2835,12 @@ definitions:
                 example: Technical steering committee discussions
                 minLength: 11
                 maxLength: 500
+            group_id:
+                type: integer
+                description: Mailing list group ID
+                example: 12345
+                format: int64
+                minimum: 0
             group_name:
                 type: string
                 description: Mailing list group name
@@ -2829,6 +2863,12 @@ definitions:
                 description: Subject tag prefix
                 example: '[TSC]'
                 maxLength: 50
+            subscriber_count:
+                type: integer
+                description: Number of subscribers in this mailing list (read-only, maintained by service)
+                example: 42
+                format: int64
+                minimum: 0
             title:
                 type: string
                 description: Mailing list title
@@ -2892,10 +2932,12 @@ definitions:
                   name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
+            group_id: 12345
             group_name: technical-steering-committee
             public: false
             service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             subject_tag: '[TSC]'
+            subscriber_count: 42
             title: Technical Steering Committee
             type: discussion_moderated
             writers:
@@ -3182,6 +3224,12 @@ definitions:
                 example: Technical steering committee discussions
                 minLength: 11
                 maxLength: 500
+            group_id:
+                type: integer
+                description: Mailing list group ID
+                example: 12345
+                format: int64
+                minimum: 0
             group_name:
                 type: string
                 description: Mailing list group name
@@ -3204,6 +3252,12 @@ definitions:
                 description: Subject tag prefix
                 example: '[TSC]'
                 maxLength: 50
+            subscriber_count:
+                type: integer
+                description: Number of subscribers in this mailing list (read-only, maintained by service)
+                example: 42
+                format: int64
+                minimum: 0
             title:
                 type: string
                 description: Mailing list title
@@ -3237,10 +3291,12 @@ definitions:
                   name: Aliquid aliquid.
                   uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             description: Technical steering committee discussions
+            group_id: 12345
             group_name: technical-steering-committee
             public: false
             service_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             subject_tag: '[TSC]'
+            subscriber_count: 42
             title: Technical Steering Committee
             type: discussion_moderated
         required:

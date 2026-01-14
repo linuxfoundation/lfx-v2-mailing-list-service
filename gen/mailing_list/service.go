@@ -130,6 +130,8 @@ type CreateGrpsioMailingListPayload struct {
 	Version string
 	// Mailing list group name
 	GroupName string
+	// Mailing list group ID
+	GroupID *int64
 	// Whether the mailing list is publicly accessible
 	Public bool
 	// Mailing list type
@@ -147,6 +149,8 @@ type CreateGrpsioMailingListPayload struct {
 	SubjectTag *string
 	// Service UUID
 	ServiceUID string
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int
 	// Manager users who can edit/modify this resource
 	Writers []*UserInfo
 	// Auditor users who can audit this resource
@@ -355,6 +359,8 @@ type GrpsIoMailingListFull struct {
 	UID *string
 	// Mailing list group name
 	GroupName *string
+	// Mailing list group ID
+	GroupID *int64
 	// Whether the mailing list is publicly accessible
 	Public bool
 	// Mailing list type
@@ -372,6 +378,8 @@ type GrpsIoMailingListFull struct {
 	SubjectTag *string
 	// Service UUID
 	ServiceUID *string
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string
 	// Manager users who can edit/modify this resource
@@ -418,6 +426,8 @@ type GrpsIoMailingListWithReadonlyAttributes struct {
 	UID *string
 	// Mailing list group name
 	GroupName *string
+	// Mailing list group ID
+	GroupID *int64
 	// Whether the mailing list is publicly accessible
 	Public bool
 	// Mailing list type
@@ -435,6 +445,8 @@ type GrpsIoMailingListWithReadonlyAttributes struct {
 	SubjectTag *string
 	// Service UUID
 	ServiceUID *string
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int
 	// LFXv2 Project UID (inherited from parent service)
 	ProjectUID *string
 	// Project name (read-only)
@@ -479,9 +491,9 @@ type GrpsIoMemberFull struct {
 	// Member status
 	Status string
 	// Groups.io member ID
-	GroupsioMemberID *int64
+	MemberID *int64
 	// Groups.io group ID
-	GroupsioGroupID *int64
+	GroupID *int64
 	// The timestamp when the service was created (read-only)
 	CreatedAt string
 	// The timestamp when the service was last updated (read-only)
@@ -524,9 +536,9 @@ type GrpsIoMemberWithReadonlyAttributes struct {
 	// Member status
 	Status *string
 	// Groups.io member ID
-	GroupsioMemberID *int64
+	MemberID *int64
 	// Groups.io group ID
-	GroupsioGroupID *int64
+	GroupID *int64
 	// The timestamp when the service was created (read-only)
 	CreatedAt *string
 	// The timestamp when the service was last updated (read-only)
@@ -686,6 +698,8 @@ type UpdateGrpsioMailingListPayload struct {
 	UID *string
 	// Mailing list group name
 	GroupName string
+	// Mailing list group ID
+	GroupID *int64
 	// Whether the mailing list is publicly accessible
 	Public bool
 	// Mailing list type
@@ -703,6 +717,8 @@ type UpdateGrpsioMailingListPayload struct {
 	SubjectTag *string
 	// Service UUID
 	ServiceUID string
+	// Number of subscribers in this mailing list (read-only, maintained by service)
+	SubscriberCount *int
 }
 
 // UpdateGrpsioMailingListSettingsPayload is the payload type of the

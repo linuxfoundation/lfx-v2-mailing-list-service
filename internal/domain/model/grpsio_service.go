@@ -79,7 +79,7 @@ type GrpsIOService struct {
 	Type             string    `json:"type"`
 	UID              string    `json:"uid"`
 	Domain           string    `json:"domain"`
-	GroupID          *int64    `json:"-"` // Groups.io group ID - internal use only, nullable for async
+	GroupID          *int64    `json:"group_id"` // Groups.io group ID
 	Status           string    `json:"status"`
 	Source           string    `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
 	GlobalOwners     []string  `json:"global_owners"`

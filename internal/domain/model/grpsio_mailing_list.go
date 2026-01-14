@@ -19,24 +19,25 @@ import (
 
 // GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
 type GrpsIOMailingList struct {
-	UID            string `json:"uid"`
-	SubgroupID     *int64 `json:"-"` // Groups.io subgroup ID - internal use only, nullable for async
-	GroupName      string `json:"group_name"`
-	Public         bool   `json:"public"`          // Whether the mailing list is publicly accessible
-	AudienceAccess string `json:"audience_access"` // "public" | "approval_required" | "invite_only"
-	Source         string `json:"source"`          // "api", "webhook", or "mock" - tracks origin for business logic
-	Type           string `json:"type"`            // "announcement" | "discussion_moderated" | "discussion_open"
+	UID             string `json:"uid"`
+	GroupID         *int64 `json:"group_id"` // Groups.io group ID
+	GroupName       string `json:"group_name"`
+	Public          bool   `json:"public"`           // Whether the mailing list is publicly accessible
+	AudienceAccess  string `json:"audience_access"`  // "public" | "approval_required" | "invite_only"
+	Source          string `json:"source"`           // "api", "webhook", or "mock" - tracks origin for business logic
+	Type            string `json:"type"`             // "announcement" | "discussion_moderated" | "discussion_open"
+	SubscriberCount int    `json:"subscriber_count"` // Number of members in this mailing list
 
 	// Committee association - supports multiple committees with OR logic for access control
 	Committees []Committee `json:"committees,omitempty"`
 
-	Description string `json:"description"`  // Minimum 11 characters
+	Description string `json:"description"` // Minimum 11 characters
 	Title       string `json:"title"`
-	SubjectTag  string `json:"subject_tag"` // Optional
-	ServiceUID  string `json:"service_uid"` // Service UUID (required)
-	ProjectUID       string `json:"project_uid"`       // Inherited from parent service
-	ProjectName      string `json:"project_name"`      // Inherited from parent service
-	ProjectSlug      string `json:"project_slug"`      // Inherited from parent service
+	SubjectTag  string `json:"subject_tag"`  // Optional
+	ServiceUID  string `json:"service_uid"`  // Service UUID (required)
+	ProjectUID  string `json:"project_uid"`  // Inherited from parent service
+	ProjectName string `json:"project_name"` // Inherited from parent service
+	ProjectSlug string `json:"project_slug"` // Inherited from parent service
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

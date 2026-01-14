@@ -149,7 +149,7 @@ func (p *grpsIOWebhookProcessor) handleSubGroupCreated(ctx context.Context, even
 		ServiceUID:  adoptingService.UID,
 		ProjectUID:  adoptingService.ProjectUID,
 		GroupName:   fullSubgroupName,
-		SubgroupID:  &subgroupIDInt,
+		GroupID:     &subgroupIDInt,
 		Source:      constants.SourceWebhook, // Orchestrator uses this for dispatch
 		Type:        model.TypeDiscussionOpen,
 		Description: "Auto-created from Groups.io webhook",
@@ -272,14 +272,14 @@ func (p *grpsIOWebhookProcessor) handleMemberAdded(ctx context.Context, event *m
 	firstName, lastName := parseNameFromEmail(email)
 
 	member := &model.GrpsIOMember{
-		MailingListUID:   mailingList.UID,
-		Email:            email,
-		FirstName:        firstName,
-		LastName:         lastName,
-		Status:           status,
-		GroupsIOMemberID: &memberID,
-		GroupsIOGroupID:  &groupID,
-		Source:           constants.SourceWebhook, // Critical for source dispatch
+		MailingListUID: mailingList.UID,
+		Email:          email,
+		FirstName:      firstName,
+		LastName:       lastName,
+		Status:         status,
+		MemberID:       &memberID,
+		GroupID:        &groupID,
+		Source:         constants.SourceWebhook, // Critical for source dispatch
 	}
 
 	// Note: UID, CreatedAt, UpdatedAt, and validation are handled by orchestrator

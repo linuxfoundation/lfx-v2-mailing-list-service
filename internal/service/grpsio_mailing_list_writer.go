@@ -27,11 +27,11 @@ func (ml *grpsIOWriterOrchestrator) ensureMailingListIdempotent(
 	request *model.GrpsIOMailingList,
 ) (*model.GrpsIOMailingList, uint64, error) {
 	// Only check if SubgroupID is provided (webhook or API retry after Groups.io creation)
-	if request.SubgroupID == nil {
+	if request.GroupID == nil {
 		return nil, 0, nil // No SubgroupID, proceed with normal creation
 	}
 
-	subgroupID := uint64(*request.SubgroupID)
+	subgroupID := uint64(*request.GroupID)
 
 	slog.DebugContext(ctx, "checking idempotency by subgroup_id",
 		"subgroup_id", subgroupID,
@@ -72,7 +72,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"parent_uid", request.ServiceUID,
 		"committees_count", len(request.Committees),
 		"source", request.Source,
-		"subgroup_id", request.SubgroupID)
+		"group_id", request.GroupID)
 
 	// LAYER 1: Early idempotency check (prevents wasted work)
 	if existing, revision, err := ml.ensureMailingListIdempotent(ctx, request); err != nil {
@@ -151,7 +151,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 			if existing, revision, checkErr := ml.ensureMailingListIdempotent(ctx, request); checkErr == nil && existing != nil {
 				slog.InfoContext(ctx, "constraint conflict resolved - returning existing record (race condition)",
 					"mailing_list_uid", existing.UID,
-					"subgroup_id", log.LogOptionalInt64(request.SubgroupID))
+					"group_id", log.LogOptionalInt64(request.GroupID))
 				return existing, revision, nil
 			}
 		}
@@ -171,15 +171,25 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 	// LAYER 3: Source-based strategy dispatch for SubgroupID resolution
 	var (
 		subgroupID      *int64
+		subgroupResult  *groupsio.SubgroupObject
 		requiresCleanup bool
 	)
 
 	switch request.Source {
 	case constants.SourceAPI:
-		subgroupID, requiresCleanup, err = ml.handleAPISourceMailingList(ctx, request, parentService)
+		subgroupResult, requiresCleanup, err = ml.handleAPISourceMailingList(ctx, request, parentService)
 		if err != nil {
 			rollbackRequired = true
 			return nil, 0, err
+		}
+		if subgroupResult != nil {
+			id := int64(subgroupResult.ID)
+			subgroupID = &id
+			// Set subscriber count from Groups.io creation response
+			request.SubscriberCount = int(subgroupResult.SubsCount)
+			slog.InfoContext(ctx, "subscriber count retrieved from Groups.io creation",
+				"mailing_list_uid", request.UID,
+				"subscriber_count", request.SubscriberCount)
 		}
 		if requiresCleanup {
 			rollbackSubgroupID = subgroupID
@@ -191,15 +201,33 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		if err != nil {
 			return nil, 0, err
 		}
+		// For webhook source, count from NATS
+		count, countErr := ml.grpsIOReader.CountMembersInMailingList(ctx, request.UID)
+		if countErr != nil {
+			slog.WarnContext(ctx, "failed to count members for webhook source, defaulting to 0",
+				"error", countErr, "mailing_list_uid", request.UID)
+			request.SubscriberCount = 0
+		} else {
+			request.SubscriberCount = count
+		}
 
 	case constants.SourceMock:
 		subgroupID = ml.handleMockSourceMailingList(ctx, request)
+		// For mock source, count from NATS
+		count, countErr := ml.grpsIOReader.CountMembersInMailingList(ctx, request.UID)
+		if countErr != nil {
+			slog.WarnContext(ctx, "failed to count members for mock source, defaulting to 0",
+				"error", countErr, "mailing_list_uid", request.UID)
+			request.SubscriberCount = 0
+		} else {
+			request.SubscriberCount = count
+		}
 	}
 
 	// Set SubgroupID from strategy result
-	request.SubgroupID = subgroupID
+	request.GroupID = subgroupID
 
-	// Step 10: Create mailing list in storage (with Groups.io ID already set)
+	// Step 10: Create mailing list in storage (with Groups.io ID and subscriber count already set)
 	createdMailingList, revision, err := ml.grpsIOWriter.CreateGrpsIOMailingList(ctx, request)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create mailing list in storage", "error", err)
@@ -258,7 +286,7 @@ func (ml *grpsIOWriterOrchestrator) CreateGrpsIOMailingList(ctx context.Context,
 		"mailing_list_uid", createdMailingList.UID,
 		"group_name", createdMailingList.GroupName,
 		"source", createdMailingList.Source,
-		"subgroup_id", log.LogOptionalInt64(createdMailingList.SubgroupID),
+		"group_id", log.LogOptionalInt64(createdMailingList.GroupID),
 		"parent_uid", createdMailingList.ServiceUID,
 		"public", createdMailingList.Public,
 		"committee_based", createdMailingList.IsCommitteeBased())
@@ -284,9 +312,10 @@ func audienceAccessToGroupsIO(audienceAccess string) (restricted, inviteOnly *bo
 	}
 }
 
-// createMailingListInGroupsIO handles Groups.io subgroup creation and returns the ID
-func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*int64, error) {
+// createMailingListInGroupsIO handles Groups.io subgroup creation and returns the SubgroupObject
+func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList, parentService *model.GrpsIOService) (*groupsio.SubgroupObject, error) {
 	if ml.groupsClient == nil || parentService.GroupID == nil {
+		slog.WarnContext(ctx, "Groups.io integration disabled or parent group ID not found, skipping Groups.io creation")
 		return nil, nil // Skip Groups.io creation
 	}
 
@@ -325,14 +354,14 @@ func (ml *grpsIOWriterOrchestrator) createMailingListInGroupsIO(ctx context.Cont
 		return nil, fmt.Errorf("groups.io subgroup creation failed: %w", err)
 	}
 
-	subgroupID := int64(subgroupResult.ID)
 	slog.InfoContext(ctx, "Groups.io subgroup created successfully",
 		"subgroup_id", subgroupResult.ID,
+		"subscriber_count", subgroupResult.SubsCount,
 		"domain", parentService.Domain,
 		"parent_group_id", *parentService.GroupID,
 	)
 
-	return &subgroupID, nil
+	return subgroupResult, nil
 }
 
 // validateAndInheritFromParent validates parent service exists and inherits metadata
@@ -571,6 +600,23 @@ func (ml *grpsIOWriterOrchestrator) UpdateGrpsIOMailingList(ctx context.Context,
 	// Sync mailing list updates to Groups.io
 	ml.syncMailingListToGroupsIO(ctx, updatedMailingList)
 
+	// Refresh subscriber count from Groups.io or count from storage
+	subscriberCount := ml.refreshSubscriberCount(ctx, updatedMailingList)
+	if subscriberCount != updatedMailingList.SubscriberCount {
+		// Update subscriber count in storage (best-effort, non-blocking)
+		updatedMailingList.SubscriberCount = subscriberCount
+		updatedCopy, newRev, err := ml.grpsIOWriter.UpdateGrpsIOMailingList(ctx, uid, updatedMailingList, newRevision)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to update subscriber count after refresh, using cached value",
+				"error", err, "mailing_list_uid", uid, "subscriber_count", subscriberCount)
+		} else {
+			updatedMailingList = updatedCopy
+			newRevision = newRev
+			slog.InfoContext(ctx, "subscriber count refreshed successfully",
+				"mailing_list_uid", uid, "subscriber_count", subscriberCount)
+		}
+	}
+
 	// Publish update messages
 	if ml.publisher != nil {
 		if err := ml.publishMailingListUpdateMessages(ctx, existing, updatedMailingList); err != nil {
@@ -719,7 +765,7 @@ func (ml *grpsIOWriterOrchestrator) DeleteGrpsIOMailingList(ctx context.Context,
 		"public", mailingListData.Public)
 
 	// Step 2.1: Delete subgroup from Groups.io (if client available and mailing list has SubgroupID)
-	ml.deleteSubgroupWithCleanup(ctx, mailingListData.ServiceUID, mailingListData.SubgroupID)
+	ml.deleteSubgroupWithCleanup(ctx, mailingListData.ServiceUID, mailingListData.GroupID)
 
 	// Delete from storage with revision check
 	err := ml.grpsIOWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingListData)
@@ -765,7 +811,7 @@ func (ml *grpsIOWriterOrchestrator) mergeMailingListData(ctx context.Context, ex
 // syncMailingListToGroupsIO handles Groups.io mailing list update with proper error handling
 func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Context, mailingList *model.GrpsIOMailingList) {
 	// Guard clause: skip if Groups.io client not available or mailing list not synced
-	if ml.groupsClient == nil || mailingList.SubgroupID == nil {
+	if ml.groupsClient == nil || mailingList.GroupID == nil {
 		slog.InfoContext(ctx, "Groups.io integration disabled or mailing list not synced - skipping Groups.io update")
 		return
 	}
@@ -791,29 +837,64 @@ func (ml *grpsIOWriterOrchestrator) syncMailingListToGroupsIO(ctx context.Contex
 	}
 
 	// Perform Groups.io mailing list update
-	err = ml.groupsClient.UpdateSubgroup(ctx, domain, utils.Int64PtrToUint64(mailingList.SubgroupID), updates)
+	err = ml.groupsClient.UpdateSubgroup(ctx, domain, utils.Int64PtrToUint64(mailingList.GroupID), updates)
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io mailing list update failed, local update will proceed",
-			"error", err, "domain", domain, "subgroup_id", *mailingList.SubgroupID)
+			"error", err, "domain", domain, "group_id", *mailingList.GroupID)
 	} else {
 		slog.InfoContext(ctx, "Groups.io mailing list updated successfully",
-			"subgroup_id", *mailingList.SubgroupID, "domain", domain)
+			"group_id", *mailingList.GroupID, "domain", domain)
 	}
 }
 
+// refreshSubscriberCount gets the latest subscriber count from Groups.io or fallback to NATS counting
+// Returns the count (never negative) - best-effort operation
+func (ml *grpsIOWriterOrchestrator) refreshSubscriberCount(ctx context.Context, mailingList *model.GrpsIOMailingList) int {
+	// Try to get count from Groups.io API first
+	if ml.groupsClient != nil && mailingList.GroupID != nil {
+		domain, err := ml.getGroupsIODomainForResource(ctx, mailingList.UID, constants.ResourceTypeMailingList)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to get domain for subscriber count refresh, falling back to NATS count",
+				"error", err, "mailing_list_uid", mailingList.UID)
+		} else {
+			groupDetails, err := ml.groupsClient.GetGroup(ctx, domain, uint64(*mailingList.GroupID))
+			if err != nil {
+				slog.WarnContext(ctx, "failed to get group details from Groups.io, falling back to NATS count",
+					"error", err, "group_id", *mailingList.GroupID)
+			} else {
+				slog.InfoContext(ctx, "subscriber count refreshed from Groups.io",
+					"mailing_list_uid", mailingList.UID, "subscriber_count", groupDetails.SubsCount)
+				return int(groupDetails.SubsCount)
+			}
+		}
+	}
+
+	// Fallback to NATS counting
+	count, err := ml.grpsIOReader.CountMembersInMailingList(ctx, mailingList.UID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to count members in NATS, preserving existing count",
+			"error", err, "mailing_list_uid", mailingList.UID, "existing_count", mailingList.SubscriberCount)
+		return mailingList.SubscriberCount
+	}
+
+	slog.InfoContext(ctx, "subscriber count refreshed from NATS",
+		"mailing_list_uid", mailingList.UID, "subscriber_count", count)
+	return count
+}
+
 // handleAPISourceMailingList handles API-initiated mailing list creation
-// Preserves existing logic: calls createMailingListInGroupsIO and returns cleanup flag
+// Returns the SubgroupObject with ID and subscriber count from Groups.io
 func (ml *grpsIOWriterOrchestrator) handleAPISourceMailingList(
 	ctx context.Context,
 	request *model.GrpsIOMailingList,
 	parentService *model.GrpsIOService,
-) (*int64, bool, error) {
+) (*groupsio.SubgroupObject, bool, error) {
 	slog.InfoContext(ctx, "source=api: creating subgroup in Groups.io",
 		"group_name", request.GroupName,
 		"parent_uid", parentService.UID)
 
-	// Call existing createMailingListInGroupsIO method (preserves all existing logic)
-	subgroupID, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
+	// Call createMailingListInGroupsIO to create subgroup and get full response
+	subgroupResult, err := ml.createMailingListInGroupsIO(ctx, request, parentService)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create subgroup in Groups.io",
 			"error", err,
@@ -822,14 +903,15 @@ func (ml *grpsIOWriterOrchestrator) handleAPISourceMailingList(
 	}
 
 	// Determine if cleanup is required (preserves existing rollback logic)
-	requiresCleanup := subgroupID != nil && parentService.Domain != ""
+	requiresCleanup := subgroupResult != nil && parentService.Domain != ""
 
-	if subgroupID != nil {
+	if subgroupResult != nil {
 		slog.InfoContext(ctx, "subgroup created successfully in Groups.io",
-			"subgroup_id", *subgroupID)
+			"subgroup_id", subgroupResult.ID,
+			"subscriber_count", subgroupResult.SubsCount)
 	}
 
-	return subgroupID, requiresCleanup, nil
+	return subgroupResult, requiresCleanup, nil
 }
 
 // handleWebhookSourceMailingList handles webhook-initiated mailing list adoption
@@ -838,15 +920,15 @@ func (ml *grpsIOWriterOrchestrator) handleWebhookSourceMailingList(
 	ctx context.Context,
 	request *model.GrpsIOMailingList,
 ) (*int64, error) {
-	if request.SubgroupID == nil {
-		return nil, errors.NewValidation("webhook source requires SubgroupID to be provided")
+	if request.GroupID == nil {
+		return nil, errors.NewValidation("webhook source requires GroupID to be provided")
 	}
 
 	slog.InfoContext(ctx, "source=webhook: adopting webhook-provided subgroup",
-		"subgroup_id", *request.SubgroupID,
+		"group_id", *request.GroupID,
 		"group_name", request.GroupName)
 
-	return request.SubgroupID, nil
+	return request.GroupID, nil
 }
 
 // handleMockSourceMailingList handles mock/test mode mailing list creation

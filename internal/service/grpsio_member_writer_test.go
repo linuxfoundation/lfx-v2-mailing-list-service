@@ -43,27 +43,27 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				mockRepo.AddMailingList(testMailingList)
 			},
 			inputMember: &model.GrpsIOMember{
-				MailingListUID:   "mailing-list-1",
-				GroupsIOMemberID: writerInt64Ptr(12345),
-				GroupsIOGroupID:  writerInt64Ptr(67890),
-				Username:         "committee-member",
-				FirstName:        "Committee",
-				LastName:         "Member",
-				Email:            "committee.member@example.com",
-				Organization:     "Test Organization",
-				JobTitle:         "Committee Chair",
-				MemberType:       "committee",
-				DeliveryMode:     "individual",
-				ModStatus:        "none",
-				Status:           "normal",
-				Source:           constants.SourceWebhook, // Webhook source preserves pre-provided IDs
+				MailingListUID: "mailing-list-1",
+				MemberID:       writerInt64Ptr(12345),
+				GroupID:        writerInt64Ptr(67890),
+				Username:       "committee-member",
+				FirstName:      "Committee",
+				LastName:       "Member",
+				Email:          "committee.member@example.com",
+				Organization:   "Test Organization",
+				JobTitle:       "Committee Chair",
+				MemberType:     "committee",
+				DeliveryMode:   "individual",
+				ModStatus:      "none",
+				Status:         "normal",
+				Source:         constants.SourceWebhook, // Webhook source preserves pre-provided IDs
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-1", result.MailingListUID)
-				require.NotNil(t, result.GroupsIOMemberID)
-				assert.Equal(t, int64(12345), *result.GroupsIOMemberID)
+				require.NotNil(t, result.MemberID)
+				assert.Equal(t, int64(12345), *result.MemberID)
 				assert.Equal(t, "committee-member", result.Username)
 				assert.Equal(t, "Committee", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -205,31 +205,31 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 				mockRepo.AddMailingList(testMailingList)
 			},
 			inputMember: &model.GrpsIOMember{
-				MailingListUID:   "mailing-list-audit",
-				GroupsIOMemberID: writerInt64Ptr(99999),
-				GroupsIOGroupID:  writerInt64Ptr(88888),
-				Username:         "audit-member",
-				FirstName:        "Audit",
-				LastName:         "Member",
-				Email:            "audit.member@example.com",
-				Organization:     "Audit Organization",
-				JobTitle:         "Audit Manager",
-				MemberType:       "committee",
-				DeliveryMode:     "digest",
-				ModStatus:        "moderator",
-				Status:           "normal",
-				LastReviewedAt:   writerStringPtr("2024-01-01T00:00:00Z"),
-				LastReviewedBy:   writerStringPtr("reviewer-uid"),
-				Source:           constants.SourceWebhook, // Webhook source preserves pre-provided IDs
+				MailingListUID: "mailing-list-audit",
+				MemberID:       writerInt64Ptr(99999),
+				GroupID:        writerInt64Ptr(88888),
+				Username:       "audit-member",
+				FirstName:      "Audit",
+				LastName:       "Member",
+				Email:          "audit.member@example.com",
+				Organization:   "Audit Organization",
+				JobTitle:       "Audit Manager",
+				MemberType:     "committee",
+				DeliveryMode:   "digest",
+				ModStatus:      "moderator",
+				Status:         "normal",
+				LastReviewedAt: writerStringPtr("2024-01-01T00:00:00Z"),
+				LastReviewedBy: writerStringPtr("reviewer-uid"),
+				Source:         constants.SourceWebhook, // Webhook source preserves pre-provided IDs
 			},
 			expectedError: nil,
 			validate: func(t *testing.T, result *model.GrpsIOMember, revision uint64, mockRepo *mock.MockRepository) {
 				assert.NotEmpty(t, result.UID)
 				assert.Equal(t, "mailing-list-audit", result.MailingListUID)
-				require.NotNil(t, result.GroupsIOMemberID)
-				assert.Equal(t, int64(99999), *result.GroupsIOMemberID)
-				require.NotNil(t, result.GroupsIOGroupID)
-				assert.Equal(t, int64(88888), *result.GroupsIOGroupID)
+				require.NotNil(t, result.MemberID)
+				assert.Equal(t, int64(99999), *result.MemberID)
+				require.NotNil(t, result.GroupID)
+				assert.Equal(t, int64(88888), *result.GroupID)
 				assert.Equal(t, "audit-member", result.Username)
 				assert.Equal(t, "Audit", result.FirstName)
 				assert.Equal(t, "Member", result.LastName)
@@ -716,10 +716,10 @@ func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
 				}
 			},
 			member: &model.GrpsIOMember{
-				UID:              "member-1",
-				GroupsIOMemberID: func() *int64 { i := int64(12345); return &i }(),
-				FirstName:        "John",
-				LastName:         "Doe",
+				UID:       "member-1",
+				MemberID:  func() *int64 { i := int64(12345); return &i }(),
+				FirstName: "John",
+				LastName:  "Doe",
 			},
 			updates: groupsio.MemberUpdateOptions{
 				FirstName: "John",
@@ -734,10 +734,10 @@ func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
 				}
 			},
 			member: &model.GrpsIOMember{
-				UID:              "member-2",
-				GroupsIOMemberID: nil, // No member ID - should skip gracefully
-				FirstName:        "Jane",
-				LastName:         "Smith",
+				UID:       "member-2",
+				MemberID:  nil, // No member ID - should skip gracefully
+				FirstName: "Jane",
+				LastName:  "Smith",
 			},
 			updates: groupsio.MemberUpdateOptions{
 				FirstName: "Jane",

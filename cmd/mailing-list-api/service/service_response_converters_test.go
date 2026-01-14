@@ -239,22 +239,23 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				UpdatedAt:        updatedAt,
 			},
 			expected: &mailinglistservice.GrpsIoMailingListFull{
-				UID:       stringPtr("ml-123"),
-				GroupName: stringPtr("test-mailing-list"),
-				Public:    true,
-				Type:      stringPtr("discussion_open"),
+				UID:             stringPtr("ml-123"),
+				GroupName:       stringPtr("test-mailing-list"),
+				Public:          true,
+				Type:            stringPtr("discussion_open"),
+				SubscriberCount: intPtr(0),
 				Committees: []*mailinglistservice.Committee{
 					{UID: "committee-123", Name: stringPtr("Test Committee"), AllowedVotingStatuses: []string{"Voting Rep", "Observer"}},
 				},
-				Description:      stringPtr("This is a comprehensive test mailing list"),
-				Title:            stringPtr("Test Mailing List"),
-				SubjectTag: stringPtr("[TEST]"),
-				ServiceUID: stringPtr("parent-service-456"),
-				ProjectUID:       stringPtr("project-789"),
-				ProjectName:      stringPtr("Test Project"),
-				ProjectSlug:      stringPtr("test-project"),
-				CreatedAt:        stringPtr("2023-02-01T10:00:00Z"),
-				UpdatedAt:        stringPtr("2023-02-02T10:00:00Z"),
+				Description: stringPtr("This is a comprehensive test mailing list"),
+				Title:       stringPtr("Test Mailing List"),
+				SubjectTag:  stringPtr("[TEST]"),
+				ServiceUID:  stringPtr("parent-service-456"),
+				ProjectUID:  stringPtr("project-789"),
+				ProjectName: stringPtr("Test Project"),
+				ProjectSlug: stringPtr("test-project"),
+				CreatedAt:   stringPtr("2023-02-01T10:00:00Z"),
+				UpdatedAt:   stringPtr("2023-02-02T10:00:00Z"),
 			},
 		},
 		{
@@ -271,18 +272,19 @@ func TestConvertMailingListDomainToResponse(t *testing.T) {
 				UpdatedAt:   time.Time{}, // Zero timestamp
 			},
 			expected: &mailinglistservice.GrpsIoMailingListFull{
-				UID:         stringPtr("ml-456"),
-				GroupName:   stringPtr("minimal-list"),
-				Public:      false,
-				Type:        stringPtr("announcement"),
-				Committees:  nil, // No committees
-				Description: stringPtr("Minimal mailing list"),
-				Title:       stringPtr("Minimal List"),
-				SubjectTag:  nil, // Empty string converts to nil
-				ServiceUID:  stringPtr("parent-789"),
-				ProjectUID:  stringPtr(""),
-				ProjectName: stringPtr(""),
-				ProjectSlug: stringPtr(""),
+				UID:             stringPtr("ml-456"),
+				GroupName:       stringPtr("minimal-list"),
+				Public:          false,
+				Type:            stringPtr("announcement"),
+				SubscriberCount: intPtr(0),
+				Committees:      nil, // No committees
+				Description:     stringPtr("Minimal mailing list"),
+				Title:           stringPtr("Minimal List"),
+				SubjectTag:      nil, // Empty string converts to nil
+				ServiceUID:      stringPtr("parent-789"),
+				ProjectUID:      stringPtr(""),
+				ProjectName:     stringPtr(""),
+				ProjectSlug:     stringPtr(""),
 				// CreatedAt and UpdatedAt should be nil when timestamps are zero
 				CreatedAt: nil,
 				UpdatedAt: nil,
@@ -335,4 +337,9 @@ func TestStringToPointer(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper function for creating int pointer in test data
+func intPtr(i int) *int {
+	return &i
 }
