@@ -322,7 +322,7 @@ func (o *grpsIOWriterOrchestrator) deleteSubgroupWithCleanup(ctx context.Context
 // removeMemberFromGroupsIO handles Groups.io member deletion with proper error handling
 func (o *grpsIOWriterOrchestrator) removeMemberFromGroupsIO(ctx context.Context, member *model.GrpsIOMember) {
 	// Guard clause: skip if Groups.io client not available or member not synced
-	if o.groupsClient == nil || member == nil || member.GroupsIOMemberID == nil {
+	if o.groupsClient == nil || member == nil || member.MemberID == nil {
 		slog.InfoContext(ctx, "Groups.io integration disabled or member not synced - skipping Groups.io deletion")
 		return
 	}
@@ -336,12 +336,12 @@ func (o *grpsIOWriterOrchestrator) removeMemberFromGroupsIO(ctx context.Context,
 	}
 
 	// Perform Groups.io member removal
-	err = o.groupsClient.RemoveMember(ctx, domain, utils.Int64PtrToUint64(member.GroupsIOMemberID))
+	err = o.groupsClient.RemoveMember(ctx, domain, utils.Int64PtrToUint64(member.MemberID))
 	if err != nil {
 		slog.WarnContext(ctx, "Groups.io member deletion failed, local deletion will proceed - orphaned members can be cleaned up later",
-			"error", err, "domain", domain, "member_id", *member.GroupsIOMemberID)
+			"error", err, "domain", domain, "member_id", *member.MemberID)
 	} else {
 		slog.InfoContext(ctx, "Groups.io member deleted successfully",
-			"member_id", *member.GroupsIOMemberID, "domain", domain)
+			"member_id", *member.MemberID, "domain", domain)
 	}
 }

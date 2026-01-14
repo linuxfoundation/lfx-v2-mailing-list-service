@@ -37,26 +37,26 @@ type ErrorSimulationConfig struct {
 
 // MockRepository provides a mock implementation of all repository interfaces for testing
 type MockRepository struct {
-	services             map[string]*model.GrpsIOService
-	serviceRevisions     map[string]uint64
-	serviceIndexKeys     map[string]*model.GrpsIOService // indexKey -> service
-	settings             map[string]*model.GrpsIOServiceSettings // serviceUID -> settings
-	settingsRevisions    map[string]uint64                       // serviceUID -> revision
-	mailingLists               map[string]*model.GrpsIOMailingList
-	mailingListRevisions       map[string]uint64
-	mailingListIndexKeys       map[string]*model.GrpsIOMailingList       // indexKey -> mailingList
-	mailingListSettings        map[string]*model.GrpsIOMailingListSettings // mailingListUID -> settings
-	mailingListSettingsRevisions map[string]uint64                         // mailingListUID -> revision
-	members                    map[string]*model.GrpsIOMember              // UID -> member
-	memberRevisions      map[string]uint64                   // UID -> revision
-	memberIndexKeys      map[string]*model.GrpsIOMember      // indexKey -> member
-	projectSlugs         map[string]string                   // projectUID -> slug
-	projectNames         map[string]string                   // projectUID -> name
-	projectParents       map[string]string                   // projectUID -> parentProjectUID
-	committeeNames       map[string]string                   // committeeUID -> name
-	errorSimulation      ErrorSimulationConfig               // Error simulation configuration
-	errorSimulationMu    sync.RWMutex                        // Protect concurrent access to error config
-	mu                   sync.RWMutex                        // Protect concurrent access to maps
+	services                     map[string]*model.GrpsIOService
+	serviceRevisions             map[string]uint64
+	serviceIndexKeys             map[string]*model.GrpsIOService         // indexKey -> service
+	settings                     map[string]*model.GrpsIOServiceSettings // serviceUID -> settings
+	settingsRevisions            map[string]uint64                       // serviceUID -> revision
+	mailingLists                 map[string]*model.GrpsIOMailingList
+	mailingListRevisions         map[string]uint64
+	mailingListIndexKeys         map[string]*model.GrpsIOMailingList         // indexKey -> mailingList
+	mailingListSettings          map[string]*model.GrpsIOMailingListSettings // mailingListUID -> settings
+	mailingListSettingsRevisions map[string]uint64                           // mailingListUID -> revision
+	members                      map[string]*model.GrpsIOMember              // UID -> member
+	memberRevisions              map[string]uint64                           // UID -> revision
+	memberIndexKeys              map[string]*model.GrpsIOMember              // indexKey -> member
+	projectSlugs                 map[string]string                           // projectUID -> slug
+	projectNames                 map[string]string                           // projectUID -> name
+	projectParents               map[string]string                           // projectUID -> parentProjectUID
+	committeeNames               map[string]string                           // committeeUID -> name
+	errorSimulation              ErrorSimulationConfig                       // Error simulation configuration
+	errorSimulationMu            sync.RWMutex                                // Protect concurrent access to error config
+	mu                           sync.RWMutex                                // Protect concurrent access to maps
 }
 
 // NewMockRepository creates a new mock repository with sample data
@@ -66,23 +66,23 @@ func NewMockRepository() *MockRepository {
 		now := time.Now()
 
 		mock := &MockRepository{
-			services:             make(map[string]*model.GrpsIOService),
-			serviceRevisions:     make(map[string]uint64),
-			serviceIndexKeys:     make(map[string]*model.GrpsIOService),
-			settings:             make(map[string]*model.GrpsIOServiceSettings),
-			settingsRevisions:    make(map[string]uint64),
-			mailingLists:               make(map[string]*model.GrpsIOMailingList),
-			mailingListRevisions:       make(map[string]uint64),
-			mailingListIndexKeys:       make(map[string]*model.GrpsIOMailingList),
-			mailingListSettings:        make(map[string]*model.GrpsIOMailingListSettings),
+			services:                     make(map[string]*model.GrpsIOService),
+			serviceRevisions:             make(map[string]uint64),
+			serviceIndexKeys:             make(map[string]*model.GrpsIOService),
+			settings:                     make(map[string]*model.GrpsIOServiceSettings),
+			settingsRevisions:            make(map[string]uint64),
+			mailingLists:                 make(map[string]*model.GrpsIOMailingList),
+			mailingListRevisions:         make(map[string]uint64),
+			mailingListIndexKeys:         make(map[string]*model.GrpsIOMailingList),
+			mailingListSettings:          make(map[string]*model.GrpsIOMailingListSettings),
 			mailingListSettingsRevisions: make(map[string]uint64),
-			members:                    make(map[string]*model.GrpsIOMember),
-			memberRevisions:      make(map[string]uint64),
-			memberIndexKeys:      make(map[string]*model.GrpsIOMember),
-			projectSlugs:         make(map[string]string),
-			projectNames:         make(map[string]string),
-			projectParents:       make(map[string]string),
-			committeeNames:       make(map[string]string),
+			members:                      make(map[string]*model.GrpsIOMember),
+			memberRevisions:              make(map[string]uint64),
+			memberIndexKeys:              make(map[string]*model.GrpsIOMember),
+			projectSlugs:                 make(map[string]string),
+			projectNames:                 make(map[string]string),
+			projectParents:               make(map[string]string),
+			committeeNames:               make(map[string]string),
 			errorSimulation: ErrorSimulationConfig{
 				Enabled:           false,
 				ServiceErrors:     make(map[string]error),
@@ -474,12 +474,12 @@ func (w *MockGrpsIOMemberWriter) CreateMemberSecondaryIndices(ctx context.Contex
 	// Mock implementation - return mock keys for testing
 	var keys []string
 
-	if member.GroupsIOMemberID != nil {
-		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-memberid/%d/%s", *member.GroupsIOMemberID, member.UID))
+	if member.MemberID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-memberid/%d/%s", *member.MemberID, member.UID))
 	}
 
-	if member.GroupsIOGroupID != nil {
-		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-groupid/%d/%s", *member.GroupsIOGroupID, member.UID))
+	if member.GroupID != nil {
+		keys = append(keys, fmt.Sprintf("lookup/groupsio-member-groupid/%d/%s", *member.GroupID, member.UID))
 	}
 
 	return keys, nil
@@ -1444,13 +1444,54 @@ func (m *MockGroupsIOClient) DeleteSubgroup(ctx context.Context, domain string, 
 	return nil
 }
 
-// AddMember mocks the Groups.io member addition API
-func (m *MockGroupsIOClient) AddMember(ctx context.Context, domain string, subgroupID uint64, email, name string) (*groupsio.MemberObject, error) {
-	m.CallLog = append(m.CallLog, fmt.Sprintf("AddMember(domain=%s, subgroup_id=%d, email=%s)", domain, subgroupID, email))
+// GetGroup mocks the Groups.io group retrieval API (works for both main groups and subgroups)
+func (m *MockGroupsIOClient) GetGroup(ctx context.Context, domain string, groupID uint64) (*groupsio.GroupObject, error) {
+	m.CallLog = append(m.CallLog, fmt.Sprintf("GetGroup(domain=%s, group_id=%d)", domain, groupID))
 
-	// Return mock result
-	return &groupsio.MemberObject{
-		ID: 11111, // Mock member ID
+	slog.InfoContext(ctx, "[MOCK] Groups.io group retrieval simulated",
+		"domain", domain, "group_id", groupID)
+
+	// Return mock result with subscriber count
+	return &groupsio.GroupObject{
+		ID:        groupID,
+		SubsCount: 0, // Mock subscriber count (newly created groups start with 0)
+	}, nil
+}
+
+// AddMember mocks the Groups.io member addition API
+func (m *MockGroupsIOClient) DirectAdd(ctx context.Context, domain string, groupID uint64, emails []string, subgroupIDs []uint64) (*groupsio.DirectAddResultsObject, error) {
+	emailsStr := ""
+	if len(emails) > 0 {
+		emailsStr = emails[0] // Just log first email for brevity
+		if len(emails) > 1 {
+			emailsStr += fmt.Sprintf(" (+%d more)", len(emails)-1)
+		}
+	}
+
+	subgroupIDsStr := ""
+	if len(subgroupIDs) > 0 {
+		subgroupIDsStr = fmt.Sprintf("%v", subgroupIDs)
+	}
+
+	m.CallLog = append(m.CallLog, fmt.Sprintf("DirectAdd(domain=%s, group_id=%d, subgroup_ids=%s, emails=%s)", domain, groupID, subgroupIDsStr, emailsStr))
+
+	// Build mock result with all requested emails
+	addedMembers := make([]groupsio.MemberInfoObject, len(emails))
+	for i, email := range emails {
+		addedMembers[i] = groupsio.MemberInfoObject{
+			ID:       uint64(11111 + i), // Mock member IDs
+			GroupID:  groupID,
+			Email:    email,
+			FullName: "Mock User",
+			Status:   "confirmed",
+		}
+	}
+
+	return &groupsio.DirectAddResultsObject{
+		Object:       "direct_add_results",
+		TotalEmails:  uint64(len(emails)),
+		AddedMembers: addedMembers,
+		Errors:       []groupsio.AddErrorObject{}, // No errors in mock
 	}, nil
 }
 
@@ -1569,7 +1610,7 @@ func (m *MockRepository) GetMailingListByGroupID(ctx context.Context, groupID ui
 
 	// Iterate through all mailing lists to find match
 	for uid, mailingList := range m.mailingLists {
-		if mailingList.SubgroupID != nil && uint64(*mailingList.SubgroupID) == groupID {
+		if mailingList.GroupID != nil && uint64(*mailingList.GroupID) == groupID {
 			// Return deep copy to avoid data races
 			mailingListCopy := *mailingList
 			revision := m.mailingListRevisions[uid]
@@ -2107,7 +2148,7 @@ func (m *MockRepository) GetMemberByGroupsIOMemberID(ctx context.Context, member
 
 	// Search through all members for matching Groups.io member ID
 	for uid, member := range m.members {
-		if member.GroupsIOMemberID != nil && uint64(*member.GroupsIOMemberID) == memberID {
+		if member.MemberID != nil && uint64(*member.MemberID) == memberID {
 			memberCopy := *member
 			revision := m.memberRevisions[uid]
 			return &memberCopy, revision, nil
@@ -2136,6 +2177,22 @@ func (m *MockRepository) GetMemberByEmail(ctx context.Context, mailingListUID, e
 	}
 
 	return nil, 0, errors.NewNotFound(fmt.Sprintf("member with email %s not found in mailing list %s", email, mailingListUID))
+}
+
+// CountMembersInMailingList counts all members in a mailing list
+// Used as fallback when Groups.io client is unavailable
+func (m *MockRepository) CountMembersInMailingList(ctx context.Context, mailingListUID string) (int, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	count := 0
+	for _, member := range m.members {
+		if member.MailingListUID == mailingListUID {
+			count++
+		}
+	}
+
+	return count, nil
 }
 
 // GetMembersForMailingList returns all members for a given mailing list (test helper)

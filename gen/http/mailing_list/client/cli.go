@@ -427,7 +427,7 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"public\",\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"public\",\n      \"auditors\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ],\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_id\": 12345,\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"subscriber_count\": 42,\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\",\n      \"writers\": [\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         },\n         {\n            \"avatar\": \"http://goldner.info/perry\",\n            \"email\": \"ernie.lueilwitz@altenwerth.info\",\n            \"name\": \"Eos non id at perspiciatis.\",\n            \"username\": \"Eaque quis possimus velit quasi quis occaecati.\"\n         }\n      ]\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -435,6 +435,11 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 		}
 		if utf8.RuneCountInString(body.GroupName) > 34 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 34, false))
+		}
+		if body.GroupID != nil {
+			if *body.GroupID < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+			}
 		}
 		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -467,6 +472,11 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 			}
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
+		if body.SubscriberCount != nil {
+			if *body.SubscriberCount < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+			}
+		}
 		for _, e := range body.Writers {
 			if e != nil {
 				if err2 := ValidateUserInfoRequestBody(e); err2 != nil {
@@ -502,14 +512,16 @@ func BuildCreateGrpsioMailingListPayload(mailingListCreateGrpsioMailingListBody 
 		}
 	}
 	v := &mailinglist.CreateGrpsioMailingListPayload{
-		GroupName:      body.GroupName,
-		Public:         body.Public,
-		Type:           body.Type,
-		AudienceAccess: body.AudienceAccess,
-		Description:    body.Description,
-		Title:          body.Title,
-		SubjectTag:     body.SubjectTag,
-		ServiceUID:     body.ServiceUID,
+		GroupName:       body.GroupName,
+		GroupID:         body.GroupID,
+		Public:          body.Public,
+		Type:            body.Type,
+		AudienceAccess:  body.AudienceAccess,
+		Description:     body.Description,
+		Title:           body.Title,
+		SubjectTag:      body.SubjectTag,
+		ServiceUID:      body.ServiceUID,
+		SubscriberCount: body.SubscriberCount,
 	}
 	{
 		var zero string
@@ -583,7 +595,7 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGrpsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"public\",\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"public\",\n      \"committees\": [\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         },\n         {\n            \"allowed_voting_statuses\": [\n               \"Voting Rep\",\n               \"Alternate Voting Rep\"\n            ],\n            \"name\": \"Aliquid aliquid.\",\n            \"uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\"\n         }\n      ],\n      \"description\": \"Technical steering committee discussions\",\n      \"group_id\": 12345,\n      \"group_name\": \"technical-steering-committee\",\n      \"public\": false,\n      \"service_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"subject_tag\": \"[TSC]\",\n      \"subscriber_count\": 42,\n      \"title\": \"Technical Steering Committee\",\n      \"type\": \"discussion_moderated\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.group_name", body.GroupName, "^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$"))
 		if utf8.RuneCountInString(body.GroupName) < 3 {
@@ -591,6 +603,11 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 		}
 		if utf8.RuneCountInString(body.GroupName) > 34 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.group_name", body.GroupName, utf8.RuneCountInString(body.GroupName), 34, false))
+		}
+		if body.GroupID != nil {
+			if *body.GroupID < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.group_id", *body.GroupID, 0, true))
+			}
 		}
 		if !(body.Type == "announcement" || body.Type == "discussion_moderated" || body.Type == "discussion_open") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"announcement", "discussion_moderated", "discussion_open"}))
@@ -623,6 +640,11 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 			}
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.service_uid", body.ServiceUID, goa.FormatUUID))
+		if body.SubscriberCount != nil {
+			if *body.SubscriberCount < 0 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.subscriber_count", *body.SubscriberCount, 0, true))
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -658,14 +680,16 @@ func BuildUpdateGrpsioMailingListPayload(mailingListUpdateGrpsioMailingListBody 
 		}
 	}
 	v := &mailinglist.UpdateGrpsioMailingListPayload{
-		GroupName:      body.GroupName,
-		Public:         body.Public,
-		Type:           body.Type,
-		AudienceAccess: body.AudienceAccess,
-		Description:    body.Description,
-		Title:          body.Title,
-		SubjectTag:     body.SubjectTag,
-		ServiceUID:     body.ServiceUID,
+		GroupName:       body.GroupName,
+		GroupID:         body.GroupID,
+		Public:          body.Public,
+		Type:            body.Type,
+		AudienceAccess:  body.AudienceAccess,
+		Description:     body.Description,
+		Title:           body.Title,
+		SubjectTag:      body.SubjectTag,
+		ServiceUID:      body.ServiceUID,
+		SubscriberCount: body.SubscriberCount,
 	}
 	{
 		var zero string

@@ -39,6 +39,7 @@ type SubgroupObject struct {
 	Restricted  bool   `json:"restricted"`  // If true, users must request to join and be approved
 	InviteOnly  bool   `json:"invite_only"` // If true, only invited users can join
 	Type        string `json:"type"`        // announcement, discussion_moderated, discussion_open
+	SubsCount   uint64 `json:"subs_count"`  // Subscriber count from Groups.io
 	CreatedAt   string `json:"created"`
 	UpdatedAt   string `json:"updated"`
 }
@@ -58,6 +59,65 @@ type MemberObject struct {
 	DeliveryMode string `json:"delivery"`   // individual, digest, no_email
 	JoinedAt     string `json:"joined"`
 	UpdatedAt    string `json:"updated"`
+}
+
+// DirectAddResultsObject represents the response from the /directadd endpoint
+type DirectAddResultsObject struct {
+	Object       string             `json:"object"`
+	TotalEmails  uint64             `json:"total_emails"`
+	Errors       []AddErrorObject   `json:"errors"`
+	AddedMembers []MemberInfoObject `json:"added_members"`
+}
+
+// MemberInfoObject represents detailed member information from Groups.io
+type MemberInfoObject struct {
+	ID                  uint64    `json:"id"`
+	Object              string    `json:"object"`
+	Created             time.Time `json:"created"`
+	Updated             time.Time `json:"updated"`
+	UserID              uint64    `json:"user_id"`
+	GroupID             uint64    `json:"group_id"`
+	GroupName           string    `json:"group_name"`
+	Status              string    `json:"status"`
+	PostStatus          string    `json:"post_status"`
+	EmailDelivery       string    `json:"email_delivery"`
+	MessageSelection    string    `json:"message_selection"`
+	AutoFollowReplies   bool      `json:"auto_follow_replies"`
+	MaxAttachmentSize   string    `json:"max_attachment_size"`
+	ApprovedPosts       uint64    `json:"approved_posts"`
+	ModStatus           string    `json:"mod_status"`
+	PendingMsgNotify    string    `json:"pending_msg_notify"`
+	PendingSubNotify    string    `json:"pending_sub_notify"`
+	SubNotify           string    `json:"sub_notify"`
+	StorageNotify       string    `json:"storage_notify"`
+	SubGroupNotify      string    `json:"sub_group_notify"`
+	MessageReportNotify string    `json:"message_report_notify"`
+	ModPermissions      string    `json:"mod_permissions"`
+	OwnerMsgNotify      string    `json:"owner_msg_notify"`
+	Email               string    `json:"email"`
+	UserStatus          string    `json:"user_status"`
+	UserName            string    `json:"user_name"`
+	Timezone            string    `json:"timezone"`
+	FullName            string    `json:"full_name"`
+}
+
+// MemberInfoListObject represents a paginated list of member information
+type MemberInfoListObject struct {
+	Object        string             `json:"object"`
+	TotalCount    uint64             `json:"total_count"`
+	StartItem     uint64             `json:"start_item"`
+	EndItem       uint64             `json:"end_item"`
+	HasMore       bool               `json:"has_more"`
+	NextPageToken uint64             `json:"next_page_token"`
+	Data          []MemberInfoObject `json:"data"`
+}
+
+// AddErrorObject represents an error when adding a member via direct_add
+type AddErrorObject struct {
+	Object  string `json:"object"`
+	Email   string `json:"email"`
+	Status  string `json:"status"`
+	GroupID uint64 `json:"group_id"`
 }
 
 // LoginObject represents the Groups.io login response

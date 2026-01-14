@@ -23,10 +23,9 @@ type GrpsIOMember struct {
 	UID            string `json:"uid"`              // Primary key
 	MailingListUID string `json:"mailing_list_uid"` // FK to mailing list
 
-	// External Groups.io IDs (nullable for async support, hidden from API)
-	GroupsIOMemberID *int64 `json:"-"`      // Groups.io member ID - internal use only
-	GroupsIOGroupID  *int64 `json:"-"`      // Groups.io subgroup ID - internal use only
-	Source           string `json:"source"` // "api", "webhook", or "mock" - tracks origin for business logic
+	MemberID *int64 `json:"member_id"` // Groups.io member ID
+	GroupID  *int64 `json:"group_id"`  // Groups.io group ID
+	Source   string `json:"source"`    // "api", "webhook", or "mock" - tracks origin for business logic
 
 	// Member Information
 	Username     string `json:"username"` // Username

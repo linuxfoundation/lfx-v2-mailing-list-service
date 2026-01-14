@@ -812,7 +812,7 @@ func (s *storage) createMailingListSecondaryIndices(ctx context.Context, mailing
 	specs := []IndexSpec{
 		{Name: "service", KeyFormat: constants.KVLookupGroupsIOMailingListServicePrefix, StringID: &mailingList.ServiceUID},
 		{Name: "project", KeyFormat: constants.KVLookupGroupsIOMailingListProjectPrefix, StringID: &mailingList.ProjectUID},
-		{Name: "subgroupid", KeyFormat: constants.KVLookupGroupsIOMailingListBySubgroupIDPrefix, Int64ID: mailingList.SubgroupID},
+		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOMailingListBySubgroupIDPrefix, Int64ID: mailingList.GroupID},
 	}
 
 	// Add committee indices for each committee in the array
@@ -1246,8 +1246,8 @@ func (s *storage) CreateMemberSecondaryIndices(ctx context.Context, member *mode
 	}
 
 	createdKeys, err := s.createSecondaryIndices(ctx, kv, member.UID, []IndexSpec{
-		{Name: "memberid", KeyFormat: constants.KVLookupGroupsIOMemberByMemberIDPrefix, Int64ID: member.GroupsIOMemberID},
-		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOMemberByGroupIDPrefix, Int64ID: member.GroupsIOGroupID},
+		{Name: "memberid", KeyFormat: constants.KVLookupGroupsIOMemberByMemberIDPrefix, Int64ID: member.MemberID},
+		{Name: "groupid", KeyFormat: constants.KVLookupGroupsIOMemberByGroupIDPrefix, Int64ID: member.GroupID},
 	})
 	if err != nil {
 		return createdKeys, err
@@ -1449,6 +1449,54 @@ func (s *storage) GetMemberByEmail(ctx context.Context, mailingListUID, email st
 		"revision", rev)
 
 	return member, rev, nil
+}
+
+// CountMembersInMailingList counts all members in a mailing list by iterating NATS KV
+// Performance: O(K) where K = total keys in members bucket
+// Used as fallback when Groups.io client is unavailable (mock mode, nil client)
+func (s *storage) CountMembersInMailingList(ctx context.Context, mailingListUID string) (int, error) {
+	slog.DebugContext(ctx, "counting members in mailing list",
+		"mailing_list_uid", mailingListUID)
+
+	kv, exists := s.client.kvStore[constants.KVBucketNameGroupsIOMembers]
+	if !exists || kv == nil {
+		return 0, errs.NewServiceUnavailable("KV bucket not available")
+	}
+
+	// Get all keys in members bucket
+	keys, err := kv.Keys(ctx, jetstream.IgnoreDeletes())
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to list member keys", "error", err)
+		return 0, errs.NewServiceUnavailable("failed to count members")
+	}
+
+	// Count members belonging to this mailing list
+	count := 0
+	for _, key := range keys {
+		// Skip lookup/index keys, only count actual member UIDs
+		if strings.HasPrefix(key, constants.GroupsIOMemberLookupKeyPrefix) {
+			continue
+		}
+
+		// Get member to check mailing_list_uid
+		member := &model.GrpsIOMember{}
+		_, err := s.get(ctx, constants.KVBucketNameGroupsIOMembers, key, member, false)
+		if err != nil {
+			// Skip members that can't be read (deleted concurrently, etc.)
+			slog.DebugContext(ctx, "skipping member during count", "key", key, "error", err)
+			continue
+		}
+
+		if member.MailingListUID == mailingListUID {
+			count++
+		}
+	}
+
+	slog.DebugContext(ctx, "member count completed",
+		"mailing_list_uid", mailingListUID,
+		"count", count)
+
+	return count, nil
 }
 
 func NewStorage(client *NATSClient) port.GrpsIOReaderWriter {

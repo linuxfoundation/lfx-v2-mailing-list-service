@@ -658,10 +658,12 @@ Example:
          }
       ],
       "description": "Technical steering committee discussions",
+      "group_id": 12345,
       "group_name": "technical-steering-committee",
       "public": false,
       "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "subject_tag": "[TSC]",
+      "subscriber_count": 42,
       "title": "Technical Steering Committee",
       "type": "discussion_moderated",
       "writers": [
@@ -755,10 +757,12 @@ Example:
          }
       ],
       "description": "Technical steering committee discussions",
+      "group_id": 12345,
       "group_name": "technical-steering-committee",
       "public": false,
       "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "subject_tag": "[TSC]",
+      "subscriber_count": 42,
       "title": "Technical Steering Committee",
       "type": "discussion_moderated"
    }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"

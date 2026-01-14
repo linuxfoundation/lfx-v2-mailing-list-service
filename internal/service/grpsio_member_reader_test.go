@@ -25,24 +25,24 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 	testMemberUID := uuid.New().String()
 	testMailingListUID := uuid.New().String()
 	testMember := &model.GrpsIOMember{
-		UID:              testMemberUID,
-		MailingListUID:   testMailingListUID,
-		GroupsIOMemberID: memberInt64Ptr(12345),
-		GroupsIOGroupID:  memberInt64Ptr(67890),
-		Username:         "testuser",
-		FirstName:        "John",
-		LastName:         "Doe",
-		Email:            "john.doe@example.com",
-		Organization:     "Acme Corp",
-		JobTitle:         "Software Engineer",
-		MemberType:       "committee",
-		DeliveryMode:     "individual",
-		ModStatus:        "none",
-		Status:           "normal",
-		LastReviewedAt:   memberStringPtr("2024-01-01T00:00:00Z"),
-		LastReviewedBy:   memberStringPtr("reviewer-uid"),
-		CreatedAt:        time.Now().Add(-24 * time.Hour),
-		UpdatedAt:        time.Now(),
+		UID:            testMemberUID,
+		MailingListUID: testMailingListUID,
+		MemberID:       memberInt64Ptr(12345),
+		GroupID:        memberInt64Ptr(67890),
+		Username:       "testuser",
+		FirstName:      "John",
+		LastName:       "Doe",
+		Email:          "john.doe@example.com",
+		Organization:   "Acme Corp",
+		JobTitle:       "Software Engineer",
+		MemberType:     "committee",
+		DeliveryMode:   "individual",
+		ModStatus:      "none",
+		Status:         "normal",
+		LastReviewedAt: memberStringPtr("2024-01-01T00:00:00Z"),
+		LastReviewedBy: memberStringPtr("reviewer-uid"),
+		CreatedAt:      time.Now().Add(-24 * time.Hour),
+		UpdatedAt:      time.Now(),
 	}
 
 	tests := []struct {
@@ -66,8 +66,8 @@ func TestGrpsIOMemberReaderOrchestrator_GetGrpsIOMember(t *testing.T) {
 				assert.NotNil(t, member)
 				assert.Equal(t, testMemberUID, member.UID)
 				assert.Equal(t, testMailingListUID, member.MailingListUID)
-				assert.Equal(t, memberInt64Ptr(12345), member.GroupsIOMemberID)
-				assert.Equal(t, memberInt64Ptr(67890), member.GroupsIOGroupID)
+				assert.Equal(t, memberInt64Ptr(12345), member.MemberID)
+				assert.Equal(t, memberInt64Ptr(67890), member.GroupID)
 				assert.Equal(t, "testuser", member.Username)
 				assert.Equal(t, "John", member.FirstName)
 				assert.Equal(t, "Doe", member.LastName)

@@ -1042,25 +1042,25 @@ func TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO(t *testing.T) {
 				return orchestrator, mockRepo
 			},
 			mailingList: &model.GrpsIOMailingList{
-				UID:        "mailing-list-1",
-				SubgroupID: func() *int64 { i := int64(12345); return &i }(),
-				Title:      "Test Mailing List",
+				UID:     "mailing-list-1",
+				GroupID: func() *int64 { i := int64(12345); return &i }(),
+				Title:   "Test Mailing List",
 			},
 			expectSkip: true,
 		},
 		{
-			name: "skip sync when mailing list SubgroupID is nil",
+			name: "skip sync when mailing list GroupID is nil",
 			setupMocks: func() (*grpsIOWriterOrchestrator, *mock.MockRepository) {
 				mockRepo := mock.NewMockRepository()
 				orchestrator := &grpsIOWriterOrchestrator{
-					groupsClient: nil, // Could be any client, but SubgroupID is nil
+					groupsClient: nil, // Could be any client, but GroupID is nil
 				}
 				return orchestrator, mockRepo
 			},
 			mailingList: &model.GrpsIOMailingList{
-				UID:        "mailing-list-2",
-				SubgroupID: nil, // No subgroup ID - not synced
-				Title:      "Test Mailing List",
+				UID:     "mailing-list-2",
+				GroupID: nil, // No group ID - not synced
+				Title:   "Test Mailing List",
 			},
 			expectSkip: true,
 		},
@@ -1080,9 +1080,9 @@ func TestGrpsIOWriterOrchestrator_syncMailingListToGroupsIO(t *testing.T) {
 				return orchestrator, mockRepo
 			},
 			mailingList: &model.GrpsIOMailingList{
-				UID:        "nonexistent-mailing-list",
-				SubgroupID: func() *int64 { i := int64(12345); return &i }(),
-				Title:      "Test Mailing List",
+				UID:     "nonexistent-mailing-list",
+				GroupID: func() *int64 { i := int64(12345); return &i }(),
+				Title:   "Test Mailing List",
 			},
 			expectWarning: true,
 		},

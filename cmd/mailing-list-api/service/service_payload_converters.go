@@ -145,8 +145,8 @@ func (s *mailingListService) convertGrpsIOMailingListUpdatePayloadToDomain(exist
 	return &model.GrpsIOMailingList{
 		// Preserve immutable/readonly fields
 		UID:         existing.UID,
-		SubgroupID:  existing.SubgroupID, // Preserve Groups.io subgroup ID
-		GroupName:   existing.GroupName,  // Fixed: GroupName is immutable, preserve from existing
+		GroupID:     existing.GroupID,   // Preserve Groups.io group ID
+		GroupName:   existing.GroupName, // Fixed: GroupName is immutable, preserve from existing
 		ProjectUID:  existing.ProjectUID,
 		ProjectName: existing.ProjectName,
 		ProjectSlug: existing.ProjectSlug,
@@ -214,16 +214,16 @@ func (s *mailingListService) convertGrpsIOMemberUpdatePayloadToDomain(payload *m
 	// Create updated member from payload data (PUT semantics)
 	return &model.GrpsIOMember{
 		// Preserve immutable fields
-		UID:              existing.UID,
-		MailingListUID:   existing.MailingListUID,
-		Email:            existing.Email,      // Immutable
-		MemberType:       existing.MemberType, // Immutable for now
-		GroupsIOMemberID: existing.GroupsIOMemberID,
-		GroupsIOGroupID:  existing.GroupsIOGroupID,
-		CreatedAt:        existing.CreatedAt,
-		Status:           existing.Status,
-		LastReviewedAt:   existing.LastReviewedAt,
-		LastReviewedBy:   existing.LastReviewedBy,
+		UID:            existing.UID,
+		MailingListUID: existing.MailingListUID,
+		Email:          existing.Email,      // Immutable
+		MemberType:     existing.MemberType, // Immutable for now
+		MemberID:       existing.MemberID,
+		GroupID:        existing.GroupID,
+		CreatedAt:      existing.CreatedAt,
+		Status:         existing.Status,
+		LastReviewedAt: existing.LastReviewedAt,
+		LastReviewedBy: existing.LastReviewedBy,
 
 		// Update all mutable fields (PUT semantics - complete replacement)
 		Username:     payloadStringValue(payload.Username),     // nil → ""

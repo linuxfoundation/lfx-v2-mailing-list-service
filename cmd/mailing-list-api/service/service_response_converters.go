@@ -110,19 +110,21 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToResponse(ml *model.
 	}
 
 	result := &mailinglistservice.GrpsIoMailingListFull{
-		UID:            &ml.UID,
-		GroupName:      &ml.GroupName,
-		Public:         ml.Public,
-		AudienceAccess: ml.AudienceAccess,
-		Type:           &ml.Type,
-		Committees:     convertCommitteesToResponse(ml.Committees),
-		Description:    &ml.Description,
-		Title:          &ml.Title,
-		SubjectTag:     stringToPointer(ml.SubjectTag),
-		ServiceUID:     &ml.ServiceUID,
-		ProjectUID:     &ml.ProjectUID,  // This is inherited from parent in orchestrator
-		ProjectName:    &ml.ProjectName, // Inherited from parent service
-		ProjectSlug:    &ml.ProjectSlug, // Inherited from parent service
+		UID:             &ml.UID,
+		GroupID:         ml.GroupID,
+		GroupName:       &ml.GroupName,
+		Public:          ml.Public,
+		AudienceAccess:  ml.AudienceAccess,
+		Type:            &ml.Type,
+		SubscriberCount: &ml.SubscriberCount,
+		Committees:      convertCommitteesToResponse(ml.Committees),
+		Description:     &ml.Description,
+		Title:           &ml.Title,
+		SubjectTag:      stringToPointer(ml.SubjectTag),
+		ServiceUID:      &ml.ServiceUID,
+		ProjectUID:      &ml.ProjectUID,  // This is inherited from parent in orchestrator
+		ProjectName:     &ml.ProjectName, // Inherited from parent service
+		ProjectSlug:     &ml.ProjectSlug, // Inherited from parent service
 	}
 
 	// Add writers and auditors from settings
@@ -169,19 +171,21 @@ func (s *mailingListService) convertGrpsIOMailingListDomainToStandardResponse(ma
 	}
 
 	response := &mailinglistservice.GrpsIoMailingListWithReadonlyAttributes{
-		UID:            &mailingList.UID,
-		GroupName:      &mailingList.GroupName,
-		Public:         mailingList.Public,
-		AudienceAccess: mailingList.AudienceAccess,
-		Type:           &mailingList.Type,
-		Committees:     convertCommitteesToResponse(mailingList.Committees),
-		Description:    &mailingList.Description,
-		Title:          &mailingList.Title,
-		SubjectTag:     stringToPointer(mailingList.SubjectTag),
-		ServiceUID:     &mailingList.ServiceUID,
-		ProjectUID:     stringToPointer(mailingList.ProjectUID),
-		ProjectName:    stringToPointer(mailingList.ProjectName),
-		ProjectSlug:    stringToPointer(mailingList.ProjectSlug),
+		UID:             &mailingList.UID,
+		GroupID:         mailingList.GroupID,
+		GroupName:       &mailingList.GroupName,
+		Public:          mailingList.Public,
+		AudienceAccess:  mailingList.AudienceAccess,
+		Type:            &mailingList.Type,
+		SubscriberCount: &mailingList.SubscriberCount,
+		Committees:      convertCommitteesToResponse(mailingList.Committees),
+		Description:     &mailingList.Description,
+		Title:           &mailingList.Title,
+		SubjectTag:      stringToPointer(mailingList.SubjectTag),
+		ServiceUID:      &mailingList.ServiceUID,
+		ProjectUID:      stringToPointer(mailingList.ProjectUID),
+		ProjectName:     stringToPointer(mailingList.ProjectName),
+		ProjectSlug:     stringToPointer(mailingList.ProjectSlug),
 	}
 
 	// Convert timestamps
@@ -222,11 +226,11 @@ func (s *mailingListService) convertGrpsIOMemberToResponse(member *model.GrpsIOM
 	}
 
 	// Handle optional GroupsIO fields
-	if member.GroupsIOMemberID != nil && *member.GroupsIOMemberID > 0 {
-		result.GroupsioMemberID = member.GroupsIOMemberID
+	if member.MemberID != nil && *member.MemberID > 0 {
+		result.MemberID = member.MemberID
 	}
-	if member.GroupsIOGroupID != nil && *member.GroupsIOGroupID > 0 {
-		result.GroupsioGroupID = member.GroupsIOGroupID
+	if member.GroupID != nil && *member.GroupID > 0 {
+		result.GroupID = member.GroupID
 	}
 
 	// Handle timestamps
@@ -274,11 +278,11 @@ func (s *mailingListService) convertGrpsIOMemberDomainToResponse(member *model.G
 	if member.JobTitle != "" {
 		response.JobTitle = &member.JobTitle
 	}
-	if member.GroupsIOMemberID != nil && *member.GroupsIOMemberID != 0 {
-		response.GroupsioMemberID = member.GroupsIOMemberID
+	if member.MemberID != nil && *member.MemberID != 0 {
+		response.MemberID = member.MemberID
 	}
-	if member.GroupsIOGroupID != nil && *member.GroupsIOGroupID != 0 {
-		response.GroupsioGroupID = member.GroupsIOGroupID
+	if member.GroupID != nil && *member.GroupID != 0 {
+		response.GroupID = member.GroupID
 	}
 	if member.LastReviewedAt != nil {
 		response.LastReviewedAt = member.LastReviewedAt

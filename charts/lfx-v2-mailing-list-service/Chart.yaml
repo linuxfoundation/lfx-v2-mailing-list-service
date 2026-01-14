@@ -5,5 +5,5 @@ apiVersion: v2
 name: lfx-v2-mailing-list-service
 description: LFX Platform V2 Mailing List Service chart
 type: application
-version: 0.1.6
+version: 0.1.8
 appVersion: "latest"
