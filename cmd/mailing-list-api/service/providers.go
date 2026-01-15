@@ -301,6 +301,36 @@ func GrpsIOWriter(ctx context.Context) port.GrpsIOWriter {
 	return grpsIOWriter
 }
 
+// GrpsIOMemberRepository initializes the member repository implementation
+func GrpsIOMemberRepository(ctx context.Context) port.GrpsIOMemberRepository {
+	var memberRepository port.GrpsIOMemberRepository
+
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock grpsio member repository")
+		memberRepository = infrastructure.NewMockGrpsIOMemberRepository(infrastructure.NewMockRepository())
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS member repository")
+		natsClient := natsStorage(ctx)
+		if natsClient == nil {
+			log.Fatalf("failed to initialize NATS client")
+		}
+		memberRepository = natsClient
+
+	default:
+		log.Fatalf("unsupported member repository implementation: %s", repoSource)
+	}
+
+	return memberRepository
+}
+
 // MessagePublisher initializes the service publisher implementation
 func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	var publisher port.MessagePublisher
@@ -380,6 +410,7 @@ func GrpsIOReaderOrchestrator(ctx context.Context) service.GrpsIOReader {
 // GrpsIOWriterOrchestrator initializes the service writer orchestrator
 func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 	grpsIOWriter := GrpsIOWriter(ctx)
+	memberRepository := GrpsIOMemberRepository(ctx)
 	grpsIOReader := GrpsIOReader(ctx)
 	entityReader := EntityAttributeRetriever(ctx)
 	publisher := MessagePublisher(ctx)
@@ -387,6 +418,7 @@ func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
 
 	return service.NewGrpsIOWriterOrchestrator(
 		service.WithGrpsIOWriter(grpsIOWriter),
+		service.WithMemberRepository(memberRepository),
 		service.WithGrpsIOWriterReader(grpsIOReader),
 		service.WithEntityAttributeReader(entityReader),
 		service.WithPublisher(publisher),

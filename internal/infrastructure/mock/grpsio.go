@@ -290,81 +290,90 @@ func NewMockRepository() *MockRepository {
 	return globalMockRepo
 }
 
-// MockGrpsIOServiceWriter implements GrpsIOServiceWriter interface
-type MockGrpsIOServiceWriter struct {
+// MockGrpsIOServiceRepository implements GrpsIOServiceRepository interface
+type MockGrpsIOServiceRepository struct {
 	mock *MockRepository
 }
 
-// MockGrpsIOMailingListWriter implements GrpsIOMailingListWriter interface
-type MockGrpsIOMailingListWriter struct {
+// Verify interface compliance at compile time
+var _ port.GrpsIOServiceRepository = (*MockGrpsIOServiceRepository)(nil)
+
+// MockGrpsIOMailingListRepository implements GrpsIOMailingListRepository interface
+type MockGrpsIOMailingListRepository struct {
 	mock *MockRepository
 }
 
-// ================== MockGrpsIOMailingListWriter implementation ==================
+// Verify interface compliance at compile time
+var _ port.GrpsIOMailingListRepository = (*MockGrpsIOMailingListRepository)(nil)
+
+// ================== MockGrpsIOMailingListRepository implementation ==================
 
 // CreateGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
+func (w *MockGrpsIOMailingListRepository) CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
 	return w.mock.CreateGrpsIOMailingList(ctx, mailingList)
 }
 
 // UpdateGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
+func (w *MockGrpsIOMailingListRepository) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
 	return w.mock.UpdateGrpsIOMailingListWithRevision(ctx, uid, mailingList, expectedRevision)
 }
 
 // DeleteGrpsIOMailingList delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
+func (w *MockGrpsIOMailingListRepository) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
 	return w.mock.DeleteGrpsIOMailingListWithRevision(ctx, uid, expectedRevision)
 }
 
 // CreateSecondaryIndices delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
+func (w *MockGrpsIOMailingListRepository) CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
 	return w.mock.CreateSecondaryIndices(ctx, mailingList)
 }
 
 // UniqueMailingListGroupName delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
+func (w *MockGrpsIOMailingListRepository) UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
 	return w.mock.UniqueMailingListGroupName(ctx, mailingList)
 }
 
 // GetKeyRevision delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
+func (w *MockGrpsIOMailingListRepository) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
 	slog.DebugContext(ctx, "mock get key revision", "key", key)
 	return 1, nil
 }
 
 // Delete removes a key with the given revision
-func (w *MockGrpsIOMailingListWriter) Delete(ctx context.Context, key string, revision uint64) error {
+func (w *MockGrpsIOMailingListRepository) Delete(ctx context.Context, key string, revision uint64) error {
 	slog.DebugContext(ctx, "mock delete key", "key", key, "revision", revision)
 	return nil
 }
 
 // CreateGrpsIOMailingListSettings delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
+func (w *MockGrpsIOMailingListRepository) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
 	return w.mock.CreateGrpsIOMailingListSettings(ctx, settings)
 }
 
 // UpdateGrpsIOMailingListSettings delegates to MockRepository
-func (w *MockGrpsIOMailingListWriter) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
+func (w *MockGrpsIOMailingListRepository) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
 	return w.mock.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
 }
 
-// MockGrpsIOMemberWriter implements GrpsIOMemberWriter interface
-type MockGrpsIOMemberWriter struct {
+// MockGrpsIOMemberRepository implements GrpsIOMemberRepository interface
+type MockGrpsIOMemberRepository struct {
 	mock *MockRepository
 }
 
-// ================== MockGrpsIOMemberWriter implementation ==================
+// Verify interface compliance at compile time
+var _ port.GrpsIOMemberRepository = (*MockGrpsIOMemberRepository)(nil)
+
+// ================== MockGrpsIOMemberRepository implementation ==================
 
 // UniqueMember validates member email is unique within mailing list
-func (w *MockGrpsIOMemberWriter) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
+func (w *MockGrpsIOMemberRepository) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
 	constraintKey := fmt.Sprintf("lookup:member:constraint:%s:%s", member.MailingListUID, member.Email)
 	slog.DebugContext(ctx, "mock: validating unique member", "constraint_key", constraintKey)
 	return constraintKey, nil
 }
 
 // CreateGrpsIOMember creates a new member and returns it with revision
-func (w *MockGrpsIOMemberWriter) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
+func (w *MockGrpsIOMemberRepository) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "mock member: creating member", "member_uid", member.UID, "email", member.Email)
 
 	w.mock.mu.Lock()
@@ -394,7 +403,7 @@ func (w *MockGrpsIOMemberWriter) CreateGrpsIOMember(ctx context.Context, member 
 }
 
 // UpdateGrpsIOMember updates an existing member with optimistic concurrency control
-func (w *MockGrpsIOMemberWriter) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
+func (w *MockGrpsIOMemberRepository) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
 	slog.DebugContext(ctx, "mock member: updating member", "member_uid", uid)
 
 	w.mock.mu.Lock()
@@ -437,7 +446,7 @@ func (w *MockGrpsIOMemberWriter) UpdateGrpsIOMember(ctx context.Context, uid str
 }
 
 // DeleteGrpsIOMember deletes a member with optimistic concurrency control
-func (w *MockGrpsIOMemberWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
+func (w *MockGrpsIOMemberRepository) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
 	slog.DebugContext(ctx, "mock member: deleting member", "member_uid", uid)
 
 	w.mock.mu.Lock()
@@ -468,7 +477,7 @@ func (w *MockGrpsIOMemberWriter) DeleteGrpsIOMember(ctx context.Context, uid str
 }
 
 // CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
-func (w *MockGrpsIOMemberWriter) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
+func (w *MockGrpsIOMemberRepository) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
 	slog.DebugContext(ctx, "mock member: creating secondary indices", "member_uid", member.UID)
 
 	// Mock implementation - return mock keys for testing
@@ -486,117 +495,117 @@ func (w *MockGrpsIOMemberWriter) CreateMemberSecondaryIndices(ctx context.Contex
 }
 
 // GetKeyRevision retrieves the revision for a given key
-func (w *MockGrpsIOMemberWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
+func (w *MockGrpsIOMemberRepository) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
 	slog.DebugContext(ctx, "mock member: get key revision", "key", key)
 	return 1, nil
 }
 
 // Delete removes a key with the given revision
-func (w *MockGrpsIOMemberWriter) Delete(ctx context.Context, key string, revision uint64) error {
+func (w *MockGrpsIOMemberRepository) Delete(ctx context.Context, key string, revision uint64) error {
 	slog.DebugContext(ctx, "mock member: delete key", "key", key, "revision", revision)
 	return nil
 }
 
 // MockGrpsIOWriter combines both service and mailing list writers
 type MockGrpsIOWriter struct {
-	mock              *MockRepository
-	serviceWriter     *MockGrpsIOServiceWriter
-	mailingListWriter *MockGrpsIOMailingListWriter
-	memberWriter      *MockGrpsIOMemberWriter
+	mock                    *MockRepository
+	serviceRepository       *MockGrpsIOServiceRepository
+	mailingListRepository   *MockGrpsIOMailingListRepository
+	memberRepository        *MockGrpsIOMemberRepository
 }
 
 // ================== MockGrpsIOWriter implementation (delegates to sub-writers) ==================
 
 // Service writer methods
 func (w *MockGrpsIOWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
-	return w.serviceWriter.CreateGrpsIOService(ctx, service, settings)
+	return w.serviceRepository.CreateGrpsIOService(ctx, service, settings)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
-	return w.serviceWriter.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
+	return w.serviceRepository.UpdateGrpsIOService(ctx, uid, service, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error {
-	return w.serviceWriter.DeleteGrpsIOService(ctx, uid, expectedRevision, service)
+	return w.serviceRepository.DeleteGrpsIOService(ctx, uid, expectedRevision, service)
 }
 
 func (w *MockGrpsIOWriter) UniqueProjectType(ctx context.Context, service *model.GrpsIOService) (string, error) {
-	return w.serviceWriter.UniqueProjectType(ctx, service)
+	return w.serviceRepository.UniqueProjectType(ctx, service)
 }
 
 func (w *MockGrpsIOWriter) UniqueProjectPrefix(ctx context.Context, service *model.GrpsIOService) (string, error) {
-	return w.serviceWriter.UniqueProjectPrefix(ctx, service)
+	return w.serviceRepository.UniqueProjectPrefix(ctx, service)
 }
 
 func (w *MockGrpsIOWriter) UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error) {
-	return w.serviceWriter.UniqueProjectGroupID(ctx, service)
+	return w.serviceRepository.UniqueProjectGroupID(ctx, service)
 }
 
 func (w *MockGrpsIOWriter) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
-	return w.serviceWriter.CreateGrpsIOServiceSettings(ctx, settings)
+	return w.serviceRepository.CreateGrpsIOServiceSettings(ctx, settings)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
-	return w.serviceWriter.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
+	return w.serviceRepository.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
 }
 
 // Mailing list writer methods
 func (w *MockGrpsIOWriter) CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error) {
-	return w.mailingListWriter.CreateGrpsIOMailingList(ctx, mailingList)
+	return w.mailingListRepository.CreateGrpsIOMailingList(ctx, mailingList)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error) {
-	return w.mailingListWriter.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
+	return w.mailingListRepository.UpdateGrpsIOMailingList(ctx, uid, mailingList, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error {
-	return w.mailingListWriter.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingList)
+	return w.mailingListRepository.DeleteGrpsIOMailingList(ctx, uid, expectedRevision, mailingList)
 }
 
 func (w *MockGrpsIOWriter) CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error) {
-	return w.mailingListWriter.CreateSecondaryIndices(ctx, mailingList)
+	return w.mailingListRepository.CreateSecondaryIndices(ctx, mailingList)
 }
 
 func (w *MockGrpsIOWriter) UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error) {
-	return w.mailingListWriter.UniqueMailingListGroupName(ctx, mailingList)
+	return w.mailingListRepository.UniqueMailingListGroupName(ctx, mailingList)
 }
 
 func (w *MockGrpsIOWriter) CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error) {
-	return w.mailingListWriter.CreateGrpsIOMailingListSettings(ctx, settings)
+	return w.mailingListRepository.CreateGrpsIOMailingListSettings(ctx, settings)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error) {
-	return w.mailingListWriter.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
+	return w.mailingListRepository.UpdateGrpsIOMailingListSettings(ctx, settings, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
-	return w.serviceWriter.GetKeyRevision(ctx, key)
+	return w.serviceRepository.GetKeyRevision(ctx, key)
 }
 
 // For cleanup operations
 func (w *MockGrpsIOWriter) Delete(ctx context.Context, key string, revision uint64) error {
-	return w.serviceWriter.Delete(ctx, key, revision)
+	return w.serviceRepository.Delete(ctx, key, revision)
 }
 
 // Member operations - delegate to member writer
 func (w *MockGrpsIOWriter) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
-	return w.memberWriter.UniqueMember(ctx, member)
+	return w.memberRepository.UniqueMember(ctx, member)
 }
 
 func (w *MockGrpsIOWriter) CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error) {
-	return w.memberWriter.CreateGrpsIOMember(ctx, member)
+	return w.memberRepository.CreateGrpsIOMember(ctx, member)
 }
 
 func (w *MockGrpsIOWriter) UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error) {
-	return w.memberWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
+	return w.memberRepository.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
 }
 
 func (w *MockGrpsIOWriter) DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error {
-	return w.memberWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
+	return w.memberRepository.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
 }
 
 func (w *MockGrpsIOWriter) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
-	return w.memberWriter.CreateMemberSecondaryIndices(ctx, member)
+	return w.memberRepository.CreateMemberSecondaryIndices(ctx, member)
 }
 
 // MockEntityAttributeReader implements EntityAttributeReader interface
@@ -796,7 +805,7 @@ func (m *MockRepository) GetGrpsIOService(ctx context.Context, uid string) (*mod
 // ================== MockGrpsIOServiceWriter implementation ==================
 
 // CreateGrpsIOService creates a new service and its settings in the mock storage
-func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
+func (w *MockGrpsIOServiceRepository) CreateGrpsIOService(ctx context.Context, service *model.GrpsIOService, settings *model.GrpsIOServiceSettings) (*model.GrpsIOService, *model.GrpsIOServiceSettings, uint64, error) {
 	slog.DebugContext(ctx, "mock service: creating service", "service_id", service.UID)
 
 	w.mock.mu.Lock()
@@ -855,7 +864,7 @@ func (w *MockGrpsIOServiceWriter) CreateGrpsIOService(ctx context.Context, servi
 }
 
 // UpdateGrpsIOService updates an existing service with revision checking
-func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
+func (w *MockGrpsIOServiceRepository) UpdateGrpsIOService(ctx context.Context, uid string, service *model.GrpsIOService, expectedRevision uint64) (*model.GrpsIOService, uint64, error) {
 	slog.DebugContext(ctx, "mock service: updating service", "service_uid", uid, "expected_revision", expectedRevision)
 
 	w.mock.mu.Lock()
@@ -901,7 +910,7 @@ func (w *MockGrpsIOServiceWriter) UpdateGrpsIOService(ctx context.Context, uid s
 }
 
 // DeleteGrpsIOService deletes a service with revision checking
-func (w *MockGrpsIOServiceWriter) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error {
+func (w *MockGrpsIOServiceRepository) DeleteGrpsIOService(ctx context.Context, uid string, expectedRevision uint64, service *model.GrpsIOService) error {
 	slog.DebugContext(ctx, "mock service: deleting service", "service_uid", uid, "expected_revision", expectedRevision)
 
 	w.mock.mu.Lock()
@@ -930,7 +939,7 @@ func (w *MockGrpsIOServiceWriter) DeleteGrpsIOService(ctx context.Context, uid s
 }
 
 // UniqueProjectType validates that only one primary service exists per project (mock implementation)
-func (w *MockGrpsIOServiceWriter) UniqueProjectType(ctx context.Context, service *model.GrpsIOService) (string, error) {
+func (w *MockGrpsIOServiceRepository) UniqueProjectType(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	slog.DebugContext(ctx, "mock constraint validation: unique project type", "project_uid", service.ProjectUID, "type", service.Type)
 
 	// Mock implementation - always allows constraint creation
@@ -939,7 +948,7 @@ func (w *MockGrpsIOServiceWriter) UniqueProjectType(ctx context.Context, service
 }
 
 // UniqueProjectPrefix validates that the prefix is unique within the project for formation services (mock implementation)
-func (w *MockGrpsIOServiceWriter) UniqueProjectPrefix(ctx context.Context, service *model.GrpsIOService) (string, error) {
+func (w *MockGrpsIOServiceRepository) UniqueProjectPrefix(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	slog.DebugContext(ctx, "mock constraint validation: unique project prefix", "project_uid", service.ProjectUID, "prefix", service.Prefix)
 
 	// Mock implementation - always allows constraint creation
@@ -948,7 +957,7 @@ func (w *MockGrpsIOServiceWriter) UniqueProjectPrefix(ctx context.Context, servi
 }
 
 // UniqueProjectGroupID validates that the group_id is unique within the project for shared services (mock implementation)
-func (w *MockGrpsIOServiceWriter) UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error) {
+func (w *MockGrpsIOServiceRepository) UniqueProjectGroupID(ctx context.Context, service *model.GrpsIOService) (string, error) {
 	slog.DebugContext(ctx, "mock constraint validation: unique project group_id", "project_uid", service.ProjectUID, "group_id", service.GroupID)
 
 	// Mock implementation - always allows constraint creation
@@ -957,24 +966,24 @@ func (w *MockGrpsIOServiceWriter) UniqueProjectGroupID(ctx context.Context, serv
 }
 
 // GetKeyRevision retrieves the revision for a given key (used for cleanup operations)
-func (w *MockGrpsIOServiceWriter) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
+func (w *MockGrpsIOServiceRepository) GetKeyRevision(ctx context.Context, key string) (uint64, error) {
 	slog.DebugContext(ctx, "mock get key revision", "key", key)
 	return 1, nil
 }
 
 // Delete removes a key with the given revision (used for cleanup and rollback)
-func (w *MockGrpsIOServiceWriter) Delete(ctx context.Context, key string, revision uint64) error {
+func (w *MockGrpsIOServiceRepository) Delete(ctx context.Context, key string, revision uint64) error {
 	slog.DebugContext(ctx, "mock delete key", "key", key, "revision", revision)
 	return nil
 }
 
 // CreateGrpsIOServiceSettings delegates to MockRepository
-func (w *MockGrpsIOServiceWriter) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
+func (w *MockGrpsIOServiceRepository) CreateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings) (*model.GrpsIOServiceSettings, uint64, error) {
 	return w.mock.CreateGrpsIOServiceSettings(ctx, settings)
 }
 
 // UpdateGrpsIOServiceSettings delegates to MockRepository
-func (w *MockGrpsIOServiceWriter) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
+func (w *MockGrpsIOServiceRepository) UpdateGrpsIOServiceSettings(ctx context.Context, settings *model.GrpsIOServiceSettings, expectedRevision uint64) (*model.GrpsIOServiceSettings, uint64, error) {
 	return w.mock.UpdateGrpsIOServiceSettings(ctx, settings, expectedRevision)
 }
 
@@ -1215,17 +1224,32 @@ func NewMockGrpsIOServiceReader(mock *MockRepository) port.GrpsIOServiceReader {
 
 // NewMockGrpsIOServiceWriter creates a mock grpsio service writer
 func NewMockGrpsIOServiceWriter(mock *MockRepository) port.GrpsIOServiceWriter {
-	return &MockGrpsIOServiceWriter{mock: mock}
+	return &MockGrpsIOServiceRepository{mock: mock}
 }
 
 // NewMockGrpsIOMailingListWriter creates a mock grpsio mailing list writer
 func NewMockGrpsIOMailingListWriter(mock *MockRepository) port.GrpsIOMailingListWriter {
-	return &MockGrpsIOMailingListWriter{mock: mock}
+	return &MockGrpsIOMailingListRepository{mock: mock}
 }
 
 // NewMockGrpsIOMemberWriter creates a mock grpsio member writer
 func NewMockGrpsIOMemberWriter(mock *MockRepository) port.GrpsIOMemberWriter {
-	return &MockGrpsIOMemberWriter{mock: mock}
+	return &MockGrpsIOMemberRepository{mock: mock}
+}
+
+// NewMockGrpsIOServiceRepository creates a mock grpsio service repository
+func NewMockGrpsIOServiceRepository(mock *MockRepository) port.GrpsIOServiceRepository {
+	return &MockGrpsIOServiceRepository{mock: mock}
+}
+
+// NewMockGrpsIOMailingListRepository creates a mock grpsio mailing list repository
+func NewMockGrpsIOMailingListRepository(mock *MockRepository) port.GrpsIOMailingListRepository {
+	return &MockGrpsIOMailingListRepository{mock: mock}
+}
+
+// NewMockGrpsIOMemberRepository creates a mock grpsio member repository
+func NewMockGrpsIOMemberRepository(mock *MockRepository) port.GrpsIOMemberRepository {
+	return &MockGrpsIOMemberRepository{mock: mock}
 }
 
 // NewMockGrpsIOReader creates a mock grpsio reader
@@ -1237,9 +1261,9 @@ func NewMockGrpsIOReader(mock *MockRepository) port.GrpsIOReader {
 func NewMockGrpsIOWriter(mock *MockRepository) port.GrpsIOWriter {
 	return &MockGrpsIOWriter{
 		mock:              mock,
-		serviceWriter:     &MockGrpsIOServiceWriter{mock: mock},
-		mailingListWriter: &MockGrpsIOMailingListWriter{mock: mock},
-		memberWriter:      &MockGrpsIOMemberWriter{mock: mock},
+		serviceRepository:     &MockGrpsIOServiceRepository{mock: mock},
+		mailingListRepository: &MockGrpsIOMailingListRepository{mock: mock},
+		memberRepository:  &MockGrpsIOMemberRepository{mock: mock},
 	}
 }
 
@@ -1249,9 +1273,9 @@ func NewMockGrpsIOReaderWriter(mock *MockRepository) port.GrpsIOReaderWriter {
 		GrpsIOReader: mock,
 		GrpsIOWriter: &MockGrpsIOWriter{
 			mock:              mock,
-			serviceWriter:     &MockGrpsIOServiceWriter{mock: mock},
-			mailingListWriter: &MockGrpsIOMailingListWriter{mock: mock},
-			memberWriter:      &MockGrpsIOMemberWriter{mock: mock},
+			serviceRepository:     &MockGrpsIOServiceRepository{mock: mock},
+			mailingListRepository: &MockGrpsIOMailingListRepository{mock: mock},
+			memberRepository:  &MockGrpsIOMemberRepository{mock: mock},
 		},
 	}
 }

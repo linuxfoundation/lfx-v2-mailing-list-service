@@ -132,13 +132,21 @@ func WithGroupsIOClient(client groupsio.ClientInterface) grpsIOWriterOrchestrato
 	}
 }
 
+// WithMemberRepository sets the member repository for direct storage operations
+func WithMemberRepository(repo port.GrpsIOMemberRepository) grpsIOWriterOrchestratorOption {
+	return func(w *grpsIOWriterOrchestrator) {
+		w.memberRepository = repo
+	}
+}
+
 // grpsIOWriterOrchestrator orchestrates the service writing process
 type grpsIOWriterOrchestrator struct {
-	grpsIOWriter port.GrpsIOWriter
-	grpsIOReader port.GrpsIOReader
-	entityReader port.EntityAttributeReader
-	publisher    port.MessagePublisher
-	groupsClient groupsio.ClientInterface // May be nil for mock/disabled mode
+	grpsIOWriter     port.GrpsIOWriter
+	memberRepository port.GrpsIOMemberRepository
+	grpsIOReader     port.GrpsIOReader
+	entityReader     port.EntityAttributeReader
+	publisher        port.MessagePublisher
+	groupsClient     groupsio.ClientInterface // May be nil for mock/disabled mode
 }
 
 // NewGrpsIOWriterOrchestrator creates a new composite writer orchestrator using the option pattern
@@ -165,12 +173,12 @@ func (o *grpsIOWriterOrchestrator) Delete(ctx context.Context, key string, revis
 
 // UniqueMember validates member email is unique within mailing list
 func (o *grpsIOWriterOrchestrator) UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error) {
-	return o.grpsIOWriter.UniqueMember(ctx, member)
+	return o.memberRepository.UniqueMember(ctx, member)
 }
 
 // CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
 func (o *grpsIOWriterOrchestrator) CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error) {
-	return o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, member)
+	return o.memberRepository.CreateMemberSecondaryIndices(ctx, member)
 }
 
 // Common methods implementation

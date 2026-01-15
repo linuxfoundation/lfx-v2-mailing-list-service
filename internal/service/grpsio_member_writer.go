@@ -163,7 +163,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	}
 
 	// Step 5: Reserve unique constraints (member email per mailing list)
-	constraintKey, err := o.grpsIOWriter.UniqueMember(ctx, member)
+	constraintKey, err := o.memberRepository.UniqueMember(ctx, member)
 	if err != nil {
 		rollbackRequired = true
 		return nil, 0, err
@@ -201,7 +201,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	member.GroupID = groupID
 
 	// Step 9: Create member in storage (with Groups.io IDs already set)
-	createdMember, revision, err := o.grpsIOWriter.CreateGrpsIOMember(ctx, member)
+	createdMember, revision, err := o.memberRepository.CreateGrpsIOMember(ctx, member)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
@@ -231,7 +231,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	// Only create if member has Groups.io IDs (skip for mock/pending members)
 	// Pattern matches: createMailingListSecondaryIndices in CreateGrpsIOMailingList
 	if createdMember.MemberID != nil || createdMember.GroupID != nil {
-		secondaryKeys, err := o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, createdMember)
+		secondaryKeys, err := o.memberRepository.CreateMemberSecondaryIndices(ctx, createdMember)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create member secondary indices",
 				"error", err,
@@ -386,7 +386,7 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 	o.mergeMemberData(ctx, existing, member)
 
 	// Step 6: Update member in storage with optimistic concurrency control
-	updatedMember, revision, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
+	updatedMember, revision, err := o.memberRepository.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update member",
 			"error", err,
@@ -447,7 +447,7 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 	}
 
 	// Delete member from storage with optimistic concurrency control
-	err = o.grpsIOWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
+	err = o.memberRepository.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to delete member",
 			"error", err,

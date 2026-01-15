@@ -259,6 +259,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
@@ -305,6 +306,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -341,6 +343,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -391,6 +394,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -416,6 +420,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -449,6 +454,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -485,6 +491,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_DuplicateEmail(t *testing.T
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -611,6 +618,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_ValidationScenarios(t *test
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
@@ -665,6 +673,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_MemberTypes(t *testing.T) {
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
