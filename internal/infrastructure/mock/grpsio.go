@@ -1445,17 +1445,17 @@ func (m *MockGroupsIOClient) DeleteSubgroup(ctx context.Context, domain string, 
 }
 
 // GetGroup mocks the Groups.io group retrieval API (works for both main groups and subgroups)
+// Returns an error to trigger NATS fallback for subscriber count, since mock mode
+// cannot return accurate subscriber counts without access to the storage layer.
 func (m *MockGroupsIOClient) GetGroup(ctx context.Context, domain string, groupID uint64) (*groupsio.GroupObject, error) {
 	m.CallLog = append(m.CallLog, fmt.Sprintf("GetGroup(domain=%s, group_id=%d)", domain, groupID))
 
-	slog.InfoContext(ctx, "[MOCK] Groups.io group retrieval simulated",
+	slog.InfoContext(ctx, "[MOCK] Groups.io GetGroup returning error to trigger NATS fallback for subscriber count",
 		"domain", domain, "group_id", groupID)
 
-	// Return mock result with subscriber count
-	return &groupsio.GroupObject{
-		ID:        groupID,
-		SubsCount: 0, // Mock subscriber count (newly created groups start with 0)
-	}, nil
+	// Return error to trigger NATS fallback for subscriber count
+	// The mock cannot return accurate subscriber counts without access to storage
+	return nil, fmt.Errorf("mock mode: GetGroup not supported, use NATS fallback for subscriber count")
 }
 
 // AddMember mocks the Groups.io member addition API
