@@ -172,8 +172,7 @@ type MemberUpdateOptions struct {
 	ModStatus    string `url:"mod_status,omitempty"` // none, moderator, owner
 	DeliveryMode string `url:"delivery,omitempty"`   // individual, digest, no_email
 	Status       string `url:"status,omitempty"`     // normal, pending, bouncing
-	FirstName    string `url:"first_name,omitempty"`
-	LastName     string `url:"last_name,omitempty"`
+	FullName     string `url:"full_name,omitempty"`
 }
 
 // GroupUpdateOptions represents options for updating a Groups.io group/service
