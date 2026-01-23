@@ -1204,6 +1204,15 @@ func (s *storage) GetMailingListsByCommittee(ctx context.Context, committeeUID s
 	return mailingLists, nil
 }
 
+// ================== Interface Assertions ==================
+
+// Verify storage implements repository interfaces at compile time
+var (
+	_ port.GrpsIOServiceRepository      = (*storage)(nil)
+	_ port.GrpsIOMailingListRepository  = (*storage)(nil)
+	_ port.GrpsIOMemberRepository       = (*storage)(nil)
+)
+
 // ================== GrpsIOMember operations ==================
 
 // UniqueMember creates a unique constraint for member email within mailing list

@@ -8,6 +8,8 @@ import (
 	stdErrors "errors"
 	"fmt"
 	"log/slog"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -136,8 +138,8 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 
 			// Clean up GroupsIO member if created
 			if rollbackMemberID != nil && o.groupsClient != nil {
-				if deleteErr := o.groupsClient.RemoveMember(ctx, rollbackGroupsIODomain, *rollbackMemberID); deleteErr != nil {
-					slog.WarnContext(ctx, "failed to cleanup GroupsIO member during rollback", "error", deleteErr, "member_id", *rollbackMemberID)
+				if deleteErr := o.groupsClient.RemoveMember(ctx, rollbackGroupsIODomain, uint64(*member.GroupID), *rollbackMemberID); deleteErr != nil {
+					slog.WarnContext(ctx, "failed to cleanup GroupsIO member during rollback", "error", deleteErr, "group_id", *member.GroupID, "member_id", *rollbackMemberID)
 				}
 			}
 		}
@@ -162,7 +164,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	}
 
 	// Step 5: Reserve unique constraints (member email per mailing list)
-	constraintKey, err := o.grpsIOWriter.UniqueMember(ctx, member)
+	constraintKey, err := o.memberRepository.UniqueMember(ctx, member)
 	if err != nil {
 		rollbackRequired = true
 		return nil, 0, err
@@ -179,49 +181,28 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		return nil, 0, err
 	}
 
-	// Step 7: Validate source
-	if err := constants.ValidateSource(member.Source); err != nil {
+	// Step 7: Handle member creation based on source (API, webhook, or mock)
+	memberID, groupID, requiresCleanup, err := o.handleMemberCreationBySource(ctx, member, mailingList)
+	if err != nil {
+		rollbackRequired = true
 		return nil, 0, err
 	}
 
-	// Step 8: Source-based strategy dispatch
-	var (
-		memberID        *int64
-		groupID         *int64
-		requiresCleanup bool
-	)
-
-	switch member.Source {
-	case constants.SourceAPI:
-		memberID, groupID, requiresCleanup, err = o.handleAPISourceMember(ctx, member, mailingList)
-		if err != nil {
-			rollbackRequired = true
-			return nil, 0, err
+	// Set rollback information if cleanup is required
+	if requiresCleanup {
+		rollbackMemberID = utils.Int64PtrToUint64Ptr(memberID)
+		// Get parent service domain for rollback (only when needed)
+		parentService, _, svcErr := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
+		if svcErr == nil {
+			rollbackGroupsIODomain = parentService.GetDomain()
 		}
-		if requiresCleanup {
-			rollbackMemberID = utils.Int64PtrToUint64Ptr(memberID)
-			// Get parent service domain for rollback (only when needed)
-			parentService, _, svcErr := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
-			if svcErr == nil {
-				rollbackGroupsIODomain = parentService.Domain
-			}
-		}
-
-	case constants.SourceWebhook:
-		memberID, groupID, err = o.handleWebhookSourceMember(ctx, member)
-		if err != nil {
-			return nil, 0, err
-		}
-
-	case constants.SourceMock:
-		memberID, groupID = o.handleMockSourceMember(ctx, member)
 	}
 
 	member.MemberID = memberID
 	member.GroupID = groupID
 
 	// Step 9: Create member in storage (with Groups.io IDs already set)
-	createdMember, revision, err := o.grpsIOWriter.CreateGrpsIOMember(ctx, member)
+	createdMember, revision, err := o.memberRepository.CreateGrpsIOMember(ctx, member)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create member",
 			"error", err,
@@ -238,11 +219,27 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		"revision", revision,
 	)
 
+	// Refresh subscriber count asynchronously after DirectAdd and NATS item creation
+	// Run in background so NATS secondary indices creation and message sending can complete concurrently
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.ErrorContext(ctx, "panic in updateMailingListSubscriberCount",
+					"panic", r,
+					"mailing_list_uid", mailingList.UID)
+			}
+			wg.Done()
+		}()
+		o.updateMailingListSubscriberCount(ctx, mailingList.UID)
+	}()
+
 	// Step 9.5: Create secondary indices for Groups.io ID lookups
 	// Only create if member has Groups.io IDs (skip for mock/pending members)
 	// Pattern matches: createMailingListSecondaryIndices in CreateGrpsIOMailingList
 	if createdMember.MemberID != nil || createdMember.GroupID != nil {
-		secondaryKeys, err := o.grpsIOWriter.CreateMemberSecondaryIndices(ctx, createdMember)
+		secondaryKeys, err := o.memberRepository.CreateMemberSecondaryIndices(ctx, createdMember)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create member secondary indices",
 				"error", err,
@@ -266,8 +263,7 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 		}
 	}
 
-	// Step 11: Refresh subscriber count from Groups.io (best-effort, non-blocking)
-	o.updateMailingListSubscriberCount(ctx, createdMember.MailingListUID)
+	wg.Wait()
 
 	return createdMember, revision, nil
 }
@@ -278,8 +274,10 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 		return nil, nil, nil // Skip Groups.io creation
 	}
 
+	domain := parentService.GetDomain()
+
 	slog.InfoContext(ctx, "creating member in Groups.io",
-		"domain", parentService.Domain,
+		"domain", domain,
 		"group_id", *mailingList.GroupID,
 		"email", member.Email,
 	)
@@ -295,7 +293,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 
 	result, err := o.groupsClient.DirectAdd(
 		ctx,
-		parentService.Domain,
+		domain,
 		utils.Int64PtrToUint64(parentService.GroupID),
 		emails,
 		subgroupIDs,
@@ -303,7 +301,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 	if err != nil {
 		slog.ErrorContext(ctx, "Groups.io member creation failed",
 			"error", err,
-			"domain", parentService.Domain,
+			"domain", domain,
 			"group_id", *mailingList.GroupID,
 			"email", member.Email,
 		)
@@ -317,7 +315,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 			"email", firstError.Email,
 			"status", firstError.Status,
 			"group_id", firstError.GroupID,
-			"domain", parentService.Domain,
+			"domain", domain,
 		)
 		return nil, nil, fmt.Errorf("failed to add member %s: %s", firstError.Email, firstError.Status)
 	}
@@ -327,7 +325,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 		slog.ErrorContext(ctx, "no members added via direct_add",
 			"email", member.Email,
 			"group_id", *mailingList.GroupID,
-			"domain", parentService.Domain,
+			"domain", domain,
 		)
 		return nil, nil, fmt.Errorf("no members were added for email %s", member.Email)
 	}
@@ -340,7 +338,7 @@ func (o *grpsIOWriterOrchestrator) createMemberInGroupsIO(ctx context.Context, m
 	slog.InfoContext(ctx, "Groups.io member created successfully",
 		"member_id", memberID,
 		"group_id", groupID,
-		"domain", parentService.Domain,
+		"domain", domain,
 		"email", addedMember.Email,
 	)
 
@@ -396,7 +394,7 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 	o.mergeMemberData(ctx, existing, member)
 
 	// Step 6: Update member in storage with optimistic concurrency control
-	updatedMember, revision, err := o.grpsIOWriter.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
+	updatedMember, revision, err := o.memberRepository.UpdateGrpsIOMember(ctx, uid, member, expectedRevision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to update member",
 			"error", err,
@@ -410,14 +408,12 @@ func (o *grpsIOWriterOrchestrator) UpdateGrpsIOMember(ctx context.Context, uid s
 		"revision", revision,
 	)
 
-	// Step 6.1: Sync member updates to Groups.io (if client available and member has GroupsIOMemberID)
-	memberUpdates := groupsio.MemberUpdateOptions{
-		FirstName: updatedMember.FirstName,
-		LastName:  updatedMember.LastName,
-		// Note: Email cannot be updated in Groups.io API
-		// ModStatus and other settings can be added here as needed
+	// Step 6.1: Handle member update sync based on source (API, webhook, or mock)
+	if err := o.handleMemberUpdateBySource(ctx, updatedMember); err != nil {
+		slog.WarnContext(ctx, "Groups.io sync failed but local update succeeded",
+			"error", err, "member_uid", uid)
+		// Don't fail the operation - local update succeeded
 	}
-	o.syncMemberToGroupsIO(ctx, updatedMember, memberUpdates)
 
 	// Step 7: Publish messages (indexer and access control)
 	if o.publisher != nil {
@@ -437,45 +433,62 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 		"expected_revision", expectedRevision,
 	)
 
-	if member != nil {
-		slog.DebugContext(ctx, "member data provided for deletion",
-			"member_uid", member.UID,
-			"email", redaction.RedactEmail(member.Email),
-			"mailing_list_uid", member.MailingListUID,
-		)
-	} else {
-		slog.DebugContext(ctx, "no member data provided for deletion - will rely on storage layer for validation")
+	if member == nil {
+		return errs.NewValidation("member is required for deletion")
 	}
 
-	// Step 1: Remove member from Groups.io (if client available and member has GroupsIOMemberID)
-	o.removeMemberFromGroupsIO(ctx, member)
+	logger := slog.With("member_uid", uid, "source", member.Source)
+	if member.GroupID != nil {
+		logger = logger.With("group_id", *member.GroupID)
+	}
+	if member.MemberID != nil {
+		logger = logger.With("member_id", *member.MemberID)
+	}
+
+	// Handle member deletion based on source (API, webhook, or mock)
+	err := o.handleMemberDeletionBySource(ctx, member)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to remove member from source",
+			"error", err,
+		)
+		return fmt.Errorf("failed to remove member from source: %w", err)
+	}
 
 	// Delete member from storage with optimistic concurrency control
-	err := o.grpsIOWriter.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
+	err = o.memberRepository.DeleteGrpsIOMember(ctx, uid, expectedRevision, member)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to delete member",
+		logger.ErrorContext(ctx, "failed to delete member",
 			"error", err,
-			"member_uid", uid,
 		)
 		return err
 	}
 
-	slog.DebugContext(ctx, "member deleted successfully",
-		"member_uid", uid,
-	)
+	logger.DebugContext(ctx, "member deleted successfully")
+
+	// Update the mailing list subscriber count asynchronously
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.ErrorContext(ctx, "panic in updateMailingListSubscriberCount",
+					"panic", r,
+					"mailing_list_uid", member.MailingListUID)
+			}
+			wg.Done()
+		}()
+		o.updateMailingListSubscriberCount(ctx, member.MailingListUID)
+	}()
 
 	// Publish delete messages (indexer and access control)
-	if o.publisher != nil && member != nil {
+	if o.publisher != nil {
 		if err := o.publishMemberDeleteMessages(ctx, uid, *member); err != nil {
-			slog.ErrorContext(ctx, "failed to publish member delete messages", "error", err)
+			logger.ErrorContext(ctx, "failed to publish member delete messages", "error", err)
 			// Don't fail the operation on message failure, delete succeeded
 		}
 	}
 
-	// Refresh subscriber count from Groups.io (best-effort, non-blocking)
-	if member != nil {
-		o.updateMailingListSubscriberCount(ctx, member.MailingListUID)
-	}
+	wg.Wait()
 
 	return nil
 }
@@ -639,107 +652,191 @@ func (o *grpsIOWriterOrchestrator) mergeMemberData(ctx context.Context, existing
 	)
 }
 
-// syncMemberToGroupsIO handles Groups.io member update synchronization with proper error handling
-func (o *grpsIOWriterOrchestrator) syncMemberToGroupsIO(ctx context.Context, member *model.GrpsIOMember, updates groupsio.MemberUpdateOptions) {
-	// Guard clause: skip if Groups.io client not available or member not synced
-	if o.groupsClient == nil || member.MemberID == nil {
-		slog.InfoContext(ctx, "Groups.io integration disabled or member not synced - skipping Groups.io update")
-		return
-	}
-
-	// Get domain using helper method through member lookup chain
-	domain, err := o.getGroupsIODomainForResource(ctx, member.UID, constants.ResourceTypeMember)
-	if err != nil {
-		slog.WarnContext(ctx, "Groups.io member sync skipped due to domain lookup failure, local update will proceed",
-			"error", err, "member_uid", member.UID)
-		return
-	}
-
-	// Perform Groups.io member update
-	err = o.groupsClient.UpdateMember(ctx, domain, utils.Int64PtrToUint64(member.MemberID), updates)
-	if err != nil {
-		slog.WarnContext(ctx, "Groups.io member update failed, local update will proceed",
-			"error", err, "domain", domain, "member_id", *member.MemberID)
-	} else {
-		slog.InfoContext(ctx, "Groups.io member updated successfully",
-			"member_id", *member.MemberID, "domain", domain)
-	}
-}
-
-// handleAPISourceMember handles API-initiated member creation
-// Preserves existing logic: calls createMemberInGroupsIO with proper guards
-func (o *grpsIOWriterOrchestrator) handleAPISourceMember(
+// handleMemberCreationBySource handles member creation based on source type (API, webhook, or mock)
+func (o *grpsIOWriterOrchestrator) handleMemberCreationBySource(
 	ctx context.Context,
 	member *model.GrpsIOMember,
 	mailingList *model.GrpsIOMailingList,
-) (*int64, *int64, bool, error) {
-	// Guard: Skip if client not available or mailing list not synced (preserves existing logic)
+) (memberID *int64, groupID *int64, requiresCleanup bool, err error) {
+	if member == nil || mailingList == nil {
+		return nil, nil, false, errs.NewValidation("member and mailing list are required for creation")
+	}
+
+	if member.Source == constants.SourceMock {
+		// Mock source: Skip Groups.io creation for testing
+		slog.InfoContext(ctx, "skipping Groups.io creation",
+			"member_uid", member.UID)
+		return nil, nil, false, nil
+	}
+
+	if member.Source == constants.SourceWebhook {
+		// Webhook source: Skip Groups.io creation (webhook is source of truth)
+		// Use pre-provided IDs from webhook event
+		slog.InfoContext(ctx, "skipping Groups.io creation for webhook source",
+			"member_uid", member.UID, "source", member.Source)
+		return member.MemberID, member.GroupID, false, nil
+	}
+
+	// Build logger with safe group_id handling
+	logger := slog.With("member_uid", member.UID, "source", member.Source)
+	if mailingList.GroupID != nil {
+		logger = logger.With("group_id", *mailingList.GroupID)
+	}
+
+	// API source: Create member in Groups.io via API
+	// Guard: Skip if client not available or mailing list not synced
 	if o.groupsClient == nil || mailingList.GroupID == nil {
-		slog.InfoContext(ctx, "source=api: Groups.io client unavailable or mailing list not synced, treating as mock",
+		logger.InfoContext(ctx, "Groups.io client unavailable or mailing list not synced, treating as mock",
 			"email", redaction.RedactEmail(member.Email))
 		return nil, nil, false, nil
 	}
 
-	// Get parent service domain (only when needed for API source)
+	// Get parent service for Groups.io operations
 	parentService, _, err := o.grpsIOReader.GetGrpsIOService(ctx, mailingList.ServiceUID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
+		logger.ErrorContext(ctx, "failed to get parent service for Groups.io sync", "error", err, "service_uid", mailingList.ServiceUID)
 		return nil, nil, false, err
 	}
 
-	slog.InfoContext(ctx, "source=api: creating member in Groups.io",
-		"email", redaction.RedactEmail(member.Email),
-		"group_id", *mailingList.GroupID)
+	logger.InfoContext(ctx, "creating member in Groups.io",
+		"email", redaction.RedactEmail(member.Email))
 
-	// Call existing createMemberInGroupsIO method (preserves all existing logic)
-	memberID, groupID, err := o.createMemberInGroupsIO(ctx, member, mailingList, parentService)
+	// Create member in Groups.io
+	memberID, groupID, err = o.createMemberInGroupsIO(ctx, member, mailingList, parentService)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create member in Groups.io",
+		logger.ErrorContext(ctx, "failed to create member in Groups.io",
 			"error", err,
 			"email", redaction.RedactEmail(member.Email))
 		return nil, nil, false, err
 	}
 
-	// Determine if cleanup is required (preserves existing rollback logic)
-	requiresCleanup := memberID != nil && parentService.Domain != ""
+	// Determine if cleanup is required for rollback
+	requiresCleanup = memberID != nil && parentService.GroupID != nil
 
 	if memberID != nil {
-		slog.InfoContext(ctx, "member created successfully in Groups.io",
+		logger.InfoContext(ctx, "member created successfully in Groups.io",
 			"member_id", *memberID)
 	}
 
 	return memberID, groupID, requiresCleanup, nil
 }
 
-// handleWebhookSourceMember handles webhook-initiated member adoption
-// New functionality: allows adopting existing Groups.io members from webhooks
-func (o *grpsIOWriterOrchestrator) handleWebhookSourceMember(
-	ctx context.Context,
-	member *model.GrpsIOMember,
-) (*int64, *int64, error) {
-	if member.MemberID == nil {
-		return nil, nil, errs.NewValidation("webhook source requires MemberID to be provided")
+// handleMemberUpdateBySource handles member updates based on source type (API, webhook, or mock)
+// Returns error if Groups.io sync fails, but does not fail the overall update operation
+func (o *grpsIOWriterOrchestrator) handleMemberUpdateBySource(ctx context.Context, member *model.GrpsIOMember) error {
+	if member == nil {
+		return errs.NewValidation("member is required for update")
 	}
 
-	slog.InfoContext(ctx, "source=webhook: adopting webhook-provided member",
-		"member_id", *member.MemberID,
-		"email", redaction.RedactEmail(member.Email))
+	if member.Source == constants.SourceMock {
+		// Mock source: Skip Groups.io sync for testing
+		slog.InfoContext(ctx, "skipping Groups.io sync",
+			"member_uid", member.UID, "source", member.Source)
+		return nil
+	}
 
-	return member.MemberID, member.GroupID, nil
+	if member.Source == constants.SourceWebhook {
+		// Webhook source: Skip Groups.io sync (webhook is source of truth)
+		slog.InfoContext(ctx, "skipping Groups.io sync for webhook source",
+			"member_uid", member.UID, "source", member.Source)
+		return nil
+	}
+
+	logger := slog.With("member_uid", member.UID, "source", member.Source)
+
+	// API source: Sync updates to Groups.io
+	// Guard: Skip if client not available or member not synced
+	if o.groupsClient == nil || member.MemberID == nil {
+		logger.InfoContext(ctx, "Groups.io integration disabled or member not synced - skipping Groups.io update")
+		return nil
+	}
+	logger = logger.With("member_id", *member.MemberID)
+
+	// Get domain using helper method through member lookup chain
+	domain, err := o.getGroupsIODomainForResource(ctx, member.UID, constants.ResourceTypeMember)
+	if err != nil {
+		logger.WarnContext(ctx, "Groups.io member sync skipped due to domain lookup failure",
+			"error", err)
+		return err
+	}
+	logger = logger.With("domain", domain)
+
+	groupsioModStatus := ""
+	switch member.ModStatus {
+	case "moderator":
+		groupsioModStatus = "sub_modstatus_moderator"
+	case "owner":
+		groupsioModStatus = "sub_modstatus_owner"
+	case "none":
+		groupsioModStatus = "sub_modstatus_none"
+	default:
+		return errs.NewValidation(fmt.Sprintf("invalid mod status: %s", member.ModStatus))
+	}
+
+	groupsioDeliveryMode := ""
+	switch member.DeliveryMode {
+	case "normal":
+		groupsioDeliveryMode = "email_delivery_single"
+	case "digest":
+		groupsioDeliveryMode = "email_delivery_digest"
+	case "none":
+		groupsioDeliveryMode = "email_delivery_none"
+	default:
+		return errs.NewValidation(fmt.Sprintf("invalid delivery mode: %s", member.DeliveryMode))
+	}
+
+	memberUpdates := groupsio.MemberUpdateOptions{
+		FullName:     strings.TrimSpace(fmt.Sprintf("%s %s", member.FirstName, member.LastName)),
+		ModStatus:    groupsioModStatus,
+		DeliveryMode: groupsioDeliveryMode,
+	}
+
+	// Perform Groups.io member update
+	err = o.groupsClient.UpdateMember(ctx, domain, utils.Int64PtrToUint64(member.MemberID), memberUpdates)
+	if err != nil {
+		logger.WarnContext(ctx, "Groups.io member update failed",
+			"error", err)
+		return err
+	}
+
+	logger.InfoContext(ctx, "Groups.io member updated successfully")
+	return nil
 }
 
-// handleMockSourceMember handles mock/test mode member creation
-// Preserves existing logic: returns nil for IDs
-func (o *grpsIOWriterOrchestrator) handleMockSourceMember(
-	ctx context.Context,
-	member *model.GrpsIOMember,
-) (*int64, *int64) {
-	slog.InfoContext(ctx, "source=mock: skipping Groups.io coordination",
-		"email", redaction.RedactEmail(member.Email))
-	return nil, nil
+// handleMemberDeletionBySource handles member deletion based on source type (API, webhook, or mock)
+// Returns error if Groups.io deletion fails
+func (o *grpsIOWriterOrchestrator) handleMemberDeletionBySource(ctx context.Context, member *model.GrpsIOMember) error {
+	if member == nil {
+		return errs.NewValidation("member is required for deletion")
+	}
+
+	if member.Source == constants.SourceMock {
+		// Mock source: Skip Groups.io deletion for testing
+		slog.InfoContext(ctx, "skipping Groups.io deletion",
+			"member_uid", member.UID)
+		return nil
+	}
+
+	if member.Source == constants.SourceWebhook {
+		// Webhook source: Skip Groups.io deletion (webhook is source of truth)
+		slog.InfoContext(ctx, "skipping Groups.io deletion for webhook source",
+			"member_uid", member.UID, "source", member.Source)
+		return nil
+	}
+
+	logger := slog.With("member_uid", member.UID, "source", member.Source)
+	if member.GroupID != nil {
+		logger = logger.With("group_id", *member.GroupID)
+	}
+	if member.MemberID != nil {
+		logger = logger.With("member_id", *member.MemberID)
+	}
+
+	logger.InfoContext(ctx, "removing member from Groups.io")
+	return o.removeMemberFromGroupsIO(ctx, member)
 }
 
-// updateMailingListSubscriberCount refreshes the subscriber count from Groups.io
+// updateMailingListSubscriberCount refreshes the subscriber count from Groups.io and falls back to NATS member item count,
 // with retry logic for concurrent updates (max 3 attempts)
 // This is a best-effort operation - failures are logged but don't fail the member operation
 func (o *grpsIOWriterOrchestrator) updateMailingListSubscriberCount(

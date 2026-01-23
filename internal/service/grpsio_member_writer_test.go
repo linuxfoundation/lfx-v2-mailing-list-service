@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
@@ -260,6 +259,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember(t *testing.T) {
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
@@ -296,6 +296,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			Email:          "original@example.com",
 			MemberType:     "committee",
 			Status:         "normal",
+			Source:         constants.SourceMock,
 			CreatedAt:      time.Now().Add(-24 * time.Hour),
 			UpdatedAt:      time.Now().Add(-1 * time.Hour),
 		}
@@ -305,6 +306,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -317,6 +319,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			Email:          "original@example.com", // Email should remain the same (immutable)
 			MemberType:     "committee",
 			Status:         "normal",
+			Source:         constants.SourceMock,
 			CreatedAt:      existingMember.CreatedAt, // Preserve created time
 			UpdatedAt:      time.Now(),               // This will be set by the orchestrator
 		}
@@ -340,6 +343,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -351,6 +355,7 @@ func TestGrpsIOWriterOrchestrator_UpdateGrpsIOMember(t *testing.T) {
 			LastName:       "Member",
 			Email:          "updated@example.com",
 			MemberType:     "committee",
+			Source:         constants.SourceMock,
 		}
 
 		result, revision, err := writer.UpdateGrpsIOMember(ctx, "non-existent", member, 1)
@@ -379,6 +384,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 			Email:          "test@example.com",
 			MemberType:     "committee",
 			Status:         "normal",
+			Source:         constants.SourceMock,
 			CreatedAt:      time.Now().Add(-24 * time.Hour),
 			UpdatedAt:      time.Now().Add(-1 * time.Hour),
 		}
@@ -388,6 +394,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -413,15 +420,16 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
-		// Execute delete on non-existent member
+		// Execute delete on non-existent member with nil member (validation error)
 		err := writer.DeleteGrpsIOMember(ctx, "non-existent", 1, nil)
 
-		// Validate
+		// Validate - should return validation error for nil member
 		require.Error(t, err)
-		assert.IsType(t, errs.NotFound{}, err)
+		assert.IsType(t, errs.Validation{}, err)
 	})
 
 	t.Run("delete with wrong revision", func(t *testing.T) {
@@ -436,6 +444,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 			Email:          "test@example.com",
 			MemberType:     "committee",
 			Status:         "normal",
+			Source:         constants.SourceMock,
 			CreatedAt:      time.Now().Add(-24 * time.Hour),
 			UpdatedAt:      time.Now().Add(-1 * time.Hour),
 		}
@@ -445,6 +454,7 @@ func TestGrpsIOWriterOrchestrator_DeleteGrpsIOMember(t *testing.T) {
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -481,6 +491,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_DuplicateEmail(t *testing.T
 		writer := NewGrpsIOWriterOrchestrator(
 			WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 			WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 			WithPublisher(mock.NewMockMessagePublisher()),
 		)
 
@@ -607,6 +618,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_ValidationScenarios(t *test
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
@@ -661,6 +673,7 @@ func TestGrpsIOWriterOrchestrator_CreateGrpsIOMember_MemberTypes(t *testing.T) {
 			writer := NewGrpsIOWriterOrchestrator(
 				WithGrpsIOWriterReader(mock.NewMockGrpsIOReader(mockRepo)),
 				WithGrpsIOWriter(mock.NewMockGrpsIOWriter(mockRepo)),
+			WithMemberRepository(mock.NewMockGrpsIOMemberRepository(mockRepo)),
 				WithEntityAttributeReader(mock.NewMockEntityAttributeReader(mockRepo)),
 				WithPublisher(mock.NewMockMessagePublisher()),
 			)
@@ -697,19 +710,17 @@ func writerInt64Ptr(i int64) *int64 {
 	return &i
 }
 
-// TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO tests the syncMemberToGroupsIO method
-// Note: This method returns void and only logs errors/warnings. Comprehensive testing would
-// require log capture or refactoring the method to return an error/status.
-// These tests verify that guard clauses prevent panics in edge cases.
-func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
+// TestGrpsIOWriterOrchestrator_handleMemberUpdateBySource tests the handleMemberUpdateBySource method
+// which dispatches member updates based on source type (API, webhook, or mock)
+func TestGrpsIOWriterOrchestrator_handleMemberUpdateBySource(t *testing.T) {
 	testCases := []struct {
-		name       string
-		setupMocks func() *grpsIOWriterOrchestrator
-		member     *model.GrpsIOMember
-		updates    groupsio.MemberUpdateOptions
+		name        string
+		setupMocks  func() *grpsIOWriterOrchestrator
+		member      *model.GrpsIOMember
+		expectError bool
 	}{
 		{
-			name: "skip sync when Groups.io client is nil",
+			name: "API source - skip sync when Groups.io client is nil",
 			setupMocks: func() *grpsIOWriterOrchestrator {
 				return &grpsIOWriterOrchestrator{
 					groupsClient: nil, // No client - should skip gracefully
@@ -717,32 +728,59 @@ func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
 			},
 			member: &model.GrpsIOMember{
 				UID:       "member-1",
+				Source:    constants.SourceAPI,
 				MemberID:  func() *int64 { i := int64(12345); return &i }(),
 				FirstName: "John",
 				LastName:  "Doe",
 			},
-			updates: groupsio.MemberUpdateOptions{
-				FirstName: "John",
-				LastName:  "Doe",
-			},
+			expectError: false,
 		},
 		{
-			name: "skip sync when member GroupsIOMemberID is nil",
+			name: "API source - skip sync when member MemberID is nil",
 			setupMocks: func() *grpsIOWriterOrchestrator {
 				return &grpsIOWriterOrchestrator{
-					groupsClient: nil, // Could be any value, but GroupsIOMemberID is nil
+					groupsClient: nil,
 				}
 			},
 			member: &model.GrpsIOMember{
 				UID:       "member-2",
+				Source:    constants.SourceAPI,
 				MemberID:  nil, // No member ID - should skip gracefully
 				FirstName: "Jane",
 				LastName:  "Smith",
 			},
-			updates: groupsio.MemberUpdateOptions{
-				FirstName: "Jane",
-				LastName:  "Smith",
+			expectError: false,
+		},
+		{
+			name: "webhook source - skip sync (webhook is source of truth)",
+			setupMocks: func() *grpsIOWriterOrchestrator {
+				return &grpsIOWriterOrchestrator{
+					groupsClient: nil,
+				}
 			},
+			member: &model.GrpsIOMember{
+				UID:       "member-3",
+				Source:    constants.SourceWebhook,
+				MemberID:  func() *int64 { i := int64(12345); return &i }(),
+				FirstName: "Bob",
+				LastName:  "Johnson",
+			},
+			expectError: false,
+		},
+		{
+			name: "mock source - skip sync for testing",
+			setupMocks: func() *grpsIOWriterOrchestrator {
+				return &grpsIOWriterOrchestrator{
+					groupsClient: nil,
+				}
+			},
+			member: &model.GrpsIOMember{
+				UID:       "member-4",
+				Source:    constants.SourceMock,
+				FirstName: "Alice",
+				LastName:  "Williams",
+			},
+			expectError: false,
 		},
 	}
 
@@ -752,13 +790,15 @@ func TestGrpsIOWriterOrchestrator_syncMemberToGroupsIO(t *testing.T) {
 			ctx := context.Background()
 			orchestrator := tc.setupMocks()
 
-			// Execute - should not panic regardless of nil clients or missing data
-			require.NotPanics(t, func() {
-				orchestrator.syncMemberToGroupsIO(ctx, tc.member, tc.updates)
-			}, "syncMemberToGroupsIO should handle nil clients and missing data gracefully")
+			// Execute
+			err := orchestrator.handleMemberUpdateBySource(ctx, tc.member)
 
-			// Note: Without log capture or return values, we can only verify no panic occurs.
-			// The guard clauses at lines 468-471 in grpsio_member_writer.go ensure safe exit.
+			// Verify
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
