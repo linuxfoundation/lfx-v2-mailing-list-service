@@ -8,6 +8,7 @@ import (
 	stdErrors "errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -223,7 +224,14 @@ func (o *grpsIOWriterOrchestrator) CreateGrpsIOMember(ctx context.Context, membe
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				slog.ErrorContext(ctx, "panic in updateMailingListSubscriberCount",
+					"panic", r,
+					"mailing_list_uid", mailingList.UID)
+			}
+			wg.Done()
+		}()
 		o.updateMailingListSubscriberCount(ctx, mailingList.UID)
 	}()
 
@@ -461,7 +469,14 @@ func (o *grpsIOWriterOrchestrator) DeleteGrpsIOMember(ctx context.Context, uid s
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				logger.ErrorContext(ctx, "panic in updateMailingListSubscriberCount",
+					"panic", r,
+					"mailing_list_uid", member.MailingListUID)
+			}
+			wg.Done()
+		}()
 		o.updateMailingListSubscriberCount(ctx, member.MailingListUID)
 	}()
 
@@ -720,6 +735,13 @@ func (o *grpsIOWriterOrchestrator) handleMemberUpdateBySource(ctx context.Contex
 		return nil
 	}
 
+	if member.Source == constants.SourceWebhook {
+		// Webhook source: Skip Groups.io sync (webhook is source of truth)
+		slog.InfoContext(ctx, "skipping Groups.io sync for webhook source",
+			"member_uid", member.UID, "source", member.Source)
+		return nil
+	}
+
 	logger := slog.With("member_uid", member.UID, "source", member.Source)
 
 	// API source: Sync updates to Groups.io
@@ -764,7 +786,7 @@ func (o *grpsIOWriterOrchestrator) handleMemberUpdateBySource(ctx context.Contex
 	}
 
 	memberUpdates := groupsio.MemberUpdateOptions{
-		FullName:     fmt.Sprintf("%s %s", member.FirstName, member.LastName),
+		FullName:     strings.TrimSpace(fmt.Sprintf("%s %s", member.FirstName, member.LastName)),
 		ModStatus:    groupsioModStatus,
 		DeliveryMode: groupsioDeliveryMode,
 	}
@@ -792,6 +814,13 @@ func (o *grpsIOWriterOrchestrator) handleMemberDeletionBySource(ctx context.Cont
 		// Mock source: Skip Groups.io deletion for testing
 		slog.InfoContext(ctx, "skipping Groups.io deletion",
 			"member_uid", member.UID)
+		return nil
+	}
+
+	if member.Source == constants.SourceWebhook {
+		// Webhook source: Skip Groups.io deletion (webhook is source of truth)
+		slog.InfoContext(ctx, "skipping Groups.io deletion for webhook source",
+			"member_uid", member.UID, "source", member.Source)
 		return nil
 	}
 

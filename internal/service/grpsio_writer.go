@@ -335,11 +335,13 @@ func (o *grpsIOWriterOrchestrator) removeMemberFromGroupsIO(ctx context.Context,
 		return nil
 	}
 
-	logger := slog.With(
-		"member_uid", member.UID,
-		"group_id", *member.GroupID,
-		"member_id", *member.MemberID,
-	)
+	logger := slog.With("member_uid", member.UID)
+	if member.GroupID != nil {
+		logger = logger.With("group_id", *member.GroupID)
+	}
+	if member.MemberID != nil {
+		logger = logger.With("member_id", *member.MemberID)
+	}
 
 	// Get domain using helper method through member lookup chain
 	domain, err := o.getGroupsIODomainForResource(ctx, member.UID, constants.ResourceTypeMember)
