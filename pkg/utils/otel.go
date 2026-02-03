@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 const (
@@ -154,6 +154,12 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	return SetupOTelSDKWithConfig(ctx, OTelConfigFromEnv())
 }
 
+// isExporterEnabled returns true if the exporter is configured to be enabled.
+// Empty string is treated as disabled (same as "none") to handle zero-value OTelConfig.
+func isExporterEnabled(exporter string) bool {
+	return exporter != OTelExporterNone && exporter != ""
+}
+
 // SetupOTelSDKWithConfig bootstraps the OpenTelemetry pipeline with the provided configuration.
 // If it does not return an error, make sure to call shutdown for proper cleanup.
 func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(context.Context) error, err error) {
@@ -188,7 +194,7 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 	otel.SetTextMapPropagator(prop)
 
 	// Set up trace provider if enabled.
-	if cfg.TracesExporter != OTelExporterNone {
+	if isExporterEnabled(cfg.TracesExporter) {
 		var tracerProvider *trace.TracerProvider
 		tracerProvider, err = newTraceProvider(ctx, cfg, res)
 		if err != nil {
@@ -200,7 +206,7 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 	}
 
 	// Set up metrics provider if enabled.
-	if cfg.MetricsExporter != OTelExporterNone {
+	if isExporterEnabled(cfg.MetricsExporter) {
 		var metricsProvider *metric.MeterProvider
 		metricsProvider, err = newMetricsProvider(ctx, cfg, res)
 		if err != nil {
@@ -212,7 +218,7 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 	}
 
 	// Set up logger provider if enabled.
-	if cfg.LogsExporter != OTelExporterNone {
+	if isExporterEnabled(cfg.LogsExporter) {
 		var loggerProvider *log.LoggerProvider
 		loggerProvider, err = newLoggerProvider(ctx, cfg, res)
 		if err != nil {

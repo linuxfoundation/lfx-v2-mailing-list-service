@@ -9,24 +9,48 @@ import (
 	"testing"
 )
 
+// otelEnvVars lists all OTEL-related environment variables used in tests.
+var otelEnvVars = []string{
+	"OTEL_SERVICE_NAME",
+	"OTEL_SERVICE_VERSION",
+	"OTEL_EXPORTER_OTLP_PROTOCOL",
+	"OTEL_EXPORTER_OTLP_ENDPOINT",
+	"OTEL_EXPORTER_OTLP_INSECURE",
+	"OTEL_TRACES_EXPORTER",
+	"OTEL_TRACES_SAMPLE_RATIO",
+	"OTEL_METRICS_EXPORTER",
+	"OTEL_LOGS_EXPORTER",
+}
+
+// setEnv is a test helper that sets an environment variable and fails the test on error.
+func setEnv(t *testing.T, key, value string) {
+	t.Helper()
+	if err := os.Setenv(key, value); err != nil {
+		t.Fatalf("failed to set %s: %v", key, err)
+	}
+}
+
+// unsetEnv is a test helper that unsets an environment variable and fails the test on error.
+func unsetEnv(t *testing.T, key string) {
+	t.Helper()
+	if err := os.Unsetenv(key); err != nil {
+		t.Fatalf("failed to unset %s: %v", key, err)
+	}
+}
+
+// clearOTelEnvVars clears all OTEL-related environment variables.
+func clearOTelEnvVars(t *testing.T) {
+	t.Helper()
+	for _, env := range otelEnvVars {
+		unsetEnv(t, env)
+	}
+}
+
 // TestOTelConfigFromEnv_Defaults verifies that OTelConfigFromEnv returns
 // sensible default values when no environment variables are set.
 func TestOTelConfigFromEnv_Defaults(t *testing.T) {
 	// Clear all relevant environment variables
-	envVars := []string{
-		"OTEL_SERVICE_NAME",
-		"OTEL_SERVICE_VERSION",
-		"OTEL_EXPORTER_OTLP_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_INSECURE",
-		"OTEL_TRACES_EXPORTER",
-		"OTEL_TRACES_SAMPLE_RATIO",
-		"OTEL_METRICS_EXPORTER",
-		"OTEL_LOGS_EXPORTER",
-	}
-	for _, env := range envVars {
-		os.Unsetenv(env)
-	}
+	clearOTelEnvVars(t)
 
 	cfg := OTelConfigFromEnv()
 
@@ -63,27 +87,17 @@ func TestOTelConfigFromEnv_Defaults(t *testing.T) {
 // reads and parses all supported OTEL_* environment variables.
 func TestOTelConfigFromEnv_CustomValues(t *testing.T) {
 	// Set all environment variables
-	os.Setenv("OTEL_SERVICE_NAME", "test-service")
-	os.Setenv("OTEL_SERVICE_VERSION", "1.2.3")
-	os.Setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http")
-	os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
-	os.Setenv("OTEL_EXPORTER_OTLP_INSECURE", "true")
-	os.Setenv("OTEL_TRACES_EXPORTER", "otlp")
-	os.Setenv("OTEL_TRACES_SAMPLE_RATIO", "0.5")
-	os.Setenv("OTEL_METRICS_EXPORTER", "otlp")
-	os.Setenv("OTEL_LOGS_EXPORTER", "otlp")
+	setEnv(t, "OTEL_SERVICE_NAME", "test-service")
+	setEnv(t, "OTEL_SERVICE_VERSION", "1.2.3")
+	setEnv(t, "OTEL_EXPORTER_OTLP_PROTOCOL", "http")
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
+	setEnv(t, "OTEL_EXPORTER_OTLP_INSECURE", "true")
+	setEnv(t, "OTEL_TRACES_EXPORTER", "otlp")
+	setEnv(t, "OTEL_TRACES_SAMPLE_RATIO", "0.5")
+	setEnv(t, "OTEL_METRICS_EXPORTER", "otlp")
+	setEnv(t, "OTEL_LOGS_EXPORTER", "otlp")
 
-	defer func() {
-		os.Unsetenv("OTEL_SERVICE_NAME")
-		os.Unsetenv("OTEL_SERVICE_VERSION")
-		os.Unsetenv("OTEL_EXPORTER_OTLP_PROTOCOL")
-		os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-		os.Unsetenv("OTEL_EXPORTER_OTLP_INSECURE")
-		os.Unsetenv("OTEL_TRACES_EXPORTER")
-		os.Unsetenv("OTEL_TRACES_SAMPLE_RATIO")
-		os.Unsetenv("OTEL_METRICS_EXPORTER")
-		os.Unsetenv("OTEL_LOGS_EXPORTER")
-	}()
+	defer clearOTelEnvVars(t)
 
 	cfg := OTelConfigFromEnv()
 
@@ -138,11 +152,11 @@ func TestOTelConfigFromEnv_TracesSampleRatio(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clear and set the env var
-			os.Unsetenv("OTEL_TRACES_SAMPLE_RATIO")
+			unsetEnv(t, "OTEL_TRACES_SAMPLE_RATIO")
 			if tt.envValue != "" {
-				os.Setenv("OTEL_TRACES_SAMPLE_RATIO", tt.envValue)
+				setEnv(t, "OTEL_TRACES_SAMPLE_RATIO", tt.envValue)
 			}
-			defer os.Unsetenv("OTEL_TRACES_SAMPLE_RATIO")
+			defer unsetEnv(t, "OTEL_TRACES_SAMPLE_RATIO")
 
 			cfg := OTelConfigFromEnv()
 
@@ -172,11 +186,11 @@ func TestOTelConfigFromEnv_InsecureFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Unsetenv("OTEL_EXPORTER_OTLP_INSECURE")
+			unsetEnv(t, "OTEL_EXPORTER_OTLP_INSECURE")
 			if tt.envValue != "" {
-				os.Setenv("OTEL_EXPORTER_OTLP_INSECURE", tt.envValue)
+				setEnv(t, "OTEL_EXPORTER_OTLP_INSECURE", tt.envValue)
 			}
-			defer os.Unsetenv("OTEL_EXPORTER_OTLP_INSECURE")
+			defer unsetEnv(t, "OTEL_EXPORTER_OTLP_INSECURE")
 
 			cfg := OTelConfigFromEnv()
 
@@ -356,20 +370,7 @@ func TestOTelConstants(t *testing.T) {
 // use defaults and successfully initialize the SDK.
 func TestSetupOTelSDK(t *testing.T) {
 	// Clear environment to use defaults
-	envVars := []string{
-		"OTEL_SERVICE_NAME",
-		"OTEL_SERVICE_VERSION",
-		"OTEL_EXPORTER_OTLP_PROTOCOL",
-		"OTEL_EXPORTER_OTLP_ENDPOINT",
-		"OTEL_EXPORTER_OTLP_INSECURE",
-		"OTEL_TRACES_EXPORTER",
-		"OTEL_TRACES_SAMPLE_RATIO",
-		"OTEL_METRICS_EXPORTER",
-		"OTEL_LOGS_EXPORTER",
-	}
-	for _, env := range envVars {
-		os.Unsetenv(env)
-	}
+	clearOTelEnvVars(t)
 
 	ctx := context.Background()
 	shutdown, err := SetupOTelSDK(ctx)
@@ -388,24 +389,58 @@ func TestSetupOTelSDK(t *testing.T) {
 	}
 }
 
-// TestOTelConfig_ZeroValue documents that a zero-value OTelConfig does not
-// have exporters disabled by default. Users must explicitly set exporters to
-// OTelExporterNone to disable them.
+// TestOTelConfig_ZeroValue verifies that a zero-value OTelConfig is safe to use.
+// Empty string exporter values are treated as disabled (same as "none").
 func TestOTelConfig_ZeroValue(t *testing.T) {
-	// Test that zero-value config (with empty strings) tries to enable exporters
-	// because empty string != "none". This verifies the expected behavior that
-	// users should explicitly set exporters to "none" to disable them.
+	// A zero-value OTelConfig should be safe to use - empty strings are treated as disabled
 	cfg := OTelConfig{}
 
-	// Verify the zero-value behavior: empty string fields mean exporters would be enabled
-	if cfg.TracesExporter == OTelExporterNone {
-		t.Error("expected zero-value TracesExporter to NOT equal OTelExporterNone")
+	// Verify isExporterEnabled treats empty string as disabled
+	if isExporterEnabled(cfg.TracesExporter) {
+		t.Error("expected zero-value TracesExporter to be treated as disabled")
 	}
-	if cfg.MetricsExporter == OTelExporterNone {
-		t.Error("expected zero-value MetricsExporter to NOT equal OTelExporterNone")
+	if isExporterEnabled(cfg.MetricsExporter) {
+		t.Error("expected zero-value MetricsExporter to be treated as disabled")
 	}
-	if cfg.LogsExporter == OTelExporterNone {
-		t.Error("expected zero-value LogsExporter to NOT equal OTelExporterNone")
+	if isExporterEnabled(cfg.LogsExporter) {
+		t.Error("expected zero-value LogsExporter to be treated as disabled")
+	}
+
+	// Verify that a zero-value config can be used to initialize the SDK without error
+	ctx := context.Background()
+	shutdown, err := SetupOTelSDKWithConfig(ctx, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error with zero-value config: %v", err)
+	}
+	if shutdown == nil {
+		t.Fatal("expected non-nil shutdown function")
+	}
+	if err := shutdown(ctx); err != nil {
+		t.Errorf("shutdown returned unexpected error: %v", err)
+	}
+}
+
+// TestIsExporterEnabled verifies the isExporterEnabled helper function correctly
+// identifies when an exporter should be enabled or disabled.
+func TestIsExporterEnabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		exporter string
+		expected bool
+	}{
+		{"otlp enabled", OTelExporterOTLP, true},
+		{"none disabled", OTelExporterNone, false},
+		{"empty string disabled", "", false},
+		{"custom exporter enabled", "custom", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isExporterEnabled(tt.exporter)
+			if result != tt.expected {
+				t.Errorf("isExporterEnabled(%q) = %t, want %t", tt.exporter, result, tt.expected)
+			}
+		})
 	}
 }
 
