@@ -16,12 +16,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-func TestErrKeyConstant(t *testing.T) {
-	if ErrKey != "error" {
-		t.Errorf("expected ErrKey to be 'error', got %q", ErrKey)
-	}
-}
-
 func TestAppendCtx(t *testing.T) {
 	// Test with nil parent context
 	attr := slog.String("key1", "value1")
@@ -166,10 +160,7 @@ func TestInitStructureLogConfig_DefaultLevel(t *testing.T) {
 		}
 	}()
 
-	handler := InitStructureLogConfig()
-	if handler == nil {
-		t.Error("expected non-nil handler")
-	}
+	InitStructureLogConfig()
 }
 
 func TestInitStructureLogConfig_WithLogLevel(t *testing.T) {
@@ -208,10 +199,7 @@ func TestInitStructureLogConfig_WithLogLevel(t *testing.T) {
 				t.Errorf("error setting LOG_LEVEL: %v", err)
 				return
 			}
-			handler := InitStructureLogConfig()
-			if handler == nil {
-				t.Error("expected non-nil handler")
-			}
+			InitStructureLogConfig()
 		})
 	}
 }
@@ -252,10 +240,7 @@ func TestInitStructureLogConfig_WithAddSource(t *testing.T) {
 				t.Errorf("error setting LOG_ADD_SOURCE: %v", err)
 				return
 			}
-			handler := InitStructureLogConfig()
-			if handler == nil {
-				t.Error("expected non-nil handler")
-			}
+			InitStructureLogConfig()
 		})
 	}
 }
