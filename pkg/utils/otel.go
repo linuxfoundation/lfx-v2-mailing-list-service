@@ -6,9 +6,11 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/contrib/propagators/jaeger"
@@ -38,6 +40,16 @@ const (
 	OTelExporterOTLP = "otlp"
 	// OTelExporterNone disables exporting for a signal.
 	OTelExporterNone = "none"
+
+	// OTelPropagatorTraceContext is the W3C Trace Context propagator.
+	OTelPropagatorTraceContext = "tracecontext"
+	// OTelPropagatorBaggage is the W3C Baggage propagator.
+	OTelPropagatorBaggage = "baggage"
+	// OTelPropagatorJaeger is the Jaeger propagation format.
+	OTelPropagatorJaeger = "jaeger"
+
+	// OTelDefaultPropagators is the default comma-separated propagator list.
+	OTelDefaultPropagators = "tracecontext,baggage,jaeger"
 )
 
 // OTelConfig holds OpenTelemetry configuration options.
@@ -72,6 +84,10 @@ type OTelConfig struct {
 	// LogsExporter specifies the logs exporter: "otlp" or "none".
 	// Env: OTEL_LOGS_EXPORTER (default: "none")
 	LogsExporter string
+	// Propagators is a comma-separated list of propagator names.
+	// Supported values: "tracecontext", "baggage", "jaeger".
+	// Env: OTEL_PROPAGATORS (default: "tracecontext,baggage,jaeger")
+	Propagators string
 }
 
 // OTelConfigFromEnv creates an OTelConfig from environment variables.
@@ -108,6 +124,11 @@ func OTelConfigFromEnv() OTelConfig {
 		logsExporter = OTelExporterNone
 	}
 
+	propagators := os.Getenv("OTEL_PROPAGATORS")
+	if propagators == "" {
+		propagators = OTelDefaultPropagators
+	}
+
 	tracesSampleRatio := 1.0
 	if ratio := os.Getenv("OTEL_TRACES_SAMPLE_RATIO"); ratio != "" {
 		if parsed, err := strconv.ParseFloat(ratio, 64); err == nil {
@@ -133,6 +154,7 @@ func OTelConfigFromEnv() OTelConfig {
 		"traces-sample-ratio", tracesSampleRatio,
 		"metrics-exporter", metricsExporter,
 		"logs-exporter", logsExporter,
+		"propagators", propagators,
 	).Debug("OTelConfig")
 
 	return OTelConfig{
@@ -145,6 +167,7 @@ func OTelConfigFromEnv() OTelConfig {
 		TracesSampleRatio: tracesSampleRatio,
 		MetricsExporter:   metricsExporter,
 		LogsExporter:      logsExporter,
+		Propagators:       propagators,
 	}
 }
 
@@ -190,7 +213,11 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 	}
 
 	// Set up propagator.
-	prop := newPropagator()
+	prop, err := newPropagator(cfg)
+	if err != nil {
+		handleErr(err)
+		return
+	}
 	otel.SetTextMapPropagator(prop)
 
 	// Set up trace provider if enabled.
@@ -244,13 +271,31 @@ func newResource(cfg OTelConfig) (*resource.Resource, error) {
 	)
 }
 
-// newPropagator creates a composite text map propagator with W3C Trace Context, Baggage, and Jaeger support.
-func newPropagator() propagation.TextMapPropagator {
-	return propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-		jaeger.Jaeger{},
-	)
+// newPropagator creates a composite text map propagator from the configured propagator names.
+// Returns an error if any propagator name is unsupported.
+func newPropagator(cfg OTelConfig) (propagation.TextMapPropagator, error) {
+	names := strings.Split(cfg.Propagators, ",")
+	var propagators []propagation.TextMapPropagator
+
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		switch name {
+		case OTelPropagatorTraceContext:
+			propagators = append(propagators, propagation.TraceContext{})
+		case OTelPropagatorBaggage:
+			propagators = append(propagators, propagation.Baggage{})
+		case OTelPropagatorJaeger:
+			propagators = append(propagators, jaeger.Jaeger{})
+		default:
+			return nil, fmt.Errorf("unsupported propagator %q: supported values are %q, %q, %q",
+				name, OTelPropagatorTraceContext, OTelPropagatorBaggage, OTelPropagatorJaeger)
+		}
+	}
+
+	return propagation.NewCompositeTextMapPropagator(propagators...), nil
 }
 
 // newTraceProvider creates a TracerProvider with an OTLP exporter configured based on the protocol setting.

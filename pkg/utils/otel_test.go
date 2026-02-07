@@ -20,6 +20,7 @@ var otelEnvVars = []string{
 	"OTEL_TRACES_SAMPLE_RATIO",
 	"OTEL_METRICS_EXPORTER",
 	"OTEL_LOGS_EXPORTER",
+	"OTEL_PROPAGATORS",
 }
 
 // setEnv is a test helper that sets an environment variable and fails the test on error.
@@ -81,6 +82,9 @@ func TestOTelConfigFromEnv_Defaults(t *testing.T) {
 	if cfg.LogsExporter != OTelExporterNone {
 		t.Errorf("expected default LogsExporter %q, got %q", OTelExporterNone, cfg.LogsExporter)
 	}
+	if cfg.Propagators != OTelDefaultPropagators {
+		t.Errorf("expected default Propagators %q, got %q", OTelDefaultPropagators, cfg.Propagators)
+	}
 }
 
 // TestOTelConfigFromEnv_CustomValues verifies that OTelConfigFromEnv correctly
@@ -96,6 +100,7 @@ func TestOTelConfigFromEnv_CustomValues(t *testing.T) {
 	setEnv(t, "OTEL_TRACES_SAMPLE_RATIO", "0.5")
 	setEnv(t, "OTEL_METRICS_EXPORTER", "otlp")
 	setEnv(t, "OTEL_LOGS_EXPORTER", "otlp")
+	setEnv(t, "OTEL_PROPAGATORS", "tracecontext,baggage")
 
 	defer clearOTelEnvVars(t)
 
@@ -127,6 +132,9 @@ func TestOTelConfigFromEnv_CustomValues(t *testing.T) {
 	}
 	if cfg.LogsExporter != OTelExporterOTLP {
 		t.Errorf("expected LogsExporter %q, got %q", OTelExporterOTLP, cfg.LogsExporter)
+	}
+	if cfg.Propagators != "tracecontext,baggage" {
+		t.Errorf("expected Propagators 'tracecontext,baggage', got %q", cfg.Propagators)
 	}
 }
 
@@ -313,27 +321,26 @@ func TestNewResource(t *testing.T) {
 	}
 }
 
-// TestNewPropagator verifies that newPropagator returns a composite
-// TextMapPropagator that includes the standard W3C trace context fields
-// (traceparent, tracestate) and baggage propagation.
-func TestNewPropagator(t *testing.T) {
-	prop := newPropagator()
+// TestNewPropagator_Defaults verifies that newPropagator with default config
+// returns a composite TextMapPropagator that includes the standard W3C trace
+// context fields (traceparent, tracestate), baggage, and jaeger (uber-trace-id).
+func TestNewPropagator_Defaults(t *testing.T) {
+	cfg := OTelConfig{Propagators: OTelDefaultPropagators}
+	prop, err := newPropagator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if prop == nil {
 		t.Fatal("expected non-nil propagator")
 	}
 
-	// Verify it's a composite propagator with expected fields
 	fields := prop.Fields()
-	if len(fields) == 0 {
-		t.Error("expected propagator to have fields")
-	}
-
-	// Check for expected propagation fields (traceparent, tracestate, baggage)
 	expectedFields := map[string]bool{
-		"traceparent": false,
-		"tracestate":  false,
-		"baggage":     false,
+		"traceparent":  false,
+		"tracestate":   false,
+		"baggage":      false,
+		"uber-trace-id": false,
 	}
 
 	for _, field := range fields {
@@ -344,6 +351,70 @@ func TestNewPropagator(t *testing.T) {
 		if !found {
 			t.Errorf("expected propagator to include field %q", field)
 		}
+	}
+}
+
+// TestNewPropagator_Override verifies that OTEL_PROPAGATORS can override
+// the default propagator set to use only a subset.
+func TestNewPropagator_Override(t *testing.T) {
+	cfg := OTelConfig{Propagators: "tracecontext"}
+	prop, err := newPropagator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	fields := prop.Fields()
+	fieldSet := make(map[string]bool)
+	for _, f := range fields {
+		fieldSet[f] = true
+	}
+
+	if !fieldSet["traceparent"] {
+		t.Error("expected traceparent field")
+	}
+	if fieldSet["baggage"] {
+		t.Error("did not expect baggage field with tracecontext-only config")
+	}
+	if fieldSet["uber-trace-id"] {
+		t.Error("did not expect uber-trace-id field with tracecontext-only config")
+	}
+}
+
+// TestNewPropagator_UnsupportedError verifies that newPropagator returns an
+// error when an unsupported propagator name is provided.
+func TestNewPropagator_UnsupportedError(t *testing.T) {
+	tests := []struct {
+		name        string
+		propagators string
+	}{
+		{"unknown propagator", "b3"},
+		{"mixed valid and invalid", "tracecontext,b3multi"},
+		{"completely invalid", "zipkin"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := OTelConfig{Propagators: tt.propagators}
+			_, err := newPropagator(cfg)
+			if err == nil {
+				t.Errorf("expected error for propagators %q, got nil", tt.propagators)
+			}
+		})
+	}
+}
+
+// TestNewPropagator_EmptyString verifies that an empty propagators string
+// results in a propagator with no fields (no-op composite).
+func TestNewPropagator_EmptyString(t *testing.T) {
+	cfg := OTelConfig{Propagators: ""}
+	prop, err := newPropagator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	fields := prop.Fields()
+	if len(fields) != 0 {
+		t.Errorf("expected no fields for empty propagators, got %v", fields)
 	}
 }
 
