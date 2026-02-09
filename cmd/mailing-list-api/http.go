@@ -15,6 +15,7 @@ import (
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/middleware"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"goa.design/clue/debug"
 	goahttp "goa.design/goa/v3/http"
 )
@@ -71,6 +72,8 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 		// Log query and response bodies if debug logs are enabled.
 		handler = debug.HTTP()(handler)
 	}
+	// Add OpenTelemetry HTTP instrumentation (outermost to capture full request lifecycle)
+	handler = otelhttp.NewHandler(handler, "mailing-list-api")
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
