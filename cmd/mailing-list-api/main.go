@@ -17,8 +17,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 
 	"goa.design/clue/debug"
+)
+
+// Build-time variables set via ldflags
+var (
+	Version   = "dev"
+	BuildTime = "unknown"
+	GitCommit = "unknown"
 )
 
 const (
@@ -49,10 +57,35 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	slog.InfoContext(ctx, "Starting query service",
+
+	// Set up OpenTelemetry SDK.
+	// Command-line/environment OTEL_SERVICE_VERSION takes precedence over
+	// the build-time Version variable.
+	otelConfig := utils.OTelConfigFromEnv()
+	if otelConfig.ServiceVersion == "" {
+		otelConfig.ServiceVersion = Version
+	}
+	otelShutdown, err := utils.SetupOTelSDKWithConfig(ctx, otelConfig)
+	if err != nil {
+		slog.ErrorContext(ctx, "error setting up OpenTelemetry SDK", "error", err)
+		os.Exit(1)
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
+		defer cancel()
+		if shutdownErr := otelShutdown(shutdownCtx); shutdownErr != nil {
+			slog.ErrorContext(ctx, "error shutting down OpenTelemetry SDK", "error", shutdownErr)
+		}
+	}()
+
+	slog.InfoContext(ctx, "Starting mailing list service",
 		"bind", *bind,
 		"http-port", *port,
 		"graceful-shutdown-seconds", gracefulShutdownSeconds,
+		"version", Version,
+		"build-time", BuildTime,
+		"git-commit", GitCommit,
 	)
 
 	// Validate provider configuration before initializing dependencies
