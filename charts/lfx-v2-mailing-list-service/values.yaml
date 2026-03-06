@@ -13,6 +13,10 @@ image:
 # replicaCount is the number of replicas for the deployment
 replicaCount: 3
 
+podAnnotations: {}
+
+podLabels: {}
+
 # resources is the configuration for resource requests and limits
 resources:
   limits:
