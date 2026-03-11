@@ -5,7 +5,9 @@ package datastream
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -23,15 +25,24 @@ import (
 // No FGA access message is published — member access is inherited from the parent
 // mailing list's access record.
 func handleMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) bool {
-	member := transformToGrpsIOMember(uid, data)
+	// Members carry group_id (Groups.io numeric ID) rather than a direct mailing_list_uid.
+	// Resolve the parent subgroup UID via the reverse index written by the subgroup handler.
+	groupID := mapconv.Int64Ptr(data, "group_id")
+	if groupID == nil {
+		slog.ErrorContext(ctx, "member has no group_id, cannot determine parent mailing list — ACKing", "uid", uid)
+		return false
+	}
 
-	// Parent dependency check: ensure the parent mailing list is already indexed.
-	subgroupKey := buildMappingKey(constants.KVMappingPrefixSubgroup, member.MailingListUID)
-	if !isMappingPresent(ctx, mappingsKV, subgroupKey) {
+	gidKey := buildMappingKey(constants.KVMappingPrefixSubgroupByGroupID, fmt.Sprintf("%d", *groupID))
+	gidEntry, err := mappingsKV.Get(ctx, gidKey)
+	if err != nil || gidEntry == nil || string(gidEntry.Value()) == constants.KVTombstoneMarker {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing member for retry",
-			"uid", uid, "mailing_list_uid", member.MailingListUID)
+			"uid", uid, "group_id", *groupID)
 		return true // NAK — retry with backoff
 	}
+	mailingListUID := string(gidEntry.Value())
+
+	member := transformToGrpsIOMember(uid, mailingListUID, data)
 
 	mKey := buildMappingKey(constants.KVMappingPrefixMember, uid)
 	action := resolveAction(ctx, mappingsKV, mKey)
@@ -78,15 +89,23 @@ func handleMemberDelete(ctx context.Context, uid string, publisher port.MessageP
 }
 
 // transformToGrpsIOMember maps v1 DynamoDB fields to the GrpsIOMember domain model.
-func transformToGrpsIOMember(uid string, data map[string]any) *model.GrpsIOMember {
+// mailingListUID is resolved from the reverse group_id index before calling this function.
+//
+// DynamoDB fields available: member_id, committee_id, created_at, created_by,
+// delivery_mode, delivery_mode_list, email, full_name, group_id, groups_email,
+// groups_full_name, job_title, last_modified_at, last_modified_by,
+// last_system_modified_at, member_type, mod_status, organization, status,
+// sync_status, user_id.
+func transformToGrpsIOMember(uid, mailingListUID string, data map[string]any) *model.GrpsIOMember {
+	firstName, lastName := splitFullName(mapconv.StringVal(data, "full_name"))
+
 	member := &model.GrpsIOMember{
 		UID:            uid,
+		MailingListUID: mailingListUID,
 		MemberID:       mapconv.Int64Ptr(data, "member_id"),
 		GroupID:        mapconv.Int64Ptr(data, "group_id"),
-		MailingListUID: mapconv.StringVal(data, "mailing_list_uid"),
-		Username:       mapconv.StringVal(data, "username"),
-		FirstName:      mapconv.StringVal(data, "first_name"),
-		LastName:       mapconv.StringVal(data, "last_name"),
+		FirstName:      firstName,
+		LastName:       lastName,
 		Email:          mapconv.StringVal(data, "email"),
 		Organization:   mapconv.StringVal(data, "organization"),
 		JobTitle:       mapconv.StringVal(data, "job_title"),
@@ -97,6 +116,11 @@ func transformToGrpsIOMember(uid string, data map[string]any) *model.GrpsIOMembe
 		Source:         "v1-sync",
 	}
 
+	if ts := mapconv.StringVal(data, "created_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			member.CreatedAt = t
+		}
+	}
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil {
 			member.UpdatedAt = t
@@ -104,4 +128,14 @@ func transformToGrpsIOMember(uid string, data map[string]any) *model.GrpsIOMembe
 	}
 
 	return member
+}
+
+// splitFullName splits "First Last" into (first, last).
+// For single-token names (no space), the whole string is returned as first name.
+func splitFullName(fullName string) (string, string) {
+	idx := strings.Index(fullName, " ")
+	if idx == -1 {
+		return fullName, ""
+	}
+	return fullName[:idx], fullName[idx+1:]
 }

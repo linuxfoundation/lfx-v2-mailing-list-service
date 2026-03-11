@@ -5,6 +5,7 @@ package datastream
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -60,6 +61,13 @@ func handleSubgroupUpdate(ctx context.Context, uid string, data map[string]any, 
 	}
 
 	putMapping(ctx, mappingsKV, mKey, uid)
+
+	// Store reverse index: group_id → subgroup UID so member events can resolve MailingListUID.
+	if list.GroupID != nil {
+		gidKey := buildMappingKey(constants.KVMappingPrefixSubgroupByGroupID, fmt.Sprintf("%d", *list.GroupID))
+		putMapping(ctx, mappingsKV, gidKey, uid)
+	}
+
 	return false
 }
 
@@ -96,19 +104,23 @@ func handleSubgroupDelete(ctx context.Context, uid string, publisher port.Messag
 // transformToGrpsIOMailingList maps v1 DynamoDB fields to the GrpsIOMailingList domain model.
 func transformToGrpsIOMailingList(uid string, data map[string]any) *model.GrpsIOMailingList {
 	list := &model.GrpsIOMailingList{
-		UID:             uid,
-		GroupID:         mapconv.Int64Ptr(data, "group_id"),
-		GroupName:       mapconv.StringVal(data, "group_name"),
-		Public:          mapconv.BoolVal(data, "public"),
-		AudienceAccess:  mapconv.StringVal(data, "audience_access"),
-		Type:            mapconv.StringVal(data, "type"),
-		Description:     mapconv.StringVal(data, "description"),
-		Title:           mapconv.StringVal(data, "title"),
-		SubjectTag:      mapconv.StringVal(data, "subject_tag"),
-		ServiceUID:      mapconv.StringVal(data, "service_uid"),
-		ProjectUID:      mapconv.StringVal(data, "project_uid"),
-		SubscriberCount: mapconv.IntVal(data, "subscriber_count"),
-		Source:          "v1-sync",
+		UID:         uid,
+		GroupID:     mapconv.Int64Ptr(data, "group_id"),
+		GroupName:   mapconv.StringVal(data, "group_name"),
+		Public:      mapconv.StringVal(data, "visibility") == "Public",
+		Type:        mapconv.StringVal(data, "type"),
+		Description: mapconv.StringVal(data, "description"),
+		SubjectTag:  mapconv.StringVal(data, "subject_tag"),
+		ServiceUID:  mapconv.StringVal(data, "parent_id"),
+		ProjectUID:  mapconv.StringVal(data, "project_id"),
+		Source:      "v1-sync",
+	}
+
+	if committeeUID := mapconv.StringVal(data, "committee"); committeeUID != "" {
+		list.Committees = []model.Committee{{
+			UID:                   committeeUID,
+			AllowedVotingStatuses: mapconv.StringSliceVal(data, "committee_filters"),
+		}}
 	}
 
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {

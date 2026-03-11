@@ -68,6 +68,9 @@ const (
 	KVMappingPrefixSubgroup = "groupsio-subgroup"
 	// KVMappingPrefixMember is the v1-mappings key prefix for GroupsIO members.
 	KVMappingPrefixMember = "groupsio-member"
+	// KVMappingPrefixSubgroupByGroupID is the v1-mappings reverse index: Groups.io group_id → subgroup UID.
+	// Written by the subgroup handler so the member handler can resolve MailingListUID from group_id.
+	KVMappingPrefixSubgroupByGroupID = "groupsio-subgroup-gid"
 
 	// Key prefixes for bucket detection
 	// GroupsIOMailingListKeyPrefix is the common prefix for all mailing list related keys

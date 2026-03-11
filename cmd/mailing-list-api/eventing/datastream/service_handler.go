@@ -84,20 +84,13 @@ func handleServiceDelete(ctx context.Context, uid string, publisher port.Message
 // Source is always "v1-sync" to distinguish these from API-created records.
 func transformToGrpsIOService(uid string, data map[string]any) *model.GrpsIOService {
 	svc := &model.GrpsIOService{
-		UID:              uid,
-		Type:             mapconv.StringVal(data, "type"),
-		Domain:           mapconv.StringVal(data, "domain"),
-		GroupID:          mapconv.Int64Ptr(data, "group_id"),
-		Status:           mapconv.StringVal(data, "status"),
-		Source:           "v1-sync",
-		GlobalOwners:     mapconv.StringSliceVal(data, "global_owners"),
-		Prefix:           mapconv.StringVal(data, "prefix"),
-		ParentServiceUID: mapconv.StringVal(data, "parent_service_uid"),
-		ProjectSlug:      mapconv.StringVal(data, "project_slug"),
-		ProjectUID:       mapconv.StringVal(data, "project_uid"),
-		URL:              mapconv.StringVal(data, "url"),
-		GroupName:        mapconv.StringVal(data, "group_name"),
-		Public:           mapconv.BoolVal(data, "public"),
+		UID:        uid,
+		Type:       mapconv.StringVal(data, "group_service_type"),
+		Domain:     mapconv.StringVal(data, "domain"),
+		GroupID:    mapconv.Int64Ptr(data, "group_id"),
+		Prefix:     mapconv.StringVal(data, "prefix"),
+		ProjectUID: mapconv.StringVal(data, "project_id"),
+		Source:     "v1-sync",
 	}
 
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {

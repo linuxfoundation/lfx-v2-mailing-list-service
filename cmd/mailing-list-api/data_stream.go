@@ -26,7 +26,7 @@ import (
 // is a no-op and returns nil.
 func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 	if !dataStreamEnabled() {
-		slog.InfoContext(ctx, "data stream processor disabled (MAILING_LIST_EVENTING_ENABLED not set to true)")
+		slog.InfoContext(ctx, "data stream processor disabled (EVENTING_ENABLED not set to true)")
 		return nil
 	}
 
@@ -76,20 +76,20 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 
 // dataStreamEnabled reports whether the data stream processor has been opted into.
 func dataStreamEnabled() bool {
-	return os.Getenv("MAILING_LIST_EVENTING_ENABLED") == "true"
+	return os.Getenv("EVENTING_ENABLED") == "true"
 }
 
 // dataStreamConfig builds eventing.Config from environment variables with
 // sensible defaults.
 func dataStreamConfig() eventing.Config {
-	consumerName := os.Getenv("MAILING_LIST_EVENTING_CONSUMER_NAME")
+	consumerName := os.Getenv("EVENTING_CONSUMER_NAME")
 	if consumerName == "" {
 		consumerName = "mailing-list-service-kv-consumer"
 	}
 
-	maxDeliver := envInt("MAILING_LIST_EVENTING_MAX_DELIVER", 3)
-	maxAckPending := envInt("MAILING_LIST_EVENTING_MAX_ACK_PENDING", 1000)
-	ackWaitSecs := envInt("MAILING_LIST_EVENTING_ACK_WAIT_SECS", 30)
+	maxDeliver := envInt("EVENTING_MAX_DELIVER", 3)
+	maxAckPending := envInt("EVENTING_MAX_ACK_PENDING", 1000)
+	ackWaitSecs := envInt("EVENTING_ACK_WAIT_SECS", 30)
 
 	return eventing.Config{
 		ConsumerName:  consumerName,
