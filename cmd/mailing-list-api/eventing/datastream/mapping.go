@@ -6,6 +6,7 @@ package datastream
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -39,6 +40,7 @@ func resolveAction(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKe
 func isMappingPresent(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKey string) bool {
 	entry, err := mappingsKV.Get(ctx, mappingKey)
 	if err != nil || entry == nil {
+		slog.WarnContext(ctx, "mapping key not found in v1-mappings", "mapping_key", mappingKey)
 		return false
 	}
 	return string(entry.Value()) != constants.KVTombstoneMarker
@@ -49,6 +51,7 @@ func isMappingPresent(ctx context.Context, mappingsKV jetstream.KeyValue, mappin
 func isTombstoned(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKey string) bool {
 	entry, err := mappingsKV.Get(ctx, mappingKey)
 	if err != nil || entry == nil {
+		slog.WarnContext(ctx, "mapping key not found in v1-mappings - treating as not tombstoned", "mapping_key", mappingKey)
 		return false
 	}
 	return string(entry.Value()) == constants.KVTombstoneMarker
@@ -57,11 +60,17 @@ func isTombstoned(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKey
 // putMapping records that uid has been successfully processed so subsequent
 // events for the same key are treated as updates rather than creates.
 func putMapping(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKey, uid string) {
-	_, _ = mappingsKV.Put(ctx, mappingKey, []byte(uid))
+	_, errPut := mappingsKV.Put(ctx, mappingKey, []byte(uid))
+	if errPut != nil {
+		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mappingKey, "error", errPut)
+	}
 }
 
 // putTombstone writes the deletion marker into v1-mappings to prevent duplicate
 // processing of the same delete on consumer redelivery.
 func putTombstone(ctx context.Context, mappingsKV jetstream.KeyValue, mappingKey string) {
-	_, _ = mappingsKV.Put(ctx, mappingKey, []byte(constants.KVTombstoneMarker))
+	_, errPut := mappingsKV.Put(ctx, mappingKey, []byte(constants.KVTombstoneMarker))
+	if errPut != nil {
+		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mappingKey, "error", errPut)
+	}
 }

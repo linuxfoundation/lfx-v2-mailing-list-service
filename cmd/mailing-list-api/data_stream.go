@@ -17,8 +17,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
 // handleDataStream starts the durable JetStream consumer that processes DynamoDB KV
@@ -32,35 +30,10 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 		return nil
 	}
 
-	cfg := dataStreamConfig()
-	natsURL := dataStreamNATSURL()
+	natsClient := service.GetNATSClient(ctx)
 
-	conn, err := nats.Connect(natsURL,
-		nats.DrainTimeout(30*time.Second),
-		nats.ErrorHandler(func(_ *nats.Conn, sub *nats.Subscription, err error) {
-			attrs := []any{"error", err}
-			if sub != nil {
-				attrs = append(attrs, "subject", sub.Subject)
-			}
-			slog.With(attrs...).Error("NATS async error (data stream eventing)")
-		}),
-		nats.ClosedHandler(func(_ *nats.Conn) {
-			slog.Warn("NATS data stream eventing connection closed")
-		}),
-	)
+	mappingsKV, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
 	if err != nil {
-		return fmt.Errorf("failed to connect to NATS for data stream eventing: %w", err)
-	}
-
-	js, err := jetstream.New(conn)
-	if err != nil {
-		conn.Close()
-		return fmt.Errorf("failed to create JetStream context: %w", err)
-	}
-
-	mappingsKV, err := js.KeyValue(ctx, constants.KVBucketNameV1Mappings)
-	if err != nil {
-		conn.Close()
 		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
 	}
 
@@ -68,9 +41,9 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 	handler := datastream.NewEventHandler(publisher, mappingsKV)
 	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
 
-	processor, err := eventing.NewEventProcessor(ctx, cfg, conn, streamConsumer)
+	cfg := dataStreamConfig()
+	processor, err := eventing.NewEventProcessor(ctx, cfg, natsClient)
 	if err != nil {
-		conn.Close()
 		return fmt.Errorf("failed to create data stream processor: %w", err)
 	}
 
@@ -82,7 +55,7 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := processor.Start(ctx); err != nil {
+		if err := processor.Start(ctx, streamConsumer); err != nil {
 			slog.ErrorContext(ctx, "data stream processor exited with error", "error", err)
 		}
 	}()
@@ -104,14 +77,6 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 // dataStreamEnabled reports whether the data stream processor has been opted into.
 func dataStreamEnabled() bool {
 	return os.Getenv("MAILING_LIST_EVENTING_ENABLED") == "true"
-}
-
-// dataStreamNATSURL returns the NATS URL for the data stream connection.
-func dataStreamNATSURL() string {
-	if url := os.Getenv("NATS_URL"); url != "" {
-		return url
-	}
-	return "nats://localhost:4222"
 }
 
 // dataStreamConfig builds eventing.Config from environment variables with

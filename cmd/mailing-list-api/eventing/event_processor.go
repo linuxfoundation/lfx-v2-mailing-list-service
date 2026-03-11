@@ -7,10 +7,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -31,43 +33,32 @@ type Config struct {
 // EventProcessor is the interface for JetStream KV bucket event consumers.
 // Start blocks until ctx is cancelled; Stop performs a graceful shutdown.
 type EventProcessor interface {
-	Start(ctx context.Context) error
+	Start(ctx context.Context, streamConsumer port.DataStreamProcessor) error
 	Stop(ctx context.Context) error
 }
 
 // natsEventProcessor is the NATS JetStream implementation of EventProcessor.
-// It takes ownership of conn — draining and closing it on Stop.
 type natsEventProcessor struct {
-	natsConn       *nats.Conn
-	jsInstance     jetstream.JetStream
-	consumer       jetstream.Consumer
-	consumeCtx     jetstream.ConsumeContext
-	streamConsumer infraNATS.DataStreamProcessor
-	config         Config
+	natsClient *infraNATS.NATSClient
+	consumer   jetstream.Consumer
+	consumeCtx jetstream.ConsumeContext
+	config     Config
 }
 
-// NewEventProcessor creates an EventProcessor from an existing NATS connection and handler.
-// conn ownership is transferred — the processor drains and closes it on Stop.
-func NewEventProcessor(ctx context.Context, cfg Config, conn *nats.Conn, streamConsumer infraNATS.DataStreamProcessor) (EventProcessor, error) {
-	js, err := jetstream.New(conn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create JetStream context: %w", err)
-	}
-
+// NewEventProcessor creates an EventProcessor backed by the given NATSClient.
+func NewEventProcessor(_ context.Context, cfg Config, natsClient *infraNATS.NATSClient) (EventProcessor, error) {
 	return &natsEventProcessor{
-		natsConn:       conn,
-		jsInstance:     js,
-		streamConsumer: streamConsumer,
-		config:         cfg,
+		natsClient: natsClient,
+		config:     cfg,
 	}, nil
 }
 
 // Start creates (or resumes) the durable JetStream consumer and processes messages
 // until ctx is cancelled.
-func (ep *natsEventProcessor) Start(ctx context.Context) error {
+func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.DataStreamProcessor) error {
 	slog.InfoContext(ctx, "starting data stream processor", "consumer_name", ep.config.ConsumerName)
 
-	consumer, err := ep.jsInstance.CreateOrUpdateConsumer(ctx, ep.config.StreamName, jetstream.ConsumerConfig{
+	consumer, err := ep.natsClient.CreateOrUpdateConsumer(ctx, ep.config.StreamName, jetstream.ConsumerConfig{
 		Name:    ep.config.ConsumerName,
 		Durable: ep.config.ConsumerName,
 		// DeliverLastPerSubjectPolicy resumes from the last seen record per KV key after a
@@ -90,8 +81,22 @@ func (ep *natsEventProcessor) Start(ctx context.Context) error {
 	ep.consumer = consumer
 
 	consumeCtx, err := consumer.Consume(
-		func(msg jetstream.Msg) {
-			ep.streamConsumer.Process(ctx, msg)
+		func(jMsg jetstream.Msg) {
+			meta, err := jMsg.Metadata()
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to read stream message metadata, ACKing to avoid poison pill",
+					"subject", jMsg.Subject(), "error", err)
+				_ = jMsg.Ack()
+				return
+			}
+			streamConsumer.Process(ctx, model.StreamMessage{
+				Key:           kvKey(jMsg.Subject()),
+				Data:          jMsg.Data(),
+				IsRemoval:     isKVRemoval(jMsg),
+				DeliveryCount: meta.NumDelivered,
+				Ack:           jMsg.Ack,
+				Nak:           jMsg.NakWithDelay,
+			})
 		},
 		jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 			slog.With("error", err).Error("data stream KV consumer error")
@@ -108,7 +113,8 @@ func (ep *natsEventProcessor) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop drains and closes the dedicated NATS connection.
+// Stop halts the JetStream consumer. The NATS connection lifecycle is managed
+// by the caller (NATSClient).
 func (ep *natsEventProcessor) Stop(ctx context.Context) error {
 	slog.InfoContext(ctx, "stopping data stream processor")
 
@@ -117,14 +123,25 @@ func (ep *natsEventProcessor) Stop(ctx context.Context) error {
 		slog.InfoContext(ctx, "data stream consumer stopped")
 	}
 
-	if ep.natsConn != nil {
-		if err := ep.natsConn.Drain(); err != nil {
-			slog.ErrorContext(ctx, "error draining data stream NATS connection", "error", err)
-		}
-		ep.natsConn.Close()
-		slog.InfoContext(ctx, "data stream NATS connection closed")
-	}
-
 	slog.InfoContext(ctx, "data stream processor stopped")
 	return nil
+}
+
+// kvKey strips the "$KV.<bucket>." prefix from a JetStream KV subject,
+// returning the bare key. Subject format: $KV.<bucket>.<key>
+func kvKey(subject string) string {
+	idx := strings.Index(subject, ".")
+	if idx == -1 {
+		return subject
+	}
+	idx2 := strings.Index(subject[idx+1:], ".")
+	if idx2 == -1 {
+		return subject
+	}
+	return subject[idx+idx2+2:]
+}
+
+func isKVRemoval(msg jetstream.Msg) bool {
+	op := msg.Headers().Get("Kv-Operation")
+	return op == "DEL" || op == "PURGE"
 }
