@@ -1,0 +1,150 @@
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing/datastream"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
+	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
+)
+
+// handleDataStream starts the durable JetStream consumer that processes DynamoDB KV
+// change events for GroupsIO entities (service, subgroup, member).
+//
+// Enabled only when MAILING_LIST_EVENTING_ENABLED=true. If disabled, the function
+// is a no-op and returns nil.
+func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
+	if !dataStreamEnabled() {
+		slog.InfoContext(ctx, "data stream processor disabled (MAILING_LIST_EVENTING_ENABLED not set to true)")
+		return nil
+	}
+
+	cfg := dataStreamConfig()
+	natsURL := dataStreamNATSURL()
+
+	conn, err := nats.Connect(natsURL,
+		nats.DrainTimeout(30*time.Second),
+		nats.ErrorHandler(func(_ *nats.Conn, sub *nats.Subscription, err error) {
+			attrs := []any{"error", err}
+			if sub != nil {
+				attrs = append(attrs, "subject", sub.Subject)
+			}
+			slog.With(attrs...).Error("NATS async error (data stream eventing)")
+		}),
+		nats.ClosedHandler(func(_ *nats.Conn) {
+			slog.Warn("NATS data stream eventing connection closed")
+		}),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to connect to NATS for data stream eventing: %w", err)
+	}
+
+	js, err := jetstream.New(conn)
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("failed to create JetStream context: %w", err)
+	}
+
+	mappingsKV, err := js.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
+	}
+
+	publisher := service.MessagePublisher(ctx)
+	handler := datastream.NewEventHandler(publisher, mappingsKV)
+	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
+
+	processor, err := eventing.NewEventProcessor(ctx, cfg, conn, streamConsumer)
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("failed to create data stream processor: %w", err)
+	}
+
+	slog.InfoContext(ctx, "data stream processor created",
+		"consumer_name", cfg.ConsumerName,
+		"stream_name", cfg.StreamName,
+	)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := processor.Start(ctx); err != nil {
+			slog.ErrorContext(ctx, "data stream processor exited with error", "error", err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		stopCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
+		defer cancel()
+		if err := processor.Stop(stopCtx); err != nil {
+			slog.ErrorContext(stopCtx, "error stopping data stream processor", "error", err)
+		}
+	}()
+
+	return nil
+}
+
+// dataStreamEnabled reports whether the data stream processor has been opted into.
+func dataStreamEnabled() bool {
+	return os.Getenv("MAILING_LIST_EVENTING_ENABLED") == "true"
+}
+
+// dataStreamNATSURL returns the NATS URL for the data stream connection.
+func dataStreamNATSURL() string {
+	if url := os.Getenv("NATS_URL"); url != "" {
+		return url
+	}
+	return "nats://localhost:4222"
+}
+
+// dataStreamConfig builds eventing.Config from environment variables with
+// sensible defaults.
+func dataStreamConfig() eventing.Config {
+	consumerName := os.Getenv("MAILING_LIST_EVENTING_CONSUMER_NAME")
+	if consumerName == "" {
+		consumerName = "mailing-list-service-kv-consumer"
+	}
+
+	maxDeliver := envInt("MAILING_LIST_EVENTING_MAX_DELIVER", 3)
+	maxAckPending := envInt("MAILING_LIST_EVENTING_MAX_ACK_PENDING", 1000)
+	ackWaitSecs := envInt("MAILING_LIST_EVENTING_ACK_WAIT_SECS", 30)
+
+	return eventing.Config{
+		ConsumerName:  consumerName,
+		StreamName:    "KV_" + constants.KVBucketV1Objects,
+		MaxDeliver:    maxDeliver,
+		AckWait:       time.Duration(ackWaitSecs) * time.Second,
+		MaxAckPending: maxAckPending,
+	}
+}
+
+// envInt reads an integer environment variable, returning defaultVal if the
+// variable is absent or cannot be parsed.
+func envInt(key string, defaultVal int) int {
+	s := os.Getenv(key)
+	if s == "" {
+		return defaultVal
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultVal
+	}
+	return n
+}
