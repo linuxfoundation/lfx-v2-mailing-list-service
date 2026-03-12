@@ -8,13 +8,41 @@ The LFX v2 Mailing List Service is a comprehensive microservice that manages mai
 
 If you just need to run the service without developing on the service, use the Helm chart:
 
-```bash
-# Install the mailing list service
-helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
-  --namespace lfx \
-  --create-namespace \
-  --set image.tag=latest
-```
+1. **Build the Docker image** (required since `pullPolicy: Never` is used locally):
+
+   ```bash
+   make docker-build
+   ```
+
+2. **Create the Kubernetes secret** with GroupsIO credentials (values are in 1Password → **LFX V2** vault → **LFX Platform Chart Values Secrets - Local Development**):
+
+   ```bash
+   kubectl create secret generic lfx-v2-mailing-list-service -n lfx \
+     --from-literal=GROUPSIO_EMAIL="<value-from-1password>" \
+     --from-literal=GROUPSIO_PASSWORD="<value-from-1password>" \
+     --from-literal=GROUPSIO_WEBHOOK_SECRET="<value-from-1password>"
+   ```
+
+3. **Install the Helm chart**:
+
+   ```bash
+   # Using make (recommended)
+   make helm-install
+
+   # Or with local values override
+   make helm-install-local
+
+   # Or directly with helm
+   helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
+     --namespace lfx \
+     --create-namespace
+
+   # Or with local values override directly
+   helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
+     --namespace lfx \
+     --create-namespace \
+     --values ./charts/lfx-v2-mailing-list-service/values.local.yaml
+   ```
 
 ### For Local Development
 
@@ -284,6 +312,7 @@ if o.groupsClient != nil {
 - **Domain Logic**: All business logic flows through `MockRepository` in `internal/infrastructure/mock/grpsio.go`
 
 **Benefits:**
+
 1. **Clean Separation**: Infrastructure (HTTP calls) vs Domain (business logic)
 2. **Nil-Safe**: Orchestrator gracefully handles disabled Groups.io integration
 3. **Testable**: Domain logic fully tested without external API dependencies
@@ -350,15 +379,18 @@ When adding new functionality:
 For comprehensive integration testing using local Kubernetes cluster:
 
 1. **Deploy with Mock Authentication**:
+
    ```bash
    make helm-install-local
    ```
+
    This deploys the service with:
    - `AUTH_SOURCE=mock` - Bypasses JWT validation
    - `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-super-admin` - Mock principal
    - Mock GroupsIO integration
 
 2. **Test Individual Endpoints**:
+
    ```bash
    # Any Bearer token works with mock auth
    curl -H "Authorization: Bearer test-token" \
@@ -369,26 +401,43 @@ For comprehensive integration testing using local Kubernetes cluster:
 
 ## 🚀 Deployment
 
+### Kubernetes Secret
+
+Before deploying, create the Kubernetes secret with GroupsIO credentials. The command below is idempotent and safe to re-run (e.g. for credential rotation):
+
+```bash
+kubectl create secret generic lfx-v2-mailing-list-service -n lfx \
+  --from-literal=GROUPSIO_EMAIL="<value-from-1password>" \
+  --from-literal=GROUPSIO_PASSWORD="<value-from-1password>" \
+  --from-literal=GROUPSIO_WEBHOOK_SECRET="<value-from-1password>" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+> **Where to find the secret values**: Look in 1Password under the **LFX V2** vault, in the secured note titled **LFX Platform Chart Values Secrets - Local Development**.
+
 ### Helm Chart
 
 The service includes a Helm chart for Kubernetes deployment:
 
 ```bash
-# Install with default values
+# Install using make (recommended)
 make helm-install
 
-# Install with custom values
+# Install with local values override using make
+make helm-install-local
+
+# Install directly with helm
 helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
   --namespace lfx \
-  --values custom-values.yaml
+  --create-namespace
 
-# Install with GroupsIO credentials
+# Install with local values override directly
 helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
   --namespace lfx \
-  --set groupsio.email="your-email@example.com" \
-  --set groupsio.password="your-password"
+  --create-namespace \
+  --values ./charts/lfx-v2-mailing-list-service/values.local.yaml
 
-# View templates
+# View rendered templates
 make helm-templates
 ```
 
