@@ -21,7 +21,7 @@ import (
 // handleDataStream starts the durable JetStream consumer that processes DynamoDB KV
 // change events for GroupsIO entities (service, subgroup, member).
 //
-// Enabled only when MAILING_LIST_EVENTING_ENABLED=true. If disabled, the function
+// Enabled only when EVENTING_ENABLED=true. If disabled, the function
 // is a no-op and returns nil.
 func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 	if !dataStreamEnabled() {

@@ -45,6 +45,8 @@ func TestInt64Ptr(t *testing.T) {
 		{"nil value", map[string]any{"k": nil}, "k", nil},
 		{"missing key", map[string]any{}, "k", nil},
 		{"unparseable string", map[string]any{"k": "abc"}, "k", nil},
+		{"partial string 123abc", map[string]any{"k": "123abc"}, "k", nil},
+		{"non-integer float64 truncated", map[string]any{"k": float64(3.9)}, "k", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -64,6 +66,8 @@ func TestIntVal(t *testing.T) {
 		{"string value", map[string]any{"k": "250"}, "k", 250},
 		{"nil value", map[string]any{"k": nil}, "k", 0},
 		{"missing key", map[string]any{}, "k", 0},
+		{"partial string 123abc", map[string]any{"k": "123abc"}, "k", 0},
+		{"non-integer float64 truncated", map[string]any{"k": float64(3.9)}, "k", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -11,6 +11,8 @@ package mapconv
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 )
 
@@ -43,14 +45,19 @@ func Int64Ptr(data map[string]any, key string) *int64 {
 	var n int64
 	switch t := v.(type) {
 	case float64:
+		if t != math.Trunc(t) {
+			return nil
+		}
 		n = int64(t)
 	case string:
 		if t == "" {
 			return nil
 		}
-		if _, err := fmt.Sscanf(t, "%d", &n); err != nil {
+		parsed, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
 			return nil
 		}
+		n = parsed
 	default:
 		return nil
 	}
@@ -67,10 +74,15 @@ func IntVal(data map[string]any, key string) int {
 	}
 	switch t := v.(type) {
 	case float64:
+		if t != math.Trunc(t) {
+			return 0
+		}
 		return int(t)
 	case string:
-		var n int
-		fmt.Sscanf(t, "%d", &n) //nolint:errcheck
+		n, err := strconv.Atoi(t)
+		if err != nil {
+			return 0
+		}
 		return n
 	default:
 		return 0

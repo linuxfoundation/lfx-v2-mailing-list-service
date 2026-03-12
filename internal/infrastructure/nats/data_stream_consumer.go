@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"time"
 
+	msgpack "github.com/vmihailenco/msgpack/v5"
+
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
@@ -35,10 +37,13 @@ func (c *dataStreamConsumer) Process(ctx context.Context, msg model.StreamMessag
 
 	var data map[string]any
 	if err := json.Unmarshal(msg.Data, &data); err != nil {
-		slog.ErrorContext(ctx, "failed to unmarshal stream message payload, ACKing to avoid poison pill",
-			"key", msg.Key, "error", err)
-		c.ack(ctx, msg)
-		return
+		if msgErr := msgpack.Unmarshal(msg.Data, &data); msgErr != nil {
+			slog.ErrorContext(ctx, "failed to unmarshal stream message payload as JSON or msgpack, ACKing to avoid poison pill",
+				"key", msg.Key, "json_error", err, "msgpack_error", msgErr)
+			c.ack(ctx, msg)
+			return
+		}
+		slog.DebugContext(ctx, "decoded stream message payload as msgpack", "key", msg.Key)
 	}
 
 	if nak := c.handler.HandleChange(ctx, msg.Key, data); nak {
