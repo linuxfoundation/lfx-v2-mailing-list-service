@@ -6,61 +6,40 @@ The LFX v2 Mailing List Service is a comprehensive microservice that manages mai
 
 ### For Deployment (Helm)
 
-If you just need to run the service without developing on the service, use the Helm chart:
+Both flows below require the Kubernetes secret to be created first. If the `lfx` namespace doesn't exist yet, create it:
 
-1. **Build the Docker image**:
+```bash
+kubectl create namespace lfx
+```
 
-   ```bash
-   make docker-build
-   ```
+Then create the secret (values are in 1Password → **LFX V2** vault → **LFX Platform Chart Values Secrets - Local Development**):
 
-2. **Create the Kubernetes secret** with GroupsIO credentials (values are in 1Password → **LFX V2** vault → **LFX Platform Chart Values Secrets - Local Development**):
+```bash
+kubectl create secret generic lfx-v2-mailing-list-service -n lfx \
+  --from-literal=GROUPSIO_EMAIL="<value-from-1password>" \
+  --from-literal=GROUPSIO_PASSWORD="<value-from-1password>" \
+  --from-literal=GROUPSIO_WEBHOOK_SECRET="<value-from-1password>"
+```
 
-   If the `lfx` namespace doesn't exist yet, create it first:
+#### Deploy from GHCR (no local code changes)
 
-   ```bash
-   kubectl create namespace lfx
-   ```
+Pulls the published image from GHCR — no local build required:
 
-   Then create the secret:
+```bash
+make helm-install
+```
 
-   ```bash
-   kubectl create secret generic lfx-v2-mailing-list-service -n lfx \
-     --from-literal=GROUPSIO_EMAIL="<value-from-1password>" \
-     --from-literal=GROUPSIO_PASSWORD="<value-from-1password>" \
-     --from-literal=GROUPSIO_WEBHOOK_SECRET="<value-from-1password>"
-   ```
+#### Deploy a local build (with code changes)
 
-3. **Install the Helm chart**:
+Build the image locally, then install using the local values override (which sets `pullPolicy: Never` and the local image repository). Copy the example file first — `values.local.yaml` is not tracked by git so it is safe to modify:
 
-   By default, `make helm-install` pulls the image from GHCR (`ghcr.io/linuxfoundation/lfx-v2-mailing-list-service/mailing-list-api`). This is the standard path when you just want to run the service without modifying it.
+```bash
+cp charts/lfx-v2-mailing-list-service/values.local.example.yaml \
+   charts/lfx-v2-mailing-list-service/values.local.yaml
 
-   ```bash
-   make helm-install
-   ```
-
-   **If you have made local code changes** and want to run your own build, you need to use a local values override. Copy the example file (which already sets `pullPolicy: Never` and the local image repository) — `values.local.yaml` is not tracked by git so it is safe to modify:
-
-   ```bash
-   cp charts/lfx-v2-mailing-list-service/values.local.example.yaml \
-      charts/lfx-v2-mailing-list-service/values.local.yaml
-   ```
-
-   Then build and install using your local image:
-
-   ```bash
-   # Build your local image first
-   make docker-build
-
-   # Install using the local values override
-   make helm-install-local
-
-   # Or directly with helm
-   helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
-     --namespace lfx \
-     --create-namespace \
-     --values ./charts/lfx-v2-mailing-list-service/values.local.yaml
-   ```
+make docker-build
+make helm-install-local
+```
 
 ### For Local Development
 
