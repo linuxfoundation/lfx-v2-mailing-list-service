@@ -174,10 +174,14 @@ For comprehensive integration testing using local Kubernetes cluster:
         http://lfx-v2-mailing-list-service.lfx.svc.cluster.local:8080/services
    ```
 
-#### Configuration Files
-- `values.yaml` - Production configuration (JWT authentication)
-- `values.local.yaml` - Local testing override (mock authentication)
-- Use `-f values.local.yaml` for local deployment only
+#### Helm Values Files
+- `charts/lfx-v2-mailing-list-service/values.yaml` - Default configuration; pulls image from GHCR (`ghcr.io/...`), `pullPolicy: IfNotPresent`. Used by `make helm-install`. Do not commit local overrides here.
+- `charts/lfx-v2-mailing-list-service/values.local.yaml` - Not tracked by git. User-created override file for local development. Used by `make helm-install-local`.
+- `charts/lfx-v2-mailing-list-service/values.local.yaml.example` - Tracked example to copy from. Sets `image.repository: linuxfoundation/lfx-v2-mailing-list-service`, `image.tag: latest`, `image.pullPolicy: Never` for use with locally-built images.
+
+**Two deployment modes:**
+1. **Run from GHCR (no local code changes)**: `make helm-install` — pulls the published image, no docker build needed.
+2. **Run local code changes**: Copy the example file (`cp values.local.yaml.example values.local.yaml`), then `make docker-build && make helm-install-local` — uses the locally-built image.
 
 **⚠️ Security Warning**: Never use mock authentication in production environments.
 

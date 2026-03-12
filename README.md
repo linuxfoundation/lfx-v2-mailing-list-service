@@ -33,23 +33,29 @@ If you just need to run the service without developing on the service, use the H
 
 3. **Install the Helm chart**:
 
-   ```bash
-   # Using make (recommended)
-   make helm-install
+   By default, `make helm-install` pulls the image from GHCR (`ghcr.io/linuxfoundation/lfx-v2-mailing-list-service/mailing-list-api`). This is the standard path when you just want to run the service without modifying it.
 
-   # Or directly with helm
-   helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
-     --namespace lfx \
-     --create-namespace
+   ```bash
+   make helm-install
    ```
 
-   Optionally, create a `charts/lfx-v2-mailing-list-service/values.local.yaml` file to override any values before installing (e.g. to enable mock auth or change environment variables). Then install with your overrides:
+   **If you have made local code changes** and want to run your own build, you need to use a local values override. Copy the example file (which already sets `pullPolicy: Never` and the local image repository) — `values.local.yaml` is not tracked by git so it is safe to modify:
 
    ```bash
-   # With local values override using make
+   cp charts/lfx-v2-mailing-list-service/values.local.yaml.example \
+      charts/lfx-v2-mailing-list-service/values.local.yaml
+   ```
+
+   Then build and install using your local image:
+
+   ```bash
+   # Build your local image first
+   make docker-build
+
+   # Install using the local values override
    make helm-install-local
 
-   # Or with local values override directly
+   # Or directly with helm
    helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
      --namespace lfx \
      --create-namespace \
