@@ -87,7 +87,11 @@ lfx-v2-mailing-list-service/
 │       ├── design/                 # Goa API design files
 │       │   ├── mailing_list.go     # Service and endpoint definitions
 │       │   └── type.go             # Type definitions and data structures
+│       ├── eventing/               # v1→v2 data stream event processing
+│       │   ├── event_processor.go  # JetStream consumer lifecycle
+│       │   └── handler.go          # Key-prefix router (delegates to internal/service)
 │       ├── service/                # GOA service implementations
+│       ├── data_stream.go          # Data stream startup wiring and env config
 │       ├── main.go                 # Application entry point
 │       └── http.go                 # HTTP server setup
 ├── charts/                         # Helm chart for Kubernetes deployment
@@ -95,6 +99,8 @@ lfx-v2-mailing-list-service/
 │       ├── templates/              # Kubernetes resource templates
 │       ├── values.yaml             # Production configuration
 │       └── values.local.yaml       # Local development configuration
+├── docs/                           # Additional documentation
+│   └── event-processing.md         # v1→v2 data stream event processing
 ├── gen/                            # Generated code (DO NOT EDIT)
 │   ├── http/                       # HTTP transport layer
 │   │   ├── openapi.yaml            # OpenAPI 2.0 specification
@@ -104,12 +110,17 @@ lfx-v2-mailing-list-service/
 │   ├── domain/                     # Business domain layer
 │   │   ├── model/                  # Domain models and conversions
 │   │   └── port/                   # Repository and service interfaces
+│   │       └── mapping_store.go    # MappingReader / MappingWriter / MappingReaderWriter
 │   ├── service/                    # Service layer implementation
-│   │   └── grpsio_service_reader.go # GroupsIO service reader
+│   │   ├── grpsio_*.go             # GroupsIO CRUD orchestrators
+│   │   ├── datastream_service_handler.go  # v1-sync service transform + publish
+│   │   ├── datastream_subgroup_handler.go # v1-sync mailing list transform + publish
+│   │   └── datastream_member_handler.go   # v1-sync member transform + publish
 │   ├── infrastructure/             # Infrastructure layer
 │   │   ├── auth/                   # JWT authentication
 │   │   ├── groupsio/               # GroupsIO API client implementation
 │   │   ├── nats/                   # NATS messaging and storage
+│   │   │   ├── mapping_store.go    # MappingReaderWriter backed by JetStream KV
 │   │   │   ├── messaging_publish.go # Message publishing
 │   │   │   ├── messaging_request.go # Request/reply messaging
 │   │   │   └── storage.go          # KV store repositories
@@ -132,6 +143,12 @@ lfx-v2-mailing-list-service/
 ├── CLAUDE.md                       # Claude Code assistant instructions
 └── go.mod                          # Go module definition
 ```
+
+## 📚 Additional Documentation
+
+| Document | Description |
+|---|---|
+| [docs/event-processing.md](docs/event-processing.md) | v1→v2 data stream: how DynamoDB change events are consumed, transformed, and published to the indexer and FGA-sync services |
 
 ## 🛠️ Development
 

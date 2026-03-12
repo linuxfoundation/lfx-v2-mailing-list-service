@@ -1,10 +1,11 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-package datastream
+package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -13,15 +14,25 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
-// handleServiceUpdate transforms the v1 payload into a GrpsIOService and publishes
+// HandleDataStreamServiceUpdate transforms the v1 payload into a GrpsIOService and publishes
 // indexer + access control messages. Returns true to NAK on transient errors.
-func handleServiceUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) bool {
-	svc := transformToGrpsIOService(uid, data)
-	mKey := buildMappingKey(constants.KVMappingPrefixService, uid)
-	action := resolveAction(ctx, mappingsKV, mKey)
+func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	// Resolve v1 project SFID → v2 project UID via the shared project.sfid.{sfid} mapping
+	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
+	projectSFID := mapconv.StringVal(data, "project_id")
+	projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
+	if !ok {
+		slog.WarnContext(ctx, "project mapping not yet available, NAKing service for retry",
+			"uid", uid, "project_sfid", projectSFID)
+		return true // NAK — retry with backoff
+	}
+	data["project_id"] = projectUID
+
+	svc := transformV1ToGrpsIOService(uid, data)
+	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, uid)
+	action := mappings.ResolveAction(ctx, mKey)
 
 	msg := &model.IndexerMessage{Action: action, Tags: svc.Tags()}
 	built, err := msg.Build(ctx, svc)
@@ -37,24 +48,28 @@ func handleServiceUpdate(ctx context.Context, uid string, data map[string]any, p
 
 	accessMsg := &model.AccessMessage{
 		UID:        uid,
-		ObjectType: "groupsio_service",
+		ObjectType: constants.ObjectTypeGroupsIOService,
 		Public:     svc.Public,
-		References: map[string][]string{"project": {svc.ProjectUID}},
+		References: map[string][]string{
+			constants.RelationProject: {svc.ProjectUID},
+		},
 	}
 	if err := publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service access message", "uid", uid, "error", err)
 	}
 
-	putMapping(ctx, mappingsKV, mKey, uid)
+	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
+		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+	}
 	return false
 }
 
-// handleServiceDelete publishes a delete indexer message and tombstones the mapping.
+// HandleDataStreamServiceDelete publishes a delete indexer message and tombstones the mapping.
 // Returns true to NAK on transient errors.
-func handleServiceDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) bool {
-	mKey := buildMappingKey(constants.KVMappingPrefixService, uid)
+func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, uid)
 
-	if isTombstoned(ctx, mappingsKV, mKey) {
+	if mappings.IsTombstoned(ctx, mKey) {
 		slog.InfoContext(ctx, "service already deleted, ACKing duplicate", "uid", uid)
 		return false
 	}
@@ -71,18 +86,20 @@ func handleServiceDelete(ctx context.Context, uid string, publisher port.Message
 		return pkgerrors.IsTransient(err)
 	}
 
-	accessMsg := &model.AccessMessage{UID: uid, ObjectType: "groupsio_service"}
+	accessMsg := &model.AccessMessage{UID: uid, ObjectType: constants.ObjectTypeGroupsIOService}
 	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOServiceSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service delete access message", "uid", uid, "error", err)
 	}
 
-	putTombstone(ctx, mappingsKV, mKey)
+	if err := mappings.PutTombstone(ctx, mKey); err != nil {
+		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+	}
 	return false
 }
 
-// transformToGrpsIOService maps v1 DynamoDB fields to the GrpsIOService domain model.
+// transformV1ToGrpsIOService maps v1 DynamoDB fields to the GrpsIOService domain model.
 // Source is always "v1-sync" to distinguish these from API-created records.
-func transformToGrpsIOService(uid string, data map[string]any) *model.GrpsIOService {
+func transformV1ToGrpsIOService(uid string, data map[string]any) *model.GrpsIOService {
 	svc := &model.GrpsIOService{
 		UID:        uid,
 		Type:       mapconv.StringVal(data, "group_service_type"),

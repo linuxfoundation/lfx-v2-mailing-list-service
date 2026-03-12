@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing/datastream"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -32,13 +31,7 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 
 	natsClient := service.GetNATSClient(ctx)
 
-	mappingsKV, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
-	if err != nil {
-		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
-	}
-
-	publisher := service.MessagePublisher(ctx)
-	handler := datastream.NewEventHandler(publisher, mappingsKV)
+	handler := eventing.NewEventHandler(service.MessagePublisher(ctx), service.MappingReaderWriter(ctx))
 	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
 
 	cfg := dataStreamConfig()

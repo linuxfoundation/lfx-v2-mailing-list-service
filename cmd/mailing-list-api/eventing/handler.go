@@ -1,9 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-// Package datastream implements port.DataEventHandler for GroupsIO v1 DynamoDB
-// change events sourced from the lfx-v1-sync-helper pipeline.
-package datastream
+package eventing
 
 import (
 	"context"
@@ -11,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
-	"github.com/nats-io/nats.go/jetstream"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 )
 
 const (
@@ -27,17 +25,17 @@ const (
 // eventHandler implements port.DataEventHandler and routes KV events to the
 // appropriate per-entity handler based on the key prefix.
 type eventHandler struct {
-	publisher  port.MessagePublisher
-	mappingsKV jetstream.KeyValue
+	publisher port.MessagePublisher
+	mappings  port.MappingReaderWriter
 }
 
 // NewEventHandler constructs a DataEventHandler for GroupsIO entities.
 // publisher is used to emit indexer and access control messages.
-// mappingsKV is the v1-mappings KV bucket used for idempotency tracking.
-func NewEventHandler(publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) port.DataEventHandler {
+// mappings is the v1-mappings abstraction used for idempotency tracking.
+func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReaderWriter) port.DataEventHandler {
 	return &eventHandler{
-		publisher:  publisher,
-		mappingsKV: mappingsKV,
+		publisher: publisher,
+		mappings:  mappings,
 	}
 }
 
@@ -50,23 +48,23 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 	case strings.HasPrefix(key, kvPrefixService):
 		uid := key[len(kvPrefixService):]
 		if isSoftDelete {
-			return handleServiceDelete(ctx, uid, h.publisher, h.mappingsKV)
+			return service.HandleDataStreamServiceDelete(ctx, uid, h.publisher, h.mappings)
 		}
-		return handleServiceUpdate(ctx, uid, data, h.publisher, h.mappingsKV)
+		return service.HandleDataStreamServiceUpdate(ctx, uid, data, h.publisher, h.mappings)
 
 	case strings.HasPrefix(key, kvPrefixSubgroup):
 		uid := key[len(kvPrefixSubgroup):]
 		if isSoftDelete {
-			return handleSubgroupDelete(ctx, uid, h.publisher, h.mappingsKV)
+			return service.HandleDataStreamSubgroupDelete(ctx, uid, h.publisher, h.mappings)
 		}
-		return handleSubgroupUpdate(ctx, uid, data, h.publisher, h.mappingsKV)
+		return service.HandleDataStreamSubgroupUpdate(ctx, uid, data, h.publisher, h.mappings)
 
 	case strings.HasPrefix(key, kvPrefixMember):
 		uid := key[len(kvPrefixMember):]
 		if isSoftDelete {
-			return handleMemberDelete(ctx, uid, h.publisher, h.mappingsKV)
+			return service.HandleDataStreamMemberDelete(ctx, uid, h.publisher, h.mappings)
 		}
-		return handleMemberUpdate(ctx, uid, data, h.publisher, h.mappingsKV)
+		return service.HandleDataStreamMemberUpdate(ctx, uid, data, h.publisher, h.mappings)
 
 	default:
 		slog.WarnContext(ctx, "unrecognized KV key prefix in HandleChange, ACKing", "key", key)
@@ -78,13 +76,13 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 func (h *eventHandler) HandleRemoval(ctx context.Context, key string) bool {
 	switch {
 	case strings.HasPrefix(key, kvPrefixService):
-		return handleServiceDelete(ctx, key[len(kvPrefixService):], h.publisher, h.mappingsKV)
+		return service.HandleDataStreamServiceDelete(ctx, key[len(kvPrefixService):], h.publisher, h.mappings)
 
 	case strings.HasPrefix(key, kvPrefixSubgroup):
-		return handleSubgroupDelete(ctx, key[len(kvPrefixSubgroup):], h.publisher, h.mappingsKV)
+		return service.HandleDataStreamSubgroupDelete(ctx, key[len(kvPrefixSubgroup):], h.publisher, h.mappings)
 
 	case strings.HasPrefix(key, kvPrefixMember):
-		return handleMemberDelete(ctx, key[len(kvPrefixMember):], h.publisher, h.mappingsKV)
+		return service.HandleDataStreamMemberDelete(ctx, key[len(kvPrefixMember):], h.publisher, h.mappings)
 
 	default:
 		slog.WarnContext(ctx, "unrecognized KV key prefix in HandleRemoval, ACKing", "key", key)

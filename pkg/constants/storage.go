@@ -72,6 +72,14 @@ const (
 	// Written by the subgroup handler so the member handler can resolve MailingListUID from group_id.
 	KVMappingPrefixSubgroupByGroupID = "groupsio-subgroup-gid"
 
+	// KVMappingPrefixProjectBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
+	// project.sfid.{sfid} → v2 project UID. Used to resolve the v1 project_id (SFID) to a v2 UID.
+	KVMappingPrefixProjectBySFID = "project.sfid"
+
+	// KVMappingPrefixCommitteeBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
+	// committee.sfid.{sfid} → v2 committee UID. Used to resolve the v1 committee SFID to a v2 UID.
+	KVMappingPrefixCommitteeBySFID = "committee.sfid"
+
 	// Key prefixes for bucket detection
 	// GroupsIOMailingListKeyPrefix is the common prefix for all mailing list related keys
 	GroupsIOMailingListKeyPrefix = "lookup/groupsio-mailing-list/"

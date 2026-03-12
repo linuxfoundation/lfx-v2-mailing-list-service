@@ -1,7 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-package datastream
+package service
 
 import (
 	"context"
@@ -15,16 +15,15 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
-// handleMemberUpdate transforms the v1 payload into a GrpsIOMember and publishes an
+// HandleDataStreamMemberUpdate transforms the v1 payload into a GrpsIOMember and publishes an
 // indexer message. Returns true to NAK when the parent subgroup mapping is absent
 // (ordering guarantee) or on transient errors.
 //
 // No FGA access message is published — member access is inherited from the parent
 // mailing list's access record.
-func handleMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) bool {
+func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
 	// Members carry group_id (Groups.io numeric ID) rather than a direct mailing_list_uid.
 	// Resolve the parent subgroup UID via the reverse index written by the subgroup handler.
 	groupID := mapconv.Int64Ptr(data, "group_id")
@@ -33,19 +32,18 @@ func handleMemberUpdate(ctx context.Context, uid string, data map[string]any, pu
 		return false
 	}
 
-	gidKey := buildMappingKey(constants.KVMappingPrefixSubgroupByGroupID, fmt.Sprintf("%d", *groupID))
-	gidEntry, err := mappingsKV.Get(ctx, gidKey)
-	if err != nil || gidEntry == nil || string(gidEntry.Value()) == constants.KVTombstoneMarker {
+	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
+	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
+	if !ok {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing member for retry",
 			"uid", uid, "group_id", *groupID)
 		return true // NAK — retry with backoff
 	}
-	mailingListUID := string(gidEntry.Value())
 
-	member := transformToGrpsIOMember(uid, mailingListUID, data)
+	member := transformV1ToGrpsIOMember(uid, mailingListUID, data)
 
-	mKey := buildMappingKey(constants.KVMappingPrefixMember, uid)
-	action := resolveAction(ctx, mappingsKV, mKey)
+	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
+	action := mappings.ResolveAction(ctx, mKey)
 
 	msg := &model.IndexerMessage{Action: action, Tags: member.Tags()}
 	built, err := msg.Build(ctx, member)
@@ -59,15 +57,17 @@ func handleMemberUpdate(ctx context.Context, uid string, data map[string]any, pu
 		return pkgerrors.IsTransient(err)
 	}
 
-	putMapping(ctx, mappingsKV, mKey, uid)
+	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
+		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+	}
 	return false
 }
 
-// handleMemberDelete publishes a delete indexer message and tombstones the mapping.
-func handleMemberDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappingsKV jetstream.KeyValue) bool {
-	mKey := buildMappingKey(constants.KVMappingPrefixMember, uid)
+// HandleDataStreamMemberDelete publishes a delete indexer message and tombstones the mapping.
+func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
 
-	if isTombstoned(ctx, mappingsKV, mKey) {
+	if mappings.IsTombstoned(ctx, mKey) {
 		slog.InfoContext(ctx, "member already deleted, ACKing duplicate", "uid", uid)
 		return false
 	}
@@ -84,19 +84,15 @@ func handleMemberDelete(ctx context.Context, uid string, publisher port.MessageP
 		return pkgerrors.IsTransient(err)
 	}
 
-	putTombstone(ctx, mappingsKV, mKey)
+	if err := mappings.PutTombstone(ctx, mKey); err != nil {
+		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+	}
 	return false
 }
 
-// transformToGrpsIOMember maps v1 DynamoDB fields to the GrpsIOMember domain model.
+// transformV1ToGrpsIOMember maps v1 DynamoDB fields to the GrpsIOMember domain model.
 // mailingListUID is resolved from the reverse group_id index before calling this function.
-//
-// DynamoDB fields available: member_id, committee_id, created_at, created_by,
-// delivery_mode, delivery_mode_list, email, full_name, group_id, groups_email,
-// groups_full_name, job_title, last_modified_at, last_modified_by,
-// last_system_modified_at, member_type, mod_status, organization, status,
-// sync_status, user_id.
-func transformToGrpsIOMember(uid, mailingListUID string, data map[string]any) *model.GrpsIOMember {
+func transformV1ToGrpsIOMember(uid, mailingListUID string, data map[string]any) *model.GrpsIOMember {
 	firstName, lastName := splitFullName(mapconv.StringVal(data, "full_name"))
 
 	member := &model.GrpsIOMember{
