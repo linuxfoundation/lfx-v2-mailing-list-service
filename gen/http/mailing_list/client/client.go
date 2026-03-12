@@ -24,73 +24,89 @@ type Client struct {
 	// Readyz Doer is the HTTP client used to make requests to the readyz endpoint.
 	ReadyzDoer goahttp.Doer
 
-	// CreateGrpsioService Doer is the HTTP client used to make requests to the
-	// create-grpsio-service endpoint.
-	CreateGrpsioServiceDoer goahttp.Doer
+	// ListGroupsioServices Doer is the HTTP client used to make requests to the
+	// list-groupsio-services endpoint.
+	ListGroupsioServicesDoer goahttp.Doer
 
-	// GetGrpsioService Doer is the HTTP client used to make requests to the
-	// get-grpsio-service endpoint.
-	GetGrpsioServiceDoer goahttp.Doer
+	// CreateGroupsioService Doer is the HTTP client used to make requests to the
+	// create-groupsio-service endpoint.
+	CreateGroupsioServiceDoer goahttp.Doer
 
-	// UpdateGrpsioService Doer is the HTTP client used to make requests to the
-	// update-grpsio-service endpoint.
-	UpdateGrpsioServiceDoer goahttp.Doer
+	// GetGroupsioService Doer is the HTTP client used to make requests to the
+	// get-groupsio-service endpoint.
+	GetGroupsioServiceDoer goahttp.Doer
 
-	// DeleteGrpsioService Doer is the HTTP client used to make requests to the
-	// delete-grpsio-service endpoint.
-	DeleteGrpsioServiceDoer goahttp.Doer
+	// UpdateGroupsioService Doer is the HTTP client used to make requests to the
+	// update-groupsio-service endpoint.
+	UpdateGroupsioServiceDoer goahttp.Doer
 
-	// GetGrpsioServiceSettings Doer is the HTTP client used to make requests to
-	// the get-grpsio-service-settings endpoint.
-	GetGrpsioServiceSettingsDoer goahttp.Doer
+	// DeleteGroupsioService Doer is the HTTP client used to make requests to the
+	// delete-groupsio-service endpoint.
+	DeleteGroupsioServiceDoer goahttp.Doer
 
-	// UpdateGrpsioServiceSettings Doer is the HTTP client used to make requests to
-	// the update-grpsio-service-settings endpoint.
-	UpdateGrpsioServiceSettingsDoer goahttp.Doer
+	// GetGroupsioServiceProjects Doer is the HTTP client used to make requests to
+	// the get-groupsio-service-projects endpoint.
+	GetGroupsioServiceProjectsDoer goahttp.Doer
 
-	// CreateGrpsioMailingList Doer is the HTTP client used to make requests to the
-	// create-grpsio-mailing-list endpoint.
-	CreateGrpsioMailingListDoer goahttp.Doer
+	// FindParentGroupsioService Doer is the HTTP client used to make requests to
+	// the find-parent-groupsio-service endpoint.
+	FindParentGroupsioServiceDoer goahttp.Doer
 
-	// GetGrpsioMailingList Doer is the HTTP client used to make requests to the
-	// get-grpsio-mailing-list endpoint.
-	GetGrpsioMailingListDoer goahttp.Doer
+	// ListGroupsioSubgroups Doer is the HTTP client used to make requests to the
+	// list-groupsio-subgroups endpoint.
+	ListGroupsioSubgroupsDoer goahttp.Doer
 
-	// UpdateGrpsioMailingList Doer is the HTTP client used to make requests to the
-	// update-grpsio-mailing-list endpoint.
-	UpdateGrpsioMailingListDoer goahttp.Doer
+	// CreateGroupsioSubgroup Doer is the HTTP client used to make requests to the
+	// create-groupsio-subgroup endpoint.
+	CreateGroupsioSubgroupDoer goahttp.Doer
 
-	// DeleteGrpsioMailingList Doer is the HTTP client used to make requests to the
-	// delete-grpsio-mailing-list endpoint.
-	DeleteGrpsioMailingListDoer goahttp.Doer
+	// GetGroupsioSubgroup Doer is the HTTP client used to make requests to the
+	// get-groupsio-subgroup endpoint.
+	GetGroupsioSubgroupDoer goahttp.Doer
 
-	// GetGrpsioMailingListSettings Doer is the HTTP client used to make requests
-	// to the get-grpsio-mailing-list-settings endpoint.
-	GetGrpsioMailingListSettingsDoer goahttp.Doer
+	// UpdateGroupsioSubgroup Doer is the HTTP client used to make requests to the
+	// update-groupsio-subgroup endpoint.
+	UpdateGroupsioSubgroupDoer goahttp.Doer
 
-	// UpdateGrpsioMailingListSettings Doer is the HTTP client used to make
-	// requests to the update-grpsio-mailing-list-settings endpoint.
-	UpdateGrpsioMailingListSettingsDoer goahttp.Doer
+	// DeleteGroupsioSubgroup Doer is the HTTP client used to make requests to the
+	// delete-groupsio-subgroup endpoint.
+	DeleteGroupsioSubgroupDoer goahttp.Doer
 
-	// CreateGrpsioMailingListMember Doer is the HTTP client used to make requests
-	// to the create-grpsio-mailing-list-member endpoint.
-	CreateGrpsioMailingListMemberDoer goahttp.Doer
+	// GetGroupsioSubgroupCount Doer is the HTTP client used to make requests to
+	// the get-groupsio-subgroup-count endpoint.
+	GetGroupsioSubgroupCountDoer goahttp.Doer
 
-	// GetGrpsioMailingListMember Doer is the HTTP client used to make requests to
-	// the get-grpsio-mailing-list-member endpoint.
-	GetGrpsioMailingListMemberDoer goahttp.Doer
+	// GetGroupsioSubgroupMemberCount Doer is the HTTP client used to make requests
+	// to the get-groupsio-subgroup-member-count endpoint.
+	GetGroupsioSubgroupMemberCountDoer goahttp.Doer
 
-	// UpdateGrpsioMailingListMember Doer is the HTTP client used to make requests
-	// to the update-grpsio-mailing-list-member endpoint.
-	UpdateGrpsioMailingListMemberDoer goahttp.Doer
+	// ListGroupsioMembers Doer is the HTTP client used to make requests to the
+	// list-groupsio-members endpoint.
+	ListGroupsioMembersDoer goahttp.Doer
 
-	// DeleteGrpsioMailingListMember Doer is the HTTP client used to make requests
-	// to the delete-grpsio-mailing-list-member endpoint.
-	DeleteGrpsioMailingListMemberDoer goahttp.Doer
+	// AddGroupsioMember Doer is the HTTP client used to make requests to the
+	// add-groupsio-member endpoint.
+	AddGroupsioMemberDoer goahttp.Doer
 
-	// GroupsioWebhook Doer is the HTTP client used to make requests to the
-	// groupsio-webhook endpoint.
-	GroupsioWebhookDoer goahttp.Doer
+	// GetGroupsioMember Doer is the HTTP client used to make requests to the
+	// get-groupsio-member endpoint.
+	GetGroupsioMemberDoer goahttp.Doer
+
+	// UpdateGroupsioMember Doer is the HTTP client used to make requests to the
+	// update-groupsio-member endpoint.
+	UpdateGroupsioMemberDoer goahttp.Doer
+
+	// DeleteGroupsioMember Doer is the HTTP client used to make requests to the
+	// delete-groupsio-member endpoint.
+	DeleteGroupsioMemberDoer goahttp.Doer
+
+	// InviteGroupsioMembers Doer is the HTTP client used to make requests to the
+	// invite-groupsio-members endpoint.
+	InviteGroupsioMembersDoer goahttp.Doer
+
+	// CheckGroupsioSubscriber Doer is the HTTP client used to make requests to the
+	// check-groupsio-subscriber endpoint.
+	CheckGroupsioSubscriberDoer goahttp.Doer
 
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
@@ -112,30 +128,34 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:                           doer,
-		ReadyzDoer:                          doer,
-		CreateGrpsioServiceDoer:             doer,
-		GetGrpsioServiceDoer:                doer,
-		UpdateGrpsioServiceDoer:             doer,
-		DeleteGrpsioServiceDoer:             doer,
-		GetGrpsioServiceSettingsDoer:        doer,
-		UpdateGrpsioServiceSettingsDoer:     doer,
-		CreateGrpsioMailingListDoer:         doer,
-		GetGrpsioMailingListDoer:            doer,
-		UpdateGrpsioMailingListDoer:         doer,
-		DeleteGrpsioMailingListDoer:         doer,
-		GetGrpsioMailingListSettingsDoer:    doer,
-		UpdateGrpsioMailingListSettingsDoer: doer,
-		CreateGrpsioMailingListMemberDoer:   doer,
-		GetGrpsioMailingListMemberDoer:      doer,
-		UpdateGrpsioMailingListMemberDoer:   doer,
-		DeleteGrpsioMailingListMemberDoer:   doer,
-		GroupsioWebhookDoer:                 doer,
-		RestoreResponseBody:                 restoreBody,
-		scheme:                              scheme,
-		host:                                host,
-		decoder:                             dec,
-		encoder:                             enc,
+		LivezDoer:                          doer,
+		ReadyzDoer:                         doer,
+		ListGroupsioServicesDoer:           doer,
+		CreateGroupsioServiceDoer:          doer,
+		GetGroupsioServiceDoer:             doer,
+		UpdateGroupsioServiceDoer:          doer,
+		DeleteGroupsioServiceDoer:          doer,
+		GetGroupsioServiceProjectsDoer:     doer,
+		FindParentGroupsioServiceDoer:      doer,
+		ListGroupsioSubgroupsDoer:          doer,
+		CreateGroupsioSubgroupDoer:         doer,
+		GetGroupsioSubgroupDoer:            doer,
+		UpdateGroupsioSubgroupDoer:         doer,
+		DeleteGroupsioSubgroupDoer:         doer,
+		GetGroupsioSubgroupCountDoer:       doer,
+		GetGroupsioSubgroupMemberCountDoer: doer,
+		ListGroupsioMembersDoer:            doer,
+		AddGroupsioMemberDoer:              doer,
+		GetGroupsioMemberDoer:              doer,
+		UpdateGroupsioMemberDoer:           doer,
+		DeleteGroupsioMemberDoer:           doer,
+		InviteGroupsioMembersDoer:          doer,
+		CheckGroupsioSubscriberDoer:        doer,
+		RestoreResponseBody:                restoreBody,
+		scheme:                             scheme,
+		host:                               host,
+		decoder:                            dec,
+		encoder:                            enc,
 	}
 }
 
@@ -177,15 +197,15 @@ func (c *Client) Readyz() goa.Endpoint {
 	}
 }
 
-// CreateGrpsioService returns an endpoint that makes HTTP requests to the
-// mailing-list service create-grpsio-service server.
-func (c *Client) CreateGrpsioService() goa.Endpoint {
+// ListGroupsioServices returns an endpoint that makes HTTP requests to the
+// mailing-list service list-groupsio-services server.
+func (c *Client) ListGroupsioServices() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeCreateGrpsioServiceRequest(c.encoder)
-		decodeResponse = DecodeCreateGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeListGroupsioServicesRequest(c.encoder)
+		decodeResponse = DecodeListGroupsioServicesResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildCreateGrpsioServiceRequest(ctx, v)
+		req, err := c.BuildListGroupsioServicesRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -193,23 +213,23 @@ func (c *Client) CreateGrpsioService() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.CreateGrpsioServiceDoer.Do(req)
+		resp, err := c.ListGroupsioServicesDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-service", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "list-groupsio-services", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GetGrpsioService returns an endpoint that makes HTTP requests to the
-// mailing-list service get-grpsio-service server.
-func (c *Client) GetGrpsioService() goa.Endpoint {
+// CreateGroupsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service create-groupsio-service server.
+func (c *Client) CreateGroupsioService() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGetGrpsioServiceRequest(c.encoder)
-		decodeResponse = DecodeGetGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeCreateGroupsioServiceRequest(c.encoder)
+		decodeResponse = DecodeCreateGroupsioServiceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGetGrpsioServiceRequest(ctx, v)
+		req, err := c.BuildCreateGroupsioServiceRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -217,23 +237,23 @@ func (c *Client) GetGrpsioService() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GetGrpsioServiceDoer.Do(req)
+		resp, err := c.CreateGroupsioServiceDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-service", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "create-groupsio-service", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// UpdateGrpsioService returns an endpoint that makes HTTP requests to the
-// mailing-list service update-grpsio-service server.
-func (c *Client) UpdateGrpsioService() goa.Endpoint {
+// GetGroupsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service get-groupsio-service server.
+func (c *Client) GetGroupsioService() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeUpdateGrpsioServiceRequest(c.encoder)
-		decodeResponse = DecodeUpdateGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioServiceRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioServiceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateGrpsioServiceRequest(ctx, v)
+		req, err := c.BuildGetGroupsioServiceRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -241,23 +261,23 @@ func (c *Client) UpdateGrpsioService() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.UpdateGrpsioServiceDoer.Do(req)
+		resp, err := c.GetGroupsioServiceDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-service", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-service", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// DeleteGrpsioService returns an endpoint that makes HTTP requests to the
-// mailing-list service delete-grpsio-service server.
-func (c *Client) DeleteGrpsioService() goa.Endpoint {
+// UpdateGroupsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service update-groupsio-service server.
+func (c *Client) UpdateGroupsioService() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeDeleteGrpsioServiceRequest(c.encoder)
-		decodeResponse = DecodeDeleteGrpsioServiceResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeUpdateGroupsioServiceRequest(c.encoder)
+		decodeResponse = DecodeUpdateGroupsioServiceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildDeleteGrpsioServiceRequest(ctx, v)
+		req, err := c.BuildUpdateGroupsioServiceRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -265,23 +285,23 @@ func (c *Client) DeleteGrpsioService() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.DeleteGrpsioServiceDoer.Do(req)
+		resp, err := c.UpdateGroupsioServiceDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-service", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "update-groupsio-service", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GetGrpsioServiceSettings returns an endpoint that makes HTTP requests to the
-// mailing-list service get-grpsio-service-settings server.
-func (c *Client) GetGrpsioServiceSettings() goa.Endpoint {
+// DeleteGroupsioService returns an endpoint that makes HTTP requests to the
+// mailing-list service delete-groupsio-service server.
+func (c *Client) DeleteGroupsioService() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGetGrpsioServiceSettingsRequest(c.encoder)
-		decodeResponse = DecodeGetGrpsioServiceSettingsResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeDeleteGroupsioServiceRequest(c.encoder)
+		decodeResponse = DecodeDeleteGroupsioServiceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGetGrpsioServiceSettingsRequest(ctx, v)
+		req, err := c.BuildDeleteGroupsioServiceRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -289,23 +309,23 @@ func (c *Client) GetGrpsioServiceSettings() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GetGrpsioServiceSettingsDoer.Do(req)
+		resp, err := c.DeleteGroupsioServiceDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-service-settings", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "delete-groupsio-service", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// UpdateGrpsioServiceSettings returns an endpoint that makes HTTP requests to
-// the mailing-list service update-grpsio-service-settings server.
-func (c *Client) UpdateGrpsioServiceSettings() goa.Endpoint {
+// GetGroupsioServiceProjects returns an endpoint that makes HTTP requests to
+// the mailing-list service get-groupsio-service-projects server.
+func (c *Client) GetGroupsioServiceProjects() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeUpdateGrpsioServiceSettingsRequest(c.encoder)
-		decodeResponse = DecodeUpdateGrpsioServiceSettingsResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioServiceProjectsRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioServiceProjectsResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateGrpsioServiceSettingsRequest(ctx, v)
+		req, err := c.BuildGetGroupsioServiceProjectsRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -313,23 +333,23 @@ func (c *Client) UpdateGrpsioServiceSettings() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.UpdateGrpsioServiceSettingsDoer.Do(req)
+		resp, err := c.GetGroupsioServiceProjectsDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-service-settings", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-service-projects", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// CreateGrpsioMailingList returns an endpoint that makes HTTP requests to the
-// mailing-list service create-grpsio-mailing-list server.
-func (c *Client) CreateGrpsioMailingList() goa.Endpoint {
+// FindParentGroupsioService returns an endpoint that makes HTTP requests to
+// the mailing-list service find-parent-groupsio-service server.
+func (c *Client) FindParentGroupsioService() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeCreateGrpsioMailingListRequest(c.encoder)
-		decodeResponse = DecodeCreateGrpsioMailingListResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeFindParentGroupsioServiceRequest(c.encoder)
+		decodeResponse = DecodeFindParentGroupsioServiceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildCreateGrpsioMailingListRequest(ctx, v)
+		req, err := c.BuildFindParentGroupsioServiceRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -337,23 +357,23 @@ func (c *Client) CreateGrpsioMailingList() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.CreateGrpsioMailingListDoer.Do(req)
+		resp, err := c.FindParentGroupsioServiceDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-mailing-list", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "find-parent-groupsio-service", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GetGrpsioMailingList returns an endpoint that makes HTTP requests to the
-// mailing-list service get-grpsio-mailing-list server.
-func (c *Client) GetGrpsioMailingList() goa.Endpoint {
+// ListGroupsioSubgroups returns an endpoint that makes HTTP requests to the
+// mailing-list service list-groupsio-subgroups server.
+func (c *Client) ListGroupsioSubgroups() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGetGrpsioMailingListRequest(c.encoder)
-		decodeResponse = DecodeGetGrpsioMailingListResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeListGroupsioSubgroupsRequest(c.encoder)
+		decodeResponse = DecodeListGroupsioSubgroupsResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGetGrpsioMailingListRequest(ctx, v)
+		req, err := c.BuildListGroupsioSubgroupsRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -361,23 +381,23 @@ func (c *Client) GetGrpsioMailingList() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GetGrpsioMailingListDoer.Do(req)
+		resp, err := c.ListGroupsioSubgroupsDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-mailing-list", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "list-groupsio-subgroups", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// UpdateGrpsioMailingList returns an endpoint that makes HTTP requests to the
-// mailing-list service update-grpsio-mailing-list server.
-func (c *Client) UpdateGrpsioMailingList() goa.Endpoint {
+// CreateGroupsioSubgroup returns an endpoint that makes HTTP requests to the
+// mailing-list service create-groupsio-subgroup server.
+func (c *Client) CreateGroupsioSubgroup() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeUpdateGrpsioMailingListRequest(c.encoder)
-		decodeResponse = DecodeUpdateGrpsioMailingListResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeCreateGroupsioSubgroupRequest(c.encoder)
+		decodeResponse = DecodeCreateGroupsioSubgroupResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateGrpsioMailingListRequest(ctx, v)
+		req, err := c.BuildCreateGroupsioSubgroupRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -385,23 +405,23 @@ func (c *Client) UpdateGrpsioMailingList() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.UpdateGrpsioMailingListDoer.Do(req)
+		resp, err := c.CreateGroupsioSubgroupDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-mailing-list", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "create-groupsio-subgroup", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// DeleteGrpsioMailingList returns an endpoint that makes HTTP requests to the
-// mailing-list service delete-grpsio-mailing-list server.
-func (c *Client) DeleteGrpsioMailingList() goa.Endpoint {
+// GetGroupsioSubgroup returns an endpoint that makes HTTP requests to the
+// mailing-list service get-groupsio-subgroup server.
+func (c *Client) GetGroupsioSubgroup() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeDeleteGrpsioMailingListRequest(c.encoder)
-		decodeResponse = DecodeDeleteGrpsioMailingListResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioSubgroupRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioSubgroupResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildDeleteGrpsioMailingListRequest(ctx, v)
+		req, err := c.BuildGetGroupsioSubgroupRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -409,23 +429,23 @@ func (c *Client) DeleteGrpsioMailingList() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.DeleteGrpsioMailingListDoer.Do(req)
+		resp, err := c.GetGroupsioSubgroupDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-subgroup", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GetGrpsioMailingListSettings returns an endpoint that makes HTTP requests to
-// the mailing-list service get-grpsio-mailing-list-settings server.
-func (c *Client) GetGrpsioMailingListSettings() goa.Endpoint {
+// UpdateGroupsioSubgroup returns an endpoint that makes HTTP requests to the
+// mailing-list service update-groupsio-subgroup server.
+func (c *Client) UpdateGroupsioSubgroup() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGetGrpsioMailingListSettingsRequest(c.encoder)
-		decodeResponse = DecodeGetGrpsioMailingListSettingsResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeUpdateGroupsioSubgroupRequest(c.encoder)
+		decodeResponse = DecodeUpdateGroupsioSubgroupResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGetGrpsioMailingListSettingsRequest(ctx, v)
+		req, err := c.BuildUpdateGroupsioSubgroupRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -433,23 +453,23 @@ func (c *Client) GetGrpsioMailingListSettings() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GetGrpsioMailingListSettingsDoer.Do(req)
+		resp, err := c.UpdateGroupsioSubgroupDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-mailing-list-settings", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "update-groupsio-subgroup", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// UpdateGrpsioMailingListSettings returns an endpoint that makes HTTP requests
-// to the mailing-list service update-grpsio-mailing-list-settings server.
-func (c *Client) UpdateGrpsioMailingListSettings() goa.Endpoint {
+// DeleteGroupsioSubgroup returns an endpoint that makes HTTP requests to the
+// mailing-list service delete-groupsio-subgroup server.
+func (c *Client) DeleteGroupsioSubgroup() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeUpdateGrpsioMailingListSettingsRequest(c.encoder)
-		decodeResponse = DecodeUpdateGrpsioMailingListSettingsResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeDeleteGroupsioSubgroupRequest(c.encoder)
+		decodeResponse = DecodeDeleteGroupsioSubgroupResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateGrpsioMailingListSettingsRequest(ctx, v)
+		req, err := c.BuildDeleteGroupsioSubgroupRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -457,23 +477,23 @@ func (c *Client) UpdateGrpsioMailingListSettings() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.UpdateGrpsioMailingListSettingsDoer.Do(req)
+		resp, err := c.DeleteGroupsioSubgroupDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-mailing-list-settings", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "delete-groupsio-subgroup", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// CreateGrpsioMailingListMember returns an endpoint that makes HTTP requests
-// to the mailing-list service create-grpsio-mailing-list-member server.
-func (c *Client) CreateGrpsioMailingListMember() goa.Endpoint {
+// GetGroupsioSubgroupCount returns an endpoint that makes HTTP requests to the
+// mailing-list service get-groupsio-subgroup-count server.
+func (c *Client) GetGroupsioSubgroupCount() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeCreateGrpsioMailingListMemberRequest(c.encoder)
-		decodeResponse = DecodeCreateGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioSubgroupCountRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioSubgroupCountResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildCreateGrpsioMailingListMemberRequest(ctx, v)
+		req, err := c.BuildGetGroupsioSubgroupCountRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -481,23 +501,23 @@ func (c *Client) CreateGrpsioMailingListMember() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.CreateGrpsioMailingListMemberDoer.Do(req)
+		resp, err := c.GetGroupsioSubgroupCountDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "create-grpsio-mailing-list-member", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-subgroup-count", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GetGrpsioMailingListMember returns an endpoint that makes HTTP requests to
-// the mailing-list service get-grpsio-mailing-list-member server.
-func (c *Client) GetGrpsioMailingListMember() goa.Endpoint {
+// GetGroupsioSubgroupMemberCount returns an endpoint that makes HTTP requests
+// to the mailing-list service get-groupsio-subgroup-member-count server.
+func (c *Client) GetGroupsioSubgroupMemberCount() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGetGrpsioMailingListMemberRequest(c.encoder)
-		decodeResponse = DecodeGetGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioSubgroupMemberCountRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioSubgroupMemberCountResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGetGrpsioMailingListMemberRequest(ctx, v)
+		req, err := c.BuildGetGroupsioSubgroupMemberCountRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -505,23 +525,23 @@ func (c *Client) GetGrpsioMailingListMember() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GetGrpsioMailingListMemberDoer.Do(req)
+		resp, err := c.GetGroupsioSubgroupMemberCountDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "get-grpsio-mailing-list-member", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-subgroup-member-count", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// UpdateGrpsioMailingListMember returns an endpoint that makes HTTP requests
-// to the mailing-list service update-grpsio-mailing-list-member server.
-func (c *Client) UpdateGrpsioMailingListMember() goa.Endpoint {
+// ListGroupsioMembers returns an endpoint that makes HTTP requests to the
+// mailing-list service list-groupsio-members server.
+func (c *Client) ListGroupsioMembers() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeUpdateGrpsioMailingListMemberRequest(c.encoder)
-		decodeResponse = DecodeUpdateGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeListGroupsioMembersRequest(c.encoder)
+		decodeResponse = DecodeListGroupsioMembersResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildUpdateGrpsioMailingListMemberRequest(ctx, v)
+		req, err := c.BuildListGroupsioMembersRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -529,23 +549,23 @@ func (c *Client) UpdateGrpsioMailingListMember() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.UpdateGrpsioMailingListMemberDoer.Do(req)
+		resp, err := c.ListGroupsioMembersDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "update-grpsio-mailing-list-member", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "list-groupsio-members", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// DeleteGrpsioMailingListMember returns an endpoint that makes HTTP requests
-// to the mailing-list service delete-grpsio-mailing-list-member server.
-func (c *Client) DeleteGrpsioMailingListMember() goa.Endpoint {
+// AddGroupsioMember returns an endpoint that makes HTTP requests to the
+// mailing-list service add-groupsio-member server.
+func (c *Client) AddGroupsioMember() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeDeleteGrpsioMailingListMemberRequest(c.encoder)
-		decodeResponse = DecodeDeleteGrpsioMailingListMemberResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeAddGroupsioMemberRequest(c.encoder)
+		decodeResponse = DecodeAddGroupsioMemberResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildDeleteGrpsioMailingListMemberRequest(ctx, v)
+		req, err := c.BuildAddGroupsioMemberRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -553,23 +573,23 @@ func (c *Client) DeleteGrpsioMailingListMember() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.DeleteGrpsioMailingListMemberDoer.Do(req)
+		resp, err := c.AddGroupsioMemberDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "delete-grpsio-mailing-list-member", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "add-groupsio-member", err)
 		}
 		return decodeResponse(resp)
 	}
 }
 
-// GroupsioWebhook returns an endpoint that makes HTTP requests to the
-// mailing-list service groupsio-webhook server.
-func (c *Client) GroupsioWebhook() goa.Endpoint {
+// GetGroupsioMember returns an endpoint that makes HTTP requests to the
+// mailing-list service get-groupsio-member server.
+func (c *Client) GetGroupsioMember() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeGroupsioWebhookRequest(c.encoder)
-		decodeResponse = DecodeGroupsioWebhookResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeGetGroupsioMemberRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioMemberResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildGroupsioWebhookRequest(ctx, v)
+		req, err := c.BuildGetGroupsioMemberRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -577,9 +597,105 @@ func (c *Client) GroupsioWebhook() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.GroupsioWebhookDoer.Do(req)
+		resp, err := c.GetGroupsioMemberDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "groupsio-webhook", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateGroupsioMember returns an endpoint that makes HTTP requests to the
+// mailing-list service update-groupsio-member server.
+func (c *Client) UpdateGroupsioMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateGroupsioMemberRequest(c.encoder)
+		decodeResponse = DecodeUpdateGroupsioMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateGroupsioMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateGroupsioMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "update-groupsio-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// DeleteGroupsioMember returns an endpoint that makes HTTP requests to the
+// mailing-list service delete-groupsio-member server.
+func (c *Client) DeleteGroupsioMember() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeDeleteGroupsioMemberRequest(c.encoder)
+		decodeResponse = DecodeDeleteGroupsioMemberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildDeleteGroupsioMemberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.DeleteGroupsioMemberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "delete-groupsio-member", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// InviteGroupsioMembers returns an endpoint that makes HTTP requests to the
+// mailing-list service invite-groupsio-members server.
+func (c *Client) InviteGroupsioMembers() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeInviteGroupsioMembersRequest(c.encoder)
+		decodeResponse = DecodeInviteGroupsioMembersResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildInviteGroupsioMembersRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.InviteGroupsioMembersDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "invite-groupsio-members", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// CheckGroupsioSubscriber returns an endpoint that makes HTTP requests to the
+// mailing-list service check-groupsio-subscriber server.
+func (c *Client) CheckGroupsioSubscriber() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeCheckGroupsioSubscriberRequest(c.encoder)
+		decodeResponse = DecodeCheckGroupsioSubscriberResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildCheckGroupsioSubscriberRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.CheckGroupsioSubscriberDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "check-groupsio-subscriber", err)
 		}
 		return decodeResponse(resp)
 	}
