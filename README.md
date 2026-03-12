@@ -42,7 +42,7 @@ If you just need to run the service without developing on the service, use the H
    **If you have made local code changes** and want to run your own build, you need to use a local values override. Copy the example file (which already sets `pullPolicy: Never` and the local image repository) — `values.local.yaml` is not tracked by git so it is safe to modify:
 
    ```bash
-   cp charts/lfx-v2-mailing-list-service/values.local.yaml.example \
+   cp charts/lfx-v2-mailing-list-service/values.local.example.yaml \
       charts/lfx-v2-mailing-list-service/values.local.yaml
    ```
 
