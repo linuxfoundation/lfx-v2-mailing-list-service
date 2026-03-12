@@ -8,13 +8,21 @@ The LFX v2 Mailing List Service is a comprehensive microservice that manages mai
 
 If you just need to run the service without developing on the service, use the Helm chart:
 
-1. **Build the Docker image** (required since `pullPolicy: Never` is used locally):
+1. **Build the Docker image**:
 
    ```bash
    make docker-build
    ```
 
 2. **Create the Kubernetes secret** with GroupsIO credentials (values are in 1Password → **LFX V2** vault → **LFX Platform Chart Values Secrets - Local Development**):
+
+   If the `lfx` namespace doesn't exist yet, create it first:
+
+   ```bash
+   kubectl create namespace lfx
+   ```
+
+   Then create the secret:
 
    ```bash
    kubectl create secret generic lfx-v2-mailing-list-service -n lfx \
