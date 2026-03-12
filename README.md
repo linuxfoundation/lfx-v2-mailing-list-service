@@ -37,13 +37,17 @@ If you just need to run the service without developing on the service, use the H
    # Using make (recommended)
    make helm-install
 
-   # Or with local values override
-   make helm-install-local
-
    # Or directly with helm
    helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
      --namespace lfx \
      --create-namespace
+   ```
+
+   Optionally, create a `charts/lfx-v2-mailing-list-service/values.local.yaml` file to override any values before installing (e.g. to enable mock auth or change environment variables). Then install with your overrides:
+
+   ```bash
+   # With local values override using make
+   make helm-install-local
 
    # Or with local values override directly
    helm upgrade --install lfx-v2-mailing-list-service ./charts/lfx-v2-mailing-list-service \
