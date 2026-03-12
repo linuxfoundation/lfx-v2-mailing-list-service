@@ -1,6 +1,8 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package main is the ITX mailing list proxy service that provides a lightweight proxy
+// layer to the ITX GroupsIO API.
 package main
 
 import (
@@ -17,34 +19,21 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 
 	"goa.design/clue/debug"
 )
 
-// Build-time variables set via ldflags
-var (
-	Version   = "dev"
-	BuildTime = "unknown"
-	GitCommit = "unknown"
-)
-
 const (
-	defaultPort = "8080"
-	// gracefulShutdownSeconds should be higher than NATS client
-	// request timeout, and lower than the pod or liveness probe's
-	// terminationGracePeriodSeconds.
+	defaultPort             = "8080"
 	gracefulShutdownSeconds = 25
 )
 
 func init() {
-	// slog is the standard library logger, we use it to log errors and
 	logging.InitStructureLogConfig()
 }
 
 func main() {
-	// Define command line flags, add any other flag required to configure the
-	// service.
 	var (
 		dbgF = flag.Bool("d", false, "enable debug logging")
 		port = flag.String("p", defaultPort, "listen port")
@@ -57,73 +46,43 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-
-	// Set up OpenTelemetry SDK.
-	// Command-line/environment OTEL_SERVICE_VERSION takes precedence over
-	// the build-time Version variable.
-	otelConfig := utils.OTelConfigFromEnv()
-	if otelConfig.ServiceVersion == "" {
-		otelConfig.ServiceVersion = Version
-	}
-	otelShutdown, err := utils.SetupOTelSDKWithConfig(ctx, otelConfig)
-	if err != nil {
-		slog.ErrorContext(ctx, "error setting up OpenTelemetry SDK", "error", err)
-		os.Exit(1)
-	}
-	// Handle shutdown properly so nothing leaks.
-	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
-		defer cancel()
-		if shutdownErr := otelShutdown(shutdownCtx); shutdownErr != nil {
-			slog.ErrorContext(ctx, "error shutting down OpenTelemetry SDK", "error", shutdownErr)
-		}
-	}()
-
-	slog.InfoContext(ctx, "Starting mailing list service",
+	slog.InfoContext(ctx, "Starting ITX mailing list proxy service",
 		"bind", *bind,
 		"http-port", *port,
 		"graceful-shutdown-seconds", gracefulShutdownSeconds,
-		"version", Version,
-		"build-time", BuildTime,
-		"git-commit", GitCommit,
 	)
 
-	// Validate provider configuration before initializing dependencies
-	service.ValidateProviderConfiguration(ctx)
-
-	// Initialize dependencies using provider pattern
-	storage := service.GrpsIOReaderWriter(ctx)
+	// Initialize authentication service
 	authService := service.AuthService(ctx)
 
-	// Create orchestrators using provider functions
-	readGrpsIOService := service.GrpsIOReaderOrchestrator(ctx)
-	writeGrpsIOService := service.GrpsIOWriterOrchestrator(ctx)
+	// Initialize ID mapper for v1/v2 ID conversions
+	idMapper := service.IDMapper(ctx)
 
-	// Initialize GroupsIO webhook dependencies
-	grpsioWebhookValidator := service.GrpsIOWebhookValidator(ctx)
-	grpsioWebhookProcessor := service.GrpsIOWebhookProcessor(ctx)
+	// Initialize ITX proxy client
+	itxConfig := service.ITXProxyConfig()
+	itxClient := proxy.NewClient(itxConfig)
 
-	// Initialize the mailing list service with service management endpoints
-	mailingListServiceSvc := service.NewMailingList(
+	// Initialize ITX GroupsIO services
+	svcService := service.GroupsioServiceService(ctx, itxClient, idMapper)
+	subgroupService := service.GroupsioSubgroupService(ctx, itxClient, idMapper)
+	memberService := service.GroupsioMemberService(ctx, itxClient)
+
+	slog.InfoContext(ctx, "ITX proxy client initialized")
+
+	// Create the mailing list API service
+	mailingListSvc := service.NewMailingListAPI(
 		authService,
-		readGrpsIOService,
-		writeGrpsIOService,
-		storage,
-		grpsioWebhookValidator,
-		grpsioWebhookProcessor,
+		svcService,
+		subgroupService,
+		memberService,
 	)
 
-	// Wrap the services in endpoints that can be invoked from other services
-	// potentially running in different processes.
-	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListServiceSvc)
+	// Wrap the services in endpoints
+	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListSvc)
 	mailingListServiceEndpoints.Use(debug.LogPayloads())
 
-	// Create channel used by both the signal handler and server goroutines
-	// to notify the main goroutine when to stop the server.
 	errc := make(chan error)
 
-	// Setup interrupt handler. This optional step configures the process so
-	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
@@ -133,7 +92,6 @@ func main() {
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(ctx)
 
-	// Start the servers and send errors (if any) to the error channel.
 	addr := ":" + *port
 	if *bind != "*" {
 		addr = *bind + ":" + *port
@@ -141,31 +99,15 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
-	// Start committee sync - critical for data consistency
-	if err := handleCommitteeSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
-
-	// Start mailing list sync - critical for data consistency
-	if err := handleMailingListSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
-
-	// Wait for signal.
 	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
 		"signal", <-errc,
 	)
 
-	// Send cancellation signal to the goroutines.
 	cancel()
 
-	// Create a timeout context for graceful shutdown
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
 
-	// Wait for all goroutines to finish with timeout
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
