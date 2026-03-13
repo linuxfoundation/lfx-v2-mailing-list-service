@@ -319,6 +319,9 @@ app:
     GROUPSIO_WEBHOOK_SECRET:
       value: null
 
+    EVENTING_ENABLED:
+      value: "true"
+
 # External Secrets Operator
 externalSecretsOperator:
   # Enable/disable External Secrets Operator integration

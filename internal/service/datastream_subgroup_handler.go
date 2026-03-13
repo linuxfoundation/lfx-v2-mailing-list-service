@@ -59,6 +59,12 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	}
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
+
+	if mappings.IsTombstoned(ctx, mKey) {
+		slog.InfoContext(ctx, "subgroup mapping is tombstoned, skipping update", "uid", uid)
+		return false
+	}
+
 	action := mappings.ResolveAction(ctx, mKey)
 
 	msg := &model.IndexerMessage{Action: action, Tags: list.Tags()}
@@ -116,6 +122,15 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		return false
 	}
 
+	// If there is no mapping entry, this record was never indexed — nothing to delete.
+	if !mappings.IsMappingPresent(ctx, mKey) {
+		slog.InfoContext(ctx, "subgroup was never indexed, skipping OpenSearch delete", "uid", uid)
+		if err := mappings.PutTombstone(ctx, mKey); err != nil {
+			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		}
+		return false
+	}
+
 	msg := &model.IndexerMessage{Action: model.ActionDeleted}
 	built, err := msg.Build(ctx, uid)
 	if err != nil {
@@ -128,8 +143,7 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		return pkgerrors.IsTransient(err)
 	}
 
-	accessMsg := &model.AccessMessage{UID: uid, ObjectType: constants.ObjectTypeGroupsIOMailingList}
-	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, accessMsg); err != nil {
+	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
 	}
 

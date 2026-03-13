@@ -40,10 +40,16 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return true // NAK — retry with backoff
 	}
 
-	member := transformV1ToGrpsIOMember(uid, mailingListUID, data)
-
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
+
+	if mappings.IsTombstoned(ctx, mKey) {
+		slog.InfoContext(ctx, "member mapping is tombstoned, skipping update", "uid", uid)
+		return false
+	}
+
 	action := mappings.ResolveAction(ctx, mKey)
+
+	member := transformV1ToGrpsIOMember(uid, mailingListUID, data)
 
 	msg := &model.IndexerMessage{Action: action, Tags: member.Tags()}
 	built, err := msg.Build(ctx, member)
@@ -69,6 +75,15 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 	if mappings.IsTombstoned(ctx, mKey) {
 		slog.InfoContext(ctx, "member already deleted, ACKing duplicate", "uid", uid)
+		return false
+	}
+
+	// If there is no mapping entry, this record was never indexed — nothing to delete.
+	if !mappings.IsMappingPresent(ctx, mKey) {
+		slog.InfoContext(ctx, "member was never indexed, skipping OpenSearch delete", "uid", uid)
+		if err := mappings.PutTombstone(ctx, mKey); err != nil {
+			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		}
 		return false
 	}
 
