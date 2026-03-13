@@ -13,7 +13,7 @@ MODULE      := $(shell go list -m)
 # Docker
 DOCKER_REGISTRY := linuxfoundation
 DOCKER_IMAGE := $(DOCKER_REGISTRY)/$(APP_NAME)
-DOCKER_TAG := $(VERSION)
+DOCKER_TAG := latest
 
 # Helm variables
 HELM_CHART_PATH=./charts/lfx-v2-mailing-list-service
