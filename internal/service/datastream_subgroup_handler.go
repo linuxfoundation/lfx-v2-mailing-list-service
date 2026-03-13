@@ -49,6 +49,11 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 
 	list := transformV1ToGrpsIOMailingList(uid, data)
 
+	if list.ServiceUID == "" {
+		slog.ErrorContext(ctx, "missing parent_id in subgroup event, discarding", "uid", uid)
+		return false // ACK — malformed data, retrying won't help
+	}
+
 	// Parent dependency check: the indexer must have the parent service record before
 	// the child mailing list to avoid orphaned documents in OpenSearch.
 	serviceKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, list.ServiceUID)
