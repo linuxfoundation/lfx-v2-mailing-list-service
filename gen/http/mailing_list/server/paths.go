@@ -22,87 +22,107 @@ func ReadyzMailingListPath() string {
 	return "/readyz"
 }
 
-// CreateGrpsioServiceMailingListPath returns the URL path to the mailing-list service create-grpsio-service HTTP endpoint.
-func CreateGrpsioServiceMailingListPath() string {
+// ListGroupsioServicesMailingListPath returns the URL path to the mailing-list service list-groupsio-services HTTP endpoint.
+func ListGroupsioServicesMailingListPath() string {
 	return "/groupsio/services"
 }
 
-// GetGrpsioServiceMailingListPath returns the URL path to the mailing-list service get-grpsio-service HTTP endpoint.
-func GetGrpsioServiceMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/services/%v", uid)
+// CreateGroupsioServiceMailingListPath returns the URL path to the mailing-list service create-groupsio-service HTTP endpoint.
+func CreateGroupsioServiceMailingListPath() string {
+	return "/groupsio/services"
 }
 
-// UpdateGrpsioServiceMailingListPath returns the URL path to the mailing-list service update-grpsio-service HTTP endpoint.
-func UpdateGrpsioServiceMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/services/%v", uid)
+// GetGroupsioServiceMailingListPath returns the URL path to the mailing-list service get-groupsio-service HTTP endpoint.
+func GetGroupsioServiceMailingListPath(serviceID string) string {
+	return fmt.Sprintf("/groupsio/services/%v", serviceID)
 }
 
-// DeleteGrpsioServiceMailingListPath returns the URL path to the mailing-list service delete-grpsio-service HTTP endpoint.
-func DeleteGrpsioServiceMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/services/%v", uid)
+// UpdateGroupsioServiceMailingListPath returns the URL path to the mailing-list service update-groupsio-service HTTP endpoint.
+func UpdateGroupsioServiceMailingListPath(serviceID string) string {
+	return fmt.Sprintf("/groupsio/services/%v", serviceID)
 }
 
-// GetGrpsioServiceSettingsMailingListPath returns the URL path to the mailing-list service get-grpsio-service-settings HTTP endpoint.
-func GetGrpsioServiceSettingsMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/services/%v/settings", uid)
+// DeleteGroupsioServiceMailingListPath returns the URL path to the mailing-list service delete-groupsio-service HTTP endpoint.
+func DeleteGroupsioServiceMailingListPath(serviceID string) string {
+	return fmt.Sprintf("/groupsio/services/%v", serviceID)
 }
 
-// UpdateGrpsioServiceSettingsMailingListPath returns the URL path to the mailing-list service update-grpsio-service-settings HTTP endpoint.
-func UpdateGrpsioServiceSettingsMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/services/%v/settings", uid)
+// GetGroupsioServiceProjectsMailingListPath returns the URL path to the mailing-list service get-groupsio-service-projects HTTP endpoint.
+func GetGroupsioServiceProjectsMailingListPath() string {
+	return "/groupsio/services/_projects"
 }
 
-// CreateGrpsioMailingListMailingListPath returns the URL path to the mailing-list service create-grpsio-mailing-list HTTP endpoint.
-func CreateGrpsioMailingListMailingListPath() string {
-	return "/groupsio/mailing-lists"
+// FindParentGroupsioServiceMailingListPath returns the URL path to the mailing-list service find-parent-groupsio-service HTTP endpoint.
+func FindParentGroupsioServiceMailingListPath() string {
+	return "/groupsio/services/find_parent"
 }
 
-// GetGrpsioMailingListMailingListPath returns the URL path to the mailing-list service get-grpsio-mailing-list HTTP endpoint.
-func GetGrpsioMailingListMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v", uid)
+// ListGroupsioSubgroupsMailingListPath returns the URL path to the mailing-list service list-groupsio-subgroups HTTP endpoint.
+func ListGroupsioSubgroupsMailingListPath() string {
+	return "/groupsio/subgroups"
 }
 
-// UpdateGrpsioMailingListMailingListPath returns the URL path to the mailing-list service update-grpsio-mailing-list HTTP endpoint.
-func UpdateGrpsioMailingListMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v", uid)
+// CreateGroupsioSubgroupMailingListPath returns the URL path to the mailing-list service create-groupsio-subgroup HTTP endpoint.
+func CreateGroupsioSubgroupMailingListPath() string {
+	return "/groupsio/subgroups"
 }
 
-// DeleteGrpsioMailingListMailingListPath returns the URL path to the mailing-list service delete-grpsio-mailing-list HTTP endpoint.
-func DeleteGrpsioMailingListMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v", uid)
+// GetGroupsioSubgroupMailingListPath returns the URL path to the mailing-list service get-groupsio-subgroup HTTP endpoint.
+func GetGroupsioSubgroupMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v", subgroupID)
 }
 
-// GetGrpsioMailingListSettingsMailingListPath returns the URL path to the mailing-list service get-grpsio-mailing-list-settings HTTP endpoint.
-func GetGrpsioMailingListSettingsMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/settings", uid)
+// UpdateGroupsioSubgroupMailingListPath returns the URL path to the mailing-list service update-groupsio-subgroup HTTP endpoint.
+func UpdateGroupsioSubgroupMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v", subgroupID)
 }
 
-// UpdateGrpsioMailingListSettingsMailingListPath returns the URL path to the mailing-list service update-grpsio-mailing-list-settings HTTP endpoint.
-func UpdateGrpsioMailingListSettingsMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/settings", uid)
+// DeleteGroupsioSubgroupMailingListPath returns the URL path to the mailing-list service delete-groupsio-subgroup HTTP endpoint.
+func DeleteGroupsioSubgroupMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v", subgroupID)
 }
 
-// CreateGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service create-grpsio-mailing-list-member HTTP endpoint.
-func CreateGrpsioMailingListMemberMailingListPath(uid string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/members", uid)
+// GetGroupsioSubgroupCountMailingListPath returns the URL path to the mailing-list service get-groupsio-subgroup-count HTTP endpoint.
+func GetGroupsioSubgroupCountMailingListPath() string {
+	return "/groupsio/subgroups/count"
 }
 
-// GetGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service get-grpsio-mailing-list-member HTTP endpoint.
-func GetGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+// GetGroupsioSubgroupMemberCountMailingListPath returns the URL path to the mailing-list service get-groupsio-subgroup-member-count HTTP endpoint.
+func GetGroupsioSubgroupMemberCountMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/member_count", subgroupID)
 }
 
-// UpdateGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service update-grpsio-mailing-list-member HTTP endpoint.
-func UpdateGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+// ListGroupsioMembersMailingListPath returns the URL path to the mailing-list service list-groupsio-members HTTP endpoint.
+func ListGroupsioMembersMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/members", subgroupID)
 }
 
-// DeleteGrpsioMailingListMemberMailingListPath returns the URL path to the mailing-list service delete-grpsio-mailing-list-member HTTP endpoint.
-func DeleteGrpsioMailingListMemberMailingListPath(uid string, memberUID string) string {
-	return fmt.Sprintf("/groupsio/mailing-lists/%v/members/%v", uid, memberUID)
+// AddGroupsioMemberMailingListPath returns the URL path to the mailing-list service add-groupsio-member HTTP endpoint.
+func AddGroupsioMemberMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/members", subgroupID)
 }
 
-// GroupsioWebhookMailingListPath returns the URL path to the mailing-list service groupsio-webhook HTTP endpoint.
-func GroupsioWebhookMailingListPath() string {
-	return "/webhooks/groupsio"
+// GetGroupsioMemberMailingListPath returns the URL path to the mailing-list service get-groupsio-member HTTP endpoint.
+func GetGroupsioMemberMailingListPath(subgroupID string, memberID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/members/%v", subgroupID, memberID)
+}
+
+// UpdateGroupsioMemberMailingListPath returns the URL path to the mailing-list service update-groupsio-member HTTP endpoint.
+func UpdateGroupsioMemberMailingListPath(subgroupID string, memberID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/members/%v", subgroupID, memberID)
+}
+
+// DeleteGroupsioMemberMailingListPath returns the URL path to the mailing-list service delete-groupsio-member HTTP endpoint.
+func DeleteGroupsioMemberMailingListPath(subgroupID string, memberID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/members/%v", subgroupID, memberID)
+}
+
+// InviteGroupsioMembersMailingListPath returns the URL path to the mailing-list service invite-groupsio-members HTTP endpoint.
+func InviteGroupsioMembersMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/subgroups/%v/invitemembers", subgroupID)
+}
+
+// CheckGroupsioSubscriberMailingListPath returns the URL path to the mailing-list service check-groupsio-subscriber HTTP endpoint.
+func CheckGroupsioSubscriberMailingListPath() string {
+	return "/groupsio/checksubscriber"
 }

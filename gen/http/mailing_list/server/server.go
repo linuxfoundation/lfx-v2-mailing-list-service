@@ -20,27 +20,31 @@ import (
 
 // Server lists the mailing-list service endpoint HTTP handlers.
 type Server struct {
-	Mounts                          []*MountPoint
-	Livez                           http.Handler
-	Readyz                          http.Handler
-	CreateGrpsioService             http.Handler
-	GetGrpsioService                http.Handler
-	UpdateGrpsioService             http.Handler
-	DeleteGrpsioService             http.Handler
-	GetGrpsioServiceSettings        http.Handler
-	UpdateGrpsioServiceSettings     http.Handler
-	CreateGrpsioMailingList         http.Handler
-	GetGrpsioMailingList            http.Handler
-	UpdateGrpsioMailingList         http.Handler
-	DeleteGrpsioMailingList         http.Handler
-	GetGrpsioMailingListSettings    http.Handler
-	UpdateGrpsioMailingListSettings http.Handler
-	CreateGrpsioMailingListMember   http.Handler
-	GetGrpsioMailingListMember      http.Handler
-	UpdateGrpsioMailingListMember   http.Handler
-	DeleteGrpsioMailingListMember   http.Handler
-	GroupsioWebhook                 http.Handler
-	GenHTTPOpenapi3JSON             http.Handler
+	Mounts                         []*MountPoint
+	Livez                          http.Handler
+	Readyz                         http.Handler
+	ListGroupsioServices           http.Handler
+	CreateGroupsioService          http.Handler
+	GetGroupsioService             http.Handler
+	UpdateGroupsioService          http.Handler
+	DeleteGroupsioService          http.Handler
+	GetGroupsioServiceProjects     http.Handler
+	FindParentGroupsioService      http.Handler
+	ListGroupsioSubgroups          http.Handler
+	CreateGroupsioSubgroup         http.Handler
+	GetGroupsioSubgroup            http.Handler
+	UpdateGroupsioSubgroup         http.Handler
+	DeleteGroupsioSubgroup         http.Handler
+	GetGroupsioSubgroupCount       http.Handler
+	GetGroupsioSubgroupMemberCount http.Handler
+	ListGroupsioMembers            http.Handler
+	AddGroupsioMember              http.Handler
+	GetGroupsioMember              http.Handler
+	UpdateGroupsioMember           http.Handler
+	DeleteGroupsioMember           http.Handler
+	InviteGroupsioMembers          http.Handler
+	CheckGroupsioSubscriber        http.Handler
+	GenHTTPOpenapi3JSON            http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -77,45 +81,53 @@ func New(
 		Mounts: []*MountPoint{
 			{"Livez", "GET", "/livez"},
 			{"Readyz", "GET", "/readyz"},
-			{"CreateGrpsioService", "POST", "/groupsio/services"},
-			{"GetGrpsioService", "GET", "/groupsio/services/{uid}"},
-			{"UpdateGrpsioService", "PUT", "/groupsio/services/{uid}"},
-			{"DeleteGrpsioService", "DELETE", "/groupsio/services/{uid}"},
-			{"GetGrpsioServiceSettings", "GET", "/groupsio/services/{uid}/settings"},
-			{"UpdateGrpsioServiceSettings", "PUT", "/groupsio/services/{uid}/settings"},
-			{"CreateGrpsioMailingList", "POST", "/groupsio/mailing-lists"},
-			{"GetGrpsioMailingList", "GET", "/groupsio/mailing-lists/{uid}"},
-			{"UpdateGrpsioMailingList", "PUT", "/groupsio/mailing-lists/{uid}"},
-			{"DeleteGrpsioMailingList", "DELETE", "/groupsio/mailing-lists/{uid}"},
-			{"GetGrpsioMailingListSettings", "GET", "/groupsio/mailing-lists/{uid}/settings"},
-			{"UpdateGrpsioMailingListSettings", "PUT", "/groupsio/mailing-lists/{uid}/settings"},
-			{"CreateGrpsioMailingListMember", "POST", "/groupsio/mailing-lists/{uid}/members"},
-			{"GetGrpsioMailingListMember", "GET", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
-			{"UpdateGrpsioMailingListMember", "PUT", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
-			{"DeleteGrpsioMailingListMember", "DELETE", "/groupsio/mailing-lists/{uid}/members/{member_uid}"},
-			{"GroupsioWebhook", "POST", "/webhooks/groupsio"},
+			{"ListGroupsioServices", "GET", "/groupsio/services"},
+			{"CreateGroupsioService", "POST", "/groupsio/services"},
+			{"GetGroupsioService", "GET", "/groupsio/services/{service_id}"},
+			{"UpdateGroupsioService", "PUT", "/groupsio/services/{service_id}"},
+			{"DeleteGroupsioService", "DELETE", "/groupsio/services/{service_id}"},
+			{"GetGroupsioServiceProjects", "GET", "/groupsio/services/_projects"},
+			{"FindParentGroupsioService", "GET", "/groupsio/services/find_parent"},
+			{"ListGroupsioSubgroups", "GET", "/groupsio/subgroups"},
+			{"CreateGroupsioSubgroup", "POST", "/groupsio/subgroups"},
+			{"GetGroupsioSubgroup", "GET", "/groupsio/subgroups/{subgroup_id}"},
+			{"UpdateGroupsioSubgroup", "PUT", "/groupsio/subgroups/{subgroup_id}"},
+			{"DeleteGroupsioSubgroup", "DELETE", "/groupsio/subgroups/{subgroup_id}"},
+			{"GetGroupsioSubgroupCount", "GET", "/groupsio/subgroups/count"},
+			{"GetGroupsioSubgroupMemberCount", "GET", "/groupsio/subgroups/{subgroup_id}/member_count"},
+			{"ListGroupsioMembers", "GET", "/groupsio/subgroups/{subgroup_id}/members"},
+			{"AddGroupsioMember", "POST", "/groupsio/subgroups/{subgroup_id}/members"},
+			{"GetGroupsioMember", "GET", "/groupsio/subgroups/{subgroup_id}/members/{member_id}"},
+			{"UpdateGroupsioMember", "PUT", "/groupsio/subgroups/{subgroup_id}/members/{member_id}"},
+			{"DeleteGroupsioMember", "DELETE", "/groupsio/subgroups/{subgroup_id}/members/{member_id}"},
+			{"InviteGroupsioMembers", "POST", "/groupsio/subgroups/{subgroup_id}/invitemembers"},
+			{"CheckGroupsioSubscriber", "POST", "/groupsio/checksubscriber"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		Livez:                           NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
-		Readyz:                          NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
-		CreateGrpsioService:             NewCreateGrpsioServiceHandler(e.CreateGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioService:                NewGetGrpsioServiceHandler(e.GetGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioService:             NewUpdateGrpsioServiceHandler(e.UpdateGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		DeleteGrpsioService:             NewDeleteGrpsioServiceHandler(e.DeleteGrpsioService, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioServiceSettings:        NewGetGrpsioServiceSettingsHandler(e.GetGrpsioServiceSettings, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioServiceSettings:     NewUpdateGrpsioServiceSettingsHandler(e.UpdateGrpsioServiceSettings, mux, decoder, encoder, errhandler, formatter),
-		CreateGrpsioMailingList:         NewCreateGrpsioMailingListHandler(e.CreateGrpsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioMailingList:            NewGetGrpsioMailingListHandler(e.GetGrpsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioMailingList:         NewUpdateGrpsioMailingListHandler(e.UpdateGrpsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		DeleteGrpsioMailingList:         NewDeleteGrpsioMailingListHandler(e.DeleteGrpsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioMailingListSettings:    NewGetGrpsioMailingListSettingsHandler(e.GetGrpsioMailingListSettings, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioMailingListSettings: NewUpdateGrpsioMailingListSettingsHandler(e.UpdateGrpsioMailingListSettings, mux, decoder, encoder, errhandler, formatter),
-		CreateGrpsioMailingListMember:   NewCreateGrpsioMailingListMemberHandler(e.CreateGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
-		GetGrpsioMailingListMember:      NewGetGrpsioMailingListMemberHandler(e.GetGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
-		UpdateGrpsioMailingListMember:   NewUpdateGrpsioMailingListMemberHandler(e.UpdateGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
-		DeleteGrpsioMailingListMember:   NewDeleteGrpsioMailingListMemberHandler(e.DeleteGrpsioMailingListMember, mux, decoder, encoder, errhandler, formatter),
-		GroupsioWebhook:                 NewGroupsioWebhookHandler(e.GroupsioWebhook, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapi3JSON:             http.FileServer(fileSystemGenHTTPOpenapi3JSON),
+		Livez:                          NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
+		Readyz:                         NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioServices:           NewListGroupsioServicesHandler(e.ListGroupsioServices, mux, decoder, encoder, errhandler, formatter),
+		CreateGroupsioService:          NewCreateGroupsioServiceHandler(e.CreateGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioService:             NewGetGroupsioServiceHandler(e.GetGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioService:          NewUpdateGroupsioServiceHandler(e.UpdateGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioService:          NewDeleteGroupsioServiceHandler(e.DeleteGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioServiceProjects:     NewGetGroupsioServiceProjectsHandler(e.GetGroupsioServiceProjects, mux, decoder, encoder, errhandler, formatter),
+		FindParentGroupsioService:      NewFindParentGroupsioServiceHandler(e.FindParentGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioSubgroups:          NewListGroupsioSubgroupsHandler(e.ListGroupsioSubgroups, mux, decoder, encoder, errhandler, formatter),
+		CreateGroupsioSubgroup:         NewCreateGroupsioSubgroupHandler(e.CreateGroupsioSubgroup, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioSubgroup:            NewGetGroupsioSubgroupHandler(e.GetGroupsioSubgroup, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioSubgroup:         NewUpdateGroupsioSubgroupHandler(e.UpdateGroupsioSubgroup, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioSubgroup:         NewDeleteGroupsioSubgroupHandler(e.DeleteGroupsioSubgroup, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioSubgroupCount:       NewGetGroupsioSubgroupCountHandler(e.GetGroupsioSubgroupCount, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioSubgroupMemberCount: NewGetGroupsioSubgroupMemberCountHandler(e.GetGroupsioSubgroupMemberCount, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioMembers:            NewListGroupsioMembersHandler(e.ListGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
+		AddGroupsioMember:              NewAddGroupsioMemberHandler(e.AddGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMember:              NewGetGroupsioMemberHandler(e.GetGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioMember:           NewUpdateGroupsioMemberHandler(e.UpdateGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioMember:           NewDeleteGroupsioMemberHandler(e.DeleteGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		InviteGroupsioMembers:          NewInviteGroupsioMembersHandler(e.InviteGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
+		CheckGroupsioSubscriber:        NewCheckGroupsioSubscriberHandler(e.CheckGroupsioSubscriber, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON:            http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -126,23 +138,27 @@ func (s *Server) Service() string { return "mailing-list" }
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.Livez = m(s.Livez)
 	s.Readyz = m(s.Readyz)
-	s.CreateGrpsioService = m(s.CreateGrpsioService)
-	s.GetGrpsioService = m(s.GetGrpsioService)
-	s.UpdateGrpsioService = m(s.UpdateGrpsioService)
-	s.DeleteGrpsioService = m(s.DeleteGrpsioService)
-	s.GetGrpsioServiceSettings = m(s.GetGrpsioServiceSettings)
-	s.UpdateGrpsioServiceSettings = m(s.UpdateGrpsioServiceSettings)
-	s.CreateGrpsioMailingList = m(s.CreateGrpsioMailingList)
-	s.GetGrpsioMailingList = m(s.GetGrpsioMailingList)
-	s.UpdateGrpsioMailingList = m(s.UpdateGrpsioMailingList)
-	s.DeleteGrpsioMailingList = m(s.DeleteGrpsioMailingList)
-	s.GetGrpsioMailingListSettings = m(s.GetGrpsioMailingListSettings)
-	s.UpdateGrpsioMailingListSettings = m(s.UpdateGrpsioMailingListSettings)
-	s.CreateGrpsioMailingListMember = m(s.CreateGrpsioMailingListMember)
-	s.GetGrpsioMailingListMember = m(s.GetGrpsioMailingListMember)
-	s.UpdateGrpsioMailingListMember = m(s.UpdateGrpsioMailingListMember)
-	s.DeleteGrpsioMailingListMember = m(s.DeleteGrpsioMailingListMember)
-	s.GroupsioWebhook = m(s.GroupsioWebhook)
+	s.ListGroupsioServices = m(s.ListGroupsioServices)
+	s.CreateGroupsioService = m(s.CreateGroupsioService)
+	s.GetGroupsioService = m(s.GetGroupsioService)
+	s.UpdateGroupsioService = m(s.UpdateGroupsioService)
+	s.DeleteGroupsioService = m(s.DeleteGroupsioService)
+	s.GetGroupsioServiceProjects = m(s.GetGroupsioServiceProjects)
+	s.FindParentGroupsioService = m(s.FindParentGroupsioService)
+	s.ListGroupsioSubgroups = m(s.ListGroupsioSubgroups)
+	s.CreateGroupsioSubgroup = m(s.CreateGroupsioSubgroup)
+	s.GetGroupsioSubgroup = m(s.GetGroupsioSubgroup)
+	s.UpdateGroupsioSubgroup = m(s.UpdateGroupsioSubgroup)
+	s.DeleteGroupsioSubgroup = m(s.DeleteGroupsioSubgroup)
+	s.GetGroupsioSubgroupCount = m(s.GetGroupsioSubgroupCount)
+	s.GetGroupsioSubgroupMemberCount = m(s.GetGroupsioSubgroupMemberCount)
+	s.ListGroupsioMembers = m(s.ListGroupsioMembers)
+	s.AddGroupsioMember = m(s.AddGroupsioMember)
+	s.GetGroupsioMember = m(s.GetGroupsioMember)
+	s.UpdateGroupsioMember = m(s.UpdateGroupsioMember)
+	s.DeleteGroupsioMember = m(s.DeleteGroupsioMember)
+	s.InviteGroupsioMembers = m(s.InviteGroupsioMembers)
+	s.CheckGroupsioSubscriber = m(s.CheckGroupsioSubscriber)
 }
 
 // MethodNames returns the methods served.
@@ -152,23 +168,27 @@ func (s *Server) MethodNames() []string { return mailinglist.MethodNames[:] }
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountLivezHandler(mux, h.Livez)
 	MountReadyzHandler(mux, h.Readyz)
-	MountCreateGrpsioServiceHandler(mux, h.CreateGrpsioService)
-	MountGetGrpsioServiceHandler(mux, h.GetGrpsioService)
-	MountUpdateGrpsioServiceHandler(mux, h.UpdateGrpsioService)
-	MountDeleteGrpsioServiceHandler(mux, h.DeleteGrpsioService)
-	MountGetGrpsioServiceSettingsHandler(mux, h.GetGrpsioServiceSettings)
-	MountUpdateGrpsioServiceSettingsHandler(mux, h.UpdateGrpsioServiceSettings)
-	MountCreateGrpsioMailingListHandler(mux, h.CreateGrpsioMailingList)
-	MountGetGrpsioMailingListHandler(mux, h.GetGrpsioMailingList)
-	MountUpdateGrpsioMailingListHandler(mux, h.UpdateGrpsioMailingList)
-	MountDeleteGrpsioMailingListHandler(mux, h.DeleteGrpsioMailingList)
-	MountGetGrpsioMailingListSettingsHandler(mux, h.GetGrpsioMailingListSettings)
-	MountUpdateGrpsioMailingListSettingsHandler(mux, h.UpdateGrpsioMailingListSettings)
-	MountCreateGrpsioMailingListMemberHandler(mux, h.CreateGrpsioMailingListMember)
-	MountGetGrpsioMailingListMemberHandler(mux, h.GetGrpsioMailingListMember)
-	MountUpdateGrpsioMailingListMemberHandler(mux, h.UpdateGrpsioMailingListMember)
-	MountDeleteGrpsioMailingListMemberHandler(mux, h.DeleteGrpsioMailingListMember)
-	MountGroupsioWebhookHandler(mux, h.GroupsioWebhook)
+	MountListGroupsioServicesHandler(mux, h.ListGroupsioServices)
+	MountCreateGroupsioServiceHandler(mux, h.CreateGroupsioService)
+	MountGetGroupsioServiceHandler(mux, h.GetGroupsioService)
+	MountUpdateGroupsioServiceHandler(mux, h.UpdateGroupsioService)
+	MountDeleteGroupsioServiceHandler(mux, h.DeleteGroupsioService)
+	MountGetGroupsioServiceProjectsHandler(mux, h.GetGroupsioServiceProjects)
+	MountFindParentGroupsioServiceHandler(mux, h.FindParentGroupsioService)
+	MountListGroupsioSubgroupsHandler(mux, h.ListGroupsioSubgroups)
+	MountCreateGroupsioSubgroupHandler(mux, h.CreateGroupsioSubgroup)
+	MountGetGroupsioSubgroupHandler(mux, h.GetGroupsioSubgroup)
+	MountUpdateGroupsioSubgroupHandler(mux, h.UpdateGroupsioSubgroup)
+	MountDeleteGroupsioSubgroupHandler(mux, h.DeleteGroupsioSubgroup)
+	MountGetGroupsioSubgroupCountHandler(mux, h.GetGroupsioSubgroupCount)
+	MountGetGroupsioSubgroupMemberCountHandler(mux, h.GetGroupsioSubgroupMemberCount)
+	MountListGroupsioMembersHandler(mux, h.ListGroupsioMembers)
+	MountAddGroupsioMemberHandler(mux, h.AddGroupsioMember)
+	MountGetGroupsioMemberHandler(mux, h.GetGroupsioMember)
+	MountUpdateGroupsioMemberHandler(mux, h.UpdateGroupsioMember)
+	MountDeleteGroupsioMemberHandler(mux, h.DeleteGroupsioMember)
+	MountInviteGroupsioMembersHandler(mux, h.InviteGroupsioMembers)
+	MountCheckGroupsioSubscriberHandler(mux, h.CheckGroupsioSubscriber)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
@@ -269,9 +289,63 @@ func NewReadyzHandler(
 	})
 }
 
-// MountCreateGrpsioServiceHandler configures the mux to serve the
-// "mailing-list" service "create-grpsio-service" endpoint.
-func MountCreateGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
+// MountListGroupsioServicesHandler configures the mux to serve the
+// "mailing-list" service "list-groupsio-services" endpoint.
+func MountListGroupsioServicesHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/services", f)
+}
+
+// NewListGroupsioServicesHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "list-groupsio-services"
+// endpoint.
+func NewListGroupsioServicesHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListGroupsioServicesRequest(mux, decoder)
+		encodeResponse = EncodeListGroupsioServicesResponse(encoder)
+		encodeError    = EncodeListGroupsioServicesError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "list-groupsio-services")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountCreateGroupsioServiceHandler configures the mux to serve the
+// "mailing-list" service "create-groupsio-service" endpoint.
+func MountCreateGroupsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -281,10 +355,10 @@ func MountCreateGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("POST", "/groupsio/services", f)
 }
 
-// NewCreateGrpsioServiceHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "create-grpsio-service"
+// NewCreateGroupsioServiceHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "create-groupsio-service"
 // endpoint.
-func NewCreateGrpsioServiceHandler(
+func NewCreateGroupsioServiceHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -293,13 +367,13 @@ func NewCreateGrpsioServiceHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeCreateGrpsioServiceRequest(mux, decoder)
-		encodeResponse = EncodeCreateGrpsioServiceResponse(encoder)
-		encodeError    = EncodeCreateGrpsioServiceError(encoder, formatter)
+		decodeRequest  = DecodeCreateGroupsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeCreateGroupsioServiceResponse(encoder)
+		encodeError    = EncodeCreateGroupsioServiceError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "create-grpsio-service")
+		ctx = context.WithValue(ctx, goa.MethodKey, "create-groupsio-service")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -323,21 +397,21 @@ func NewCreateGrpsioServiceHandler(
 	})
 }
 
-// MountGetGrpsioServiceHandler configures the mux to serve the "mailing-list"
-// service "get-grpsio-service" endpoint.
-func MountGetGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetGroupsioServiceHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-service" endpoint.
+func MountGetGroupsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/groupsio/services/{uid}", f)
+	mux.Handle("GET", "/groupsio/services/{service_id}", f)
 }
 
-// NewGetGrpsioServiceHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "get-grpsio-service" endpoint.
-func NewGetGrpsioServiceHandler(
+// NewGetGroupsioServiceHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "get-groupsio-service" endpoint.
+func NewGetGroupsioServiceHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -346,13 +420,13 @@ func NewGetGrpsioServiceHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeGetGrpsioServiceRequest(mux, decoder)
-		encodeResponse = EncodeGetGrpsioServiceResponse(encoder)
-		encodeError    = EncodeGetGrpsioServiceError(encoder, formatter)
+		decodeRequest  = DecodeGetGroupsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioServiceResponse(encoder)
+		encodeError    = EncodeGetGroupsioServiceError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-service")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-service")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -376,22 +450,22 @@ func NewGetGrpsioServiceHandler(
 	})
 }
 
-// MountUpdateGrpsioServiceHandler configures the mux to serve the
-// "mailing-list" service "update-grpsio-service" endpoint.
-func MountUpdateGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
+// MountUpdateGroupsioServiceHandler configures the mux to serve the
+// "mailing-list" service "update-groupsio-service" endpoint.
+func MountUpdateGroupsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/groupsio/services/{uid}", f)
+	mux.Handle("PUT", "/groupsio/services/{service_id}", f)
 }
 
-// NewUpdateGrpsioServiceHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "update-grpsio-service"
+// NewUpdateGroupsioServiceHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "update-groupsio-service"
 // endpoint.
-func NewUpdateGrpsioServiceHandler(
+func NewUpdateGroupsioServiceHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -400,13 +474,13 @@ func NewUpdateGrpsioServiceHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeUpdateGrpsioServiceRequest(mux, decoder)
-		encodeResponse = EncodeUpdateGrpsioServiceResponse(encoder)
-		encodeError    = EncodeUpdateGrpsioServiceError(encoder, formatter)
+		decodeRequest  = DecodeUpdateGroupsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeUpdateGroupsioServiceResponse(encoder)
+		encodeError    = EncodeUpdateGroupsioServiceError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "update-grpsio-service")
+		ctx = context.WithValue(ctx, goa.MethodKey, "update-groupsio-service")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -430,22 +504,22 @@ func NewUpdateGrpsioServiceHandler(
 	})
 }
 
-// MountDeleteGrpsioServiceHandler configures the mux to serve the
-// "mailing-list" service "delete-grpsio-service" endpoint.
-func MountDeleteGrpsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
+// MountDeleteGroupsioServiceHandler configures the mux to serve the
+// "mailing-list" service "delete-groupsio-service" endpoint.
+func MountDeleteGroupsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("DELETE", "/groupsio/services/{uid}", f)
+	mux.Handle("DELETE", "/groupsio/services/{service_id}", f)
 }
 
-// NewDeleteGrpsioServiceHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "delete-grpsio-service"
+// NewDeleteGroupsioServiceHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "delete-groupsio-service"
 // endpoint.
-func NewDeleteGrpsioServiceHandler(
+func NewDeleteGroupsioServiceHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -454,13 +528,13 @@ func NewDeleteGrpsioServiceHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeDeleteGrpsioServiceRequest(mux, decoder)
-		encodeResponse = EncodeDeleteGrpsioServiceResponse(encoder)
-		encodeError    = EncodeDeleteGrpsioServiceError(encoder, formatter)
+		decodeRequest  = DecodeDeleteGroupsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeDeleteGroupsioServiceResponse(encoder)
+		encodeError    = EncodeDeleteGroupsioServiceError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "delete-grpsio-service")
+		ctx = context.WithValue(ctx, goa.MethodKey, "delete-groupsio-service")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -484,22 +558,22 @@ func NewDeleteGrpsioServiceHandler(
 	})
 }
 
-// MountGetGrpsioServiceSettingsHandler configures the mux to serve the
-// "mailing-list" service "get-grpsio-service-settings" endpoint.
-func MountGetGrpsioServiceSettingsHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetGroupsioServiceProjectsHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-service-projects" endpoint.
+func MountGetGroupsioServiceProjectsHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/groupsio/services/{uid}/settings", f)
+	mux.Handle("GET", "/groupsio/services/_projects", f)
 }
 
-// NewGetGrpsioServiceSettingsHandler creates a HTTP handler which loads the
+// NewGetGroupsioServiceProjectsHandler creates a HTTP handler which loads the
 // HTTP request and calls the "mailing-list" service
-// "get-grpsio-service-settings" endpoint.
-func NewGetGrpsioServiceSettingsHandler(
+// "get-groupsio-service-projects" endpoint.
+func NewGetGroupsioServiceProjectsHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -508,13 +582,13 @@ func NewGetGrpsioServiceSettingsHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeGetGrpsioServiceSettingsRequest(mux, decoder)
-		encodeResponse = EncodeGetGrpsioServiceSettingsResponse(encoder)
-		encodeError    = EncodeGetGrpsioServiceSettingsError(encoder, formatter)
+		decodeRequest  = DecodeGetGroupsioServiceProjectsRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioServiceProjectsResponse(encoder)
+		encodeError    = EncodeGetGroupsioServiceProjectsError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-service-settings")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-service-projects")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -538,22 +612,22 @@ func NewGetGrpsioServiceSettingsHandler(
 	})
 }
 
-// MountUpdateGrpsioServiceSettingsHandler configures the mux to serve the
-// "mailing-list" service "update-grpsio-service-settings" endpoint.
-func MountUpdateGrpsioServiceSettingsHandler(mux goahttp.Muxer, h http.Handler) {
+// MountFindParentGroupsioServiceHandler configures the mux to serve the
+// "mailing-list" service "find-parent-groupsio-service" endpoint.
+func MountFindParentGroupsioServiceHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/groupsio/services/{uid}/settings", f)
+	mux.Handle("GET", "/groupsio/services/find_parent", f)
 }
 
-// NewUpdateGrpsioServiceSettingsHandler creates a HTTP handler which loads the
+// NewFindParentGroupsioServiceHandler creates a HTTP handler which loads the
 // HTTP request and calls the "mailing-list" service
-// "update-grpsio-service-settings" endpoint.
-func NewUpdateGrpsioServiceSettingsHandler(
+// "find-parent-groupsio-service" endpoint.
+func NewFindParentGroupsioServiceHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -562,13 +636,13 @@ func NewUpdateGrpsioServiceSettingsHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeUpdateGrpsioServiceSettingsRequest(mux, decoder)
-		encodeResponse = EncodeUpdateGrpsioServiceSettingsResponse(encoder)
-		encodeError    = EncodeUpdateGrpsioServiceSettingsError(encoder, formatter)
+		decodeRequest  = DecodeFindParentGroupsioServiceRequest(mux, decoder)
+		encodeResponse = EncodeFindParentGroupsioServiceResponse(encoder)
+		encodeError    = EncodeFindParentGroupsioServiceError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "update-grpsio-service-settings")
+		ctx = context.WithValue(ctx, goa.MethodKey, "find-parent-groupsio-service")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -592,76 +666,22 @@ func NewUpdateGrpsioServiceSettingsHandler(
 	})
 }
 
-// MountCreateGrpsioMailingListHandler configures the mux to serve the
-// "mailing-list" service "create-grpsio-mailing-list" endpoint.
-func MountCreateGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
+// MountListGroupsioSubgroupsHandler configures the mux to serve the
+// "mailing-list" service "list-groupsio-subgroups" endpoint.
+func MountListGroupsioSubgroupsHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/groupsio/mailing-lists", f)
+	mux.Handle("GET", "/groupsio/subgroups", f)
 }
 
-// NewCreateGrpsioMailingListHandler creates a HTTP handler which loads the
-// HTTP request and calls the "mailing-list" service
-// "create-grpsio-mailing-list" endpoint.
-func NewCreateGrpsioMailingListHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeCreateGrpsioMailingListRequest(mux, decoder)
-		encodeResponse = EncodeCreateGrpsioMailingListResponse(encoder)
-		encodeError    = EncodeCreateGrpsioMailingListError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "create-grpsio-mailing-list")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountGetGrpsioMailingListHandler configures the mux to serve the
-// "mailing-list" service "get-grpsio-mailing-list" endpoint.
-func MountGetGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("GET", "/groupsio/mailing-lists/{uid}", f)
-}
-
-// NewGetGrpsioMailingListHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "get-grpsio-mailing-list"
+// NewListGroupsioSubgroupsHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "list-groupsio-subgroups"
 // endpoint.
-func NewGetGrpsioMailingListHandler(
+func NewListGroupsioSubgroupsHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -670,13 +690,13 @@ func NewGetGrpsioMailingListHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeGetGrpsioMailingListRequest(mux, decoder)
-		encodeResponse = EncodeGetGrpsioMailingListResponse(encoder)
-		encodeError    = EncodeGetGrpsioMailingListError(encoder, formatter)
+		decodeRequest  = DecodeListGroupsioSubgroupsRequest(mux, decoder)
+		encodeResponse = EncodeListGroupsioSubgroupsResponse(encoder)
+		encodeError    = EncodeListGroupsioSubgroupsError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-mailing-list")
+		ctx = context.WithValue(ctx, goa.MethodKey, "list-groupsio-subgroups")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -700,22 +720,238 @@ func NewGetGrpsioMailingListHandler(
 	})
 }
 
-// MountUpdateGrpsioMailingListHandler configures the mux to serve the
-// "mailing-list" service "update-grpsio-mailing-list" endpoint.
-func MountUpdateGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
+// MountCreateGroupsioSubgroupHandler configures the mux to serve the
+// "mailing-list" service "create-groupsio-subgroup" endpoint.
+func MountCreateGroupsioSubgroupHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/groupsio/mailing-lists/{uid}", f)
+	mux.Handle("POST", "/groupsio/subgroups", f)
 }
 
-// NewUpdateGrpsioMailingListHandler creates a HTTP handler which loads the
+// NewCreateGroupsioSubgroupHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "create-groupsio-subgroup"
+// endpoint.
+func NewCreateGroupsioSubgroupHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCreateGroupsioSubgroupRequest(mux, decoder)
+		encodeResponse = EncodeCreateGroupsioSubgroupResponse(encoder)
+		encodeError    = EncodeCreateGroupsioSubgroupError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "create-groupsio-subgroup")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioSubgroupHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-subgroup" endpoint.
+func MountGetGroupsioSubgroupHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/subgroups/{subgroup_id}", f)
+}
+
+// NewGetGroupsioSubgroupHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "get-groupsio-subgroup"
+// endpoint.
+func NewGetGroupsioSubgroupHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioSubgroupRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioSubgroupResponse(encoder)
+		encodeError    = EncodeGetGroupsioSubgroupError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-subgroup")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountUpdateGroupsioSubgroupHandler configures the mux to serve the
+// "mailing-list" service "update-groupsio-subgroup" endpoint.
+func MountUpdateGroupsioSubgroupHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/groupsio/subgroups/{subgroup_id}", f)
+}
+
+// NewUpdateGroupsioSubgroupHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "update-groupsio-subgroup"
+// endpoint.
+func NewUpdateGroupsioSubgroupHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeUpdateGroupsioSubgroupRequest(mux, decoder)
+		encodeResponse = EncodeUpdateGroupsioSubgroupResponse(encoder)
+		encodeError    = EncodeUpdateGroupsioSubgroupError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "update-groupsio-subgroup")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountDeleteGroupsioSubgroupHandler configures the mux to serve the
+// "mailing-list" service "delete-groupsio-subgroup" endpoint.
+func MountDeleteGroupsioSubgroupHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("DELETE", "/groupsio/subgroups/{subgroup_id}", f)
+}
+
+// NewDeleteGroupsioSubgroupHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "delete-groupsio-subgroup"
+// endpoint.
+func NewDeleteGroupsioSubgroupHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDeleteGroupsioSubgroupRequest(mux, decoder)
+		encodeResponse = EncodeDeleteGroupsioSubgroupResponse(encoder)
+		encodeError    = EncodeDeleteGroupsioSubgroupError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "delete-groupsio-subgroup")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioSubgroupCountHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-subgroup-count" endpoint.
+func MountGetGroupsioSubgroupCountHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/subgroups/count", f)
+}
+
+// NewGetGroupsioSubgroupCountHandler creates a HTTP handler which loads the
 // HTTP request and calls the "mailing-list" service
-// "update-grpsio-mailing-list" endpoint.
-func NewUpdateGrpsioMailingListHandler(
+// "get-groupsio-subgroup-count" endpoint.
+func NewGetGroupsioSubgroupCountHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -724,13 +960,13 @@ func NewUpdateGrpsioMailingListHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeUpdateGrpsioMailingListRequest(mux, decoder)
-		encodeResponse = EncodeUpdateGrpsioMailingListResponse(encoder)
-		encodeError    = EncodeUpdateGrpsioMailingListError(encoder, formatter)
+		decodeRequest  = DecodeGetGroupsioSubgroupCountRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioSubgroupCountResponse(encoder)
+		encodeError    = EncodeGetGroupsioSubgroupCountError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "update-grpsio-mailing-list")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-subgroup-count")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -754,22 +990,398 @@ func NewUpdateGrpsioMailingListHandler(
 	})
 }
 
-// MountDeleteGrpsioMailingListHandler configures the mux to serve the
-// "mailing-list" service "delete-grpsio-mailing-list" endpoint.
-func MountDeleteGrpsioMailingListHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetGroupsioSubgroupMemberCountHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-subgroup-member-count" endpoint.
+func MountGetGroupsioSubgroupMemberCountHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("DELETE", "/groupsio/mailing-lists/{uid}", f)
+	mux.Handle("GET", "/groupsio/subgroups/{subgroup_id}/member_count", f)
 }
 
-// NewDeleteGrpsioMailingListHandler creates a HTTP handler which loads the
+// NewGetGroupsioSubgroupMemberCountHandler creates a HTTP handler which loads
+// the HTTP request and calls the "mailing-list" service
+// "get-groupsio-subgroup-member-count" endpoint.
+func NewGetGroupsioSubgroupMemberCountHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioSubgroupMemberCountRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioSubgroupMemberCountResponse(encoder)
+		encodeError    = EncodeGetGroupsioSubgroupMemberCountError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-subgroup-member-count")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountListGroupsioMembersHandler configures the mux to serve the
+// "mailing-list" service "list-groupsio-members" endpoint.
+func MountListGroupsioMembersHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/subgroups/{subgroup_id}/members", f)
+}
+
+// NewListGroupsioMembersHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "list-groupsio-members"
+// endpoint.
+func NewListGroupsioMembersHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListGroupsioMembersRequest(mux, decoder)
+		encodeResponse = EncodeListGroupsioMembersResponse(encoder)
+		encodeError    = EncodeListGroupsioMembersError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "list-groupsio-members")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountAddGroupsioMemberHandler configures the mux to serve the "mailing-list"
+// service "add-groupsio-member" endpoint.
+func MountAddGroupsioMemberHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/subgroups/{subgroup_id}/members", f)
+}
+
+// NewAddGroupsioMemberHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "add-groupsio-member" endpoint.
+func NewAddGroupsioMemberHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeAddGroupsioMemberRequest(mux, decoder)
+		encodeResponse = EncodeAddGroupsioMemberResponse(encoder)
+		encodeError    = EncodeAddGroupsioMemberError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "add-groupsio-member")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioMemberHandler configures the mux to serve the "mailing-list"
+// service "get-groupsio-member" endpoint.
+func MountGetGroupsioMemberHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/subgroups/{subgroup_id}/members/{member_id}", f)
+}
+
+// NewGetGroupsioMemberHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "get-groupsio-member" endpoint.
+func NewGetGroupsioMemberHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioMemberRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioMemberResponse(encoder)
+		encodeError    = EncodeGetGroupsioMemberError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-member")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountUpdateGroupsioMemberHandler configures the mux to serve the
+// "mailing-list" service "update-groupsio-member" endpoint.
+func MountUpdateGroupsioMemberHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/groupsio/subgroups/{subgroup_id}/members/{member_id}", f)
+}
+
+// NewUpdateGroupsioMemberHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "update-groupsio-member"
+// endpoint.
+func NewUpdateGroupsioMemberHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeUpdateGroupsioMemberRequest(mux, decoder)
+		encodeResponse = EncodeUpdateGroupsioMemberResponse(encoder)
+		encodeError    = EncodeUpdateGroupsioMemberError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "update-groupsio-member")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountDeleteGroupsioMemberHandler configures the mux to serve the
+// "mailing-list" service "delete-groupsio-member" endpoint.
+func MountDeleteGroupsioMemberHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("DELETE", "/groupsio/subgroups/{subgroup_id}/members/{member_id}", f)
+}
+
+// NewDeleteGroupsioMemberHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "delete-groupsio-member"
+// endpoint.
+func NewDeleteGroupsioMemberHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDeleteGroupsioMemberRequest(mux, decoder)
+		encodeResponse = EncodeDeleteGroupsioMemberResponse(encoder)
+		encodeError    = EncodeDeleteGroupsioMemberError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "delete-groupsio-member")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountInviteGroupsioMembersHandler configures the mux to serve the
+// "mailing-list" service "invite-groupsio-members" endpoint.
+func MountInviteGroupsioMembersHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/subgroups/{subgroup_id}/invitemembers", f)
+}
+
+// NewInviteGroupsioMembersHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "invite-groupsio-members"
+// endpoint.
+func NewInviteGroupsioMembersHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeInviteGroupsioMembersRequest(mux, decoder)
+		encodeResponse = EncodeInviteGroupsioMembersResponse(encoder)
+		encodeError    = EncodeInviteGroupsioMembersError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "invite-groupsio-members")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountCheckGroupsioSubscriberHandler configures the mux to serve the
+// "mailing-list" service "check-groupsio-subscriber" endpoint.
+func MountCheckGroupsioSubscriberHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/checksubscriber", f)
+}
+
+// NewCheckGroupsioSubscriberHandler creates a HTTP handler which loads the
 // HTTP request and calls the "mailing-list" service
-// "delete-grpsio-mailing-list" endpoint.
-func NewDeleteGrpsioMailingListHandler(
+// "check-groupsio-subscriber" endpoint.
+func NewCheckGroupsioSubscriberHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -778,390 +1390,13 @@ func NewDeleteGrpsioMailingListHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeDeleteGrpsioMailingListRequest(mux, decoder)
-		encodeResponse = EncodeDeleteGrpsioMailingListResponse(encoder)
-		encodeError    = EncodeDeleteGrpsioMailingListError(encoder, formatter)
+		decodeRequest  = DecodeCheckGroupsioSubscriberRequest(mux, decoder)
+		encodeResponse = EncodeCheckGroupsioSubscriberResponse(encoder)
+		encodeError    = EncodeCheckGroupsioSubscriberError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "delete-grpsio-mailing-list")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountGetGrpsioMailingListSettingsHandler configures the mux to serve the
-// "mailing-list" service "get-grpsio-mailing-list-settings" endpoint.
-func MountGetGrpsioMailingListSettingsHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("GET", "/groupsio/mailing-lists/{uid}/settings", f)
-}
-
-// NewGetGrpsioMailingListSettingsHandler creates a HTTP handler which loads
-// the HTTP request and calls the "mailing-list" service
-// "get-grpsio-mailing-list-settings" endpoint.
-func NewGetGrpsioMailingListSettingsHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeGetGrpsioMailingListSettingsRequest(mux, decoder)
-		encodeResponse = EncodeGetGrpsioMailingListSettingsResponse(encoder)
-		encodeError    = EncodeGetGrpsioMailingListSettingsError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-mailing-list-settings")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountUpdateGrpsioMailingListSettingsHandler configures the mux to serve the
-// "mailing-list" service "update-grpsio-mailing-list-settings" endpoint.
-func MountUpdateGrpsioMailingListSettingsHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("PUT", "/groupsio/mailing-lists/{uid}/settings", f)
-}
-
-// NewUpdateGrpsioMailingListSettingsHandler creates a HTTP handler which loads
-// the HTTP request and calls the "mailing-list" service
-// "update-grpsio-mailing-list-settings" endpoint.
-func NewUpdateGrpsioMailingListSettingsHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeUpdateGrpsioMailingListSettingsRequest(mux, decoder)
-		encodeResponse = EncodeUpdateGrpsioMailingListSettingsResponse(encoder)
-		encodeError    = EncodeUpdateGrpsioMailingListSettingsError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "update-grpsio-mailing-list-settings")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountCreateGrpsioMailingListMemberHandler configures the mux to serve the
-// "mailing-list" service "create-grpsio-mailing-list-member" endpoint.
-func MountCreateGrpsioMailingListMemberHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("POST", "/groupsio/mailing-lists/{uid}/members", f)
-}
-
-// NewCreateGrpsioMailingListMemberHandler creates a HTTP handler which loads
-// the HTTP request and calls the "mailing-list" service
-// "create-grpsio-mailing-list-member" endpoint.
-func NewCreateGrpsioMailingListMemberHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeCreateGrpsioMailingListMemberRequest(mux, decoder)
-		encodeResponse = EncodeCreateGrpsioMailingListMemberResponse(encoder)
-		encodeError    = EncodeCreateGrpsioMailingListMemberError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "create-grpsio-mailing-list-member")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountGetGrpsioMailingListMemberHandler configures the mux to serve the
-// "mailing-list" service "get-grpsio-mailing-list-member" endpoint.
-func MountGetGrpsioMailingListMemberHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("GET", "/groupsio/mailing-lists/{uid}/members/{member_uid}", f)
-}
-
-// NewGetGrpsioMailingListMemberHandler creates a HTTP handler which loads the
-// HTTP request and calls the "mailing-list" service
-// "get-grpsio-mailing-list-member" endpoint.
-func NewGetGrpsioMailingListMemberHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeGetGrpsioMailingListMemberRequest(mux, decoder)
-		encodeResponse = EncodeGetGrpsioMailingListMemberResponse(encoder)
-		encodeError    = EncodeGetGrpsioMailingListMemberError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "get-grpsio-mailing-list-member")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountUpdateGrpsioMailingListMemberHandler configures the mux to serve the
-// "mailing-list" service "update-grpsio-mailing-list-member" endpoint.
-func MountUpdateGrpsioMailingListMemberHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("PUT", "/groupsio/mailing-lists/{uid}/members/{member_uid}", f)
-}
-
-// NewUpdateGrpsioMailingListMemberHandler creates a HTTP handler which loads
-// the HTTP request and calls the "mailing-list" service
-// "update-grpsio-mailing-list-member" endpoint.
-func NewUpdateGrpsioMailingListMemberHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeUpdateGrpsioMailingListMemberRequest(mux, decoder)
-		encodeResponse = EncodeUpdateGrpsioMailingListMemberResponse(encoder)
-		encodeError    = EncodeUpdateGrpsioMailingListMemberError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "update-grpsio-mailing-list-member")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountDeleteGrpsioMailingListMemberHandler configures the mux to serve the
-// "mailing-list" service "delete-grpsio-mailing-list-member" endpoint.
-func MountDeleteGrpsioMailingListMemberHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("DELETE", "/groupsio/mailing-lists/{uid}/members/{member_uid}", f)
-}
-
-// NewDeleteGrpsioMailingListMemberHandler creates a HTTP handler which loads
-// the HTTP request and calls the "mailing-list" service
-// "delete-grpsio-mailing-list-member" endpoint.
-func NewDeleteGrpsioMailingListMemberHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeDeleteGrpsioMailingListMemberRequest(mux, decoder)
-		encodeResponse = EncodeDeleteGrpsioMailingListMemberResponse(encoder)
-		encodeError    = EncodeDeleteGrpsioMailingListMemberError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "delete-grpsio-mailing-list-member")
-		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
-		payload, err := decodeRequest(r)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		res, err := endpoint(ctx, payload)
-		if err != nil {
-			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-			return
-		}
-		if err := encodeResponse(ctx, w, res); err != nil {
-			if errhandler != nil {
-				errhandler(ctx, w, err)
-			}
-		}
-	})
-}
-
-// MountGroupsioWebhookHandler configures the mux to serve the "mailing-list"
-// service "groupsio-webhook" endpoint.
-func MountGroupsioWebhookHandler(mux goahttp.Muxer, h http.Handler) {
-	f, ok := h.(http.HandlerFunc)
-	if !ok {
-		f = func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-		}
-	}
-	mux.Handle("POST", "/webhooks/groupsio", f)
-}
-
-// NewGroupsioWebhookHandler creates a HTTP handler which loads the HTTP
-// request and calls the "mailing-list" service "groupsio-webhook" endpoint.
-func NewGroupsioWebhookHandler(
-	endpoint goa.Endpoint,
-	mux goahttp.Muxer,
-	decoder func(*http.Request) goahttp.Decoder,
-	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
-	errhandler func(context.Context, http.ResponseWriter, error),
-	formatter func(ctx context.Context, err error) goahttp.Statuser,
-) http.Handler {
-	var (
-		decodeRequest  = DecodeGroupsioWebhookRequest(mux, decoder)
-		encodeResponse = EncodeGroupsioWebhookResponse(encoder)
-		encodeError    = EncodeGroupsioWebhookError(encoder, formatter)
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "groupsio-webhook")
+		ctx = context.WithValue(ctx, goa.MethodKey, "check-groupsio-subscriber")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {
