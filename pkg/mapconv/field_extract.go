@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 )
 
 // StringVal extracts a string value from data[key].
@@ -62,49 +61,6 @@ func Int64Ptr(data map[string]any, key string) *int64 {
 		return nil
 	}
 	return &n
-}
-
-// IntVal extracts an int from data[key].
-// Accepts float64 or string representations.
-// Returns 0 if the key is absent, nil, or unparseable.
-func IntVal(data map[string]any, key string) int {
-	v, ok := data[key]
-	if !ok || v == nil {
-		return 0
-	}
-	switch t := v.(type) {
-	case float64:
-		if t != math.Trunc(t) {
-			return 0
-		}
-		return int(t)
-	case string:
-		n, err := strconv.Atoi(t)
-		if err != nil {
-			return 0
-		}
-		return n
-	default:
-		return 0
-	}
-}
-
-// BoolVal extracts a bool from data[key].
-// Accepts JSON boolean or the strings "true" / "false" (case-insensitive).
-// Returns false if the key is absent or the value cannot be interpreted.
-func BoolVal(data map[string]any, key string) bool {
-	v, ok := data[key]
-	if !ok || v == nil {
-		return false
-	}
-	switch t := v.(type) {
-	case bool:
-		return t
-	case string:
-		return strings.EqualFold(t, "true")
-	default:
-		return false
-	}
 }
 
 // StringSliceVal extracts a []string from data[key].

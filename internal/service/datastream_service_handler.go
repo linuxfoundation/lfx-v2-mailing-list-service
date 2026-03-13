@@ -90,8 +90,7 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 		return pkgerrors.IsTransient(err)
 	}
 
-	accessMsg := &model.AccessMessage{UID: uid, ObjectType: constants.ObjectTypeGroupsIOService}
-	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOServiceSubject, accessMsg); err != nil {
+	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOServiceSubject, uid); err != nil {
 		slog.WarnContext(ctx, "failed to publish service delete access message", "uid", uid, "error", err)
 	}
 

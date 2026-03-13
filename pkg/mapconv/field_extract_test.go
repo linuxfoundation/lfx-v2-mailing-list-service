@@ -55,49 +55,6 @@ func TestInt64Ptr(t *testing.T) {
 	}
 }
 
-func TestIntVal(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     map[string]any
-		key      string
-		expected int
-	}{
-		{"float64 value", map[string]any{"k": float64(7)}, "k", 7},
-		{"string value", map[string]any{"k": "250"}, "k", 250},
-		{"nil value", map[string]any{"k": nil}, "k", 0},
-		{"missing key", map[string]any{}, "k", 0},
-		{"partial string 123abc", map[string]any{"k": "123abc"}, "k", 0},
-		{"non-integer float64 truncated", map[string]any{"k": float64(3.9)}, "k", 0},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, mapconv.IntVal(tt.data, tt.key))
-		})
-	}
-}
-
-func TestBoolVal(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     map[string]any
-		key      string
-		expected bool
-	}{
-		{"bool true", map[string]any{"k": true}, "k", true},
-		{"bool false", map[string]any{"k": false}, "k", false},
-		{"string true", map[string]any{"k": "true"}, "k", true},
-		{"string TRUE uppercase", map[string]any{"k": "TRUE"}, "k", true},
-		{"string false", map[string]any{"k": "false"}, "k", false},
-		{"nil value", map[string]any{"k": nil}, "k", false},
-		{"missing key", map[string]any{}, "k", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, mapconv.BoolVal(tt.data, tt.key))
-		})
-	}
-}
-
 func TestStringSliceVal(t *testing.T) {
 	tests := []struct {
 		name     string
