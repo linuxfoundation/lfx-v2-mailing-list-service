@@ -134,6 +134,7 @@ func TestHandleDataStreamSubgroupDelete_DuplicateDelete_ACK(t *testing.T) {
 
 func TestHandleDataStreamSubgroupDelete_HappyPath_ACKAndTombstones(t *testing.T) {
 	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup), "sg-1")
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamSubgroupDelete(context.Background(), "sg-1", pub, m)
 
