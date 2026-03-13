@@ -1,0 +1,11 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+# image is the configuration for the container images
+image:
+  # repository is the container image repository
+  repository: linuxfoundation/lfx-v2-mailing-list-service
+  # tag is the container image tag (overrides appVersion from Chart.yaml)
+  tag: "latest"
+  # pullPolicy is the image pull policy
+  pullPolicy: Never
