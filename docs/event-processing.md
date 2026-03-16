@@ -125,7 +125,12 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 | `group_id` | `GroupID` |
 | `prefix` | `Prefix` |
 | `project_id` | `ProjectUID` |
+| `proj_id` | `ProjectSlug` |
+| `writers` | `GrpsIOServiceSettings.Writers` |
+| `auditors` | `GrpsIOServiceSettings.Auditors` |
+| `created_at` | `CreatedAt` |
 | `last_modified_at` | `UpdatedAt` |
+| `last_system_modified_at` | `SystemUpdatedAt` |
 | _(hardcoded)_ | `Source = "v1-sync"` |
 
 ### Mailing List / Subgroup (`GrpsIOMailingList`)
@@ -137,12 +142,18 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 | `visibility == "Public"` | `Public` |
 | `type` | `Type` |
 | `description` | `Description` |
+| `title` | `Title` |
 | `subject_tag` | `SubjectTag` |
+| `url` | `URL` |
+| `flags` | `Flags` |
+| `subscriber_count` | `SubscriberCount` |
 | `parent_id` | `ServiceUID` |
 | `project_id` | `ProjectUID` |
 | `committee` | `Committees[0].UID` |
 | `committee_filters` | `Committees[0].AllowedVotingStatuses` |
+| `created_at` | `CreatedAt` |
 | `last_modified_at` | `UpdatedAt` |
+| `last_system_modified_at` | `SystemUpdatedAt` |
 | _(hardcoded)_ | `Source = "v1-sync"` |
 
 ### Member (`GrpsIOMember`)
@@ -151,16 +162,26 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 |---|---|
 | `member_id` | `MemberID` |
 | `group_id` | `GroupID` |
+| `user_id` | `UserID` |
 | `full_name` (split on first space) | `FirstName`, `LastName` |
 | `email` | `Email` |
 | `organization` | `Organization` |
 | `job_title` | `JobTitle` |
+| `groups_email` | `GroupsEmail` |
+| `groups_full_name` | `GroupsFullName` |
+| `committee_email` | `CommitteeEmail` |
+| `committee_full_name` | `CommitteeFullName` |
+| `committee_id` | `CommitteeID` |
+| `role` | `Role` |
+| `voting_status` | `VotingStatus` |
 | `member_type` | `MemberType` |
 | `delivery_mode` | `DeliveryMode` |
+| `delivery_mode_list` | `DeliveryModeList` |
 | `mod_status` | `ModStatus` |
 | `status` | `Status` |
 | `created_at` | `CreatedAt` |
 | `last_modified_at` | `UpdatedAt` |
+| `last_system_modified_at` | `SystemUpdatedAt` |
 | _(resolved from reverse index)_ | `MailingListUID` |
 | _(hardcoded)_ | `Source = "v1-sync"` |
 
@@ -170,18 +191,17 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 
 ## NATS Subjects Published
 
-| Entity | Action | Subject |
+| Entity | Subject | Notes |
 |---|---|---|
-| Service | Created / Updated | `lfx.index.groupsio_service` |
-| Service | Created / Updated | `lfx.update_access.groupsio_service` |
-| Service | Deleted | `lfx.index.groupsio_service` |
-| Service | Deleted | `lfx.delete_all_access.groupsio_service` |
-| Mailing List | Created / Updated | `lfx.index.groupsio_mailing_list` |
-| Mailing List | Created / Updated | `lfx.update_access.groupsio_mailing_list` |
-| Mailing List | Deleted | `lfx.index.groupsio_mailing_list` |
-| Mailing List | Deleted | `lfx.delete_all_access.groupsio_mailing_list` |
-| Member | Created / Updated | `lfx.index.groupsio_member` |
-| Member | Deleted | `lfx.index.groupsio_member` |
+| Service | `lfx.index.groupsio_service` | All actions (Created / Updated / Deleted) |
+| Service | `lfx.index.groupsio_service_settings` | Created / Updated only (when writers/auditors present) |
+| Service | `lfx.update_access.groupsio_service` | Created / Updated only |
+| Service | `lfx.delete_all_access.groupsio_service` | Deleted only |
+| Mailing List | `lfx.index.groupsio_mailing_list` | All actions (Created / Updated / Deleted) |
+| Mailing List | `lfx.index.groupsio_mailing_list_settings` | Created / Updated only (when writers/auditors present) |
+| Mailing List | `lfx.update_access.groupsio_mailing_list` | Created / Updated only |
+| Mailing List | `lfx.delete_all_access.groupsio_mailing_list` | Deleted only |
+| Member | `lfx.index.groupsio_member` | All actions (Created / Updated / Deleted) |
 
 ---
 

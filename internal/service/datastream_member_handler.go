@@ -111,20 +111,29 @@ func transformV1ToGrpsIOMember(uid, mailingListUID string, data map[string]any) 
 	firstName, lastName := splitFullName(mapconv.StringVal(data, "full_name"))
 
 	member := &model.GrpsIOMember{
-		UID:            uid,
-		MailingListUID: mailingListUID,
-		MemberID:       mapconv.Int64Ptr(data, "member_id"),
-		GroupID:        mapconv.Int64Ptr(data, "group_id"),
-		FirstName:      firstName,
-		LastName:       lastName,
-		Email:          mapconv.StringVal(data, "email"),
-		Organization:   mapconv.StringVal(data, "organization"),
-		JobTitle:       mapconv.StringVal(data, "job_title"),
-		MemberType:     mapconv.StringVal(data, "member_type"),
-		DeliveryMode:   mapconv.StringVal(data, "delivery_mode"),
-		ModStatus:      mapconv.StringVal(data, "mod_status"),
-		Status:         mapconv.StringVal(data, "status"),
-		Source:         "v1-sync",
+		UID:               uid,
+		MailingListUID:    mailingListUID,
+		MemberID:          mapconv.Int64Ptr(data, "member_id"),
+		GroupID:           mapconv.Int64Ptr(data, "group_id"),
+		UserID:            mapconv.StringVal(data, "user_id"),
+		FirstName:         firstName,
+		LastName:          lastName,
+		Email:             mapconv.StringVal(data, "email"),
+		Organization:      mapconv.StringVal(data, "organization"),
+		JobTitle:          mapconv.StringVal(data, "job_title"),
+		GroupsEmail:       mapconv.StringVal(data, "groups_email"),
+		GroupsFullName:    mapconv.StringVal(data, "groups_full_name"),
+		CommitteeEmail:    mapconv.StringVal(data, "committee_email"),
+		CommitteeFullName: mapconv.StringVal(data, "committee_full_name"),
+		CommitteeID:       mapconv.StringVal(data, "committee_id"),
+		Role:              mapconv.StringVal(data, "role"),
+		VotingStatus:      mapconv.StringVal(data, "voting_status"),
+		MemberType:        mapconv.StringVal(data, "member_type"),
+		DeliveryMode:      mapconv.StringVal(data, "delivery_mode"),
+		DeliveryModeList:  mapconv.StringVal(data, "delivery_mode_list"),
+		ModStatus:         mapconv.StringVal(data, "mod_status"),
+		Status:            mapconv.StringVal(data, "status"),
+		Source:            "v1-sync",
 	}
 
 	if ts := mapconv.StringVal(data, "created_at"); ts != "" {
@@ -135,6 +144,11 @@ func transformV1ToGrpsIOMember(uid, mailingListUID string, data map[string]any) 
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil {
 			member.UpdatedAt = t
+		}
+	}
+	if ts := mapconv.StringVal(data, "last_system_modified_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			member.SystemUpdatedAt = t
 		}
 	}
 

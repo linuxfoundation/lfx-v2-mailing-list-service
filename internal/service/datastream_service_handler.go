@@ -50,13 +50,37 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 		return pkgerrors.IsTransient(err)
 	}
 
+	// Publish settings indexer message when writers or auditors are present.
+	settings := buildServiceSettings(uid, data)
+	if settings != nil {
+		settingsMsg := &model.IndexerMessage{Action: action, Tags: settings.Tags()}
+		builtSettings, errSettings := settingsMsg.Build(ctx, settings)
+		if errSettings != nil {
+			slog.ErrorContext(ctx, "failed to build service settings indexer message", "uid", uid, "error", errSettings)
+		}
+		if errSettings == nil {
+			if errPublish := publisher.Indexer(ctx, constants.IndexGroupsIOServiceSettingsSubject, builtSettings); errPublish != nil {
+				slog.ErrorContext(ctx, "failed to publish service settings indexer message", "uid", uid, "error", errPublish)
+			}
+		}
+	}
+
+	references := map[string][]string{
+		constants.RelationProject: {svc.ProjectUID},
+	}
+	if settings != nil {
+		if writers := userInfoUsernames(settings.Writers); len(writers) > 0 {
+			references[constants.RelationWriter] = writers
+		}
+		if auditors := userInfoUsernames(settings.Auditors); len(auditors) > 0 {
+			references[constants.RelationAuditor] = auditors
+		}
+	}
 	accessMsg := &model.AccessMessage{
 		UID:        uid,
 		ObjectType: constants.ObjectTypeGroupsIOService,
 		Public:     svc.Public,
-		References: map[string][]string{
-			constants.RelationProject: {svc.ProjectUID},
-		},
+		References: references,
 	}
 	if err := publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service access message", "uid", uid, "error", err)
@@ -100,22 +124,48 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 	return false
 }
 
+// buildServiceSettings constructs a GrpsIOServiceSettings from v1 writers/auditors.
+// Returns nil when both slices are empty (no settings message needed).
+func buildServiceSettings(uid string, data map[string]any) *model.GrpsIOServiceSettings {
+	writers := toUserInfoSlice(mapconv.StringSliceVal(data, "writers"))
+	auditors := toUserInfoSlice(mapconv.StringSliceVal(data, "auditors"))
+	if len(writers) == 0 && len(auditors) == 0 {
+		return nil
+	}
+	return &model.GrpsIOServiceSettings{
+		UID:      uid,
+		Writers:  writers,
+		Auditors: auditors,
+	}
+}
+
 // transformV1ToGrpsIOService maps v1 DynamoDB fields to the GrpsIOService domain model.
 // Source is always "v1-sync" to distinguish these from API-created records.
 func transformV1ToGrpsIOService(uid string, data map[string]any) *model.GrpsIOService {
 	svc := &model.GrpsIOService{
-		UID:        uid,
-		Type:       mapconv.StringVal(data, "group_service_type"),
-		Domain:     mapconv.StringVal(data, "domain"),
-		GroupID:    mapconv.Int64Ptr(data, "group_id"),
-		Prefix:     mapconv.StringVal(data, "prefix"),
-		ProjectUID: mapconv.StringVal(data, "project_id"),
-		Source:     "v1-sync",
+		UID:         uid,
+		Type:        mapconv.StringVal(data, "group_service_type"),
+		Domain:      mapconv.StringVal(data, "domain"),
+		GroupID:     mapconv.Int64Ptr(data, "group_id"),
+		Prefix:      mapconv.StringVal(data, "prefix"),
+		ProjectUID:  mapconv.StringVal(data, "project_id"),
+		ProjectSlug: mapconv.StringVal(data, "proj_id"),
+		Source:      "v1-sync",
 	}
 
+	if ts := mapconv.StringVal(data, "created_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			svc.CreatedAt = t
+		}
+	}
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil {
 			svc.UpdatedAt = t
+		}
+	}
+	if ts := mapconv.StringVal(data, "last_system_modified_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			svc.SystemUpdatedAt = t
 		}
 	}
 

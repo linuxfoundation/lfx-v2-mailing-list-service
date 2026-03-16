@@ -84,6 +84,21 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return pkgerrors.IsTransient(err)
 	}
 
+	// Publish settings indexer message when writers or auditors are present.
+	settings := buildMailingListSettings(uid, data)
+	if settings != nil {
+		settingsMsg := &model.IndexerMessage{Action: action, Tags: settings.Tags()}
+		builtSettings, errSettings := settingsMsg.Build(ctx, settings)
+		if errSettings != nil {
+			slog.ErrorContext(ctx, "failed to build subgroup settings indexer message", "uid", uid, "error", errSettings)
+		}
+		if errSettings == nil {
+			if errPublish := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSettingsSubject, builtSettings); errPublish != nil {
+				slog.ErrorContext(ctx, "failed to publish subgroup settings indexer message", "uid", uid, "error", errPublish)
+			}
+		}
+	}
+
 	references := map[string][]string{
 		// Project access is inherited through the service — only service reference needed.
 		constants.RelationGroupsIOService: {list.ServiceUID},
@@ -91,6 +106,14 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	for _, committee := range list.Committees {
 		if committee.UID != "" {
 			references[constants.RelationCommittee] = append(references[constants.RelationCommittee], committee.UID)
+		}
+	}
+	if settings != nil {
+		if writers := userInfoUsernames(settings.Writers); len(writers) > 0 {
+			references[constants.RelationWriter] = writers
+		}
+		if auditors := userInfoUsernames(settings.Auditors); len(auditors) > 0 {
+			references[constants.RelationAuditor] = auditors
 		}
 	}
 	accessMsg := &model.AccessMessage{
@@ -158,6 +181,45 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 	return false
 }
 
+// buildMailingListSettings constructs a GrpsIOMailingListSettings from v1 writers/auditors.
+// Returns nil when both slices are empty (no settings message needed).
+func buildMailingListSettings(uid string, data map[string]any) *model.GrpsIOMailingListSettings {
+	writers := toUserInfoSlice(mapconv.StringSliceVal(data, "writers"))
+	auditors := toUserInfoSlice(mapconv.StringSliceVal(data, "auditors"))
+	if len(writers) == 0 && len(auditors) == 0 {
+		return nil
+	}
+	return &model.GrpsIOMailingListSettings{
+		UID:      uid,
+		Writers:  writers,
+		Auditors: auditors,
+	}
+}
+
+// toUserInfoSlice converts a slice of username strings to UserInfo values.
+func toUserInfoSlice(usernames []string) []model.UserInfo {
+	if len(usernames) == 0 {
+		return nil
+	}
+	out := make([]model.UserInfo, len(usernames))
+	for i, u := range usernames {
+		username := u
+		out[i] = model.UserInfo{Username: &username}
+	}
+	return out
+}
+
+// userInfoUsernames extracts the non-empty Username pointers from a []UserInfo slice.
+func userInfoUsernames(users []model.UserInfo) []string {
+	out := make([]string, 0, len(users))
+	for _, u := range users {
+		if u.Username != nil && *u.Username != "" {
+			out = append(out, *u.Username)
+		}
+	}
+	return out
+}
+
 // transformV1ToGrpsIOMailingList maps v1 DynamoDB fields to the GrpsIOMailingList domain model.
 func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.GrpsIOMailingList {
 	list := &model.GrpsIOMailingList{
@@ -167,10 +229,17 @@ func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.Grps
 		Public:      mapconv.StringVal(data, "visibility") == "Public",
 		Type:        mapconv.StringVal(data, "type"),
 		Description: mapconv.StringVal(data, "description"),
+		Title:       mapconv.StringVal(data, "title"),
 		SubjectTag:  mapconv.StringVal(data, "subject_tag"),
+		URL:         mapconv.StringVal(data, "url"),
+		Flags:       mapconv.StringSliceVal(data, "flags"),
 		ServiceUID:  mapconv.StringVal(data, "parent_id"),
 		ProjectUID:  mapconv.StringVal(data, "project_id"),
 		Source:      "v1-sync",
+	}
+
+	if n := mapconv.Int64Ptr(data, "subscriber_count"); n != nil {
+		list.SubscriberCount = int(*n)
 	}
 
 	if committeeUID := mapconv.StringVal(data, "committee"); committeeUID != "" {
@@ -180,9 +249,21 @@ func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.Grps
 		}}
 	}
 
+	if ts := mapconv.StringVal(data, "created_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			list.CreatedAt = t
+		}
+	}
+
 	if ts := mapconv.StringVal(data, "last_modified_at"); ts != "" {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil {
 			list.UpdatedAt = t
+		}
+	}
+
+	if ts := mapconv.StringVal(data, "last_system_modified_at"); ts != "" {
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			list.SystemUpdatedAt = t
 		}
 	}
 
