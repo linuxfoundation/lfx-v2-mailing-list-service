@@ -28,17 +28,30 @@ type GrpsIOMember struct {
 	Source   string `json:"source"`    // "api", "webhook", or "mock" - tracks origin for business logic
 
 	// Member Information
-	Username     string `json:"username"` // Username
+	UserID       string `json:"user_id,omitempty"`  // User-service ID of the member
+	Username     string `json:"username"`            // Username
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Email        string `json:"email"`        // Required, RFC 5322
 	Organization string `json:"organization"` // Optional
 	JobTitle     string `json:"job_title"`    // Optional
 
+	// Normalised search fields (lowercase, for filtering)
+	GroupsEmail       string `json:"groups_email,omitempty"`        // Lowercase email from Groups.io
+	GroupsFullName    string `json:"groups_full_name,omitempty"`    // Lowercase full name from Groups.io
+	CommitteeEmail    string `json:"committee_email,omitempty"`     // Lowercase email from Committee Service
+	CommitteeFullName string `json:"committee_full_name,omitempty"` // Lowercase full name from Committee Service
+
+	// Committee association
+	CommitteeID  string `json:"committee_id,omitempty"`  // Committee ID if member belongs to a committee
+	Role         string `json:"role,omitempty"`          // Role of the member
+	VotingStatus string `json:"voting_status,omitempty"` // Voting status of the member
+
 	// Member Configuration
-	MemberType   string `json:"member_type"`   // "committee" or "direct"
-	DeliveryMode string `json:"delivery_mode"` // Email delivery preference
-	ModStatus    string `json:"mod_status"`    // "none", "moderator", "owner"
+	MemberType       string `json:"member_type"`                  // "committee" or "direct"
+	DeliveryMode     string `json:"delivery_mode"`                // Email delivery preference
+	DeliveryModeList string `json:"delivery_mode_list,omitempty"` // Delivery mode list from Groups.io
+	ModStatus        string `json:"mod_status"`                   // "none", "moderator", "owner"
 
 	// Status
 	Status string `json:"status"` // Groups.io status: normal, pending, etc.
@@ -47,8 +60,9 @@ type GrpsIOMember struct {
 	LastReviewedBy *string `json:"last_reviewed_by"` // Nullable user ID
 
 	// Timestamps
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	SystemUpdatedAt time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key.

@@ -19,9 +19,21 @@ import (
 // NATSClient wraps the NATS connection and provides access control operations
 type NATSClient struct {
 	conn    *nats.Conn
+	js      jetstream.JetStream
 	config  Config
 	kvStore map[string]jetstream.KeyValue
 	timeout time.Duration
+}
+
+// KeyValue opens the named KV bucket. The bucket is not cached — use KeyValueStore
+// for buckets that are accessed repeatedly via the storage adapters.
+func (c *NATSClient) KeyValue(ctx context.Context, bucketName string) (jetstream.KeyValue, error) {
+	return c.js.KeyValue(ctx, bucketName)
+}
+
+// CreateOrUpdateConsumer creates or updates a durable JetStream consumer.
+func (c *NATSClient) CreateOrUpdateConsumer(ctx context.Context, streamName string, cfg jetstream.ConsumerConfig) (jetstream.Consumer, error) {
+	return c.js.CreateOrUpdateConsumer(ctx, streamName, cfg)
 }
 
 // NATSClientInterface defines the interface for NATS operations
@@ -68,17 +80,9 @@ func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandl
 	return c.conn.QueueSubscribe(subject, queue, handler)
 }
 
-// KeyValueStore creates a JetStream client and gets the key-value store for projects.
+// KeyValueStore opens the named KV bucket and caches it on the client.
 func (c *NATSClient) KeyValueStore(ctx context.Context, bucketName string) error {
-	js, err := jetstream.New(c.conn)
-	if err != nil {
-		slog.ErrorContext(ctx, "error creating NATS JetStream client",
-			"error", err,
-			"nats_url", c.conn.ConnectedUrl(),
-		)
-		return err
-	}
-	kvStore, err := js.KeyValue(ctx, bucketName)
+	kvStore, err := c.js.KeyValue(ctx, bucketName)
 	if err != nil {
 		slog.ErrorContext(ctx, "error getting NATS JetStream key-value store",
 			"error", err,
@@ -144,8 +148,15 @@ func NewClient(ctx context.Context, config Config) (*NATSClient, error) {
 		return nil, errors.NewServiceUnavailable("failed to connect to NATS", err)
 	}
 
+	js, err := jetstream.New(conn)
+	if err != nil {
+		conn.Close()
+		return nil, errors.NewServiceUnavailable("failed to create JetStream context", err)
+	}
+
 	client := &NATSClient{
 		conn:    conn,
+		js:      js,
 		config:  config,
 		timeout: config.Timeout,
 	}

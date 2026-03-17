@@ -10,6 +10,30 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
 
+// SpyMessagePublisher records every call to Indexer and Access for assertion in tests.
+type SpyMessagePublisher struct {
+	IndexerCalls []PublishedMsg
+	AccessCalls  []PublishedMsg
+}
+
+// PublishedMsg holds the subject and message from a single publisher call.
+type PublishedMsg struct {
+	Subject string
+	Message any
+}
+
+var _ port.MessagePublisher = (*SpyMessagePublisher)(nil)
+
+func (s *SpyMessagePublisher) Indexer(_ context.Context, subject string, message any) error {
+	s.IndexerCalls = append(s.IndexerCalls, PublishedMsg{subject, message})
+	return nil
+}
+func (s *SpyMessagePublisher) Access(_ context.Context, subject string, message any) error {
+	s.AccessCalls = append(s.AccessCalls, PublishedMsg{subject, message})
+	return nil
+}
+func (s *SpyMessagePublisher) Internal(_ context.Context, _ string, _ any) error { return nil }
+
 // mockMessagePublisher is a mock implementation of the MessagePublisher interface
 type mockMessagePublisher struct{}
 
