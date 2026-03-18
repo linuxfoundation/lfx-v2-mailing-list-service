@@ -13,6 +13,7 @@ metadata:
   {{- end }}
 spec:
   bucket: {{ .Values.nats.groupsio_services_kv_bucket.name }}
+  replicas: {{ .Values.nats.groupsio_services_kv_bucket.replicas }}
   history: {{ .Values.nats.groupsio_services_kv_bucket.history }}
   storage: {{ .Values.nats.groupsio_services_kv_bucket.storage }}
   maxValueSize: {{ .Values.nats.groupsio_services_kv_bucket.maxValueSize }}
@@ -32,6 +33,7 @@ metadata:
   {{- end }}
 spec:
   bucket: {{ .Values.nats.groupsio_service_settings_kv_bucket.name }}
+  replicas: {{ .Values.nats.groupsio_service_settings_kv_bucket.replicas }}
   history: {{ .Values.nats.groupsio_service_settings_kv_bucket.history }}
   storage: {{ .Values.nats.groupsio_service_settings_kv_bucket.storage }}
   maxValueSize: {{ .Values.nats.groupsio_service_settings_kv_bucket.maxValueSize }}
@@ -51,6 +53,7 @@ metadata:
   {{- end }}
 spec:
   bucket: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.name }}
+  replicas: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.replicas }}
   history: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.history }}
   storage: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.storage }}
   maxValueSize: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.maxValueSize }}
@@ -70,6 +73,7 @@ metadata:
   {{- end }}
 spec:
   bucket: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.name }}
+  replicas: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.replicas }}
   history: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.history }}
   storage: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.storage }}
   maxValueSize: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.maxValueSize }}
@@ -89,6 +93,7 @@ metadata:
   {{- end }}
 spec:
   bucket: {{ .Values.nats.groupsio_members_kv_bucket.name }}
+  replicas: {{ .Values.nats.groupsio_members_kv_bucket.replicas }}
   history: {{ .Values.nats.groupsio_members_kv_bucket.history }}
   storage: {{ .Values.nats.groupsio_members_kv_bucket.storage }}
   maxValueSize: {{ .Values.nats.groupsio_members_kv_bucket.maxValueSize }}
