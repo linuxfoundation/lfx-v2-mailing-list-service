@@ -90,8 +90,8 @@ var GroupsioServiceRequestType = dsl.Type("groupsio-service-request", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("type", dsl.String, "Service type", func() {
-		dsl.Enum("primary", "formation", "shared")
-		dsl.Example("primary")
+		dsl.Enum("v2_primary", "v2_formation", "v2_shared")
+		dsl.Example("v2_primary")
 	})
 	dsl.Attribute("group_id", dsl.Int64, "GroupsIO group ID")
 	dsl.Attribute("domain", dsl.String, "Service domain")

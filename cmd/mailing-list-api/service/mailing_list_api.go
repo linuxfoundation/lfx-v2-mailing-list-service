@@ -328,6 +328,15 @@ func strVal(s *string) string {
 	return *s
 }
 
+// nonEmptyStrPtr returns a pointer to s, or nil if s is empty.
+// Used to omit optional timestamp fields when not set.
+func nonEmptyStrPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func int64Val(v *int64) int64 {
 	if v == nil {
 		return 0
@@ -348,7 +357,7 @@ func convertService(svc *models.GroupsioService) *mailinglist.GroupsioService {
 		Prefix:     &svc.Prefix,
 		Status:     &svc.Status,
 		CreatedAt:  &svc.CreatedAt,
-		UpdatedAt:  &svc.UpdatedAt,
+		UpdatedAt:  nonEmptyStrPtr(svc.UpdatedAt),
 	}
 }
 
@@ -366,7 +375,7 @@ func convertSubgroup(sg *models.GroupsioSubgroup) *mailinglist.GroupsioSubgroup 
 		Type:           &sg.Type,
 		AudienceAccess: &sg.AudienceAccess,
 		CreatedAt:      &sg.CreatedAt,
-		UpdatedAt:      &sg.UpdatedAt,
+		UpdatedAt:      nonEmptyStrPtr(sg.UpdatedAt),
 	}
 }
 
@@ -385,6 +394,6 @@ func convertMember(m *models.GroupsioMember) *mailinglist.GroupsioMember {
 		DeliveryMode: &m.DeliveryMode,
 		Status:       &m.Status,
 		CreatedAt:    &m.CreatedAt,
-		UpdatedAt:    &m.UpdatedAt,
+		UpdatedAt:    nonEmptyStrPtr(m.UpdatedAt),
 	}
 }

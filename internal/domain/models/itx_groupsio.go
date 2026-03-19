@@ -14,7 +14,7 @@ type GroupsioService struct {
 	Prefix    string `json:"prefix,omitempty"`
 	Status    string `json:"status,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
+	UpdatedAt string `json:"last_modified_at,omitempty"`
 }
 
 // GroupsioServiceRequest represents a create/update request for a GroupsIO service.
@@ -41,8 +41,8 @@ type GroupsioServiceProjectsResponse struct {
 // GroupsioSubgroup represents a GroupsIO subgroup (mailing list) in the ITX API.
 type GroupsioSubgroup struct {
 	ID             string `json:"id,omitempty"`
-	ProjectID      string `json:"project_id,omitempty"`  // v1 SFID in ITX, v2 UUID in our API
-	CommitteeID    string `json:"committee,omitempty"`   // v1 UUID in ITX, v2 UUID in our API
+	ProjectID      string `json:"project_id,omitempty"` // v1 SFID in ITX, v2 UUID in our API
+	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID in ITX, v2 UUID in our API
 	GroupID        int64  `json:"group_id,omitempty"`
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`
@@ -54,8 +54,8 @@ type GroupsioSubgroup struct {
 
 // GroupsioSubgroupRequest represents a create/update request for a GroupsIO subgroup.
 type GroupsioSubgroupRequest struct {
-	ProjectID      string `json:"project_id,omitempty"`  // v1 SFID
-	CommitteeID    string `json:"committee,omitempty"`   // v1 UUID
+	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
+	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
 	GroupID        int64  `json:"group_id,omitempty"`
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`

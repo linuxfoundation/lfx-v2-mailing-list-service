@@ -51,7 +51,7 @@ func BuildCreateGroupsioServicePayload(mailingListCreateGroupsioServiceBody stri
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGroupsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Molestias amet aut molestiae sequi quisquam.\",\n      \"group_id\": 7943249514373272995,\n      \"prefix\": \"Non fuga a est et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Eum officiis voluptates.\",\n      \"type\": \"primary\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Molestias amet aut molestiae sequi quisquam.\",\n      \"group_id\": 7943249514373272995,\n      \"prefix\": \"Non fuga a est et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Eum officiis voluptates.\",\n      \"type\": \"v2_primary\"\n   }'")
 		}
 	}
 	var bearerToken *string
@@ -101,14 +101,14 @@ func BuildUpdateGroupsioServicePayload(mailingListUpdateGroupsioServiceBody stri
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Velit molestias molestiae fuga.\",\n      \"group_id\": 1590455940722915203,\n      \"prefix\": \"Ea nisi sapiente minus qui aut.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Aliquid dicta non.\",\n      \"type\": \"primary\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Velit molestias molestiae fuga.\",\n      \"group_id\": 1590455940722915203,\n      \"prefix\": \"Ea nisi sapiente minus qui aut.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Aliquid dicta non.\",\n      \"type\": \"v2_primary\"\n   }'")
 		}
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 		}
 		if body.Type != nil {
-			if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
+			if !(*body.Type == "v2_primary" || *body.Type == "v2_formation" || *body.Type == "v2_shared") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"v2_primary", "v2_formation", "v2_shared"}))
 			}
 		}
 		if err != nil {

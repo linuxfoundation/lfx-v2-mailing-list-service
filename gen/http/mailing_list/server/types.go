@@ -2337,8 +2337,8 @@ func ValidateCreateGroupsioServiceRequestBody(body *CreateGroupsioServiceRequest
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
+		if !(*body.Type == "v2_primary" || *body.Type == "v2_formation" || *body.Type == "v2_shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"v2_primary", "v2_formation", "v2_shared"}))
 		}
 	}
 	return
@@ -2351,8 +2351,8 @@ func ValidateUpdateGroupsioServiceRequestBody(body *UpdateGroupsioServiceRequest
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "primary" || *body.Type == "formation" || *body.Type == "shared") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"primary", "formation", "shared"}))
+		if !(*body.Type == "v2_primary" || *body.Type == "v2_formation" || *body.Type == "v2_shared") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"v2_primary", "v2_formation", "v2_shared"}))
 		}
 	}
 	return

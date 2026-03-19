@@ -453,7 +453,7 @@ Example:
       "prefix": "Non fuga a est et.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "status": "Eum officiis voluptates.",
-      "type": "primary"
+      "type": "v2_primary"
    }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
@@ -485,7 +485,7 @@ Example:
       "prefix": "Ea nisi sapiente minus qui aut.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
       "status": "Aliquid dicta non.",
-      "type": "primary"
+      "type": "v2_primary"
    }' --service-id "Atque omnis recusandae qui." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }

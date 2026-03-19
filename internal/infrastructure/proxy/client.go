@@ -250,6 +250,11 @@ func (c *Client) UpdateService(ctx context.Context, serviceID string, req *model
 		return nil, c.mapHTTPError(status, body)
 	}
 
+	// ITX returns 204 No Content on successful update; fetch the updated resource.
+	if len(body) == 0 {
+		return c.GetService(ctx, serviceID)
+	}
+
 	var result models.GroupsioService
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, domain.NewInternalError("failed to parse response", err)
@@ -392,6 +397,11 @@ func (c *Client) UpdateSubgroup(ctx context.Context, subgroupID string, req *mod
 		return nil, c.mapHTTPError(status, body)
 	}
 
+	// ITX returns 204 No Content on successful update; fetch the updated resource.
+	if len(body) == 0 {
+		return c.GetSubgroup(ctx, subgroupID)
+	}
+
 	var result models.GroupsioSubgroup
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, domain.NewInternalError("failed to parse response", err)
@@ -523,6 +533,11 @@ func (c *Client) UpdateMember(ctx context.Context, subgroupID, memberID string, 
 	}
 	if status < 200 || status >= 300 {
 		return nil, c.mapHTTPError(status, body)
+	}
+
+	// ITX returns 204 No Content on successful update; fetch the updated resource.
+	if len(body) == 0 {
+		return c.GetMember(ctx, subgroupID, memberID)
 	}
 
 	var result models.GroupsioMember

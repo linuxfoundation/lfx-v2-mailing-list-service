@@ -148,7 +148,7 @@ paths:
                             prefix: Non fuga a est et.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             status: Eum officiis voluptates.
-                            type: primary
+                            type: v2_primary
             responses:
                 "201":
                     description: Created response.
@@ -369,7 +369,7 @@ paths:
                             prefix: Ea nisi sapiente minus qui aut.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             status: Aliquid dicta non.
-                            type: primary
+                            type: v2_primary
             responses:
                 "200":
                     description: OK response.
@@ -1962,11 +1962,11 @@ components:
                 type:
                     type: string
                     description: Service type
-                    example: primary
+                    example: v2_primary
                     enum:
-                        - primary
-                        - formation
-                        - shared
+                        - v2_primary
+                        - v2_formation
+                        - v2_shared
             description: Request body for creating or updating a GroupsIO service
             example:
                 domain: Amet qui eligendi.
@@ -1974,7 +1974,7 @@ components:
                 prefix: Magni provident laborum voluptatem.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 status: Iusto recusandae.
-                type: primary
+                type: v2_primary
         GroupsioSubgroup:
             type: object
             properties:
@@ -2226,18 +2226,18 @@ components:
                 type:
                     type: string
                     description: Service type
-                    example: primary
+                    example: v2_primary
                     enum:
-                        - primary
-                        - formation
-                        - shared
+                        - v2_primary
+                        - v2_formation
+                        - v2_shared
             example:
                 domain: Exercitationem laboriosam ipsum.
                 group_id: 3468863149838709088
                 prefix: Eos error qui.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 status: Qui nihil.
-                type: primary
+                type: v2_primary
         UpdateGroupsioSubgroupRequestBody:
             type: object
             properties:
