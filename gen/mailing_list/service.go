@@ -143,6 +143,8 @@ type CreateGroupsioSubgroupPayload struct {
 	ProjectUID *string
 	// LFX v2 committee UID
 	CommitteeUID *string
+	// Parent GroupsIO service ID
+	ServiceID *string
 	// GroupsIO group ID
 	GroupID *int64
 	// Subgroup name
@@ -345,6 +347,8 @@ type GroupsioSubgroup struct {
 	ProjectUID *string
 	// LFX v2 committee UID
 	CommitteeUID *string
+	// Parent GroupsIO service ID
+	ServiceID *string
 	// GroupsIO group ID
 	GroupID *int64
 	// Subgroup name
@@ -461,6 +465,8 @@ type UpdateGroupsioSubgroupPayload struct {
 	ProjectUID *string
 	// LFX v2 committee UID
 	CommitteeUID *string
+	// Parent GroupsIO service ID
+	ServiceID *string
 	// GroupsIO group ID
 	GroupID *int64
 	// Subgroup name

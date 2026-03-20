@@ -25,11 +25,10 @@ import (
 )
 
 var (
-	natsStorageClient   port.GrpsIOReaderWriter
-	natsMessagingClient port.EntityAttributeReader
 	natsPublisherClient port.MessagePublisher
 
 	natsDoOnce sync.Once
+	natsClient *nats.NATSClient
 )
 
 // AuthService initializes the authentication service implementation
@@ -159,6 +158,7 @@ func natsInit(ctx context.Context) {
 		if errNewClient != nil {
 			log.Fatalf("failed to create NATS client: %v", errNewClient)
 		}
+		natsClient = client
 		natsPublisherClient = nats.NewMessagePublisher(client)
 	})
 }
@@ -171,14 +171,9 @@ func GroupsioMemberService(ctx context.Context, client domain.ITXGroupsioClient)
 
 // GetNATSClient returns the initialized NATS client for subscriptions
 func GetNATSClient(ctx context.Context) *nats.NATSClient {
+	// singleton initialization of NATS client
 	natsInit(ctx)
-	// Access the client through storage adapter
-	storageImpl, ok := natsStorageClient.(interface{ Client() *nats.NATSClient })
-	if !ok {
-		slog.ErrorContext(ctx, "NATS storage does not implement Client() method")
-		panic("NATS storage implementation error")
-	}
-	return storageImpl.Client()
+	return natsClient
 }
 
 // MappingReaderWriter initializes the v1-mappings KV abstraction used by the

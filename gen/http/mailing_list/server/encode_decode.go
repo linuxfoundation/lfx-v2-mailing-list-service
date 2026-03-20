@@ -2383,6 +2383,7 @@ func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailing
 		ID:             v.ID,
 		ProjectUID:     v.ProjectUID,
 		CommitteeUID:   v.CommitteeUID,
+		ServiceID:      v.ServiceID,
 		GroupID:        v.GroupID,
 		Name:           v.Name,
 		Description:    v.Description,

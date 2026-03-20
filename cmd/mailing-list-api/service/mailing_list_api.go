@@ -167,6 +167,7 @@ func (s *mailingListAPI) CreateGroupsioSubgroup(ctx context.Context, p *mailingl
 	req := &models.GroupsioSubgroupRequest{
 		ProjectID:      strVal(p.ProjectUID),
 		CommitteeID:    strVal(p.CommitteeUID),
+		ParentID:       strVal(p.ServiceID),
 		GroupID:        int64Val(p.GroupID),
 		Name:           strVal(p.Name),
 		Description:    strVal(p.Description),
@@ -192,6 +193,7 @@ func (s *mailingListAPI) UpdateGroupsioSubgroup(ctx context.Context, p *mailingl
 	req := &models.GroupsioSubgroupRequest{
 		ProjectID:      strVal(p.ProjectUID),
 		CommitteeID:    strVal(p.CommitteeUID),
+		ParentID:       strVal(p.ServiceID),
 		GroupID:        int64Val(p.GroupID),
 		Name:           strVal(p.Name),
 		Description:    strVal(p.Description),
@@ -369,6 +371,7 @@ func convertSubgroup(sg *models.GroupsioSubgroup) *mailinglist.GroupsioSubgroup 
 		ID:             &sg.ID,
 		ProjectUID:     &sg.ProjectID,
 		CommitteeUID:   &sg.CommitteeID,
+		ServiceID:      &sg.ParentID,
 		GroupID:        &sg.GroupID,
 		Name:           &sg.Name,
 		Description:    &sg.Description,

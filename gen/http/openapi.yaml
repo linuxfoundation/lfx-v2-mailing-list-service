@@ -1171,7 +1171,7 @@ definitions:
             subscribed:
                 type: boolean
                 description: Whether the email is subscribed
-                example: true
+                example: false
         example:
             subscribed: true
         required:
@@ -1183,10 +1183,10 @@ definitions:
             count:
                 type: integer
                 description: Count value
-                example: 6800691645898679136
+                example: 575600027751503757
                 format: int64
         example:
-            count: 763626204865788569
+            count: 8248949192821872160
         required:
             - count
     GroupsioMember:
@@ -1196,61 +1196,61 @@ definitions:
             created_at:
                 type: string
                 description: Creation timestamp
-                example: Est est et.
+                example: Labore et accusamus rerum laboriosam vel.
             delivery_mode:
                 type: string
                 description: Email delivery mode
-                example: Sunt ipsum et in ipsa sed.
+                example: Quibusdam qui.
             email:
                 type: string
                 description: Member email address
-                example: sunny@hoeger.org
+                example: halie@bernier.info
                 format: email
             first_name:
                 type: string
                 description: Member first name
-                example: Nulla quas repellat.
+                example: Quibusdam molestias sunt.
             id:
                 type: string
                 description: Member ID
-                example: Alias aut delectus ut omnis.
+                example: Est sit ut doloremque non.
             last_name:
                 type: string
                 description: Member last name
-                example: Sunt et qui rerum.
+                example: Veritatis tenetur ea optio.
             mod_status:
                 type: string
                 description: Moderation status
-                example: Dolor accusantium ipsam cumque.
+                example: Veritatis quis molestiae aperiam.
             name:
                 type: string
                 description: Member display name
-                example: Dolorum fugit similique saepe fugiat.
+                example: Voluptatibus explicabo.
             status:
                 type: string
                 description: Member status
-                example: Voluptas optio eveniet maxime.
+                example: Praesentium fugiat tempora.
             subgroup_id:
                 type: string
                 description: Subgroup ID
-                example: Ut iste velit repudiandae dolores non quas.
+                example: Porro soluta dolorem odit provident.
             updated_at:
                 type: string
                 description: Last update timestamp
-                example: Voluptatem debitis.
+                example: Non necessitatibus atque esse.
         description: A member of a GroupsIO subgroup
         example:
-            created_at: Voluptatem reprehenderit voluptatibus voluptatem.
-            delivery_mode: Repudiandae expedita est.
-            email: manley@mckenzie.org
-            first_name: Veritatis ut repudiandae sed.
-            id: Esse enim.
-            last_name: Dolore sapiente sit et sunt vitae quos.
-            mod_status: Voluptas iure alias sequi.
-            name: Est architecto ea magnam quisquam doloremque autem.
-            status: Officia et dignissimos ut voluptatibus fuga id.
-            subgroup_id: Voluptatibus explicabo.
-            updated_at: Commodi in porro.
+            created_at: Dolores omnis explicabo.
+            delivery_mode: Voluptatem voluptas est recusandae.
+            email: desmond_rempel@lehner.org
+            first_name: Qui fugit libero.
+            id: Ipsam molestias quia adipisci alias unde.
+            last_name: Sed quos ad.
+            mod_status: Aut laudantium vero iure praesentium.
+            name: Porro iste.
+            status: Exercitationem distinctio molestiae quia.
+            subgroup_id: Enim fuga omnis repellat non.
+            updated_at: Aut odit sit est neque.
     GroupsioMemberList:
         title: GroupsioMemberList
         type: object
@@ -1261,91 +1261,58 @@ definitions:
                     $ref: '#/definitions/GroupsioMember'
                 description: List of members
                 example:
-                    - created_at: Eos sint ea provident.
-                      delivery_mode: Quae dolores.
-                      email: casey@littel.org
-                      first_name: Cumque sed eveniet reprehenderit.
-                      id: Ullam exercitationem quisquam nostrum nihil culpa.
-                      last_name: Ut atque voluptatibus.
-                      mod_status: Aut tempora.
-                      name: Qui et voluptates in perspiciatis non.
-                      status: Natus nesciunt omnis et.
-                      subgroup_id: Et repellat voluptates reiciendis.
-                      updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-                    - created_at: Eos sint ea provident.
-                      delivery_mode: Quae dolores.
-                      email: casey@littel.org
-                      first_name: Cumque sed eveniet reprehenderit.
-                      id: Ullam exercitationem quisquam nostrum nihil culpa.
-                      last_name: Ut atque voluptatibus.
-                      mod_status: Aut tempora.
-                      name: Qui et voluptates in perspiciatis non.
-                      status: Natus nesciunt omnis et.
-                      subgroup_id: Et repellat voluptates reiciendis.
-                      updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-                    - created_at: Eos sint ea provident.
-                      delivery_mode: Quae dolores.
-                      email: casey@littel.org
-                      first_name: Cumque sed eveniet reprehenderit.
-                      id: Ullam exercitationem quisquam nostrum nihil culpa.
-                      last_name: Ut atque voluptatibus.
-                      mod_status: Aut tempora.
-                      name: Qui et voluptates in perspiciatis non.
-                      status: Natus nesciunt omnis et.
-                      subgroup_id: Et repellat voluptates reiciendis.
-                      updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-                    - created_at: Eos sint ea provident.
-                      delivery_mode: Quae dolores.
-                      email: casey@littel.org
-                      first_name: Cumque sed eveniet reprehenderit.
-                      id: Ullam exercitationem quisquam nostrum nihil culpa.
-                      last_name: Ut atque voluptatibus.
-                      mod_status: Aut tempora.
-                      name: Qui et voluptates in perspiciatis non.
-                      status: Natus nesciunt omnis et.
-                      subgroup_id: Et repellat voluptates reiciendis.
-                      updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
+                    - created_at: Ratione aut expedita fugit.
+                      delivery_mode: Totam est sed expedita non.
+                      email: jedidiah@okuneva.org
+                      first_name: Eos sint ea provident.
+                      id: Repellat nisi.
+                      last_name: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
+                      mod_status: Nobis saepe laboriosam inventore omnis tenetur dignissimos.
+                      name: Natus nesciunt omnis et.
+                      status: Quod nostrum.
+                      subgroup_id: Blanditiis tempore itaque rerum doloremque.
+                      updated_at: Molestiae sit illum quia ut voluptatem vero.
+                    - created_at: Ratione aut expedita fugit.
+                      delivery_mode: Totam est sed expedita non.
+                      email: jedidiah@okuneva.org
+                      first_name: Eos sint ea provident.
+                      id: Repellat nisi.
+                      last_name: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
+                      mod_status: Nobis saepe laboriosam inventore omnis tenetur dignissimos.
+                      name: Natus nesciunt omnis et.
+                      status: Quod nostrum.
+                      subgroup_id: Blanditiis tempore itaque rerum doloremque.
+                      updated_at: Molestiae sit illum quia ut voluptatem vero.
             total:
                 type: integer
                 description: Total count
-                example: 6152661567749295680
+                example: 3582682877287622401
                 format: int64
         example:
             items:
-                - created_at: Eos sint ea provident.
-                  delivery_mode: Quae dolores.
-                  email: casey@littel.org
-                  first_name: Cumque sed eveniet reprehenderit.
-                  id: Ullam exercitationem quisquam nostrum nihil culpa.
-                  last_name: Ut atque voluptatibus.
-                  mod_status: Aut tempora.
-                  name: Qui et voluptates in perspiciatis non.
-                  status: Natus nesciunt omnis et.
-                  subgroup_id: Et repellat voluptates reiciendis.
-                  updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-                - created_at: Eos sint ea provident.
-                  delivery_mode: Quae dolores.
-                  email: casey@littel.org
-                  first_name: Cumque sed eveniet reprehenderit.
-                  id: Ullam exercitationem quisquam nostrum nihil culpa.
-                  last_name: Ut atque voluptatibus.
-                  mod_status: Aut tempora.
-                  name: Qui et voluptates in perspiciatis non.
-                  status: Natus nesciunt omnis et.
-                  subgroup_id: Et repellat voluptates reiciendis.
-                  updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-                - created_at: Eos sint ea provident.
-                  delivery_mode: Quae dolores.
-                  email: casey@littel.org
-                  first_name: Cumque sed eveniet reprehenderit.
-                  id: Ullam exercitationem quisquam nostrum nihil culpa.
-                  last_name: Ut atque voluptatibus.
-                  mod_status: Aut tempora.
-                  name: Qui et voluptates in perspiciatis non.
-                  status: Natus nesciunt omnis et.
-                  subgroup_id: Et repellat voluptates reiciendis.
-                  updated_at: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
-            total: 6755547264242539697
+                - created_at: Ratione aut expedita fugit.
+                  delivery_mode: Totam est sed expedita non.
+                  email: jedidiah@okuneva.org
+                  first_name: Eos sint ea provident.
+                  id: Repellat nisi.
+                  last_name: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
+                  mod_status: Nobis saepe laboriosam inventore omnis tenetur dignissimos.
+                  name: Natus nesciunt omnis et.
+                  status: Quod nostrum.
+                  subgroup_id: Blanditiis tempore itaque rerum doloremque.
+                  updated_at: Molestiae sit illum quia ut voluptatem vero.
+                - created_at: Ratione aut expedita fugit.
+                  delivery_mode: Totam est sed expedita non.
+                  email: jedidiah@okuneva.org
+                  first_name: Eos sint ea provident.
+                  id: Repellat nisi.
+                  last_name: Reiciendis consequatur laborum quidem voluptatum et voluptatibus.
+                  mod_status: Nobis saepe laboriosam inventore omnis tenetur dignissimos.
+                  name: Natus nesciunt omnis et.
+                  status: Quod nostrum.
+                  subgroup_id: Blanditiis tempore itaque rerum doloremque.
+                  updated_at: Molestiae sit illum quia ut voluptatem vero.
+            total: 1792078255102098383
     GroupsioProjectsResponse:
         title: GroupsioProjectsResponse
         type: object
@@ -1354,15 +1321,17 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Et omnis harum eveniet molestias.
+                    example: Provident blanditiis laborum.
                 description: List of project identifiers
                 example:
-                    - Aperiam ut quia praesentium ut.
-                    - Molestiae rerum vero exercitationem eum.
+                    - Qui architecto.
+                    - Quibusdam et quis repellendus voluptatem.
         example:
             projects:
-                - Blanditiis laborum magni aut qui.
-                - Similique quibusdam.
+                - Et a rerum ut.
+                - Blanditiis rerum voluptatem distinctio perferendis rerum.
+                - Provident quas occaecati.
+                - Enim expedita soluta alias ex.
     GroupsioService:
         title: GroupsioService
         type: object
@@ -1370,24 +1339,24 @@ definitions:
             created_at:
                 type: string
                 description: Creation timestamp
-                example: Omnis quidem iste deserunt voluptas.
+                example: Blanditiis sequi molestias est sunt nihil mollitia.
             domain:
                 type: string
                 description: Service domain
-                example: Corporis qui.
+                example: Vel rem praesentium.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 2523950269387679955
+                example: 7436781687966375374
                 format: int64
             id:
                 type: string
                 description: Service ID
-                example: Ab est.
+                example: Quidem iste deserunt voluptas neque ea.
             prefix:
                 type: string
                 description: Email prefix
-                example: In enim et ut.
+                example: Quisquam veniam explicabo dolor.
             project_uid:
                 type: string
                 description: LFX v2 project UID
@@ -1396,7 +1365,7 @@ definitions:
             status:
                 type: string
                 description: Service status
-                example: Nobis ea ipsum optio.
+                example: Enim tenetur provident occaecati molestiae.
             type:
                 type: string
                 description: Service type
@@ -1404,18 +1373,18 @@ definitions:
             updated_at:
                 type: string
                 description: Last update timestamp
-                example: Ea aut ea.
+                example: Aliquid hic facere non corporis.
         description: A GroupsIO service managed via ITX
         example:
-            created_at: Et et quae ad debitis veniam.
-            domain: Enim tenetur provident occaecati molestiae.
-            group_id: 2296828321887294762
-            id: Rem praesentium aut quisquam veniam explicabo.
-            prefix: Blanditiis sequi molestias est sunt nihil mollitia.
+            created_at: Et repellendus non sed doloremque voluptatibus.
+            domain: Expedita voluptas occaecati ex amet.
+            group_id: 5274236482388687642
+            id: Et et quae ad debitis veniam.
+            prefix: Vero repudiandae.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            status: Aliquid hic facere non corporis.
+            status: Qui iure deserunt.
             type: primary
-            updated_at: Delectus expedita voluptas occaecati.
+            updated_at: Autem ut dolorem nihil nesciunt quidem corporis.
     GroupsioServiceList:
         title: GroupsioServiceList
         type: object
@@ -1426,50 +1395,68 @@ definitions:
                     $ref: '#/definitions/GroupsioService'
                 description: List of services
                 example:
-                    - created_at: Voluptatem et ipsum eum.
-                      domain: Temporibus enim recusandae ipsam.
-                      group_id: 7850125793634127719
-                      id: Provident quo quia ea debitis numquam.
-                      prefix: Perspiciatis nihil at.
+                    - created_at: Ipsam qui vel provident.
+                      domain: Nihil at.
+                      group_id: 1767333735569879790
+                      id: Impedit temporibus enim recusandae ipsam.
+                      prefix: Quasi consequatur.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      status: Quasi consequatur.
+                      status: Voluptatem et ipsum eum.
                       type: primary
-                      updated_at: Ipsam qui vel provident.
-                    - created_at: Voluptatem et ipsum eum.
-                      domain: Temporibus enim recusandae ipsam.
-                      group_id: 7850125793634127719
-                      id: Provident quo quia ea debitis numquam.
-                      prefix: Perspiciatis nihil at.
+                      updated_at: Nostrum laboriosam esse molestias amet.
+                    - created_at: Ipsam qui vel provident.
+                      domain: Nihil at.
+                      group_id: 1767333735569879790
+                      id: Impedit temporibus enim recusandae ipsam.
+                      prefix: Quasi consequatur.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      status: Quasi consequatur.
+                      status: Voluptatem et ipsum eum.
                       type: primary
-                      updated_at: Ipsam qui vel provident.
+                      updated_at: Nostrum laboriosam esse molestias amet.
             total:
                 type: integer
                 description: Total count
-                example: 4846887354177833450
+                example: 4744381488467373313
                 format: int64
         example:
             items:
-                - created_at: Voluptatem et ipsum eum.
-                  domain: Temporibus enim recusandae ipsam.
-                  group_id: 7850125793634127719
-                  id: Provident quo quia ea debitis numquam.
-                  prefix: Perspiciatis nihil at.
+                - created_at: Ipsam qui vel provident.
+                  domain: Nihil at.
+                  group_id: 1767333735569879790
+                  id: Impedit temporibus enim recusandae ipsam.
+                  prefix: Quasi consequatur.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  status: Quasi consequatur.
+                  status: Voluptatem et ipsum eum.
                   type: primary
-                  updated_at: Ipsam qui vel provident.
-                - created_at: Voluptatem et ipsum eum.
-                  domain: Temporibus enim recusandae ipsam.
-                  group_id: 7850125793634127719
-                  id: Provident quo quia ea debitis numquam.
-                  prefix: Perspiciatis nihil at.
+                  updated_at: Nostrum laboriosam esse molestias amet.
+                - created_at: Ipsam qui vel provident.
+                  domain: Nihil at.
+                  group_id: 1767333735569879790
+                  id: Impedit temporibus enim recusandae ipsam.
+                  prefix: Quasi consequatur.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  status: Quasi consequatur.
+                  status: Voluptatem et ipsum eum.
                   type: primary
-                  updated_at: Ipsam qui vel provident.
-            total: 1724364197153247090
+                  updated_at: Nostrum laboriosam esse molestias amet.
+                - created_at: Ipsam qui vel provident.
+                  domain: Nihil at.
+                  group_id: 1767333735569879790
+                  id: Impedit temporibus enim recusandae ipsam.
+                  prefix: Quasi consequatur.
+                  project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                  status: Voluptatem et ipsum eum.
+                  type: primary
+                  updated_at: Nostrum laboriosam esse molestias amet.
+                - created_at: Ipsam qui vel provident.
+                  domain: Nihil at.
+                  group_id: 1767333735569879790
+                  id: Impedit temporibus enim recusandae ipsam.
+                  prefix: Quasi consequatur.
+                  project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                  status: Voluptatem et ipsum eum.
+                  type: primary
+                  updated_at: Nostrum laboriosam esse molestias amet.
+            total: 315178176387379102
     GroupsioSubgroup:
         title: GroupsioSubgroup
         type: object
@@ -1477,7 +1464,7 @@ definitions:
             audience_access:
                 type: string
                 description: Audience access setting
-                example: Non aut sit sit nesciunt quibusdam.
+                example: Ea possimus sint molestias.
             committee_uid:
                 type: string
                 description: LFX v2 committee UID
@@ -1486,49 +1473,54 @@ definitions:
             created_at:
                 type: string
                 description: Creation timestamp
-                example: Et molestias.
+                example: Minus ad id et.
             description:
                 type: string
                 description: Subgroup description
-                example: Rerum voluptatem distinctio perferendis rerum consequuntur provident.
+                example: Ratione ullam delectus vel a.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 5150237287792658257
+                example: 9039849910609958217
                 format: int64
             id:
                 type: string
                 description: Subgroup ID
-                example: Quis repellendus voluptatem hic necessitatibus.
+                example: Non aut sit sit nesciunt quibusdam.
             name:
                 type: string
                 description: Subgroup name
-                example: Rerum ut a.
+                example: Nobis mollitia consequuntur ullam.
             project_uid:
                 type: string
                 description: LFX v2 project UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            service_id:
+                type: string
+                description: Parent GroupsIO service ID
+                example: Et molestias.
             type:
                 type: string
                 description: Subgroup type
-                example: Occaecati quia enim expedita soluta alias ex.
+                example: Sit reiciendis.
             updated_at:
                 type: string
                 description: Last update timestamp
-                example: Optio nobis mollitia consequuntur ullam.
+                example: Recusandae recusandae expedita.
         description: A GroupsIO subgroup (mailing list) managed via ITX
         example:
-            audience_access: Quis quis ab.
+            audience_access: Eveniet dolor odio incidunt expedita quia.
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            created_at: In inventore.
-            description: Impedit minus.
-            group_id: 9138520030546806571
-            id: Ratione ullam delectus vel a.
-            name: Reiciendis et ea possimus sint.
+            created_at: Dolor deserunt voluptatem deserunt optio eius.
+            description: Maxime molestiae veritatis.
+            group_id: 699001378655053533
+            id: Ut quis quis ab quia in inventore.
+            name: Doloremque debitis ut est quisquam distinctio nesciunt.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            type: Id et velit recusandae recusandae expedita quisquam.
-            updated_at: Officia temporibus voluptate nihil excepturi.
+            service_id: Officia temporibus voluptate nihil excepturi.
+            type: Illum et omnis.
+            updated_at: Est repellendus aut veritatis.
     GroupsioSubgroupList:
         title: GroupsioSubgroupList
         type: object
@@ -1539,54 +1531,80 @@ definitions:
                     $ref: '#/definitions/GroupsioSubgroup'
                 description: List of subgroups
                 example:
-                    - audience_access: Dolores sed officiis nihil ex.
+                    - audience_access: Sed dolores recusandae.
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      created_at: Dolores recusandae amet blanditiis omnis qui optio.
-                      description: Voluptatibus autem expedita cumque magnam et.
-                      group_id: 3581801669178659495
+                      created_at: Blanditiis omnis qui.
+                      description: Expedita cumque magnam et id.
+                      group_id: 2787818233378497470
                       id: Debitis eaque sed aut sequi veniam.
-                      name: Aut adipisci veritatis.
+                      name: Pariatur voluptatibus.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      type: Natus et.
-                      updated_at: Saepe nihil quaerat exercitationem vero.
-                    - audience_access: Dolores sed officiis nihil ex.
+                      service_id: Harum aut.
+                      type: Et repellendus dolores sed officiis nihil.
+                      updated_at: Eaque saepe nihil quaerat.
+                    - audience_access: Sed dolores recusandae.
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      created_at: Dolores recusandae amet blanditiis omnis qui optio.
-                      description: Voluptatibus autem expedita cumque magnam et.
-                      group_id: 3581801669178659495
+                      created_at: Blanditiis omnis qui.
+                      description: Expedita cumque magnam et id.
+                      group_id: 2787818233378497470
                       id: Debitis eaque sed aut sequi veniam.
-                      name: Aut adipisci veritatis.
+                      name: Pariatur voluptatibus.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                      type: Natus et.
-                      updated_at: Saepe nihil quaerat exercitationem vero.
+                      service_id: Harum aut.
+                      type: Et repellendus dolores sed officiis nihil.
+                      updated_at: Eaque saepe nihil quaerat.
+                    - audience_access: Sed dolores recusandae.
+                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                      created_at: Blanditiis omnis qui.
+                      description: Expedita cumque magnam et id.
+                      group_id: 2787818233378497470
+                      id: Debitis eaque sed aut sequi veniam.
+                      name: Pariatur voluptatibus.
+                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                      service_id: Harum aut.
+                      type: Et repellendus dolores sed officiis nihil.
+                      updated_at: Eaque saepe nihil quaerat.
+                    - audience_access: Sed dolores recusandae.
+                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                      created_at: Blanditiis omnis qui.
+                      description: Expedita cumque magnam et id.
+                      group_id: 2787818233378497470
+                      id: Debitis eaque sed aut sequi veniam.
+                      name: Pariatur voluptatibus.
+                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                      service_id: Harum aut.
+                      type: Et repellendus dolores sed officiis nihil.
+                      updated_at: Eaque saepe nihil quaerat.
             total:
                 type: integer
                 description: Total count
-                example: 392522118725679720
+                example: 6702982827042325979
                 format: int64
         example:
             items:
-                - audience_access: Dolores sed officiis nihil ex.
+                - audience_access: Sed dolores recusandae.
                   committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  created_at: Dolores recusandae amet blanditiis omnis qui optio.
-                  description: Voluptatibus autem expedita cumque magnam et.
-                  group_id: 3581801669178659495
+                  created_at: Blanditiis omnis qui.
+                  description: Expedita cumque magnam et id.
+                  group_id: 2787818233378497470
                   id: Debitis eaque sed aut sequi veniam.
-                  name: Aut adipisci veritatis.
+                  name: Pariatur voluptatibus.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  type: Natus et.
-                  updated_at: Saepe nihil quaerat exercitationem vero.
-                - audience_access: Dolores sed officiis nihil ex.
+                  service_id: Harum aut.
+                  type: Et repellendus dolores sed officiis nihil.
+                  updated_at: Eaque saepe nihil quaerat.
+                - audience_access: Sed dolores recusandae.
                   committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  created_at: Dolores recusandae amet blanditiis omnis qui optio.
-                  description: Voluptatibus autem expedita cumque magnam et.
-                  group_id: 3581801669178659495
+                  created_at: Blanditiis omnis qui.
+                  description: Expedita cumque magnam et id.
+                  group_id: 2787818233378497470
                   id: Debitis eaque sed aut sequi veniam.
-                  name: Aut adipisci veritatis.
+                  name: Pariatur voluptatibus.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                  type: Natus et.
-                  updated_at: Saepe nihil quaerat exercitationem vero.
-            total: 2594653333279322015
+                  service_id: Harum aut.
+                  type: Et repellendus dolores sed officiis nihil.
+                  updated_at: Eaque saepe nihil quaerat.
+            total: 6781635133346712419
     InternalServerError:
         title: InternalServerError
         type: object
@@ -1607,7 +1625,7 @@ definitions:
             delivery_mode:
                 type: string
                 description: Email delivery mode
-                example: normal
+                example: none
                 enum:
                     - normal
                     - digest
@@ -1615,12 +1633,12 @@ definitions:
             email:
                 type: string
                 description: Member email address
-                example: lee.rodriguez@emard.com
+                example: ulises@kuvalis.name
                 format: email
             mod_status:
                 type: string
                 description: Moderation status
-                example: none
+                example: moderator
                 enum:
                     - none
                     - moderator
@@ -1628,12 +1646,12 @@ definitions:
             name:
                 type: string
                 description: Member display name
-                example: Consequatur molestiae laborum nihil.
+                example: Commodi quo odio sint quo consequatur earum.
         example:
-            delivery_mode: normal
-            email: nick@eichmann.com
-            mod_status: moderator
-            name: Nobis dolores et.
+            delivery_mode: digest
+            email: shaina.frami@schulist.org
+            mod_status: owner
+            name: Ducimus quibusdam laboriosam id suscipit est.
     MailingListCheckGroupsioSubscriberRequestBody:
         title: MailingListCheckGroupsioSubscriberRequestBody
         type: object
@@ -1641,15 +1659,15 @@ definitions:
             email:
                 type: string
                 description: Email address to check
-                example: celestino@sawayn.biz
+                example: josiah_gibson@conroy.net
                 format: email
             subgroup_id:
                 type: string
                 description: Subgroup ID
-                example: Deserunt ab illum rem tenetur.
+                example: Est officiis sit rem.
         example:
-            email: lucious.witting@carter.com
-            subgroup_id: Sint aut aliquid.
+            email: hudson.corkery@zemlak.net
+            subgroup_id: Fugit optio sit sequi.
         required:
             - email
             - subgroup_id
@@ -1660,16 +1678,16 @@ definitions:
             domain:
                 type: string
                 description: Service domain
-                example: Qui iure deserunt.
+                example: Ab id sed dignissimos quam.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 1965789746219430351
+                example: 2442743328612159593
                 format: int64
             prefix:
                 type: string
                 description: Email prefix
-                example: Et repellendus non sed doloremque voluptatibus.
+                example: Odit possimus libero temporibus.
             project_uid:
                 type: string
                 description: LFX v2 project UID
@@ -1678,7 +1696,7 @@ definitions:
             status:
                 type: string
                 description: Service status
-                example: Autem ut dolorem nihil nesciunt quidem corporis.
+                example: Et quidem earum explicabo.
             type:
                 type: string
                 description: Service type
@@ -1688,11 +1706,11 @@ definitions:
                     - v2_formation
                     - v2_shared
         example:
-            domain: Adipisci qui deleniti dolores ab.
-            group_id: 1512003203849078727
-            prefix: Sed dignissimos quam tempora odit.
+            domain: Ut facilis.
+            group_id: 3087014187353822244
+            prefix: Blanditiis quisquam quia voluptatem molestiae qui qui.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            status: Libero temporibus distinctio et.
+            status: Minus est molestiae repudiandae odit.
             type: v2_primary
     MailingListCreateGroupsioSubgroupRequestBody:
         title: MailingListCreateGroupsioSubgroupRequestBody
@@ -1701,7 +1719,7 @@ definitions:
             audience_access:
                 type: string
                 description: Audience access setting
-                example: Deserunt voluptatem deserunt optio eius omnis est.
+                example: Laborum sed et praesentium et eius fugiat.
             committee_uid:
                 type: string
                 description: LFX v2 committee UID
@@ -1710,33 +1728,38 @@ definitions:
             description:
                 type: string
                 description: Subgroup description
-                example: Nisi illum et omnis omnis.
+                example: Minima ad enim rerum sint animi.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 8362702504098453980
+                example: 5615524820452777165
                 format: int64
             name:
                 type: string
                 description: Subgroup name
-                example: Quisquam distinctio nesciunt consequatur maxime molestiae.
+                example: Est velit qui fugiat voluptates.
             project_uid:
                 type: string
                 description: LFX v2 project UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            service_id:
+                type: string
+                description: Parent GroupsIO service ID
+                example: Consectetur nisi doloribus numquam rerum et.
             type:
                 type: string
                 description: Subgroup type
-                example: Dolor odio incidunt expedita quia enim.
+                example: Error qui.
         example:
-            audience_access: Qui fugiat voluptates.
+            audience_access: Quibusdam sit est ut maxime error.
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            description: Libero consectetur nisi doloribus numquam rerum et.
-            group_id: 6109535771415932356
-            name: Veritatis mollitia et doloribus.
+            description: Culpa adipisci.
+            group_id: 3820804542906023136
+            name: Laborum nihil.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            type: Aspernatur est.
+            service_id: Voluptas laudantium.
+            type: Enim sint quos corrupti id.
     MailingListInviteGroupsioMembersRequestBody:
         title: MailingListInviteGroupsioMembersRequestBody
         type: object
@@ -1745,17 +1768,15 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ut amet unde eaque ut veniam.
+                    example: Sint autem neque.
                 description: Email addresses to invite
                 example:
-                    - Et qui quisquam vel illo velit.
-                    - Corrupti quia sit nemo sunt.
-                    - Quasi aliquam est ullam cumque.
-                    - Magnam libero minima.
+                    - Ipsam nihil et ipsam quibusdam dolor velit.
+                    - Enim repudiandae ex.
         example:
             emails:
-                - Aspernatur rerum odit qui et consequatur.
-                - Dolores facere.
+                - Id hic deleniti assumenda assumenda officiis.
+                - Ut repudiandae dicta.
         required:
             - emails
     MailingListUpdateGroupsioMemberRequestBody:
@@ -1773,12 +1794,12 @@ definitions:
             email:
                 type: string
                 description: Member email address
-                example: ocie@streichbergnaum.biz
+                example: dawson.wiza@erdman.info
                 format: email
             mod_status:
                 type: string
                 description: Moderation status
-                example: moderator
+                example: owner
                 enum:
                     - none
                     - moderator
@@ -1786,12 +1807,12 @@ definitions:
             name:
                 type: string
                 description: Member display name
-                example: Voluptatem atque architecto qui eius.
+                example: Dolor et sunt aliquam nostrum aut occaecati.
         example:
-            delivery_mode: none
-            email: brionna.baumbach@hageneskerluke.org
-            mod_status: owner
-            name: Voluptatem illum qui.
+            delivery_mode: digest
+            email: georgianna@schultz.info
+            mod_status: moderator
+            name: Consequatur placeat dolores facere rerum.
     MailingListUpdateGroupsioServiceRequestBody:
         title: MailingListUpdateGroupsioServiceRequestBody
         type: object
@@ -1799,16 +1820,16 @@ definitions:
             domain:
                 type: string
                 description: Service domain
-                example: Explicabo non quibusdam ut facilis.
+                example: Soluta ut nesciunt dolores tempora.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 8907944369201721908
+                example: 3063062694427452684
                 format: int64
             prefix:
                 type: string
                 description: Email prefix
-                example: Blanditiis quisquam quia voluptatem molestiae qui qui.
+                example: Qui deleniti alias natus quo.
             project_uid:
                 type: string
                 description: LFX v2 project UID
@@ -1817,7 +1838,7 @@ definitions:
             status:
                 type: string
                 description: Service status
-                example: Minus est molestiae repudiandae odit.
+                example: Perspiciatis laudantium accusantium eum voluptatem.
             type:
                 type: string
                 description: Service type
@@ -1827,11 +1848,11 @@ definitions:
                     - v2_formation
                     - v2_shared
         example:
-            domain: Soluta ut nesciunt dolores tempora.
-            group_id: 3063062694427452684
-            prefix: Qui deleniti alias natus quo.
+            domain: Omnis harum eveniet molestias labore tenetur.
+            group_id: 8467124269813063471
+            prefix: Ut quia praesentium ut.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            status: Perspiciatis laudantium accusantium eum voluptatem.
+            status: Molestiae rerum vero exercitationem eum.
             type: v2_primary
     MailingListUpdateGroupsioSubgroupRequestBody:
         title: MailingListUpdateGroupsioSubgroupRequestBody
@@ -1840,7 +1861,7 @@ definitions:
             audience_access:
                 type: string
                 description: Audience access setting
-                example: Laudantium exercitationem iusto laborum nihil.
+                example: Quas totam dolor labore.
             committee_uid:
                 type: string
                 description: LFX v2 committee UID
@@ -1849,33 +1870,38 @@ definitions:
             description:
                 type: string
                 description: Subgroup description
-                example: Sint animi sint error qui odit.
+                example: Omnis molestiae.
             group_id:
                 type: integer
                 description: GroupsIO group ID
-                example: 1334617563062168445
+                example: 5971219052635161028
                 format: int64
             name:
                 type: string
                 description: Subgroup name
-                example: Ad enim.
+                example: Quasi hic voluptatum est alias aut delectus.
             project_uid:
                 type: string
                 description: LFX v2 project UID
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 format: uuid
+            service_id:
+                type: string
+                description: Parent GroupsIO service ID
+                example: Dicta voluptatem qui.
             type:
                 type: string
                 description: Subgroup type
-                example: Sed et praesentium et eius fugiat id.
+                example: Iste velit repudiandae dolores.
         example:
-            audience_access: Voluptatem qui sapiente tempora quasi.
+            audience_access: Pariatur non.
             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            description: Id velit quibusdam.
-            group_id: 385295109757726360
-            name: Adipisci ab enim sint quos.
+            description: Ab accusantium fuga.
+            group_id: 8089285569879051261
+            name: Cupiditate dolorem quod sed.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            type: Est ut maxime error velit.
+            service_id: Ut sed quia numquam mollitia explicabo distinctio.
+            type: Ab minima illum sapiente.
     NotFoundError:
         title: NotFoundError
         type: object

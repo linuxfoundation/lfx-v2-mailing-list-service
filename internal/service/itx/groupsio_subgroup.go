@@ -156,11 +156,12 @@ func (s *GroupsioSubgroupService) mapSubgroupResponseIDs(ctx context.Context, sg
 		return nil
 	}
 	if sg.ProjectID != "" {
-		v2UID, err := s.idMapper.MapProjectV1ToV2(ctx, sg.ProjectID)
-		if err != nil {
-			return err
-		}
-		sg.ProjectID = v2UID
+		// TODO - check the response from itx service - it seems there's a bug
+		//v2UID, err := s.idMapper.MapProjectV1ToV2(ctx, sg.ProjectID)
+		// if err != nil {
+		// 	return err
+		// }
+		// sg.ProjectID = v2UID
 	}
 	if sg.CommitteeID != "" {
 		v2UID, err := s.idMapper.MapCommitteeV1ToV2(ctx, sg.CommitteeID)

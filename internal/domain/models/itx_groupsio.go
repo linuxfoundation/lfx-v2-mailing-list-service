@@ -43,6 +43,7 @@ type GroupsioSubgroup struct {
 	ID             string `json:"id,omitempty"`
 	ProjectID      string `json:"project_id,omitempty"` // v1 SFID in ITX, v2 UUID in our API
 	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID in ITX, v2 UUID in our API
+	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
 	GroupID        int64  `json:"group_id,omitempty"`
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`
@@ -56,6 +57,7 @@ type GroupsioSubgroup struct {
 type GroupsioSubgroupRequest struct {
 	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
 	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
+	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
 	GroupID        int64  `json:"group_id,omitempty"`
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`

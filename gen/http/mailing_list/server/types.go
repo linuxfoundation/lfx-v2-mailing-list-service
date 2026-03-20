@@ -54,6 +54,8 @@ type CreateGroupsioSubgroupRequestBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -73,6 +75,8 @@ type UpdateGroupsioSubgroupRequestBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -253,6 +257,8 @@ type CreateGroupsioSubgroupResponseBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -278,6 +284,8 @@ type GetGroupsioSubgroupResponseBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -303,6 +311,8 @@ type UpdateGroupsioSubgroupResponseBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -1036,6 +1046,8 @@ type GroupsioSubgroupResponseBody struct {
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Parent GroupsIO service ID
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
 	// GroupsIO group ID
 	GroupID *int64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
 	// Subgroup name
@@ -1203,6 +1215,7 @@ func NewCreateGroupsioSubgroupResponseBody(res *mailinglist.GroupsioSubgroup) *C
 		ID:             res.ID,
 		ProjectUID:     res.ProjectUID,
 		CommitteeUID:   res.CommitteeUID,
+		ServiceID:      res.ServiceID,
 		GroupID:        res.GroupID,
 		Name:           res.Name,
 		Description:    res.Description,
@@ -1221,6 +1234,7 @@ func NewGetGroupsioSubgroupResponseBody(res *mailinglist.GroupsioSubgroup) *GetG
 		ID:             res.ID,
 		ProjectUID:     res.ProjectUID,
 		CommitteeUID:   res.CommitteeUID,
+		ServiceID:      res.ServiceID,
 		GroupID:        res.GroupID,
 		Name:           res.Name,
 		Description:    res.Description,
@@ -1240,6 +1254,7 @@ func NewUpdateGroupsioSubgroupResponseBody(res *mailinglist.GroupsioSubgroup) *U
 		ID:             res.ID,
 		ProjectUID:     res.ProjectUID,
 		CommitteeUID:   res.CommitteeUID,
+		ServiceID:      res.ServiceID,
 		GroupID:        res.GroupID,
 		Name:           res.Name,
 		Description:    res.Description,
@@ -2172,6 +2187,7 @@ func NewCreateGroupsioSubgroupPayload(body *CreateGroupsioSubgroupRequestBody, b
 	v := &mailinglist.CreateGroupsioSubgroupPayload{
 		ProjectUID:     body.ProjectUID,
 		CommitteeUID:   body.CommitteeUID,
+		ServiceID:      body.ServiceID,
 		GroupID:        body.GroupID,
 		Name:           body.Name,
 		Description:    body.Description,
@@ -2199,6 +2215,7 @@ func NewUpdateGroupsioSubgroupPayload(body *UpdateGroupsioSubgroupRequestBody, s
 	v := &mailinglist.UpdateGroupsioSubgroupPayload{
 		ProjectUID:     body.ProjectUID,
 		CommitteeUID:   body.CommitteeUID,
+		ServiceID:      body.ServiceID,
 		GroupID:        body.GroupID,
 		Name:           body.Name,
 		Description:    body.Description,
