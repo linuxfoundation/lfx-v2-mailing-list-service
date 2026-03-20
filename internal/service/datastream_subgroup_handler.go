@@ -16,6 +16,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
+// groupsioMailingListMemberStub represents the minimal data needed for member access control
+type groupsioMailingListMemberStub struct {
+	// UID is the mailing list member ID.
+	UID string `json:"uid"`
+	// Username is the username (i.e. LFID) of the member. This is the identity of the user object in FGA.
+	Username string `json:"username"`
+	// MailingListUID is the mailing list ID for the mailing list the member belongs to.
+	MailingListUID string `json:"mailing_list_uid"`
+}
+
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
 // is absent (ordering guarantee) or on transient errors.

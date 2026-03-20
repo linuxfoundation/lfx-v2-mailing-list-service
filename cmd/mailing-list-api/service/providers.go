@@ -9,6 +9,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
@@ -20,6 +22,14 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	itxsvc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service/itx"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+)
+
+var (
+	natsStorageClient   port.GrpsIOReaderWriter
+	natsMessagingClient port.EntityAttributeReader
+	natsPublisherClient port.MessagePublisher
+
+	natsDoOnce sync.Once
 )
 
 // AuthService initializes the authentication service implementation
@@ -104,10 +114,71 @@ func GroupsioSubgroupService(ctx context.Context, client domain.ITXGroupsioClien
 	return itxsvc.NewGroupsioSubgroupService(client, mapper)
 }
 
+func natsInit(ctx context.Context) {
+	natsDoOnce.Do(func() {
+		natsURL := os.Getenv("NATS_URL")
+		if natsURL == "" {
+			natsURL = "nats://localhost:4222"
+		}
+
+		natsTimeout := os.Getenv("NATS_TIMEOUT")
+		if natsTimeout == "" {
+			natsTimeout = "10s"
+		}
+		natsTimeoutDuration, err := time.ParseDuration(natsTimeout)
+		if err != nil {
+			log.Fatalf("invalid NATS timeout duration: %v", err)
+		}
+
+		natsMaxReconnect := os.Getenv("NATS_MAX_RECONNECT")
+		if natsMaxReconnect == "" {
+			natsMaxReconnect = "3"
+		}
+		natsMaxReconnectInt, err := strconv.Atoi(natsMaxReconnect)
+		if err != nil {
+			log.Fatalf("invalid NATS max reconnect value %s: %v", natsMaxReconnect, err)
+		}
+
+		natsReconnectWait := os.Getenv("NATS_RECONNECT_WAIT")
+		if natsReconnectWait == "" {
+			natsReconnectWait = "2s"
+		}
+		natsReconnectWaitDuration, err := time.ParseDuration(natsReconnectWait)
+		if err != nil {
+			log.Fatalf("invalid NATS reconnect wait duration %s : %v", natsReconnectWait, err)
+		}
+
+		config := nats.Config{
+			URL:           natsURL,
+			Timeout:       natsTimeoutDuration,
+			MaxReconnect:  natsMaxReconnectInt,
+			ReconnectWait: natsReconnectWaitDuration,
+		}
+
+		client, errNewClient := nats.NewClient(ctx, config)
+		if errNewClient != nil {
+			log.Fatalf("failed to create NATS client: %v", errNewClient)
+		}
+		natsPublisherClient = nats.NewMessagePublisher(client)
+	})
+}
+
 // GroupsioMemberService initializes the GroupsIO member handler.
 func GroupsioMemberService(ctx context.Context, client domain.ITXGroupsioClient) *itxsvc.GroupsioMemberService {
 	slog.InfoContext(ctx, "initializing GroupsIO member service")
 	return itxsvc.NewGroupsioMemberService(client)
+}
+
+// GetNATSClient returns the initialized NATS client for subscriptions
+func GetNATSClient(ctx context.Context) *nats.NATSClient {
+	natsInit(ctx)
+	// Access the client through storage adapter
+	storageImpl, ok := natsStorageClient.(interface{ Client() *nats.NATSClient })
+	if !ok {
+		slog.ErrorContext(ctx, "NATS storage does not implement Client() method")
+		panic("NATS storage implementation error")
+	}
+	return storageImpl.Client()
 }
 
 // MappingReaderWriter initializes the v1-mappings KV abstraction used by the
@@ -119,4 +190,39 @@ func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
 		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
 	}
 	return nats.NewMappingReaderWriter(kv)
+}
+
+func natsPublisher(ctx context.Context) port.MessagePublisher {
+	natsInit(ctx)
+	return natsPublisherClient
+}
+
+// MessagePublisher initializes the service publisher implementation
+func MessagePublisher(ctx context.Context) port.MessagePublisher {
+	var publisher port.MessagePublisher
+
+	// Repository implementation configuration
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock service publisher")
+		publisher = infrastructure.NewMockMessagePublisher()
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS service publisher")
+		natsPublisher := natsPublisher(ctx)
+		if natsPublisher == nil {
+			log.Fatalf("failed to initialize NATS publisher")
+		}
+		publisher = natsPublisher
+
+	default:
+		log.Fatalf("unsupported service publisher implementation: %s", repoSource)
+	}
+
+	return publisher
 }

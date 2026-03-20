@@ -99,17 +99,21 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
+	// ** IMPORTANT **
+	// TODO - sync should use wrapper service
 	// Start committee sync - critical for data consistency
-	if err := handleCommitteeSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
+	// if err := handleCommitteeSync(ctx, &wg); err != nil {
+	// 	slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
+	// 	os.Exit(1)
+	// }
 
+	// ** IMPORTANT **
+	// TODO - sync should use wrapper service
 	// Start mailing list sync - critical for data consistency
-	if err := handleMailingListSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
+	// if err := handleMailingListSync(ctx, &wg); err != nil {
+	// 	slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
+	// 	os.Exit(1)
+	// }
 
 	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var)
 	if err := handleDataStream(ctx, &wg); err != nil {
