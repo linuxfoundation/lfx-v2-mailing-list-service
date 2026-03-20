@@ -96,10 +96,18 @@ type AddGroupsioMemberRequestBody struct {
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Moderation status
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
 }
 
 // UpdateGroupsioMemberRequestBody is the type of the "mailing-list" service
@@ -109,10 +117,18 @@ type UpdateGroupsioMemberRequestBody struct {
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Moderation status
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
 }
 
 // InviteGroupsioMembersRequestBody is the type of the "mailing-list" service
@@ -357,22 +373,30 @@ type ListGroupsioMembersResponseBody struct {
 type AddGroupsioMemberResponseBody struct {
 	// Member ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Subgroup ID
-	SubgroupID *string `form:"subgroup_id,omitempty" json:"subgroup_id,omitempty" xml:"subgroup_id,omitempty"`
 	// Member email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Member first name
-	FirstName *string `form:"first_name,omitempty" json:"first_name,omitempty" xml:"first_name,omitempty"`
-	// Member last name
-	LastName *string `form:"last_name,omitempty" json:"last_name,omitempty" xml:"last_name,omitempty"`
-	// Moderation status
-	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// Moderation status
+	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
+	// Groups.io username
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Member role
+	Role *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// Voting status
+	VotingStatus *string `form:"voting_status,omitempty" json:"voting_status,omitempty" xml:"voting_status,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -384,22 +408,30 @@ type AddGroupsioMemberResponseBody struct {
 type GetGroupsioMemberResponseBody struct {
 	// Member ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Subgroup ID
-	SubgroupID *string `form:"subgroup_id,omitempty" json:"subgroup_id,omitempty" xml:"subgroup_id,omitempty"`
 	// Member email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Member first name
-	FirstName *string `form:"first_name,omitempty" json:"first_name,omitempty" xml:"first_name,omitempty"`
-	// Member last name
-	LastName *string `form:"last_name,omitempty" json:"last_name,omitempty" xml:"last_name,omitempty"`
-	// Moderation status
-	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// Moderation status
+	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
+	// Groups.io username
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Member role
+	Role *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// Voting status
+	VotingStatus *string `form:"voting_status,omitempty" json:"voting_status,omitempty" xml:"voting_status,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -411,22 +443,30 @@ type GetGroupsioMemberResponseBody struct {
 type UpdateGroupsioMemberResponseBody struct {
 	// Member ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Subgroup ID
-	SubgroupID *string `form:"subgroup_id,omitempty" json:"subgroup_id,omitempty" xml:"subgroup_id,omitempty"`
 	// Member email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Member first name
-	FirstName *string `form:"first_name,omitempty" json:"first_name,omitempty" xml:"first_name,omitempty"`
-	// Member last name
-	LastName *string `form:"last_name,omitempty" json:"last_name,omitempty" xml:"last_name,omitempty"`
-	// Moderation status
-	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// Moderation status
+	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
+	// Groups.io username
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Member role
+	Role *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// Voting status
+	VotingStatus *string `form:"voting_status,omitempty" json:"voting_status,omitempty" xml:"voting_status,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1068,22 +1108,30 @@ type GroupsioSubgroupResponseBody struct {
 type GroupsioMemberResponseBody struct {
 	// Member ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Subgroup ID
-	SubgroupID *string `form:"subgroup_id,omitempty" json:"subgroup_id,omitempty" xml:"subgroup_id,omitempty"`
 	// Member email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
 	// Member display name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Member first name
-	FirstName *string `form:"first_name,omitempty" json:"first_name,omitempty" xml:"first_name,omitempty"`
-	// Member last name
-	LastName *string `form:"last_name,omitempty" json:"last_name,omitempty" xml:"last_name,omitempty"`
-	// Moderation status
-	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
+	// Member type
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
+	// Moderation status
+	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// User ID
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
+	// Member organization
+	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
+	// Member job title
+	JobTitle *string `form:"job_title,omitempty" json:"job_title,omitempty" xml:"job_title,omitempty"`
+	// Groups.io username
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Member role
+	Role *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// Voting status
+	VotingStatus *string `form:"voting_status,omitempty" json:"voting_status,omitempty" xml:"voting_status,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1306,14 +1354,18 @@ func NewListGroupsioMembersResponseBody(res *mailinglist.GroupsioMemberList) *Li
 func NewAddGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *AddGroupsioMemberResponseBody {
 	body := &AddGroupsioMemberResponseBody{
 		ID:           res.ID,
-		SubgroupID:   res.SubgroupID,
 		Email:        res.Email,
 		Name:         res.Name,
-		FirstName:    res.FirstName,
-		LastName:     res.LastName,
-		ModStatus:    res.ModStatus,
+		MemberType:   res.MemberType,
 		DeliveryMode: res.DeliveryMode,
+		ModStatus:    res.ModStatus,
 		Status:       res.Status,
+		UserID:       res.UserID,
+		Organization: res.Organization,
+		JobTitle:     res.JobTitle,
+		Username:     res.Username,
+		Role:         res.Role,
+		VotingStatus: res.VotingStatus,
 		CreatedAt:    res.CreatedAt,
 		UpdatedAt:    res.UpdatedAt,
 	}
@@ -1325,14 +1377,18 @@ func NewAddGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *AddGroup
 func NewGetGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *GetGroupsioMemberResponseBody {
 	body := &GetGroupsioMemberResponseBody{
 		ID:           res.ID,
-		SubgroupID:   res.SubgroupID,
 		Email:        res.Email,
 		Name:         res.Name,
-		FirstName:    res.FirstName,
-		LastName:     res.LastName,
-		ModStatus:    res.ModStatus,
+		MemberType:   res.MemberType,
 		DeliveryMode: res.DeliveryMode,
+		ModStatus:    res.ModStatus,
 		Status:       res.Status,
+		UserID:       res.UserID,
+		Organization: res.Organization,
+		JobTitle:     res.JobTitle,
+		Username:     res.Username,
+		Role:         res.Role,
+		VotingStatus: res.VotingStatus,
 		CreatedAt:    res.CreatedAt,
 		UpdatedAt:    res.UpdatedAt,
 	}
@@ -1345,14 +1401,18 @@ func NewGetGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *GetGroup
 func NewUpdateGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *UpdateGroupsioMemberResponseBody {
 	body := &UpdateGroupsioMemberResponseBody{
 		ID:           res.ID,
-		SubgroupID:   res.SubgroupID,
 		Email:        res.Email,
 		Name:         res.Name,
-		FirstName:    res.FirstName,
-		LastName:     res.LastName,
-		ModStatus:    res.ModStatus,
+		MemberType:   res.MemberType,
 		DeliveryMode: res.DeliveryMode,
+		ModStatus:    res.ModStatus,
 		Status:       res.Status,
+		UserID:       res.UserID,
+		Organization: res.Organization,
+		JobTitle:     res.JobTitle,
+		Username:     res.Username,
+		Role:         res.Role,
+		VotingStatus: res.VotingStatus,
 		CreatedAt:    res.CreatedAt,
 		UpdatedAt:    res.UpdatedAt,
 	}
@@ -2274,8 +2334,12 @@ func NewAddGroupsioMemberPayload(body *AddGroupsioMemberRequestBody, subgroupID 
 	v := &mailinglist.AddGroupsioMemberPayload{
 		Email:        body.Email,
 		Name:         body.Name,
+		MemberType:   body.MemberType,
 		ModStatus:    body.ModStatus,
 		DeliveryMode: body.DeliveryMode,
+		UserID:       body.UserID,
+		Organization: body.Organization,
+		JobTitle:     body.JobTitle,
 	}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
@@ -2300,8 +2364,12 @@ func NewUpdateGroupsioMemberPayload(body *UpdateGroupsioMemberRequestBody, subgr
 	v := &mailinglist.UpdateGroupsioMemberPayload{
 		Email:        body.Email,
 		Name:         body.Name,
+		MemberType:   body.MemberType,
 		ModStatus:    body.ModStatus,
 		DeliveryMode: body.DeliveryMode,
+		UserID:       body.UserID,
+		Organization: body.Organization,
+		JobTitle:     body.JobTitle,
 	}
 	v.SubgroupID = subgroupID
 	v.MemberID = memberID
@@ -2411,8 +2479,8 @@ func ValidateAddGroupsioMemberRequestBody(body *AddGroupsioMemberRequestBody) (e
 		}
 	}
 	if body.DeliveryMode != nil {
-		if !(*body.DeliveryMode == "normal" || *body.DeliveryMode == "digest" || *body.DeliveryMode == "none") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.delivery_mode", *body.DeliveryMode, []any{"normal", "digest", "none"}))
+		if !(*body.DeliveryMode == "email_delivery_single" || *body.DeliveryMode == "email_delivery_digest" || *body.DeliveryMode == "email_delivery_none" || *body.DeliveryMode == "email_delivery_special" || *body.DeliveryMode == "email_delivery_html_digest" || *body.DeliveryMode == "email_delivery_summary") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.delivery_mode", *body.DeliveryMode, []any{"email_delivery_single", "email_delivery_digest", "email_delivery_none", "email_delivery_special", "email_delivery_html_digest", "email_delivery_summary"}))
 		}
 	}
 	return
@@ -2430,8 +2498,8 @@ func ValidateUpdateGroupsioMemberRequestBody(body *UpdateGroupsioMemberRequestBo
 		}
 	}
 	if body.DeliveryMode != nil {
-		if !(*body.DeliveryMode == "normal" || *body.DeliveryMode == "digest" || *body.DeliveryMode == "none") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.delivery_mode", *body.DeliveryMode, []any{"normal", "digest", "none"}))
+		if !(*body.DeliveryMode == "email_delivery_single" || *body.DeliveryMode == "email_delivery_digest" || *body.DeliveryMode == "email_delivery_none" || *body.DeliveryMode == "email_delivery_special" || *body.DeliveryMode == "email_delivery_html_digest" || *body.DeliveryMode == "email_delivery_summary") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.delivery_mode", *body.DeliveryMode, []any{"email_delivery_single", "email_delivery_digest", "email_delivery_none", "email_delivery_special", "email_delivery_html_digest", "email_delivery_summary"}))
 		}
 	}
 	return

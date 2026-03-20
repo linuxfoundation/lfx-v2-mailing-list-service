@@ -3030,14 +3030,18 @@ func unmarshalGroupsioMemberResponseBodyToMailinglistGroupsioMember(v *GroupsioM
 	}
 	res := &mailinglist.GroupsioMember{
 		ID:           v.ID,
-		SubgroupID:   v.SubgroupID,
 		Email:        v.Email,
 		Name:         v.Name,
-		FirstName:    v.FirstName,
-		LastName:     v.LastName,
-		ModStatus:    v.ModStatus,
+		MemberType:   v.MemberType,
 		DeliveryMode: v.DeliveryMode,
+		ModStatus:    v.ModStatus,
 		Status:       v.Status,
+		UserID:       v.UserID,
+		Organization: v.Organization,
+		JobTitle:     v.JobTitle,
+		Username:     v.Username,
+		Role:         v.Role,
+		VotingStatus: v.VotingStatus,
 		CreatedAt:    v.CreatedAt,
 		UpdatedAt:    v.UpdatedAt,
 	}

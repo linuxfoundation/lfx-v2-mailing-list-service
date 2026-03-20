@@ -92,24 +92,34 @@ type GroupsioMemberCountResponse struct {
 // GroupsioMember represents a member of a GroupsIO subgroup.
 type GroupsioMember struct {
 	ID           string `json:"id,omitempty"`
-	SubgroupID   string `json:"subgroup_id,omitempty"`
+	SubgroupID   uint64 `json:"group_id,omitempty"`
+	MemberID     uint64 `json:"member_id,omitempty"`
 	Email        string `json:"email,omitempty"`
-	Name         string `json:"name,omitempty"`
-	FirstName    string `json:"first_name,omitempty"`
-	LastName     string `json:"last_name,omitempty"`
-	ModStatus    string `json:"mod_status,omitempty"`
+	FullName     string `json:"full_name,omitempty"`
+	MemberType   string `json:"member_type,omitempty"`
 	DeliveryMode string `json:"delivery_mode,omitempty"`
+	ModStatus    string `json:"mod_status,omitempty"`
 	Status       string `json:"status,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	JobTitle     string `json:"job_title,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Role         string `json:"role,omitempty"`
+	VotingStatus string `json:"voting_status,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
-	UpdatedAt    string `json:"updated_at,omitempty"`
+	UpdatedAt    string `json:"last_modified_at,omitempty"`
 }
 
 // GroupsioMemberRequest represents a create/update request for a GroupsIO member.
 type GroupsioMemberRequest struct {
 	Email        string `json:"email,omitempty"`
-	Name         string `json:"name,omitempty"`
+	FullName     string `json:"full_name,omitempty"` // combined from first_name + last_name
+	MemberType   string `json:"member_type,omitempty"`
 	ModStatus    string `json:"mod_status,omitempty"`
 	DeliveryMode string `json:"delivery_mode,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	JobTitle     string `json:"job_title,omitempty"`
 }
 
 // GroupsioMemberListResponse represents a list of GroupsIO members.

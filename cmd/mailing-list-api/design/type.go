@@ -165,16 +165,20 @@ var GroupsioCountType = dsl.Type("groupsio-count", func() {
 var GroupsioMemberType = dsl.Type("groupsio-member", func() {
 	dsl.Description("A member of a GroupsIO subgroup")
 	dsl.Attribute("id", dsl.String, "Member ID")
-	dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
 	dsl.Attribute("email", dsl.String, "Member email address", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
 	dsl.Attribute("name", dsl.String, "Member display name")
-	dsl.Attribute("first_name", dsl.String, "Member first name")
-	dsl.Attribute("last_name", dsl.String, "Member last name")
-	dsl.Attribute("mod_status", dsl.String, "Moderation status")
+	dsl.Attribute("member_type", dsl.String, "Member type")
 	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode")
+	dsl.Attribute("mod_status", dsl.String, "Moderation status")
 	dsl.Attribute("status", dsl.String, "Member status")
+	dsl.Attribute("user_id", dsl.String, "User ID")
+	dsl.Attribute("organization", dsl.String, "Member organization")
+	dsl.Attribute("job_title", dsl.String, "Member job title")
+	dsl.Attribute("username", dsl.String, "Groups.io username")
+	dsl.Attribute("role", dsl.String, "Member role")
+	dsl.Attribute("voting_status", dsl.String, "Voting status")
 	dsl.Attribute("created_at", dsl.String, "Creation timestamp")
 	dsl.Attribute("updated_at", dsl.String, "Last update timestamp")
 })
@@ -186,12 +190,16 @@ var GroupsioMemberRequestType = dsl.Type("groupsio-member-request", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
 	dsl.Attribute("name", dsl.String, "Member display name")
+	dsl.Attribute("member_type", dsl.String, "Member type")
 	dsl.Attribute("mod_status", dsl.String, "Moderation status", func() {
 		dsl.Enum("none", "moderator", "owner")
 	})
 	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode", func() {
-		dsl.Enum("normal", "digest", "none")
+		dsl.Enum("email_delivery_single", "email_delivery_digest", "email_delivery_none", "email_delivery_special", "email_delivery_html_digest", "email_delivery_summary")
 	})
+	dsl.Attribute("user_id", dsl.String, "User ID")
+	dsl.Attribute("organization", dsl.String, "Member organization")
+	dsl.Attribute("job_title", dsl.String, "Member job title")
 })
 
 // GroupsioMemberListType represents a list of GroupsIO members.

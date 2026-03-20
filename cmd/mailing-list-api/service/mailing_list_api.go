@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
@@ -15,6 +16,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	itxsvc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service/itx"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
 
 	"goa.design/goa/v3/security"
 )
@@ -82,12 +84,12 @@ func (s *mailingListAPI) ListGroupsioServices(ctx context.Context, p *mailinglis
 
 func (s *mailingListAPI) CreateGroupsioService(ctx context.Context, p *mailinglist.CreateGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
 	req := &models.GroupsioServiceRequest{
-		ProjectID: strVal(p.ProjectUID),
-		Type:      strVal(p.Type),
-		GroupID:   int64Val(p.GroupID),
-		Domain:    strVal(p.Domain),
-		Prefix:    strVal(p.Prefix),
-		Status:    strVal(p.Status),
+		ProjectID: converter.StringVal(p.ProjectUID),
+		Type:      converter.StringVal(p.Type),
+		GroupID:   converter.Int64Val(p.GroupID),
+		Domain:    converter.StringVal(p.Domain),
+		Prefix:    converter.StringVal(p.Prefix),
+		Status:    converter.StringVal(p.Status),
 	}
 	resp, err := s.serviceService.CreateService(ctx, req)
 	if err != nil {
@@ -106,12 +108,12 @@ func (s *mailingListAPI) GetGroupsioService(ctx context.Context, p *mailinglist.
 
 func (s *mailingListAPI) UpdateGroupsioService(ctx context.Context, p *mailinglist.UpdateGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
 	req := &models.GroupsioServiceRequest{
-		ProjectID: strVal(p.ProjectUID),
-		Type:      strVal(p.Type),
-		GroupID:   int64Val(p.GroupID),
-		Domain:    strVal(p.Domain),
-		Prefix:    strVal(p.Prefix),
-		Status:    strVal(p.Status),
+		ProjectID: converter.StringVal(p.ProjectUID),
+		Type:      converter.StringVal(p.Type),
+		GroupID:   converter.Int64Val(p.GroupID),
+		Domain:    converter.StringVal(p.Domain),
+		Prefix:    converter.StringVal(p.Prefix),
+		Status:    converter.StringVal(p.Status),
 	}
 	resp, err := s.serviceService.UpdateService(ctx, p.ServiceID, req)
 	if err != nil {
@@ -165,14 +167,14 @@ func (s *mailingListAPI) ListGroupsioSubgroups(ctx context.Context, p *mailingli
 
 func (s *mailingListAPI) CreateGroupsioSubgroup(ctx context.Context, p *mailinglist.CreateGroupsioSubgroupPayload) (*mailinglist.GroupsioSubgroup, error) {
 	req := &models.GroupsioSubgroupRequest{
-		ProjectID:      strVal(p.ProjectUID),
-		CommitteeID:    strVal(p.CommitteeUID),
-		ParentID:       strVal(p.ServiceID),
-		GroupID:        int64Val(p.GroupID),
-		Name:           strVal(p.Name),
-		Description:    strVal(p.Description),
-		Type:           strVal(p.Type),
-		AudienceAccess: strVal(p.AudienceAccess),
+		ProjectID:      converter.StringVal(p.ProjectUID),
+		CommitteeID:    converter.StringVal(p.CommitteeUID),
+		ParentID:       converter.StringVal(p.ServiceID),
+		GroupID:        converter.Int64Val(p.GroupID),
+		Name:           converter.StringVal(p.Name),
+		Description:    converter.StringVal(p.Description),
+		Type:           converter.StringVal(p.Type),
+		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
 	resp, err := s.subgroupService.CreateSubgroup(ctx, req)
 	if err != nil {
@@ -191,14 +193,14 @@ func (s *mailingListAPI) GetGroupsioSubgroup(ctx context.Context, p *mailinglist
 
 func (s *mailingListAPI) UpdateGroupsioSubgroup(ctx context.Context, p *mailinglist.UpdateGroupsioSubgroupPayload) (*mailinglist.GroupsioSubgroup, error) {
 	req := &models.GroupsioSubgroupRequest{
-		ProjectID:      strVal(p.ProjectUID),
-		CommitteeID:    strVal(p.CommitteeUID),
-		ParentID:       strVal(p.ServiceID),
-		GroupID:        int64Val(p.GroupID),
-		Name:           strVal(p.Name),
-		Description:    strVal(p.Description),
-		Type:           strVal(p.Type),
-		AudienceAccess: strVal(p.AudienceAccess),
+		ProjectID:      converter.StringVal(p.ProjectUID),
+		CommitteeID:    converter.StringVal(p.CommitteeUID),
+		ParentID:       converter.StringVal(p.ServiceID),
+		GroupID:        converter.Int64Val(p.GroupID),
+		Name:           converter.StringVal(p.Name),
+		Description:    converter.StringVal(p.Description),
+		Type:           converter.StringVal(p.Type),
+		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
 	resp, err := s.subgroupService.UpdateSubgroup(ctx, p.SubgroupID, req)
 	if err != nil {
@@ -244,10 +246,14 @@ func (s *mailingListAPI) ListGroupsioMembers(ctx context.Context, p *mailinglist
 
 func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
 	req := &models.GroupsioMemberRequest{
-		Email:        strVal(p.Email),
-		Name:         strVal(p.Name),
-		ModStatus:    strVal(p.ModStatus),
-		DeliveryMode: strVal(p.DeliveryMode),
+		Email:        converter.StringVal(p.Email),
+		FullName:     converter.StringVal(p.Name),
+		MemberType:   converter.StringVal(p.MemberType),
+		ModStatus:    converter.StringVal(p.ModStatus),
+		DeliveryMode: converter.StringVal(p.DeliveryMode),
+		UserID:       converter.StringVal(p.UserID),
+		Organization: converter.StringVal(p.Organization),
+		JobTitle:     converter.StringVal(p.JobTitle),
 	}
 	resp, err := s.memberService.AddMember(ctx, p.SubgroupID, req)
 	if err != nil {
@@ -266,10 +272,14 @@ func (s *mailingListAPI) GetGroupsioMember(ctx context.Context, p *mailinglist.G
 
 func (s *mailingListAPI) UpdateGroupsioMember(ctx context.Context, p *mailinglist.UpdateGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
 	req := &models.GroupsioMemberRequest{
-		Email:        strVal(p.Email),
-		Name:         strVal(p.Name),
-		ModStatus:    strVal(p.ModStatus),
-		DeliveryMode: strVal(p.DeliveryMode),
+		Email:        converter.StringVal(p.Email),
+		FullName:     converter.StringVal(p.Name),
+		MemberType:   converter.StringVal(p.MemberType),
+		ModStatus:    converter.StringVal(p.ModStatus),
+		DeliveryMode: converter.StringVal(p.DeliveryMode),
+		UserID:       converter.StringVal(p.UserID),
+		Organization: converter.StringVal(p.Organization),
+		JobTitle:     converter.StringVal(p.JobTitle),
 	}
 	resp, err := s.memberService.UpdateMember(ctx, p.SubgroupID, p.MemberID, req)
 	if err != nil {
@@ -323,28 +333,6 @@ func mapDomainError(err error) error {
 	}
 }
 
-func strVal(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-// nonEmptyStrPtr returns a pointer to s, or nil if s is empty.
-// Used to omit optional timestamp fields when not set.
-func nonEmptyStrPtr(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
-func int64Val(v *int64) int64 {
-	if v == nil {
-		return 0
-	}
-	return *v
-}
 
 func convertService(svc *models.GroupsioService) *mailinglist.GroupsioService {
 	if svc == nil {
@@ -359,7 +347,7 @@ func convertService(svc *models.GroupsioService) *mailinglist.GroupsioService {
 		Prefix:     &svc.Prefix,
 		Status:     &svc.Status,
 		CreatedAt:  &svc.CreatedAt,
-		UpdatedAt:  nonEmptyStrPtr(svc.UpdatedAt),
+		UpdatedAt:  converter.NonEmptyString(svc.UpdatedAt),
 	}
 }
 
@@ -367,18 +355,21 @@ func convertSubgroup(sg *models.GroupsioSubgroup) *mailinglist.GroupsioSubgroup 
 	if sg == nil {
 		return nil
 	}
+	groupID := ""
+	if sg.GroupID != 0 {
+		groupID = strconv.FormatInt(sg.GroupID, 10)
+	}
 	return &mailinglist.GroupsioSubgroup{
-		ID:             &sg.ID,
+		ID:             &groupID,
 		ProjectUID:     &sg.ProjectID,
 		CommitteeUID:   &sg.CommitteeID,
 		ServiceID:      &sg.ParentID,
-		GroupID:        &sg.GroupID,
 		Name:           &sg.Name,
 		Description:    &sg.Description,
 		Type:           &sg.Type,
 		AudienceAccess: &sg.AudienceAccess,
 		CreatedAt:      &sg.CreatedAt,
-		UpdatedAt:      nonEmptyStrPtr(sg.UpdatedAt),
+		UpdatedAt:      converter.NonEmptyString(sg.UpdatedAt),
 	}
 }
 
@@ -386,17 +377,25 @@ func convertMember(m *models.GroupsioMember) *mailinglist.GroupsioMember {
 	if m == nil {
 		return nil
 	}
+	memberID := ""
+	if m.ID == "" {
+		memberID = strconv.FormatUint(m.MemberID, 10)
+	}
 	return &mailinglist.GroupsioMember{
-		ID:           &m.ID,
-		SubgroupID:   &m.SubgroupID,
+		ID:           &memberID,
 		Email:        &m.Email,
-		Name:         &m.Name,
-		FirstName:    &m.FirstName,
-		LastName:     &m.LastName,
-		ModStatus:    &m.ModStatus,
+		Name:         &m.FullName,
+		MemberType:   &m.MemberType,
 		DeliveryMode: &m.DeliveryMode,
+		ModStatus:    &m.ModStatus,
 		Status:       &m.Status,
+		UserID:       &m.UserID,
+		Organization: &m.Organization,
+		JobTitle:     &m.JobTitle,
+		Username:     &m.Username,
+		Role:         &m.Role,
+		VotingStatus: &m.VotingStatus,
 		CreatedAt:    &m.CreatedAt,
-		UpdatedAt:    nonEmptyStrPtr(m.UpdatedAt),
+		UpdatedAt:    converter.NonEmptyString(m.UpdatedAt),
 	}
 }

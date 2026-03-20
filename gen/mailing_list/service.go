@@ -98,10 +98,18 @@ type AddGroupsioMemberPayload struct {
 	Email *string
 	// Member display name
 	Name *string
+	// Member type
+	MemberType *string
 	// Moderation status
 	ModStatus *string
 	// Email delivery mode
 	DeliveryMode *string
+	// User ID
+	UserID *string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
 }
 
 // CheckGroupsioSubscriberPayload is the payload type of the mailing-list
@@ -268,22 +276,30 @@ type GroupsioCount struct {
 type GroupsioMember struct {
 	// Member ID
 	ID *string
-	// Subgroup ID
-	SubgroupID *string
 	// Member email address
 	Email *string
 	// Member display name
 	Name *string
-	// Member first name
-	FirstName *string
-	// Member last name
-	LastName *string
-	// Moderation status
-	ModStatus *string
+	// Member type
+	MemberType *string
 	// Email delivery mode
 	DeliveryMode *string
+	// Moderation status
+	ModStatus *string
 	// Member status
 	Status *string
+	// User ID
+	UserID *string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
+	// Groups.io username
+	Username *string
+	// Member role
+	Role *string
+	// Voting status
+	VotingStatus *string
 	// Creation timestamp
 	CreatedAt *string
 	// Last update timestamp
@@ -427,10 +443,18 @@ type UpdateGroupsioMemberPayload struct {
 	Email *string
 	// Member display name
 	Name *string
+	// Member type
+	MemberType *string
 	// Moderation status
 	ModStatus *string
 	// Email delivery mode
 	DeliveryMode *string
+	// User ID
+	UserID *string
+	// Member organization
+	Organization *string
+	// Member job title
+	JobTitle *string
 }
 
 // UpdateGroupsioServicePayload is the payload type of the mailing-list service
