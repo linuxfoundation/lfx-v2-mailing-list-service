@@ -14,10 +14,12 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
-	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/idmapper"
+	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	itxsvc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service/itx"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
 // AuthService initializes the authentication service implementation
@@ -36,8 +38,8 @@ func AuthService(ctx context.Context) port.Authenticator {
 	case "jwt":
 		slog.InfoContext(ctx, "initializing JWT authentication service")
 		jwtConfig := auth.JWTAuthConfig{
-			JWKSURL:  os.Getenv("JWKS_URL"),
-			Audience: os.Getenv("JWT_AUDIENCE"),
+			JWKSURL:            os.Getenv("JWKS_URL"),
+			Audience:           os.Getenv("JWT_AUDIENCE"),
 			MockLocalPrincipal: os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL"),
 		}
 		jwtAuth, err := auth.NewJWTAuth(jwtConfig)
@@ -106,4 +108,15 @@ func GroupsioSubgroupService(ctx context.Context, client domain.ITXGroupsioClien
 func GroupsioMemberService(ctx context.Context, client domain.ITXGroupsioClient) *itxsvc.GroupsioMemberService {
 	slog.InfoContext(ctx, "initializing GroupsIO member service")
 	return itxsvc.NewGroupsioMemberService(client)
+}
+
+// MappingReaderWriter initializes the v1-mappings KV abstraction used by the
+// data stream event handler for idempotency tracking.
+func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
+	client := GetNATSClient(ctx)
+	kv, err := client.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	if err != nil {
+		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
+	}
+	return nats.NewMappingReaderWriter(kv)
 }

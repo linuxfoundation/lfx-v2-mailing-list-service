@@ -328,6 +328,9 @@ app:
           name: lfx-v2-mailing-list-service
           key: GROUPSIO_WEBHOOK_SECRET
 
+    EVENTING_ENABLED:
+      value: "true"
+
 # External Secrets Operator
 externalSecretsOperator:
   # Enable/disable External Secrets Operator integration

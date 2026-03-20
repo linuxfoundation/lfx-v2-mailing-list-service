@@ -39,8 +39,12 @@ type GrpsIOMailingList struct {
 	ProjectName string `json:"project_name"` // Inherited from parent service
 	ProjectSlug string `json:"project_slug"` // Inherited from parent service
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	URL   string   `json:"url,omitempty"`   // The groups.io URL for the subgroup
+	Flags []string `json:"flags,omitempty"` // Warning messages about unusual settings
+
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	SystemUpdatedAt time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
 // Removed visibility constants - now using Public bool field
