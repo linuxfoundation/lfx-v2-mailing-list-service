@@ -72,7 +72,7 @@ func main() {
 		orchestrator.WithServiceReaderTranslator(translator),
 	)
 
-	serviceOrchestrator := orchestrator.NewGroupsIOServiceOrchestrator(
+	serviceOrchestrator := orchestrator.NewGroupsIOServiceWriterOrchestrator(
 		orchestrator.WithServiceWriter(proxyClient),
 		orchestrator.WithServiceTranslator(translator),
 	)

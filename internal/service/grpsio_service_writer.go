@@ -12,32 +12,32 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
-// GroupsIOServiceOrchestrator implements port.GrpsIOServiceWriter by wrapping an inner
+// GroupsIOServiceWriterOrchestrator implements port.GrpsIOServiceWriter by wrapping an inner
 // GrpsIOServiceWriter and translating v2 UUIDs to v1 SFIDs before forwarding requests.
-type GroupsIOServiceOrchestrator struct {
+type GroupsIOServiceWriterOrchestrator struct {
 	writer     port.GroupsIOServiceWriter
 	translator port.Translator
 }
 
-// ServiceOrchestratorOption configures a GroupsIOServiceOrchestrator.
-type ServiceOrchestratorOption func(*GroupsIOServiceOrchestrator)
+// ServiceWriterOrchestratorOption configures a GroupsIOServiceWriterOrchestrator.
+type ServiceWriterOrchestratorOption func(*GroupsIOServiceWriterOrchestrator)
 
 // WithServiceWriter sets the underlying writer (e.g. the ITX proxy client).
-func WithServiceWriter(w port.GroupsIOServiceWriter) ServiceOrchestratorOption {
-	return func(o *GroupsIOServiceOrchestrator) {
+func WithServiceWriter(w port.GroupsIOServiceWriter) ServiceWriterOrchestratorOption {
+	return func(o *GroupsIOServiceWriterOrchestrator) {
 		o.writer = w
 	}
 }
 
 // WithServiceTranslator sets the ID translator.
-func WithServiceTranslator(t port.Translator) ServiceOrchestratorOption {
-	return func(o *GroupsIOServiceOrchestrator) {
+func WithServiceTranslator(t port.Translator) ServiceWriterOrchestratorOption {
+	return func(o *GroupsIOServiceWriterOrchestrator) {
 		o.translator = t
 	}
 }
 
 // CreateService creates a new GroupsIO service, mapping project_uid (v2) -> project_id (v1).
-func (o *GroupsIOServiceOrchestrator) CreateService(ctx context.Context, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
+func (o *GroupsIOServiceWriterOrchestrator) CreateService(ctx context.Context, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
 	toSend := *svc
 	if svc.ProjectUID != "" {
 		v1ID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, svc.ProjectUID)
@@ -52,11 +52,11 @@ func (o *GroupsIOServiceOrchestrator) CreateService(ctx context.Context, svc *mo
 		return nil, err
 	}
 
-	return o.mapServiceResponse(ctx, resp)
+	return mapServiceResponse(ctx, o.translator, resp)
 }
 
 // UpdateService updates a GroupsIO service, mapping project_uid (v2) -> project_id (v1).
-func (o *GroupsIOServiceOrchestrator) UpdateService(ctx context.Context, serviceID string, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
+func (o *GroupsIOServiceWriterOrchestrator) UpdateService(ctx context.Context, serviceID string, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
 	toSend := *svc
 	if svc.ProjectUID != "" {
 		v1ID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, svc.ProjectUID)
@@ -71,21 +71,21 @@ func (o *GroupsIOServiceOrchestrator) UpdateService(ctx context.Context, service
 		return nil, err
 	}
 
-	return o.mapServiceResponse(ctx, resp)
+	return mapServiceResponse(ctx, o.translator, resp)
 }
 
 // DeleteService deletes a GroupsIO service.
-func (o *GroupsIOServiceOrchestrator) DeleteService(ctx context.Context, serviceID string) error {
+func (o *GroupsIOServiceWriterOrchestrator) DeleteService(ctx context.Context, serviceID string) error {
 	return o.writer.DeleteService(ctx, serviceID)
 }
 
 // mapServiceResponse maps project_id (v1) -> project_uid (v2) in a service response.
-func (o *GroupsIOServiceOrchestrator) mapServiceResponse(ctx context.Context, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
+func mapServiceResponse(ctx context.Context, translator port.Translator, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
 	if svc == nil {
 		return nil, nil
 	}
 	if svc.ProjectUID != "" {
-		v2UID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV1ToV2, svc.ProjectUID)
+		v2UID, err := translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV1ToV2, svc.ProjectUID)
 		if err != nil {
 			return nil, err
 		}
@@ -96,9 +96,9 @@ func (o *GroupsIOServiceOrchestrator) mapServiceResponse(ctx context.Context, sv
 	return svc, nil
 }
 
-// NewGroupsIOServiceOrchestrator creates a new orchestrator with the given options.
-func NewGroupsIOServiceOrchestrator(opts ...ServiceOrchestratorOption) *GroupsIOServiceOrchestrator {
-	o := &GroupsIOServiceOrchestrator{}
+// NewGroupsIOServiceWriterOrchestrator creates a new orchestrator with the given options.
+func NewGroupsIOServiceWriterOrchestrator(opts ...ServiceWriterOrchestratorOption) *GroupsIOServiceWriterOrchestrator {
+	o := &GroupsIOServiceWriterOrchestrator{}
 	for _, opt := range opts {
 		opt(o)
 	}

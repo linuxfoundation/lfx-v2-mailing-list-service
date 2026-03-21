@@ -53,7 +53,7 @@ func (o *GroupsIOServiceReaderOrchestrator) ListServices(ctx context.Context, pr
 	}
 
 	for i, svc := range svcs {
-		mapped, err := o.mapServiceResponse(ctx, svc)
+		mapped, err := mapServiceResponse(ctx, o.translator, svc)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -70,7 +70,7 @@ func (o *GroupsIOServiceReaderOrchestrator) GetService(ctx context.Context, serv
 	if err != nil {
 		return nil, err
 	}
-	return o.mapServiceResponse(ctx, svc)
+	return mapServiceResponse(ctx, o.translator, svc)
 }
 
 // GetProjects returns v2 project UIDs that have GroupsIO services, translating
@@ -106,25 +106,9 @@ func (o *GroupsIOServiceReaderOrchestrator) FindParentService(ctx context.Contex
 		return nil, err
 	}
 
-	return o.mapServiceResponse(ctx, svc)
+	return mapServiceResponse(ctx, o.translator, svc)
 }
 
-// mapServiceResponse maps project_id (v1) -> project_uid (v2) in a service response.
-func (o *GroupsIOServiceReaderOrchestrator) mapServiceResponse(ctx context.Context, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
-	if svc == nil {
-		return nil, nil
-	}
-	if svc.ProjectUID != "" {
-		v2UID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV1ToV2, svc.ProjectUID)
-		if err != nil {
-			return nil, err
-		}
-		copy := *svc
-		copy.ProjectUID = v2UID
-		return &copy, nil
-	}
-	return svc, nil
-}
 
 // NewGroupsIOServiceReaderOrchestrator creates a new reader orchestrator with the given options.
 func NewGroupsIOServiceReaderOrchestrator(opts ...ServiceReaderOrchestratorOption) *GroupsIOServiceReaderOrchestrator {
