@@ -47,7 +47,7 @@ The codebase follows hexagonal/clean architecture principles:
   - `grpsio_mailing_list_reader.go`, `grpsio_mailing_list_writer.go` - Mailing list orchestrators
   - `grpsio_member_reader.go`, `grpsio_member_writer.go` - Member orchestrators
   - `grpsio_webhook_processor.go` - Webhook event processor
-  - `committee_sync_service.go` - Committee member synchronization to mailing lists
+  - `datastream_member_handler.go`, `datastream_subgroup_handler.go` - Committee member synchronization to mailing lists
 
 **Middleware Layer** (`internal/middleware/`):
 - `authorization.go` - JWT-based authorization middleware
@@ -135,7 +135,6 @@ Environment-based configuration for:
 ### Key Files to Understand
 - [`cmd/mailing-list-api/main.go`](cmd/mailing-list-api/main.go) - Application entry point, service initialization
 - [`cmd/mailing-list-api/committee.go`](cmd/mailing-list-api/committee.go) - Committee event subscription setup
-- [`internal/service/committee_sync_service.go`](internal/service/committee_sync_service.go) - Committee synchronization logic
 - [`internal/domain/model/committee_events.go`](internal/domain/model/committee_events.go) - Committee event structures
 - [`pkg/constants/subjects.go`](pkg/constants/subjects.go) - NATS subject definitions
 
@@ -244,5 +243,5 @@ To test committee member synchronization locally:
 
 4. **Run unit tests**:
    ```bash
-   go test -v ./internal/service/committee_sync_service_test.go
+   go test -v ./internal/service/...
    ```
