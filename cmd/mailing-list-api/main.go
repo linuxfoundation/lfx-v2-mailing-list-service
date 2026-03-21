@@ -77,6 +77,11 @@ func main() {
 		orchestrator.WithServiceTranslator(translator),
 	)
 
+	mailingListReaderOrchestrator := orchestrator.NewGroupsIOMailingListReaderOrchestrator(
+		orchestrator.WithMailingListReader(proxyClient),
+		orchestrator.WithMailingListReaderTranslator(translator),
+	)
+
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
@@ -89,6 +94,7 @@ func main() {
 		authService,
 		serviceReaderOrchestrator,
 		serviceOrchestrator,
+		mailingListReaderOrchestrator,
 		mailingListOrchestrator,
 	)
 

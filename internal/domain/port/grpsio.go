@@ -8,5 +8,6 @@ package port
 type GroupsIOReaderWriter interface {
 	GroupsIOServiceReader
 	GroupsIOServiceWriter
+	GroupsIOMailingListReader
 	GroupsIOMailingListWriter
 }

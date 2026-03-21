@@ -209,6 +209,72 @@ func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error
 	return nil
 }
 
+// ---- GroupsIOMailingListReader implementation ----
+
+// ListMailingLists lists GroupsIO mailing lists, optionally filtered by project and/or committee v1 IDs.
+func (c *itx) ListMailingLists(ctx context.Context, projectID string, committeeID string) ([]*model.GroupsIOMailingList, int, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup", c.config.BaseURL)
+	sep := "?"
+	if projectID != "" {
+		url = fmt.Sprintf("%s%sproject_id=%s", url, sep, projectID)
+		sep = "&"
+	}
+	if committeeID != "" {
+		url = fmt.Sprintf("%s%scommittee=%s", url, sep, committeeID)
+	}
+
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return nil, 0, c.handleRequestError(err)
+	}
+
+	var wire subgroupListResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, 0, domain.NewInternalError("failed to parse response", err)
+	}
+
+	items := make([]*model.GroupsIOMailingList, len(wire.Items))
+	for i, item := range wire.Items {
+		items[i] = fromWireSubgroup(item)
+	}
+	return items, wire.Total, nil
+}
+
+// GetMailingList retrieves a GroupsIO mailing list by ID.
+func (c *itx) GetMailingList(ctx context.Context, mailingListID string) (*model.GroupsIOMailingList, error) {
+	return c.getSubgroup(ctx, mailingListID)
+}
+
+// GetMailingListCount returns the count of mailing lists for a given v1 project ID.
+func (c *itx) GetMailingListCount(ctx context.Context, projectID string) (int, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup/count?project_id=%s", c.config.BaseURL, projectID)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return 0, c.handleRequestError(err)
+	}
+
+	var wire countResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return 0, domain.NewInternalError("failed to parse response", err)
+	}
+	return wire.Count, nil
+}
+
+// GetMailingListMemberCount returns the count of members in a given mailing list.
+func (c *itx) GetMailingListMemberCount(ctx context.Context, mailingListID string) (int, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/member_count", c.config.BaseURL, mailingListID)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return 0, c.handleRequestError(err)
+	}
+
+	var wire countResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return 0, domain.NewInternalError("failed to parse response", err)
+	}
+	return wire.Count, nil
+}
+
 // ---- GroupsIOServiceReader implementation ----
 
 // listServices retrieves a list of GroupsIO services, optionally filtered by project_id.
