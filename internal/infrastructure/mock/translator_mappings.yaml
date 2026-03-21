@@ -1,0 +1,26 @@
+# Mock ID translation mappings for local development and testing.
+#
+# Key format:
+#   V2 -> V1:  "{subject}.uid.{v2-uuid}"
+#   V1 -> V2:  "{subject}.sfid.{v1-sfid}"
+#
+# For committee V2 -> V1, the value must be "projectSFID:committeeSFID"
+# (the mock applies the same parsing logic as the real NATS translator).
+#
+# Subjects: project, committee
+# See pkg/constants/translation.go for the canonical constant values.
+
+mappings:
+  # Project mappings
+  project.uid.00000000-0000-0000-0000-000000000001: a0B000000000001EAI
+  project.sfid.a0B000000000001EAI: 00000000-0000-0000-0000-000000000001
+
+  project.uid.00000000-0000-0000-0000-000000000002: a0B000000000002EAI
+  project.sfid.a0B000000000002EAI: 00000000-0000-0000-0000-000000000002
+
+  # Committee mappings (value is "projectSFID:committeeSFID")
+  committee.uid.00000000-0000-0000-0000-000000000010: a0B000000000001EAI:a2T000000000001EAI
+  committee.sfid.a2T000000000001EAI: 00000000-0000-0000-0000-000000000010
+
+  committee.uid.00000000-0000-0000-0000-000000000011: a0B000000000001EAI:a2T000000000002EAI
+  committee.sfid.a2T000000000002EAI: 00000000-0000-0000-0000-000000000011

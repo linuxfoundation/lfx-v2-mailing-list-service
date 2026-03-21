@@ -5,20 +5,19 @@
 package model
 
 import (
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"log/slog"
-	"strings"
 	"time"
-
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
-// GrpsIOMailingList represents a GroupsIO mailing list entity with committee support
-type GrpsIOMailingList struct {
+// Mailing list type constants.
+const (
+	TypeAnnouncement        = "announcement"
+	TypeDiscussionModerated = "discussion_moderated"
+	TypeDiscussionOpen      = "discussion_open"
+)
+
+// GroupsIOMailingList represents a GroupsIO mailing list entity with committee support
+type GroupsIOMailingList struct {
 	UID             string `json:"uid"`
 	GroupID         *int64 `json:"group_id"` // Groups.io group ID
 	GroupName       string `json:"group_name"`
@@ -47,174 +46,8 @@ type GrpsIOMailingList struct {
 	SystemUpdatedAt time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
-// Removed visibility constants - now using Public bool field
-
-// Valid mailing list types
-const (
-	TypeAnnouncement        = "announcement"
-	TypeDiscussionModerated = "discussion_moderated"
-	TypeDiscussionOpen      = "discussion_open"
-	TypeCustom              = "custom" // TODO: Verify if Groups.io actually supports custom type
-)
-
-// Audience access constants - controls who can join the mailing list
-const (
-	AudienceAccessPublic           = "public"            // Anyone can join
-	AudienceAccessApprovalRequired = "approval_required" // Users must request to join and be approved
-	AudienceAccessInviteOnly       = "invite_only"       // Only invited users can join
-)
-
-// Valid committee voting statuses
-const (
-	CommitteeVotingStatusVotingRep    = "Voting Rep"
-	CommitteeVotingStatusAltVotingRep = "Alternate Voting Rep"
-	CommitteeVotingStatusObserver     = "Observer"
-	CommitteeVotingStatusEmeritus     = "Emeritus"
-	CommitteeVotingStatusNone         = "None"
-)
-
-// ValidCommitteeVotingStatuses returns all valid committee voting status values
-func ValidCommitteeVotingStatuses() []string {
-	return []string{
-		CommitteeVotingStatusVotingRep,
-		CommitteeVotingStatusAltVotingRep,
-		CommitteeVotingStatusObserver,
-		CommitteeVotingStatusEmeritus,
-		CommitteeVotingStatusNone,
-	}
-}
-
-// ValidAudienceAccessValues returns all valid audience access values
-func ValidAudienceAccessValues() []string {
-	return []string{
-		AudienceAccessPublic,
-		AudienceAccessApprovalRequired,
-		AudienceAccessInviteOnly,
-	}
-}
-
-// ValidMailingListTypes returns all valid mailing list type values
-func ValidMailingListTypes() []string {
-	return []string{
-		TypeAnnouncement,
-		TypeDiscussionModerated,
-		TypeDiscussionOpen,
-		TypeCustom,
-	}
-}
-
-// ValidateBasicFields validates the basic required fields and formats
-func (ml *GrpsIOMailingList) ValidateBasicFields() error {
-	// Group name validation
-	if ml.GroupName == "" {
-		return errors.NewValidation("group_name is required")
-	}
-	if !isValidGroupName(ml.GroupName) {
-		return errors.NewValidation("group_name must match pattern: ^[a-z][a-z0-9-]*[a-z0-9]$")
-	}
-
-	// Public field is boolean, no validation needed
-
-	// Audience access validation - default to public if empty
-	if ml.AudienceAccess == "" {
-		ml.AudienceAccess = AudienceAccessPublic
-	}
-	if !isValidAudienceAccess(ml.AudienceAccess) {
-		return errors.NewValidation(fmt.Sprintf("audience_access must be one of: %v", ValidAudienceAccessValues()))
-	}
-
-	// Type validation
-	if ml.Type == "" {
-		return errors.NewValidation("type is required")
-	}
-	if !isValidMailingListType(ml.Type) {
-		return errors.NewValidation("type must be 'announcement', 'discussion_moderated', or 'discussion_open'")
-	}
-
-	// Description validation (minimum 11 characters as per ITX service)
-	if ml.Description == "" {
-		return errors.NewValidation("description is required")
-	}
-	if len(ml.Description) < 11 {
-		return errors.NewValidation("description must be at least 11 characters long")
-	}
-
-	// Title validation
-	if ml.Title == "" {
-		return errors.NewValidation("title is required")
-	}
-
-	// Parent ID validation
-	if ml.ServiceUID == "" {
-		return errors.NewValidation("parent_id is required")
-	}
-
-	return nil
-}
-
-// ValidateCommitteeFields validates committee-related fields
-func (ml *GrpsIOMailingList) ValidateCommitteeFields() error {
-	if len(ml.Committees) == 0 {
-		return nil // No committees is valid
-	}
-
-	validVotingStatuses := ValidCommitteeVotingStatuses()
-
-	for i, committee := range ml.Committees {
-		// Each committee must have a UID
-		if committee.UID == "" {
-			return errors.NewValidation(fmt.Sprintf("committees[%d].uid is required", i))
-		}
-
-		// Validate each voting status value if specified
-		for _, status := range committee.AllowedVotingStatuses {
-			if !contains(validVotingStatuses, status) {
-				return errors.NewValidation(fmt.Sprintf("invalid committees[%d].allowed_voting_statuses value: %s. Valid values: %v", i, status, validVotingStatuses))
-			}
-		}
-	}
-
-	return nil
-}
-
-// ValidateGroupNamePrefix validates that group name starts with required prefix for non-primary services
-func (ml *GrpsIOMailingList) ValidateGroupNamePrefix(parentServiceType, parentServicePrefix string) error {
-	// For non-primary services, group name must start with parent service prefix
-	if parentServiceType != "primary" {
-		if parentServicePrefix == "" {
-			return errors.NewValidation("parent service prefix is required for non-primary services")
-		}
-		if !strings.HasPrefix(ml.GroupName, parentServicePrefix+"-") {
-			return errors.NewValidation(fmt.Sprintf("group_name must start with parent service prefix '%s-' for %s services", parentServicePrefix, parentServiceType))
-		}
-	}
-	return nil
-}
-
-// IsCommitteeBased returns true if this mailing list is committee-based
-func (ml *GrpsIOMailingList) IsCommitteeBased() bool {
-	return len(ml.Committees) > 0
-}
-
-// BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
-func (ml *GrpsIOMailingList) BuildIndexKey(ctx context.Context) string {
-	// Combine parent_id and group_name for uniqueness constraint
-	data := fmt.Sprintf("%s|%s", ml.ServiceUID, ml.GroupName)
-
-	hash := sha256.Sum256([]byte(data))
-	key := hex.EncodeToString(hash[:])
-
-	slog.DebugContext(ctx, "mailing list index key built",
-		"parent_uid", ml.ServiceUID,
-		"group_name", ml.GroupName,
-		"key", key,
-	)
-
-	return key
-}
-
-// GrpsIOMailingListSettings represents the settings for a GroupsIO mailing list (user management).
-type GrpsIOMailingListSettings struct {
+// GroupsIOMailingListSettings represents the settings for a GroupsIO mailing list (user management).
+type GroupsIOMailingListSettings struct {
 	UID             string     `json:"uid"`
 	Writers         []UserInfo `json:"writers"`
 	Auditors        []UserInfo `json:"auditors"`
@@ -227,7 +60,7 @@ type GrpsIOMailingListSettings struct {
 }
 
 // Tags generates a consistent set of tags for the GrpsIO mailing list settings
-func (s *GrpsIOMailingListSettings) Tags() []string {
+func (s *GroupsIOMailingListSettings) Tags() []string {
 	var tags []string
 
 	if s == nil {
@@ -243,20 +76,8 @@ func (s *GrpsIOMailingListSettings) Tags() []string {
 	return tags
 }
 
-// ValidateLastReviewedAt validates the LastReviewedAt timestamp format for mailing list settings.
-// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
-func (s *GrpsIOMailingListSettings) ValidateLastReviewedAt() error {
-	return utils.ValidateRFC3339Ptr(s.LastReviewedAt)
-}
-
-// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer for mailing list settings.
-// Returns nil if the field is nil or empty, or the parsed time if valid.
-func (s *GrpsIOMailingListSettings) GetLastReviewedAtTime() (*time.Time, error) {
-	return utils.ParseTimestampPtr(s.LastReviewedAt)
-}
-
 // Tags generates a consistent set of tags for the mailing list
-func (ml *GrpsIOMailingList) Tags() []string {
+func (ml *GroupsIOMailingList) Tags() []string {
 	var tags []string
 
 	if ml == nil {
@@ -309,58 +130,4 @@ func (ml *GrpsIOMailingList) Tags() []string {
 	}
 
 	return tags
-}
-
-// Helper functions for validation
-
-func isValidGroupName(groupName string) bool {
-	// Pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
-	if len(groupName) < 2 {
-		return false
-	}
-
-	// Must start with lowercase letter
-	if groupName[0] < 'a' || groupName[0] > 'z' {
-		return false
-	}
-
-	// Must end with lowercase letter or digit
-	last := groupName[len(groupName)-1]
-	if (last < 'a' || last > 'z') && (last < '0' || last > '9') {
-		return false
-	}
-
-	// Middle characters can be lowercase letters, digits, or hyphens
-	for _, char := range groupName[1 : len(groupName)-1] {
-		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Removed isValidVisibility - now using Public bool field
-
-func isValidMailingListType(mlType string) bool {
-	return contains(ValidMailingListTypes(), mlType)
-}
-
-func isValidAudienceAccess(access string) bool {
-	return contains(ValidAudienceAccessValues(), access)
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-// IsMainGroup determines if a mailing list is the main group for a service
-// Main groups have the same group_name as their parent service's group_name
-func (ml *GrpsIOMailingList) IsMainGroup(parentService *GrpsIOService) bool {
-	return ml.GroupName == parentService.GroupName
 }

@@ -4,526 +4,16 @@
 package model
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-func TestGrpsIOMailingList_ValidateBasicFields(t *testing.T) {
-	tests := []struct {
-		name        string
-		mailingList func() *GrpsIOMailingList
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name: "valid mailing list",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "empty group name",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "group_name is required",
-		},
-		{
-			name: "invalid group name - starts with number",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "1dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "group_name must match pattern: ^[a-z][a-z0-9-]*[a-z0-9]$",
-		},
-		{
-			name: "invalid group name - contains uppercase",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "Dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "group_name must match pattern: ^[a-z][a-z0-9-]*[a-z0-9]$",
-		},
-		{
-			name: "invalid group name - ends with hyphen",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team-",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "group_name must match pattern: ^[a-z][a-z0-9-]*[a-z0-9]$",
-		},
-		{
-			name: "valid group name - single character",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "a1",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "empty type",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        "",
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "type is required",
-		},
-		{
-			name: "invalid type",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        "invalid_type",
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "type must be 'announcement', 'discussion_moderated', or 'discussion_open'",
-		},
-		{
-			name: "empty description",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "description is required",
-		},
-		{
-			name: "description too short",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "too short",
-					Title:       "Development Team",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "description must be at least 11 characters long",
-		},
-		{
-			name: "empty title",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "",
-					ServiceUID:  "service-123",
-				}
-			},
-			expectError: true,
-			errorMsg:    "title is required",
-		},
-		{
-			name: "empty service uid",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName:   "dev-team",
-					Type:        TypeDiscussionOpen,
-					Description: "Development team discussions and updates",
-					Title:       "Development Team",
-					ServiceUID:  "",
-				}
-			},
-			expectError: true,
-			errorMsg:    "parent_id is required",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ml := tt.mailingList()
-			err := ml.ValidateBasicFields()
-
-			if tt.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				assert.IsType(t, errors.Validation{}, err)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestGrpsIOMailingList_ValidateCommitteeFields(t *testing.T) {
-	tests := []struct {
-		name        string
-		mailingList func() *GrpsIOMailingList
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name: "valid committee with allowed voting statuses",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
-					},
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "valid committee without allowed voting statuses",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{UID: "committee-123", AllowedVotingStatuses: []string{}},
-					},
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "no committee no allowed voting statuses",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{},
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "allowed voting statuses without committee UID",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{UID: "", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
-					},
-				}
-			},
-			expectError: true,
-			errorMsg:    "committees[0].uid is required",
-		},
-		{
-			name: "invalid committee allowed voting status",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, "invalid_status"}},
-					},
-				}
-			},
-			expectError: true,
-			errorMsg:    "invalid committees[0].allowed_voting_statuses value: invalid_status",
-		},
-		{
-			name: "all valid committee allowed voting statuses",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{
-							UID: "committee-123",
-							AllowedVotingStatuses: []string{
-								CommitteeVotingStatusVotingRep,
-								CommitteeVotingStatusAltVotingRep,
-								CommitteeVotingStatusObserver,
-								CommitteeVotingStatusEmeritus,
-								CommitteeVotingStatusNone,
-							},
-						},
-					},
-				}
-			},
-			expectError: false,
-		},
-		{
-			name: "multiple valid committees",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					Committees: []Committee{
-						{UID: "committee-1", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
-						{UID: "committee-2", AllowedVotingStatuses: []string{CommitteeVotingStatusObserver}},
-					},
-				}
-			},
-			expectError: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ml := tt.mailingList()
-			err := ml.ValidateCommitteeFields()
-
-			if tt.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				assert.IsType(t, errors.Validation{}, err)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestGrpsIOMailingList_ValidateGroupNamePrefix(t *testing.T) {
-	tests := []struct {
-		name                string
-		mailingList         func() *GrpsIOMailingList
-		parentServiceType   string
-		parentServicePrefix string
-		expectError         bool
-		errorMsg            string
-	}{
-		{
-			name: "primary service - no prefix required",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName: "announcements",
-				}
-			},
-			parentServiceType:   "primary",
-			parentServicePrefix: "",
-			expectError:         false,
-		},
-		{
-			name: "formation service - valid prefix",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName: "formation-dev",
-				}
-			},
-			parentServiceType:   "formation",
-			parentServicePrefix: "formation",
-			expectError:         false,
-		},
-		{
-			name: "formation service - invalid prefix",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName: "dev-team",
-				}
-			},
-			parentServiceType:   "formation",
-			parentServicePrefix: "formation",
-			expectError:         true,
-			errorMsg:            "group_name must start with parent service prefix 'formation-' for formation services",
-		},
-		{
-			name: "non-primary service - missing prefix",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName: "dev-team",
-				}
-			},
-			parentServiceType:   "formation",
-			parentServicePrefix: "",
-			expectError:         true,
-			errorMsg:            "parent service prefix is required for non-primary services",
-		},
-		{
-			name: "shared service - valid prefix",
-			mailingList: func() *GrpsIOMailingList {
-				return &GrpsIOMailingList{
-					GroupName: "shared-project-dev",
-				}
-			},
-			parentServiceType:   "shared",
-			parentServicePrefix: "shared-project",
-			expectError:         false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ml := tt.mailingList()
-			err := ml.ValidateGroupNamePrefix(tt.parentServiceType, tt.parentServicePrefix)
-
-			if tt.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				assert.IsType(t, errors.Validation{}, err)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestGrpsIOMailingList_IsCommitteeBased(t *testing.T) {
-	tests := []struct {
-		name        string
-		mailingList *GrpsIOMailingList
-		expected    bool
-	}{
-		{
-			name: "single committee without filters",
-			mailingList: &GrpsIOMailingList{
-				Committees: []Committee{
-					{UID: "committee-123", AllowedVotingStatuses: []string{}},
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "single committee with filters",
-			mailingList: &GrpsIOMailingList{
-				Committees: []Committee{
-					{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "multiple committees",
-			mailingList: &GrpsIOMailingList{
-				Committees: []Committee{
-					{UID: "committee-1", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep}},
-					{UID: "committee-2", AllowedVotingStatuses: []string{CommitteeVotingStatusObserver}},
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "empty committees array",
-			mailingList: &GrpsIOMailingList{
-				Committees: []Committee{},
-			},
-			expected: false,
-		},
-		{
-			name: "nil committees",
-			mailingList: &GrpsIOMailingList{
-				Committees: nil,
-			},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.mailingList.IsCommitteeBased()
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestGrpsIOMailingList_BuildIndexKey(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name        string
-		mailingList *GrpsIOMailingList
-	}{
-		{
-			name: "basic mailing list",
-			mailingList: &GrpsIOMailingList{
-				ServiceUID: "service-123",
-				GroupName:  "dev-team",
-			},
-		},
-		{
-			name: "mailing list with special characters",
-			mailingList: &GrpsIOMailingList{
-				ServiceUID: "service-456",
-				GroupName:  "dev-team-special",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			key1 := tt.mailingList.BuildIndexKey(ctx)
-			key2 := tt.mailingList.BuildIndexKey(ctx)
-
-			// Keys should be consistent
-			assert.Equal(t, key1, key2, "Index keys should be consistent for same input")
-
-			// Keys should be valid SHA-256 hex strings (64 characters)
-			assert.Len(t, key1, 64, "Index key should be 64 characters (SHA-256 hex)")
-
-			// Keys should only contain hex characters
-			for _, char := range key1 {
-				assert.True(t, (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f'),
-					"Index key should only contain hex characters")
-			}
-		})
-	}
-
-	// Test different inputs produce different keys
-	t.Run("different inputs produce different keys", func(t *testing.T) {
-		ml1 := &GrpsIOMailingList{
-			ServiceUID: "service-123",
-			GroupName:  "dev-team",
-		}
-		ml2 := &GrpsIOMailingList{
-			ServiceUID: "service-456",
-			GroupName:  "dev-team",
-		}
-
-		key1 := ml1.BuildIndexKey(ctx)
-		key2 := ml2.BuildIndexKey(ctx)
-
-		assert.NotEqual(t, key1, key2, "Different inputs should produce different keys")
-	})
-}
-
-func TestGrpsIOMailingList_Tags(t *testing.T) {
+func TestGroupsIOMailingList_Tags(t *testing.T) {
 	tests := []struct {
 		name         string
-		mailingList  *GrpsIOMailingList
+		mailingList  *GroupsIOMailingList
 		expectedTags []string
 	}{
 		{
@@ -532,50 +22,198 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 			expectedTags: nil,
 		},
 		{
-			name: "complete mailing list",
-			mailingList: &GrpsIOMailingList{
+			name:        "empty mailing list - only public tag",
+			mailingList: &GroupsIOMailingList{},
+			expectedTags: []string{
+				"public:false",
+			},
+		},
+		{
+			name: "public mailing list",
+			mailingList: &GroupsIOMailingList{
+				Public: true,
+			},
+			expectedTags: []string{
+				"public:true",
+			},
+		},
+		{
+			name: "complete mailing list - no committees",
+			mailingList: &GroupsIOMailingList{
 				UID:            "ml-123",
 				ProjectUID:     "project-456",
 				ServiceUID:     "service-789",
+				GroupName:      "test-group",
 				Type:           TypeDiscussionOpen,
 				Public:         true,
-				AudienceAccess: AudienceAccessApprovalRequired,
-				Committees: []Committee{
-					{UID: "committee-123", AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
-				},
+				AudienceAccess: "public",
 			},
 			expectedTags: []string{
 				"project_uid:project-456",
 				"service_uid:service-789",
 				"type:discussion_open",
 				"public:true",
-				"audience_access:approval_required",
-				"committee_uid:committee-123",
-				"committee_voting_status:Voting Rep",
-				"committee_voting_status:Observer",
+				"audience_access:public",
 				"groupsio_mailing_list_uid:ml-123",
+				"group_name:test-group",
 			},
 		},
 		{
-			name: "minimal mailing list",
-			mailingList: &GrpsIOMailingList{
+			name: "mailing list with single committee - no voting statuses",
+			mailingList: &GroupsIOMailingList{
+				UID:    "ml-111",
 				Public: false,
+				Committees: []Committee{
+					{UID: "committee-aaa"},
+				},
 			},
 			expectedTags: []string{
+				"public:false",
+				"committee_uid:committee-aaa",
+				"groupsio_mailing_list_uid:ml-111",
+			},
+		},
+		{
+			name: "mailing list with single committee - with voting statuses",
+			mailingList: &GroupsIOMailingList{
+				UID:    "ml-222",
+				Public: true,
+				Committees: []Committee{
+					{
+						UID:                   "committee-bbb",
+						AllowedVotingStatuses: []string{"Voting Rep", "Alternate Voting Rep"},
+					},
+				},
+			},
+			expectedTags: []string{
+				"public:true",
+				"committee_uid:committee-bbb",
+				"committee_voting_status:Voting Rep",
+				"committee_voting_status:Alternate Voting Rep",
+				"groupsio_mailing_list_uid:ml-222",
+			},
+		},
+		{
+			name: "mailing list with multiple committees",
+			mailingList: &GroupsIOMailingList{
+				UID:    "ml-333",
+				Public: false,
+				Committees: []Committee{
+					{
+						UID:                   "committee-ccc",
+						AllowedVotingStatuses: []string{"Voting Rep"},
+					},
+					{
+						UID:                   "committee-ddd",
+						AllowedVotingStatuses: []string{"Observer"},
+					},
+				},
+			},
+			expectedTags: []string{
+				"public:false",
+				"committee_uid:committee-ccc",
+				"committee_voting_status:Voting Rep",
+				"committee_uid:committee-ddd",
+				"committee_voting_status:Observer",
+				"groupsio_mailing_list_uid:ml-333",
+			},
+		},
+		{
+			name: "committee with empty UID - skips committee_uid tag but keeps voting statuses",
+			mailingList: &GroupsIOMailingList{
+				Public: false,
+				Committees: []Committee{
+					{
+						UID:                   "",
+						AllowedVotingStatuses: []string{"Voting Rep"},
+					},
+				},
+			},
+			expectedTags: []string{
+				"public:false",
+				"committee_voting_status:Voting Rep",
+			},
+		},
+		{
+			name: "mailing list with only project UID",
+			mailingList: &GroupsIOMailingList{
+				ProjectUID: "project-only",
+			},
+			expectedTags: []string{
+				"project_uid:project-only",
 				"public:false",
 			},
 		},
 		{
-			name: "mailing list with some fields",
-			mailingList: &GrpsIOMailingList{
-				ProjectUID: "project-123",
-				Type:       TypeAnnouncement,
+			name: "mailing list with only service UID",
+			mailingList: &GroupsIOMailingList{
+				ServiceUID: "service-only",
+			},
+			expectedTags: []string{
+				"service_uid:service-only",
+				"public:false",
+			},
+		},
+		{
+			name: "mailing list with only type",
+			mailingList: &GroupsIOMailingList{
+				Type: "announcement",
+			},
+			expectedTags: []string{
+				"type:announcement",
+				"public:false",
+			},
+		},
+		{
+			name: "mailing list with only audience access",
+			mailingList: &GroupsIOMailingList{
+				AudienceAccess: "invite_only",
+			},
+			expectedTags: []string{
+				"public:false",
+				"audience_access:invite_only",
+			},
+		},
+		{
+			name: "mailing list with only group name",
+			mailingList: &GroupsIOMailingList{
+				GroupName: "my-group",
+			},
+			expectedTags: []string{
+				"public:false",
+				"group_name:my-group",
+			},
+		},
+		{
+			name: "tag order - project before service before type before public",
+			mailingList: &GroupsIOMailingList{
+				ProjectUID: "proj-1",
+				ServiceUID: "svc-1",
+				Type:       TypeDiscussionModerated,
 				Public:     true,
 			},
 			expectedTags: []string{
-				"project_uid:project-123",
-				"type:announcement",
+				"project_uid:proj-1",
+				"service_uid:svc-1",
+				"type:discussion_moderated",
 				"public:true",
+			},
+		},
+		{
+			name: "tag order - committees appear after audience_access and before uid",
+			mailingList: &GroupsIOMailingList{
+				UID:            "ml-order",
+				AudienceAccess: "approval_required",
+				Public:         false,
+				Committees: []Committee{
+					{UID: "committee-order"},
+				},
+			},
+			expectedTags: []string{
+				"public:false",
+				"audience_access:approval_required",
+				"committee_uid:committee-order",
+				"groupsio_mailing_list_uid:ml-order",
 			},
 		},
 	}
@@ -588,250 +226,102 @@ func TestGrpsIOMailingList_Tags(t *testing.T) {
 	}
 }
 
-func TestValidCommitteeVotingStatuses(t *testing.T) {
-	votingStatuses := ValidCommitteeVotingStatuses()
-
-	expectedVotingStatuses := []string{
-		CommitteeVotingStatusVotingRep,
-		CommitteeVotingStatusAltVotingRep,
-		CommitteeVotingStatusObserver,
-		CommitteeVotingStatusEmeritus,
-		CommitteeVotingStatusNone,
-	}
-
-	assert.Equal(t, expectedVotingStatuses, votingStatuses)
-	assert.Len(t, votingStatuses, 5, "Should return 5 valid committee voting statuses")
-}
-
-func TestValidAudienceAccessValues(t *testing.T) {
-	values := ValidAudienceAccessValues()
-
-	expectedValues := []string{
-		AudienceAccessPublic,
-		AudienceAccessApprovalRequired,
-		AudienceAccessInviteOnly,
-	}
-
-	assert.Equal(t, expectedValues, values)
-	assert.Len(t, values, 3, "Should return 3 valid audience access values")
-}
-
-func TestIsValidAudienceAccess(t *testing.T) {
+func TestGroupsIOMailingListSettings_Tags(t *testing.T) {
 	tests := []struct {
-		name     string
-		access   string
-		expected bool
-	}{
-		{"valid public", AudienceAccessPublic, true},
-		{"valid approval_required", AudienceAccessApprovalRequired, true},
-		{"valid invite_only", AudienceAccessInviteOnly, true},
-		{"invalid type", "invalid_access", false},
-		{"empty type", "", false},
-		{"uppercase type", "PUBLIC", false},
-		{"mixed case", "Public", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isValidAudienceAccess(tt.access)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestGrpsIOMailingList_ValidateBasicFields_AudienceAccess(t *testing.T) {
-	tests := []struct {
-		name                   string
-		audienceAccess         string
-		expectError            bool
-		errorMsg               string
-		expectedAudienceAccess string
+		name         string
+		settings     *GroupsIOMailingListSettings
+		expectedTags []string
 	}{
 		{
-			name:                   "empty audience_access defaults to public",
-			audienceAccess:         "",
-			expectError:            false,
-			expectedAudienceAccess: AudienceAccessPublic,
+			name:         "nil settings",
+			settings:     nil,
+			expectedTags: nil,
 		},
 		{
-			name:                   "valid public",
-			audienceAccess:         AudienceAccessPublic,
-			expectError:            false,
-			expectedAudienceAccess: AudienceAccessPublic,
+			name:         "empty UID",
+			settings:     &GroupsIOMailingListSettings{},
+			expectedTags: nil,
 		},
 		{
-			name:                   "valid approval_required",
-			audienceAccess:         AudienceAccessApprovalRequired,
-			expectError:            false,
-			expectedAudienceAccess: AudienceAccessApprovalRequired,
+			name: "with UID",
+			settings: &GroupsIOMailingListSettings{
+				UID: "ml-settings-123",
+			},
+			expectedTags: []string{
+				"ml-settings-123",
+				"mailing_list_uid:ml-settings-123",
+			},
 		},
 		{
-			name:                   "valid invite_only",
-			audienceAccess:         AudienceAccessInviteOnly,
-			expectError:            false,
-			expectedAudienceAccess: AudienceAccessInviteOnly,
-		},
-		{
-			name:           "invalid audience_access value",
-			audienceAccess: "invalid_value",
-			expectError:    true,
-			errorMsg:       "audience_access must be one of",
+			name: "UID produces bare uid tag and prefixed tag",
+			settings: &GroupsIOMailingListSettings{
+				UID: "settings-uid-456",
+			},
+			expectedTags: []string{
+				"settings-uid-456",
+				"mailing_list_uid:settings-uid-456",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ml := &GrpsIOMailingList{
-				GroupName:      "dev-team",
-				Type:           TypeDiscussionOpen,
-				Description:    "Development team discussions and updates",
-				Title:          "Development Team",
-				ServiceUID:     "service-123",
-				AudienceAccess: tt.audienceAccess,
-			}
-
-			err := ml.ValidateBasicFields()
-
-			if tt.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-				assert.IsType(t, errors.Validation{}, err)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.expectedAudienceAccess, ml.AudienceAccess, "AudienceAccess should be set correctly")
-			}
+			tags := tt.settings.Tags()
+			assert.Equal(t, tt.expectedTags, tags)
 		})
 	}
 }
 
-func TestIsValidGroupName(t *testing.T) {
-	tests := []struct {
-		name      string
-		groupName string
-		expected  bool
-	}{
-		// Valid cases
-		{"valid simple", "dev", true},
-		{"valid with hyphen", "dev-team", true},
-		{"valid with numbers", "dev2-team3", true},
-		{"valid starting with letter ending with number", "a1", true},
-		{"valid complex", "project-dev-team2", true},
-
-		// Invalid cases - too short
-		{"too short - single char", "a", false},
-		{"empty string", "", false},
-
-		// Invalid cases - start with wrong character
-		{"starts with number", "1dev", false},
-		{"starts with hyphen", "-dev", false},
-		{"starts with uppercase", "Dev", false},
-
-		// Invalid cases - ends with wrong character
-		{"ends with hyphen", "dev-", false},
-
-		// Invalid cases - invalid middle characters
-		{"contains uppercase", "dev-Team", false},
-		{"contains special char", "dev@team", false},
-		{"contains space", "dev team", false},
-		{"contains underscore", "dev_team", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isValidGroupName(tt.groupName)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestIsValidMailingListType(t *testing.T) {
-	tests := []struct {
-		name     string
-		mlType   string
-		expected bool
-	}{
-		{"valid announcement", TypeAnnouncement, true},
-		{"valid discussion moderated", TypeDiscussionModerated, true},
-		{"valid discussion open", TypeDiscussionOpen, true},
-		{"invalid type", "invalid_type", false},
-		{"empty type", "", false},
-		{"uppercase type", "ANNOUNCEMENT", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isValidMailingListType(tt.mlType)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestContains(t *testing.T) {
-	tests := []struct {
-		name     string
-		slice    []string
-		item     string
-		expected bool
-	}{
-		{"item found", []string{"a", "b", "c"}, "b", true},
-		{"item not found", []string{"a", "b", "c"}, "d", false},
-		{"empty slice", []string{}, "a", false},
-		{"nil slice", nil, "a", false},
-		{"case sensitive", []string{"Test"}, "test", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := contains(tt.slice, tt.item)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// Benchmark tests for performance-critical functions
-func BenchmarkGrpsIOMailingList_BuildIndexKey(b *testing.B) {
-	ctx := context.Background()
-	ml := &GrpsIOMailingList{
-		ServiceUID: "service-" + uuid.New().String(),
-		GroupName:  "dev-team-benchmark",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = ml.BuildIndexKey(ctx)
-	}
-}
-
-func BenchmarkGrpsIOMailingList_Tags(b *testing.B) {
-	ml := &GrpsIOMailingList{
-		UID:        "ml-" + uuid.New().String(),
-		ProjectUID: "project-" + uuid.New().String(),
-		ServiceUID: "service-" + uuid.New().String(),
-		Type:       TypeDiscussionOpen,
-		Public:     true,
+func BenchmarkGroupsIOMailingList_Tags(b *testing.B) {
+	ml := &GroupsIOMailingList{
+		UID:            "ml-" + uuid.New().String(),
+		ProjectUID:     "project-" + uuid.New().String(),
+		ServiceUID:     "service-" + uuid.New().String(),
+		GroupName:      "benchmark-group",
+		Type:           "discussion_open",
+		Public:         true,
+		AudienceAccess: "public",
 		Committees: []Committee{
-			{UID: "committee-" + uuid.New().String(), AllowedVotingStatuses: []string{CommitteeVotingStatusVotingRep, CommitteeVotingStatusObserver}},
+			{
+				UID:                   "committee-" + uuid.New().String(),
+				AllowedVotingStatuses: []string{"Voting Rep", "Alternate Voting Rep"},
+			},
 		},
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = ml.Tags()
 	}
 }
 
-// Helper function to create test mailing list with valid basic fields
-func createValidTestMailingList() *GrpsIOMailingList {
-	return &GrpsIOMailingList{
-		UID:         uuid.New().String(),
-		GroupName:   "test-group",
-		Public:      true,
-		Type:        TypeDiscussionOpen,
-		Description: "Test description with enough characters",
-		Title:       "Test Title",
-		ServiceUID:  uuid.New().String(),
-		ProjectUID:  uuid.New().String(),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+func BenchmarkGroupsIOMailingListSettings_Tags(b *testing.B) {
+	settings := &GroupsIOMailingListSettings{
+		UID: "ml-settings-" + uuid.New().String(),
+	}
+
+	for b.Loop() {
+		_ = settings.Tags()
+	}
+}
+
+// createValidTestMailingList returns a fully populated GroupsIOMailingList for use in tests
+// across the model package.
+func createValidTestMailingList() *GroupsIOMailingList {
+	return &GroupsIOMailingList{
+		UID:            "ml-" + uuid.New().String(),
+		ProjectUID:     "project-" + uuid.New().String(),
+		ServiceUID:     "service-" + uuid.New().String(),
+		GroupName:      "test-group",
+		Type:           TypeDiscussionOpen,
+		Public:         true,
+		AudienceAccess: "public",
+		Description:    "A valid test mailing list",
+		Title:          "Test Mailing List",
+		Committees: []Committee{
+			{
+				UID:                   "committee-" + uuid.New().String(),
+				AllowedVotingStatuses: []string{"Voting Rep"},
+			},
+		},
 	}
 }

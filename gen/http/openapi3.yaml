@@ -58,6 +58,964 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists:
+        get:
+            tags:
+                - mailing-list
+            summary: list-groupsio-mailing-lists mailing-list
+            description: List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
+            operationId: mailing-list#list-groupsio-mailing-lists
+            parameters:
+                - name: project_uid
+                  in: query
+                  description: LFX v2 project UID filter
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: LFX v2 project UID filter
+                    example: 0ba87d86-4724-4ad0-8c6f-b07881d9b643
+                    format: uuid
+                  example: 482ef29d-e96a-45e5-a865-ef95d0bc6f76
+                - name: committee_uid
+                  in: query
+                  description: LFX v2 committee UID filter
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: LFX v2 committee UID filter
+                    example: d13ef465-c1a4-48bd-b0d4-79267f3e39c5
+                    format: uuid
+                  example: ad87abf9-9b6b-4014-a591-2a84413df27d
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSubgroupList'
+                            example:
+                                items:
+                                    - audience_access: Sunt exercitationem amet animi dolore facilis ad.
+                                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                      created_at: Ea dolorem similique doloribus est.
+                                      description: Eum rerum.
+                                      group_id: 5488535354202772066
+                                      id: Vel modi cum et.
+                                      name: Id sed itaque quaerat et non sed.
+                                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                      service_id: Provident expedita.
+                                      type: Pariatur quam quo quasi natus totam.
+                                      updated_at: Ratione nihil magni aut accusantium aliquid enim.
+                                    - audience_access: Sunt exercitationem amet animi dolore facilis ad.
+                                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                      created_at: Ea dolorem similique doloribus est.
+                                      description: Eum rerum.
+                                      group_id: 5488535354202772066
+                                      id: Vel modi cum et.
+                                      name: Id sed itaque quaerat et non sed.
+                                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                      service_id: Provident expedita.
+                                      type: Pariatur quam quo quasi natus totam.
+                                      updated_at: Ratione nihil magni aut accusantium aliquid enim.
+                                total: 2299155967228245037
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        post:
+            tags:
+                - mailing-list
+            summary: create-groupsio-mailing-list mailing-list
+            description: Create a GroupsIO subgroup
+            operationId: mailing-list#create-groupsio-mailing-list
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupsioSubgroupRequest'
+                        example:
+                            audience_access: Vel eos laboriosam eaque aliquam exercitationem.
+                            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            description: Recusandae ducimus sed.
+                            group_id: 8887327035954549420
+                            name: Similique quisquam voluptate.
+                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            service_id: Voluptatem commodi qui.
+                            type: Sunt amet itaque delectus.
+            responses:
+                "201":
+                    description: Created response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSubgroup'
+                            example:
+                                audience_access: Totam blanditiis consequatur molestiae odio.
+                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                created_at: Enim et non qui inventore voluptatibus quas.
+                                description: Qui et distinctio ullam quia.
+                                group_id: 1163917217923144196
+                                id: Aspernatur similique.
+                                name: Sit et maxime asperiores rerum ex.
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                service_id: Quia id fugit laudantium cupiditate tempore.
+                                type: Iste repellendus.
+                                updated_at: Suscipit iure tenetur voluptatum.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}:
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-groupsio-mailing-list mailing-list
+            description: Delete a GroupsIO subgroup
+            operationId: mailing-list#delete-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Ea ipsum.
+                  example: Pariatur inventore qui hic.
+            responses:
+                "204":
+                    description: No Content response.
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list mailing-list
+            description: Get a GroupsIO subgroup by ID
+            operationId: mailing-list#get-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Laborum iste quos sunt quidem.
+                  example: Architecto pariatur alias veniam molestiae eum.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSubgroup'
+                            example:
+                                audience_access: Quas rem autem.
+                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                created_at: Molestiae consequatur.
+                                description: Repudiandae eaque adipisci optio.
+                                group_id: 829085249508020717
+                                id: Et perspiciatis id quia fuga.
+                                name: Cupiditate minus.
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                service_id: Dolore repellendus sint libero.
+                                type: Hic dignissimos modi.
+                                updated_at: Esse mollitia voluptatem atque impedit aut et.
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-groupsio-mailing-list mailing-list
+            description: Update a GroupsIO subgroup
+            operationId: mailing-list#update-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Voluptatum aut.
+                  example: Est eveniet est dignissimos id.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateGroupsioMailingListRequestBody'
+                        example:
+                            audience_access: Distinctio dolore voluptas occaecati.
+                            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            description: Labore fuga.
+                            group_id: 8823882162391895104
+                            name: Nobis est.
+                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                            service_id: Enim adipisci expedita et ducimus repellendus eveniet.
+                            type: Enim at.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSubgroup'
+                            example:
+                                audience_access: Consectetur adipisci labore.
+                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                created_at: Commodi veritatis sunt.
+                                description: Non iure autem earum doloremque.
+                                group_id: 982931229520688550
+                                id: Delectus eius deserunt.
+                                name: Vel et autem illum expedita.
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                                service_id: Maxime et quos quia qui quasi qui.
+                                type: Neque esse.
+                                updated_at: Corporis modi consectetur odio magnam.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/invitemembers:
+        post:
+            tags:
+                - mailing-list
+            summary: invite-groupsio-members mailing-list
+            description: Invite members to a GroupsIO subgroup by email
+            operationId: mailing-list#invite-groupsio-members
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Voluptatem porro aut deserunt consequatur.
+                  example: Corporis alias.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupsioInviteMembersRequest'
+                        example:
+                            emails:
+                                - Explicabo non quibusdam ut facilis.
+                                - Blanditiis quisquam quia voluptatem molestiae qui qui.
+                                - Minus est molestiae repudiandae odit.
+                                - Rem soluta ut nesciunt.
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/member_count:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-member-count mailing-list
+            description: Get count of members in a GroupsIO subgroup
+            operationId: mailing-list#get-groupsio-mailing-list-member-count
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: In dolores molestiae distinctio laborum.
+                  example: Magnam quae dicta qui.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioCount'
+                            example:
+                                count: 5523119173167445012
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/members:
+        get:
+            tags:
+                - mailing-list
+            summary: list-groupsio-members mailing-list
+            description: List members of a GroupsIO subgroup
+            operationId: mailing-list#list-groupsio-members
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Perferendis quisquam libero similique consequatur explicabo.
+                  example: Rerum aut.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioMemberList'
+                            example:
+                                items:
+                                    - created_at: Non qui suscipit sit voluptas minima.
+                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
+                                      email: kyle.von@roobkuphal.biz
+                                      id: Quia et ipsam iste dignissimos vel.
+                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
+                                      member_type: Ratione aut expedita fugit.
+                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
+                                      name: Quod nostrum.
+                                      organization: Et aperiam.
+                                      role: Asperiores tempore.
+                                      status: Error quasi iste rerum.
+                                      updated_at: Totam repellat ut esse aut earum architecto.
+                                      user_id: Eligendi nihil voluptates maiores deserunt.
+                                      username: Sint sed ab qui quidem illum aliquam.
+                                      voting_status: Debitis quia suscipit odio necessitatibus.
+                                    - created_at: Non qui suscipit sit voluptas minima.
+                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
+                                      email: kyle.von@roobkuphal.biz
+                                      id: Quia et ipsam iste dignissimos vel.
+                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
+                                      member_type: Ratione aut expedita fugit.
+                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
+                                      name: Quod nostrum.
+                                      organization: Et aperiam.
+                                      role: Asperiores tempore.
+                                      status: Error quasi iste rerum.
+                                      updated_at: Totam repellat ut esse aut earum architecto.
+                                      user_id: Eligendi nihil voluptates maiores deserunt.
+                                      username: Sint sed ab qui quidem illum aliquam.
+                                      voting_status: Debitis quia suscipit odio necessitatibus.
+                                    - created_at: Non qui suscipit sit voluptas minima.
+                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
+                                      email: kyle.von@roobkuphal.biz
+                                      id: Quia et ipsam iste dignissimos vel.
+                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
+                                      member_type: Ratione aut expedita fugit.
+                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
+                                      name: Quod nostrum.
+                                      organization: Et aperiam.
+                                      role: Asperiores tempore.
+                                      status: Error quasi iste rerum.
+                                      updated_at: Totam repellat ut esse aut earum architecto.
+                                      user_id: Eligendi nihil voluptates maiores deserunt.
+                                      username: Sint sed ab qui quidem illum aliquam.
+                                      voting_status: Debitis quia suscipit odio necessitatibus.
+                                    - created_at: Non qui suscipit sit voluptas minima.
+                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
+                                      email: kyle.von@roobkuphal.biz
+                                      id: Quia et ipsam iste dignissimos vel.
+                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
+                                      member_type: Ratione aut expedita fugit.
+                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
+                                      name: Quod nostrum.
+                                      organization: Et aperiam.
+                                      role: Asperiores tempore.
+                                      status: Error quasi iste rerum.
+                                      updated_at: Totam repellat ut esse aut earum architecto.
+                                      user_id: Eligendi nihil voluptates maiores deserunt.
+                                      username: Sint sed ab qui quidem illum aliquam.
+                                      voting_status: Debitis quia suscipit odio necessitatibus.
+                                total: 9093995770061544160
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        post:
+            tags:
+                - mailing-list
+            summary: add-groupsio-member mailing-list
+            description: Add a member to a GroupsIO subgroup
+            operationId: mailing-list#add-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Numquam totam saepe autem.
+                  example: Et quo.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddGroupsioMemberRequestBody'
+                        example:
+                            delivery_mode: email_delivery_summary
+                            email: brando@koepp.name
+                            job_title: Eos dicta id quis et quibusdam.
+                            member_type: Quia in alias voluptas illum ipsum cupiditate.
+                            mod_status: none
+                            name: Et ipsam ducimus deserunt vitae.
+                            organization: Aut suscipit non dolor fugit aut.
+                            user_id: Iusto sed voluptate perspiciatis inventore.
+            responses:
+                "201":
+                    description: Created response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioMember'
+                            example:
+                                created_at: Corrupti aut.
+                                delivery_mode: Sit dolores laboriosam voluptates.
+                                email: nelson.lang@krisadams.org
+                                id: Et labore in similique eum.
+                                job_title: Alias repudiandae in nostrum id ut aut.
+                                member_type: Consequatur quibusdam et deserunt eos illum.
+                                mod_status: Pariatur est inventore beatae tempore id rerum.
+                                name: Aut eveniet provident laboriosam.
+                                organization: Deleniti quia tenetur.
+                                role: Doloremque consequatur quo illo voluptatem ipsam.
+                                status: Totam ab qui.
+                                updated_at: Et distinctio quae quia.
+                                user_id: Beatae atque ab repudiandae voluptate et quia.
+                                username: Ut sed nihil suscipit laudantium.
+                                voting_status: Quas excepturi maxime.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Subgroup not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "409":
+                    description: 'Conflict: Member already exists'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/members/{member_id}:
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-groupsio-member mailing-list
+            description: Delete a member from a GroupsIO subgroup
+            operationId: mailing-list#delete-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Harum nostrum.
+                  example: Veritatis fuga placeat et nemo.
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Member ID
+                    example: Ut aliquid molestiae.
+                  example: Atque non consequatur autem.
+            responses:
+                "204":
+                    description: No Content response.
+                "404":
+                    description: 'NotFound: Member not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-member mailing-list
+            description: Get a member of a GroupsIO subgroup by ID
+            operationId: mailing-list#get-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Nemo hic ut ullam possimus mollitia.
+                  example: Ullam molestiae.
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Member ID
+                    example: Cumque veniam molestiae alias eum.
+                  example: Inventore optio iste fugit accusamus rerum assumenda.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioMember'
+                            example:
+                                created_at: Quaerat deserunt.
+                                delivery_mode: Doloribus natus sed aperiam laboriosam.
+                                email: sylvan@rath.biz
+                                id: Optio quasi ipsum aut illum illo.
+                                job_title: Quidem voluptatum assumenda qui et est.
+                                member_type: Qui rerum.
+                                mod_status: Nemo consequuntur harum deleniti vel quidem.
+                                name: Commodi ut similique provident saepe rerum saepe.
+                                organization: Non assumenda eum sequi dolorem ullam rerum.
+                                role: Voluptatem est enim quisquam voluptate.
+                                status: Non quis adipisci.
+                                updated_at: Est est iure necessitatibus accusamus.
+                                user_id: Autem eum voluptatum eum voluptatum ad.
+                                username: Voluptatum odit.
+                                voting_status: Excepturi quia.
+                "404":
+                    description: 'NotFound: Member not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-groupsio-member mailing-list
+            description: Update a member of a GroupsIO subgroup
+            operationId: mailing-list#update-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Quas earum soluta asperiores ducimus recusandae.
+                  example: Repudiandae omnis consectetur.
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Member ID
+                    example: Est exercitationem nobis ex sunt fuga numquam.
+                  example: Repellat autem.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddGroupsioMemberRequestBody'
+                        example:
+                            delivery_mode: email_delivery_digest
+                            email: cornelius@price.net
+                            job_title: In esse voluptas et iusto.
+                            member_type: Quia blanditiis unde porro qui commodi.
+                            mod_status: none
+                            name: Eius quo.
+                            organization: Velit nihil quibusdam voluptatum soluta sapiente error.
+                            user_id: Excepturi nam debitis quisquam.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioMember'
+                            example:
+                                created_at: Nisi qui iure deserunt voluptatem et repellendus.
+                                delivery_mode: Ea aut ea.
+                                email: dejuan@dietrichhudson.net
+                                id: Voluptates qui et inventore modi eos.
+                                job_title: Aliquid hic facere non corporis.
+                                member_type: Omnis quidem iste deserunt voluptas.
+                                mod_status: Rem praesentium aut quisquam veniam explicabo.
+                                name: Nobis ea ipsum optio.
+                                organization: Sunt nihil mollitia.
+                                role: Delectus expedita voluptas occaecati.
+                                status: Perspiciatis enim tenetur provident.
+                                updated_at: Sed doloremque.
+                                user_id: Molestiae fuga blanditiis sequi molestias.
+                                username: Et et quae ad debitis veniam.
+                                voting_status: Amet quo vero.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Member not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/count:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-count mailing-list
+            description: Get count of GroupsIO subgroups for a project
+            operationId: mailing-list#get-groupsio-mailing-list-count
+            parameters:
+                - name: project_uid
+                  in: query
+                  description: LFX v2 project UID
+                  allowEmptyValue: true
+                  required: true
+                  schema:
+                    type: string
+                    description: LFX v2 project UID
+                    example: 8eb0b592-5b8c-4a57-9a8e-a81b3521804e
+                    format: uuid
+                  example: 70862972-5a9c-4e9c-bdfc-a113658a0445
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioCount'
+                            example:
+                                count: 7348416279030253818
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services:
         get:
             tags:
@@ -491,964 +1449,6 @@ paths:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
                                 message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups:
-        get:
-            tags:
-                - mailing-list
-            summary: list-groupsio-subgroups mailing-list
-            description: List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
-            operationId: mailing-list#list-groupsio-subgroups
-            parameters:
-                - name: project_uid
-                  in: query
-                  description: LFX v2 project UID filter
-                  allowEmptyValue: true
-                  schema:
-                    type: string
-                    description: LFX v2 project UID filter
-                    example: 0ba87d86-4724-4ad0-8c6f-b07881d9b643
-                    format: uuid
-                  example: 482ef29d-e96a-45e5-a865-ef95d0bc6f76
-                - name: committee_uid
-                  in: query
-                  description: LFX v2 committee UID filter
-                  allowEmptyValue: true
-                  schema:
-                    type: string
-                    description: LFX v2 committee UID filter
-                    example: d13ef465-c1a4-48bd-b0d4-79267f3e39c5
-                    format: uuid
-                  example: ad87abf9-9b6b-4014-a591-2a84413df27d
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioSubgroupList'
-                            example:
-                                items:
-                                    - audience_access: Sunt exercitationem amet animi dolore facilis ad.
-                                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                      created_at: Ea dolorem similique doloribus est.
-                                      description: Eum rerum.
-                                      group_id: 5488535354202772066
-                                      id: Vel modi cum et.
-                                      name: Id sed itaque quaerat et non sed.
-                                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                      service_id: Provident expedita.
-                                      type: Pariatur quam quo quasi natus totam.
-                                      updated_at: Ratione nihil magni aut accusantium aliquid enim.
-                                    - audience_access: Sunt exercitationem amet animi dolore facilis ad.
-                                      committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                      created_at: Ea dolorem similique doloribus est.
-                                      description: Eum rerum.
-                                      group_id: 5488535354202772066
-                                      id: Vel modi cum et.
-                                      name: Id sed itaque quaerat et non sed.
-                                      project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                      service_id: Provident expedita.
-                                      type: Pariatur quam quo quasi natus totam.
-                                      updated_at: Ratione nihil magni aut accusantium aliquid enim.
-                                total: 2299155967228245037
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        post:
-            tags:
-                - mailing-list
-            summary: create-groupsio-subgroup mailing-list
-            description: Create a GroupsIO subgroup
-            operationId: mailing-list#create-groupsio-subgroup
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/GroupsioSubgroupRequest'
-                        example:
-                            audience_access: Vel eos laboriosam eaque aliquam exercitationem.
-                            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                            description: Recusandae ducimus sed.
-                            group_id: 8887327035954549420
-                            name: Similique quisquam voluptate.
-                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                            service_id: Voluptatem commodi qui.
-                            type: Sunt amet itaque delectus.
-            responses:
-                "201":
-                    description: Created response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioSubgroup'
-                            example:
-                                audience_access: Totam blanditiis consequatur molestiae odio.
-                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                created_at: Enim et non qui inventore voluptatibus quas.
-                                description: Qui et distinctio ullam quia.
-                                group_id: 1163917217923144196
-                                id: Aspernatur similique.
-                                name: Sit et maxime asperiores rerum ex.
-                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                service_id: Quia id fugit laudantium cupiditate tempore.
-                                type: Iste repellendus.
-                                updated_at: Suscipit iure tenetur voluptatum.
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "409":
-                    description: 'Conflict: Conflict'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ConflictError'
-                            example:
-                                message: The resource already exists.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}:
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-groupsio-subgroup mailing-list
-            description: Delete a GroupsIO subgroup
-            operationId: mailing-list#delete-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Ea ipsum.
-                  example: Pariatur inventore qui hic.
-            responses:
-                "204":
-                    description: No Content response.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup mailing-list
-            description: Get a GroupsIO subgroup by ID
-            operationId: mailing-list#get-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Laborum iste quos sunt quidem.
-                  example: Architecto pariatur alias veniam molestiae eum.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioSubgroup'
-                            example:
-                                audience_access: Quas rem autem.
-                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                created_at: Molestiae consequatur.
-                                description: Repudiandae eaque adipisci optio.
-                                group_id: 829085249508020717
-                                id: Et perspiciatis id quia fuga.
-                                name: Cupiditate minus.
-                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                service_id: Dolore repellendus sint libero.
-                                type: Hic dignissimos modi.
-                                updated_at: Esse mollitia voluptatem atque impedit aut et.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        put:
-            tags:
-                - mailing-list
-            summary: update-groupsio-subgroup mailing-list
-            description: Update a GroupsIO subgroup
-            operationId: mailing-list#update-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Voluptatum aut.
-                  example: Est eveniet est dignissimos id.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateGroupsioSubgroupRequestBody'
-                        example:
-                            audience_access: Distinctio dolore voluptas occaecati.
-                            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                            description: Labore fuga.
-                            group_id: 8823882162391895104
-                            name: Nobis est.
-                            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                            service_id: Enim adipisci expedita et ducimus repellendus eveniet.
-                            type: Enim at.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioSubgroup'
-                            example:
-                                audience_access: Consectetur adipisci labore.
-                                committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                created_at: Commodi veritatis sunt.
-                                description: Non iure autem earum doloremque.
-                                group_id: 982931229520688550
-                                id: Delectus eius deserunt.
-                                name: Vel et autem illum expedita.
-                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                                service_id: Maxime et quos quia qui quasi qui.
-                                type: Neque esse.
-                                updated_at: Corporis modi consectetur odio magnam.
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/invitemembers:
-        post:
-            tags:
-                - mailing-list
-            summary: invite-groupsio-members mailing-list
-            description: Invite members to a GroupsIO subgroup by email
-            operationId: mailing-list#invite-groupsio-members
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Voluptatem porro aut deserunt consequatur.
-                  example: Corporis alias.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/GroupsioInviteMembersRequest'
-                        example:
-                            emails:
-                                - Explicabo non quibusdam ut facilis.
-                                - Blanditiis quisquam quia voluptatem molestiae qui qui.
-                                - Minus est molestiae repudiandae odit.
-                                - Rem soluta ut nesciunt.
-            responses:
-                "204":
-                    description: No Content response.
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/member_count:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup-member-count mailing-list
-            description: Get count of members in a GroupsIO subgroup
-            operationId: mailing-list#get-groupsio-subgroup-member-count
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: In dolores molestiae distinctio laborum.
-                  example: Magnam quae dicta qui.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioCount'
-                            example:
-                                count: 5523119173167445012
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/members:
-        get:
-            tags:
-                - mailing-list
-            summary: list-groupsio-members mailing-list
-            description: List members of a GroupsIO subgroup
-            operationId: mailing-list#list-groupsio-members
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Perferendis quisquam libero similique consequatur explicabo.
-                  example: Rerum aut.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioMemberList'
-                            example:
-                                items:
-                                    - created_at: Non qui suscipit sit voluptas minima.
-                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
-                                      email: kyle.von@roobkuphal.biz
-                                      id: Quia et ipsam iste dignissimos vel.
-                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
-                                      member_type: Ratione aut expedita fugit.
-                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
-                                      name: Quod nostrum.
-                                      organization: Et aperiam.
-                                      role: Asperiores tempore.
-                                      status: Error quasi iste rerum.
-                                      updated_at: Totam repellat ut esse aut earum architecto.
-                                      user_id: Eligendi nihil voluptates maiores deserunt.
-                                      username: Sint sed ab qui quidem illum aliquam.
-                                      voting_status: Debitis quia suscipit odio necessitatibus.
-                                    - created_at: Non qui suscipit sit voluptas minima.
-                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
-                                      email: kyle.von@roobkuphal.biz
-                                      id: Quia et ipsam iste dignissimos vel.
-                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
-                                      member_type: Ratione aut expedita fugit.
-                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
-                                      name: Quod nostrum.
-                                      organization: Et aperiam.
-                                      role: Asperiores tempore.
-                                      status: Error quasi iste rerum.
-                                      updated_at: Totam repellat ut esse aut earum architecto.
-                                      user_id: Eligendi nihil voluptates maiores deserunt.
-                                      username: Sint sed ab qui quidem illum aliquam.
-                                      voting_status: Debitis quia suscipit odio necessitatibus.
-                                    - created_at: Non qui suscipit sit voluptas minima.
-                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
-                                      email: kyle.von@roobkuphal.biz
-                                      id: Quia et ipsam iste dignissimos vel.
-                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
-                                      member_type: Ratione aut expedita fugit.
-                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
-                                      name: Quod nostrum.
-                                      organization: Et aperiam.
-                                      role: Asperiores tempore.
-                                      status: Error quasi iste rerum.
-                                      updated_at: Totam repellat ut esse aut earum architecto.
-                                      user_id: Eligendi nihil voluptates maiores deserunt.
-                                      username: Sint sed ab qui quidem illum aliquam.
-                                      voting_status: Debitis quia suscipit odio necessitatibus.
-                                    - created_at: Non qui suscipit sit voluptas minima.
-                                      delivery_mode: Molestiae sit illum quia ut voluptatem vero.
-                                      email: kyle.von@roobkuphal.biz
-                                      id: Quia et ipsam iste dignissimos vel.
-                                      job_title: Autem cum consequatur rerum blanditiis mollitia.
-                                      member_type: Ratione aut expedita fugit.
-                                      mod_status: Tempora similique natus voluptas ducimus doloribus.
-                                      name: Quod nostrum.
-                                      organization: Et aperiam.
-                                      role: Asperiores tempore.
-                                      status: Error quasi iste rerum.
-                                      updated_at: Totam repellat ut esse aut earum architecto.
-                                      user_id: Eligendi nihil voluptates maiores deserunt.
-                                      username: Sint sed ab qui quidem illum aliquam.
-                                      voting_status: Debitis quia suscipit odio necessitatibus.
-                                total: 9093995770061544160
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        post:
-            tags:
-                - mailing-list
-            summary: add-groupsio-member mailing-list
-            description: Add a member to a GroupsIO subgroup
-            operationId: mailing-list#add-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Numquam totam saepe autem.
-                  example: Et quo.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AddGroupsioMemberRequestBody'
-                        example:
-                            delivery_mode: email_delivery_summary
-                            email: brando@koepp.name
-                            job_title: Eos dicta id quis et quibusdam.
-                            member_type: Quia in alias voluptas illum ipsum cupiditate.
-                            mod_status: none
-                            name: Et ipsam ducimus deserunt vitae.
-                            organization: Aut suscipit non dolor fugit aut.
-                            user_id: Iusto sed voluptate perspiciatis inventore.
-            responses:
-                "201":
-                    description: Created response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioMember'
-                            example:
-                                created_at: Corrupti aut.
-                                delivery_mode: Sit dolores laboriosam voluptates.
-                                email: nelson.lang@krisadams.org
-                                id: Et labore in similique eum.
-                                job_title: Alias repudiandae in nostrum id ut aut.
-                                member_type: Consequatur quibusdam et deserunt eos illum.
-                                mod_status: Pariatur est inventore beatae tempore id rerum.
-                                name: Aut eveniet provident laboriosam.
-                                organization: Deleniti quia tenetur.
-                                role: Doloremque consequatur quo illo voluptatem ipsam.
-                                status: Totam ab qui.
-                                updated_at: Et distinctio quae quia.
-                                user_id: Beatae atque ab repudiandae voluptate et quia.
-                                username: Ut sed nihil suscipit laudantium.
-                                voting_status: Quas excepturi maxime.
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "409":
-                    description: 'Conflict: Member already exists'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ConflictError'
-                            example:
-                                message: The resource already exists.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/members/{member_id}:
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-groupsio-member mailing-list
-            description: Delete a member from a GroupsIO subgroup
-            operationId: mailing-list#delete-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Harum nostrum.
-                  example: Veritatis fuga placeat et nemo.
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Member ID
-                    example: Ut aliquid molestiae.
-                  example: Atque non consequatur autem.
-            responses:
-                "204":
-                    description: No Content response.
-                "404":
-                    description: 'NotFound: Member not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-member mailing-list
-            description: Get a member of a GroupsIO subgroup by ID
-            operationId: mailing-list#get-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Nemo hic ut ullam possimus mollitia.
-                  example: Ullam molestiae.
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Member ID
-                    example: Cumque veniam molestiae alias eum.
-                  example: Inventore optio iste fugit accusamus rerum assumenda.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioMember'
-                            example:
-                                created_at: Quaerat deserunt.
-                                delivery_mode: Doloribus natus sed aperiam laboriosam.
-                                email: sylvan@rath.biz
-                                id: Optio quasi ipsum aut illum illo.
-                                job_title: Quidem voluptatum assumenda qui et est.
-                                member_type: Qui rerum.
-                                mod_status: Nemo consequuntur harum deleniti vel quidem.
-                                name: Commodi ut similique provident saepe rerum saepe.
-                                organization: Non assumenda eum sequi dolorem ullam rerum.
-                                role: Voluptatem est enim quisquam voluptate.
-                                status: Non quis adipisci.
-                                updated_at: Est est iure necessitatibus accusamus.
-                                user_id: Autem eum voluptatum eum voluptatum ad.
-                                username: Voluptatum odit.
-                                voting_status: Excepturi quia.
-                "404":
-                    description: 'NotFound: Member not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-        put:
-            tags:
-                - mailing-list
-            summary: update-groupsio-member mailing-list
-            description: Update a member of a GroupsIO subgroup
-            operationId: mailing-list#update-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Quas earum soluta asperiores ducimus recusandae.
-                  example: Repudiandae omnis consectetur.
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Member ID
-                    example: Est exercitationem nobis ex sunt fuga numquam.
-                  example: Repellat autem.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AddGroupsioMemberRequestBody'
-                        example:
-                            delivery_mode: email_delivery_digest
-                            email: cornelius@price.net
-                            job_title: In esse voluptas et iusto.
-                            member_type: Quia blanditiis unde porro qui commodi.
-                            mod_status: none
-                            name: Eius quo.
-                            organization: Velit nihil quibusdam voluptatum soluta sapiente error.
-                            user_id: Excepturi nam debitis quisquam.
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioMember'
-                            example:
-                                created_at: Nisi qui iure deserunt voluptatem et repellendus.
-                                delivery_mode: Ea aut ea.
-                                email: dejuan@dietrichhudson.net
-                                id: Voluptates qui et inventore modi eos.
-                                job_title: Aliquid hic facere non corporis.
-                                member_type: Omnis quidem iste deserunt voluptas.
-                                mod_status: Rem praesentium aut quisquam veniam explicabo.
-                                name: Nobis ea ipsum optio.
-                                organization: Sunt nihil mollitia.
-                                role: Delectus expedita voluptas occaecati.
-                                status: Perspiciatis enim tenetur provident.
-                                updated_at: Sed doloremque.
-                                user_id: Molestiae fuga blanditiis sequi molestias.
-                                username: Et et quae ad debitis veniam.
-                                voting_status: Amet quo vero.
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
-                "404":
-                    description: 'NotFound: Member not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/count:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup-count mailing-list
-            description: Get count of GroupsIO subgroups for a project
-            operationId: mailing-list#get-groupsio-subgroup-count
-            parameters:
-                - name: project_uid
-                  in: query
-                  description: LFX v2 project UID
-                  allowEmptyValue: true
-                  required: true
-                  schema:
-                    type: string
-                    description: LFX v2 project UID
-                    example: 8eb0b592-5b8c-4a57-9a8e-a81b3521804e
-                    format: uuid
-                  example: 70862972-5a9c-4e9c-bdfc-a113658a0445
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupsioCount'
-                            example:
-                                count: 7348416279030253818
-                "400":
-                    description: 'BadRequest: Bad request'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BadRequestError'
-                            example:
-                                message: The request was invalid.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -2376,47 +2376,7 @@ components:
                 message: Unauthorized access.
             required:
                 - message
-        UpdateGroupsioServiceRequestBody:
-            type: object
-            properties:
-                domain:
-                    type: string
-                    description: Service domain
-                    example: Ad ut explicabo.
-                group_id:
-                    type: integer
-                    description: GroupsIO group ID
-                    example: 5508857813236052367
-                    format: int64
-                prefix:
-                    type: string
-                    description: Email prefix
-                    example: Cum veritatis.
-                project_uid:
-                    type: string
-                    description: LFX v2 project UID
-                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                    format: uuid
-                status:
-                    type: string
-                    description: Service status
-                    example: Quia tenetur officia optio.
-                type:
-                    type: string
-                    description: Service type
-                    example: v2_primary
-                    enum:
-                        - v2_primary
-                        - v2_formation
-                        - v2_shared
-            example:
-                domain: Est et laboriosam aspernatur quod delectus consectetur.
-                group_id: 6498292374161792227
-                prefix: Voluptatibus enim iure nulla non recusandae qui.
-                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                status: Temporibus fuga alias rerum a qui et.
-                type: v2_primary
-        UpdateGroupsioSubgroupRequestBody:
+        UpdateGroupsioMailingListRequestBody:
             type: object
             properties:
                 audience_access:
@@ -2463,6 +2423,46 @@ components:
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Nesciunt est suscipit rerum.
                 type: Suscipit molestiae incidunt minus suscipit quod sit.
+        UpdateGroupsioServiceRequestBody:
+            type: object
+            properties:
+                domain:
+                    type: string
+                    description: Service domain
+                    example: Ad ut explicabo.
+                group_id:
+                    type: integer
+                    description: GroupsIO group ID
+                    example: 5508857813236052367
+                    format: int64
+                prefix:
+                    type: string
+                    description: Email prefix
+                    example: Cum veritatis.
+                project_uid:
+                    type: string
+                    description: LFX v2 project UID
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
+                status:
+                    type: string
+                    description: Service status
+                    example: Quia tenetur officia optio.
+                type:
+                    type: string
+                    description: Service type
+                    example: v2_primary
+                    enum:
+                        - v2_primary
+                        - v2_formation
+                        - v2_shared
+            example:
+                domain: Est et laboriosam aspernatur quod delectus consectetur.
+                group_id: 6498292374161792227
+                prefix: Voluptatibus enim iure nulla non recusandae qui.
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                status: Temporibus fuga alias rerum a qui et.
+                type: v2_primary
     securitySchemes:
         jwt_header_Authorization:
             type: http

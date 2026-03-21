@@ -16,57 +16,57 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint                          goa.Endpoint
-	ReadyzEndpoint                         goa.Endpoint
-	ListGroupsioServicesEndpoint           goa.Endpoint
-	CreateGroupsioServiceEndpoint          goa.Endpoint
-	GetGroupsioServiceEndpoint             goa.Endpoint
-	UpdateGroupsioServiceEndpoint          goa.Endpoint
-	DeleteGroupsioServiceEndpoint          goa.Endpoint
-	GetGroupsioServiceProjectsEndpoint     goa.Endpoint
-	FindParentGroupsioServiceEndpoint      goa.Endpoint
-	ListGroupsioSubgroupsEndpoint          goa.Endpoint
-	CreateGroupsioSubgroupEndpoint         goa.Endpoint
-	GetGroupsioSubgroupEndpoint            goa.Endpoint
-	UpdateGroupsioSubgroupEndpoint         goa.Endpoint
-	DeleteGroupsioSubgroupEndpoint         goa.Endpoint
-	GetGroupsioSubgroupCountEndpoint       goa.Endpoint
-	GetGroupsioSubgroupMemberCountEndpoint goa.Endpoint
-	ListGroupsioMembersEndpoint            goa.Endpoint
-	AddGroupsioMemberEndpoint              goa.Endpoint
-	GetGroupsioMemberEndpoint              goa.Endpoint
-	UpdateGroupsioMemberEndpoint           goa.Endpoint
-	DeleteGroupsioMemberEndpoint           goa.Endpoint
-	InviteGroupsioMembersEndpoint          goa.Endpoint
-	CheckGroupsioSubscriberEndpoint        goa.Endpoint
+	LivezEndpoint                             goa.Endpoint
+	ReadyzEndpoint                            goa.Endpoint
+	ListGroupsioServicesEndpoint              goa.Endpoint
+	CreateGroupsioServiceEndpoint             goa.Endpoint
+	GetGroupsioServiceEndpoint                goa.Endpoint
+	UpdateGroupsioServiceEndpoint             goa.Endpoint
+	DeleteGroupsioServiceEndpoint             goa.Endpoint
+	GetGroupsioServiceProjectsEndpoint        goa.Endpoint
+	FindParentGroupsioServiceEndpoint         goa.Endpoint
+	ListGroupsioMailingListsEndpoint          goa.Endpoint
+	CreateGroupsioMailingListEndpoint         goa.Endpoint
+	GetGroupsioMailingListEndpoint            goa.Endpoint
+	UpdateGroupsioMailingListEndpoint         goa.Endpoint
+	DeleteGroupsioMailingListEndpoint         goa.Endpoint
+	GetGroupsioMailingListCountEndpoint       goa.Endpoint
+	GetGroupsioMailingListMemberCountEndpoint goa.Endpoint
+	ListGroupsioMembersEndpoint               goa.Endpoint
+	AddGroupsioMemberEndpoint                 goa.Endpoint
+	GetGroupsioMemberEndpoint                 goa.Endpoint
+	UpdateGroupsioMemberEndpoint              goa.Endpoint
+	DeleteGroupsioMemberEndpoint              goa.Endpoint
+	InviteGroupsioMembersEndpoint             goa.Endpoint
+	CheckGroupsioSubscriberEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioSubgroups, createGroupsioSubgroup, getGroupsioSubgroup, updateGroupsioSubgroup, deleteGroupsioSubgroup, getGroupsioSubgroupCount, getGroupsioSubgroupMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:                          livez,
-		ReadyzEndpoint:                         readyz,
-		ListGroupsioServicesEndpoint:           listGroupsioServices,
-		CreateGroupsioServiceEndpoint:          createGroupsioService,
-		GetGroupsioServiceEndpoint:             getGroupsioService,
-		UpdateGroupsioServiceEndpoint:          updateGroupsioService,
-		DeleteGroupsioServiceEndpoint:          deleteGroupsioService,
-		GetGroupsioServiceProjectsEndpoint:     getGroupsioServiceProjects,
-		FindParentGroupsioServiceEndpoint:      findParentGroupsioService,
-		ListGroupsioSubgroupsEndpoint:          listGroupsioSubgroups,
-		CreateGroupsioSubgroupEndpoint:         createGroupsioSubgroup,
-		GetGroupsioSubgroupEndpoint:            getGroupsioSubgroup,
-		UpdateGroupsioSubgroupEndpoint:         updateGroupsioSubgroup,
-		DeleteGroupsioSubgroupEndpoint:         deleteGroupsioSubgroup,
-		GetGroupsioSubgroupCountEndpoint:       getGroupsioSubgroupCount,
-		GetGroupsioSubgroupMemberCountEndpoint: getGroupsioSubgroupMemberCount,
-		ListGroupsioMembersEndpoint:            listGroupsioMembers,
-		AddGroupsioMemberEndpoint:              addGroupsioMember,
-		GetGroupsioMemberEndpoint:              getGroupsioMember,
-		UpdateGroupsioMemberEndpoint:           updateGroupsioMember,
-		DeleteGroupsioMemberEndpoint:           deleteGroupsioMember,
-		InviteGroupsioMembersEndpoint:          inviteGroupsioMembers,
-		CheckGroupsioSubscriberEndpoint:        checkGroupsioSubscriber,
+		LivezEndpoint:                             livez,
+		ReadyzEndpoint:                            readyz,
+		ListGroupsioServicesEndpoint:              listGroupsioServices,
+		CreateGroupsioServiceEndpoint:             createGroupsioService,
+		GetGroupsioServiceEndpoint:                getGroupsioService,
+		UpdateGroupsioServiceEndpoint:             updateGroupsioService,
+		DeleteGroupsioServiceEndpoint:             deleteGroupsioService,
+		GetGroupsioServiceProjectsEndpoint:        getGroupsioServiceProjects,
+		FindParentGroupsioServiceEndpoint:         findParentGroupsioService,
+		ListGroupsioMailingListsEndpoint:          listGroupsioMailingLists,
+		CreateGroupsioMailingListEndpoint:         createGroupsioMailingList,
+		GetGroupsioMailingListEndpoint:            getGroupsioMailingList,
+		UpdateGroupsioMailingListEndpoint:         updateGroupsioMailingList,
+		DeleteGroupsioMailingListEndpoint:         deleteGroupsioMailingList,
+		GetGroupsioMailingListCountEndpoint:       getGroupsioMailingListCount,
+		GetGroupsioMailingListMemberCountEndpoint: getGroupsioMailingListMemberCount,
+		ListGroupsioMembersEndpoint:               listGroupsioMembers,
+		AddGroupsioMemberEndpoint:                 addGroupsioMember,
+		GetGroupsioMemberEndpoint:                 getGroupsioMember,
+		UpdateGroupsioMemberEndpoint:              updateGroupsioMember,
+		DeleteGroupsioMemberEndpoint:              deleteGroupsioMember,
+		InviteGroupsioMembersEndpoint:             inviteGroupsioMembers,
+		CheckGroupsioSubscriberEndpoint:           checkGroupsioSubscriber,
 	}
 }
 
@@ -203,110 +203,111 @@ func (c *Client) FindParentGroupsioService(ctx context.Context, p *FindParentGro
 	return ires.(*GroupsioService), nil
 }
 
-// ListGroupsioSubgroups calls the "list-groupsio-subgroups" endpoint of the
-// "mailing-list" service.
-// ListGroupsioSubgroups may return the following errors:
+// ListGroupsioMailingLists calls the "list-groupsio-mailing-lists" endpoint of
+// the "mailing-list" service.
+// ListGroupsioMailingLists may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) ListGroupsioSubgroups(ctx context.Context, p *ListGroupsioSubgroupsPayload) (res *GroupsioSubgroupList, err error) {
+func (c *Client) ListGroupsioMailingLists(ctx context.Context, p *ListGroupsioMailingListsPayload) (res *GroupsioSubgroupList, err error) {
 	var ires any
-	ires, err = c.ListGroupsioSubgroupsEndpoint(ctx, p)
+	ires, err = c.ListGroupsioMailingListsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
 	return ires.(*GroupsioSubgroupList), nil
 }
 
-// CreateGroupsioSubgroup calls the "create-groupsio-subgroup" endpoint of the
-// "mailing-list" service.
-// CreateGroupsioSubgroup may return the following errors:
+// CreateGroupsioMailingList calls the "create-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// CreateGroupsioMailingList may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "Conflict" (type *ConflictError): Conflict
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGroupsioSubgroup(ctx context.Context, p *CreateGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error) {
+func (c *Client) CreateGroupsioMailingList(ctx context.Context, p *CreateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
 	var ires any
-	ires, err = c.CreateGroupsioSubgroupEndpoint(ctx, p)
+	ires, err = c.CreateGroupsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
 	return ires.(*GroupsioSubgroup), nil
 }
 
-// GetGroupsioSubgroup calls the "get-groupsio-subgroup" endpoint of the
+// GetGroupsioMailingList calls the "get-groupsio-mailing-list" endpoint of the
 // "mailing-list" service.
-// GetGroupsioSubgroup may return the following errors:
+// GetGroupsioMailingList may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGroupsioSubgroup(ctx context.Context, p *GetGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error) {
+func (c *Client) GetGroupsioMailingList(ctx context.Context, p *GetGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
 	var ires any
-	ires, err = c.GetGroupsioSubgroupEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
 	return ires.(*GroupsioSubgroup), nil
 }
 
-// UpdateGroupsioSubgroup calls the "update-groupsio-subgroup" endpoint of the
-// "mailing-list" service.
-// UpdateGroupsioSubgroup may return the following errors:
+// UpdateGroupsioMailingList calls the "update-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// UpdateGroupsioMailingList may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGroupsioSubgroup(ctx context.Context, p *UpdateGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error) {
+func (c *Client) UpdateGroupsioMailingList(ctx context.Context, p *UpdateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
 	var ires any
-	ires, err = c.UpdateGroupsioSubgroupEndpoint(ctx, p)
+	ires, err = c.UpdateGroupsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
 	return ires.(*GroupsioSubgroup), nil
 }
 
-// DeleteGroupsioSubgroup calls the "delete-groupsio-subgroup" endpoint of the
-// "mailing-list" service.
-// DeleteGroupsioSubgroup may return the following errors:
+// DeleteGroupsioMailingList calls the "delete-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// DeleteGroupsioMailingList may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) DeleteGroupsioSubgroup(ctx context.Context, p *DeleteGroupsioSubgroupPayload) (err error) {
-	_, err = c.DeleteGroupsioSubgroupEndpoint(ctx, p)
+func (c *Client) DeleteGroupsioMailingList(ctx context.Context, p *DeleteGroupsioMailingListPayload) (err error) {
+	_, err = c.DeleteGroupsioMailingListEndpoint(ctx, p)
 	return
 }
 
-// GetGroupsioSubgroupCount calls the "get-groupsio-subgroup-count" endpoint of
-// the "mailing-list" service.
-// GetGroupsioSubgroupCount may return the following errors:
+// GetGroupsioMailingListCount calls the "get-groupsio-mailing-list-count"
+// endpoint of the "mailing-list" service.
+// GetGroupsioMailingListCount may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGroupsioSubgroupCount(ctx context.Context, p *GetGroupsioSubgroupCountPayload) (res *GroupsioCount, err error) {
+func (c *Client) GetGroupsioMailingListCount(ctx context.Context, p *GetGroupsioMailingListCountPayload) (res *GroupsioCount, err error) {
 	var ires any
-	ires, err = c.GetGroupsioSubgroupCountEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListCountEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
 	return ires.(*GroupsioCount), nil
 }
 
-// GetGroupsioSubgroupMemberCount calls the
-// "get-groupsio-subgroup-member-count" endpoint of the "mailing-list" service.
-// GetGroupsioSubgroupMemberCount may return the following errors:
+// GetGroupsioMailingListMemberCount calls the
+// "get-groupsio-mailing-list-member-count" endpoint of the "mailing-list"
+// service.
+// GetGroupsioMailingListMemberCount may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGroupsioSubgroupMemberCount(ctx context.Context, p *GetGroupsioSubgroupMemberCountPayload) (res *GroupsioCount, err error) {
+func (c *Client) GetGroupsioMailingListMemberCount(ctx context.Context, p *GetGroupsioMailingListMemberCountPayload) (res *GroupsioCount, err error) {
 	var ires any
-	ires, err = c.GetGroupsioSubgroupMemberCountEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListMemberCountEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

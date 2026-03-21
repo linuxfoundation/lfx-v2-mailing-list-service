@@ -9,6 +9,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -19,6 +20,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
+	orchestrator "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 
 	"goa.design/clue/debug"
@@ -55,26 +57,27 @@ func main() {
 	// Initialize authentication service
 	authService := service.AuthService(ctx)
 
-	// Initialize ID mapper for v1/v2 ID conversions
-	idMapper := service.IDMapper(ctx)
+	// Initialize ID translator
+	translator := service.Translator(ctx)
 
-	// Initialize ITX proxy client
-	itxConfig := service.ITXProxyConfig()
-	itxClient := proxy.NewClient(itxConfig)
+	// Initialize GroupsIO service writer (ITX proxy + orchestrator)
+	slog.InfoContext(ctx, "initializing GroupsIO service writer")
+	proxyWriter, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
+	if err != nil {
+		log.Fatalf("failed to initialize ITX proxy client: %v", err)
+	}
 
-	// Initialize ITX GroupsIO services
-	svcService := service.GroupsioServiceService(ctx, itxClient, idMapper)
-	subgroupService := service.GroupsioSubgroupService(ctx, itxClient, idMapper)
-	memberService := service.GroupsioMemberService(ctx, itxClient)
+	serviceOrchestrator := orchestrator.NewGroupsIOServiceOrchestrator(
+		orchestrator.WithServiceWriter(proxyWriter),
+		orchestrator.WithServiceTranslator(translator),
+	)
 
 	slog.InfoContext(ctx, "ITX proxy client initialized")
 
 	// Create the mailing list API service
 	mailingListSvc := service.NewMailingListAPI(
 		authService,
-		svcService,
-		subgroupService,
-		memberService,
+		serviceOrchestrator,
 	)
 
 	// Wrap the services in endpoints

@@ -13,14 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/idmapper"
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
-	itxsvc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service/itx"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
@@ -63,6 +60,37 @@ func AuthService(ctx context.Context) port.Authenticator {
 	return authService
 }
 
+// Translator initializes the ID translator implementation.
+// TRANSLATOR_SOURCE controls which backend is used (default: "nats").
+// In mock mode, TRANSLATOR_MAPPINGS_FILE points to the YAML mappings file.
+func Translator(ctx context.Context) port.Translator {
+	source := os.Getenv("TRANSLATOR_SOURCE")
+	if source == "" {
+		source = "nats"
+	}
+
+	switch source {
+	case "mock":
+		filePath := os.Getenv("TRANSLATOR_MAPPINGS_FILE")
+		if filePath == "" {
+			filePath = "translator_mappings.yaml"
+		}
+		slog.InfoContext(ctx, "initializing mock translator", "file", filePath)
+		t, err := infrastructure.NewMockTranslator(filePath)
+		if err != nil {
+			log.Fatalf("failed to initialize mock translator: %v", err)
+		}
+		return t
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS translator")
+		return nats.NewNATSTranslatorFromClient(GetNATSClient(ctx), 5*time.Second)
+	default:
+		log.Fatalf("unsupported translator implementation: %s", source)
+	}
+
+	return nil
+}
+
 // ITXProxyConfig reads ITX proxy configuration from environment variables.
 func ITXProxyConfig() proxy.Config {
 	return proxy.Config{
@@ -73,44 +101,6 @@ func ITXProxyConfig() proxy.Config {
 		Audience:    os.Getenv("ITX_AUDIENCE"),
 		Timeout:     30 * time.Second,
 	}
-}
-
-// IDMapper initializes the ID mapper based on configuration.
-func IDMapper(ctx context.Context) domain.IDMapper {
-	if os.Getenv("ID_MAPPING_DISABLED") == "true" {
-		slog.WarnContext(ctx, "ID mapping is DISABLED - using no-op mapper (IDs will pass through unchanged)")
-		return idmapper.NewNoOpMapper()
-	}
-
-	natsURL := os.Getenv("NATS_URL")
-	if natsURL == "" {
-		slog.WarnContext(ctx, "NATS_URL not set, using no-op ID mapper")
-		return idmapper.NewNoOpMapper()
-	}
-
-	natsMapper, err := idmapper.NewNATSMapper(idmapper.Config{
-		URL:     natsURL,
-		Timeout: 5 * time.Second,
-	})
-	if err != nil {
-		slog.With("error", err).WarnContext(ctx, "Failed to initialize NATS ID mapper, falling back to no-op mapper")
-		return idmapper.NewNoOpMapper()
-	}
-
-	slog.InfoContext(ctx, "ID mapping enabled - using NATS mapper for v1/v2 ID conversions")
-	return natsMapper
-}
-
-// GroupsioServiceService initializes the GroupsIO service handler.
-func GroupsioServiceService(ctx context.Context, client domain.ITXGroupsioClient, mapper domain.IDMapper) *itxsvc.GroupsioServiceService {
-	slog.InfoContext(ctx, "initializing GroupsIO service service")
-	return itxsvc.NewGroupsioServiceService(client, mapper)
-}
-
-// GroupsioSubgroupService initializes the GroupsIO subgroup handler.
-func GroupsioSubgroupService(ctx context.Context, client domain.ITXGroupsioClient, mapper domain.IDMapper) *itxsvc.GroupsioSubgroupService {
-	slog.InfoContext(ctx, "initializing GroupsIO subgroup service")
-	return itxsvc.NewGroupsioSubgroupService(client, mapper)
 }
 
 func natsInit(ctx context.Context) {
@@ -163,15 +153,8 @@ func natsInit(ctx context.Context) {
 	})
 }
 
-// GroupsioMemberService initializes the GroupsIO member handler.
-func GroupsioMemberService(ctx context.Context, client domain.ITXGroupsioClient) *itxsvc.GroupsioMemberService {
-	slog.InfoContext(ctx, "initializing GroupsIO member service")
-	return itxsvc.NewGroupsioMemberService(client)
-}
-
 // GetNATSClient returns the initialized NATS client for subscriptions
 func GetNATSClient(ctx context.Context) *nats.NATSClient {
-	// singleton initialization of NATS client
 	natsInit(ctx)
 	return natsClient
 }
@@ -196,7 +179,6 @@ func natsPublisher(ctx context.Context) port.MessagePublisher {
 func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	var publisher port.MessagePublisher
 
-	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
 		repoSource = "nats"

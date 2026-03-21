@@ -36,19 +36,19 @@ type Service interface {
 	FindParentGroupsioService(context.Context, *FindParentGroupsioServicePayload) (res *GroupsioService, err error)
 	// List GroupsIO subgroups, optionally filtered by project UID and/or committee
 	// UID
-	ListGroupsioSubgroups(context.Context, *ListGroupsioSubgroupsPayload) (res *GroupsioSubgroupList, err error)
+	ListGroupsioMailingLists(context.Context, *ListGroupsioMailingListsPayload) (res *GroupsioSubgroupList, err error)
 	// Create a GroupsIO subgroup
-	CreateGroupsioSubgroup(context.Context, *CreateGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error)
+	CreateGroupsioMailingList(context.Context, *CreateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error)
 	// Get a GroupsIO subgroup by ID
-	GetGroupsioSubgroup(context.Context, *GetGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error)
+	GetGroupsioMailingList(context.Context, *GetGroupsioMailingListPayload) (res *GroupsioSubgroup, err error)
 	// Update a GroupsIO subgroup
-	UpdateGroupsioSubgroup(context.Context, *UpdateGroupsioSubgroupPayload) (res *GroupsioSubgroup, err error)
+	UpdateGroupsioMailingList(context.Context, *UpdateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error)
 	// Delete a GroupsIO subgroup
-	DeleteGroupsioSubgroup(context.Context, *DeleteGroupsioSubgroupPayload) (err error)
+	DeleteGroupsioMailingList(context.Context, *DeleteGroupsioMailingListPayload) (err error)
 	// Get count of GroupsIO subgroups for a project
-	GetGroupsioSubgroupCount(context.Context, *GetGroupsioSubgroupCountPayload) (res *GroupsioCount, err error)
+	GetGroupsioMailingListCount(context.Context, *GetGroupsioMailingListCountPayload) (res *GroupsioCount, err error)
 	// Get count of members in a GroupsIO subgroup
-	GetGroupsioSubgroupMemberCount(context.Context, *GetGroupsioSubgroupMemberCountPayload) (res *GroupsioCount, err error)
+	GetGroupsioMailingListMemberCount(context.Context, *GetGroupsioMailingListMemberCountPayload) (res *GroupsioCount, err error)
 	// List members of a GroupsIO subgroup
 	ListGroupsioMembers(context.Context, *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error)
 	// Add a member to a GroupsIO subgroup
@@ -85,7 +85,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [23]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-subgroups", "create-groupsio-subgroup", "get-groupsio-subgroup", "update-groupsio-subgroup", "delete-groupsio-subgroup", "get-groupsio-subgroup-count", "get-groupsio-subgroup-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber"}
+var MethodNames = [23]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -123,6 +123,29 @@ type CheckGroupsioSubscriberPayload struct {
 	SubgroupID string
 }
 
+// CreateGroupsioMailingListPayload is the payload type of the mailing-list
+// service create-groupsio-mailing-list method.
+type CreateGroupsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// LFX v2 project UID
+	ProjectUID *string
+	// LFX v2 committee UID
+	CommitteeUID *string
+	// Parent GroupsIO service ID
+	ServiceID *string
+	// GroupsIO group ID
+	GroupID *int64
+	// Subgroup name
+	Name *string
+	// Subgroup description
+	Description *string
+	// Subgroup type
+	Type *string
+	// Audience access setting
+	AudienceAccess *string
+}
+
 // CreateGroupsioServicePayload is the payload type of the mailing-list service
 // create-groupsio-service method.
 type CreateGroupsioServicePayload struct {
@@ -142,27 +165,13 @@ type CreateGroupsioServicePayload struct {
 	Status *string
 }
 
-// CreateGroupsioSubgroupPayload is the payload type of the mailing-list
-// service create-groupsio-subgroup method.
-type CreateGroupsioSubgroupPayload struct {
+// DeleteGroupsioMailingListPayload is the payload type of the mailing-list
+// service delete-groupsio-mailing-list method.
+type DeleteGroupsioMailingListPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
-	// LFX v2 project UID
-	ProjectUID *string
-	// LFX v2 committee UID
-	CommitteeUID *string
-	// Parent GroupsIO service ID
-	ServiceID *string
-	// GroupsIO group ID
-	GroupID *int64
-	// Subgroup name
-	Name *string
-	// Subgroup description
-	Description *string
-	// Subgroup type
-	Type *string
-	// Audience access setting
-	AudienceAccess *string
+	// Subgroup ID
+	SubgroupID string
 }
 
 // DeleteGroupsioMemberPayload is the payload type of the mailing-list service
@@ -185,15 +194,6 @@ type DeleteGroupsioServicePayload struct {
 	ServiceID string
 }
 
-// DeleteGroupsioSubgroupPayload is the payload type of the mailing-list
-// service delete-groupsio-subgroup method.
-type DeleteGroupsioSubgroupPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// Subgroup ID
-	SubgroupID string
-}
-
 // FindParentGroupsioServicePayload is the payload type of the mailing-list
 // service find-parent-groupsio-service method.
 type FindParentGroupsioServicePayload struct {
@@ -201,6 +201,33 @@ type FindParentGroupsioServicePayload struct {
 	BearerToken *string
 	// LFX v2 project UID
 	ProjectUID string
+}
+
+// GetGroupsioMailingListCountPayload is the payload type of the mailing-list
+// service get-groupsio-mailing-list-count method.
+type GetGroupsioMailingListCountPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// LFX v2 project UID
+	ProjectUID string
+}
+
+// GetGroupsioMailingListMemberCountPayload is the payload type of the
+// mailing-list service get-groupsio-mailing-list-member-count method.
+type GetGroupsioMailingListMemberCountPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+}
+
+// GetGroupsioMailingListPayload is the payload type of the mailing-list
+// service get-groupsio-mailing-list method.
+type GetGroupsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
 }
 
 // GetGroupsioMemberPayload is the payload type of the mailing-list service
@@ -230,33 +257,6 @@ type GetGroupsioServiceProjectsPayload struct {
 	BearerToken *string
 }
 
-// GetGroupsioSubgroupCountPayload is the payload type of the mailing-list
-// service get-groupsio-subgroup-count method.
-type GetGroupsioSubgroupCountPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// LFX v2 project UID
-	ProjectUID string
-}
-
-// GetGroupsioSubgroupMemberCountPayload is the payload type of the
-// mailing-list service get-groupsio-subgroup-member-count method.
-type GetGroupsioSubgroupMemberCountPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// Subgroup ID
-	SubgroupID string
-}
-
-// GetGroupsioSubgroupPayload is the payload type of the mailing-list service
-// get-groupsio-subgroup method.
-type GetGroupsioSubgroupPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// Subgroup ID
-	SubgroupID string
-}
-
 // GroupsioCheckSubscriberResponse is the result type of the mailing-list
 // service check-groupsio-subscriber method.
 type GroupsioCheckSubscriberResponse struct {
@@ -265,7 +265,7 @@ type GroupsioCheckSubscriberResponse struct {
 }
 
 // GroupsioCount is the result type of the mailing-list service
-// get-groupsio-subgroup-count method.
+// get-groupsio-mailing-list-count method.
 type GroupsioCount struct {
 	// Count value
 	Count int
@@ -355,7 +355,7 @@ type GroupsioServiceList struct {
 }
 
 // GroupsioSubgroup is the result type of the mailing-list service
-// create-groupsio-subgroup method.
+// create-groupsio-mailing-list method.
 type GroupsioSubgroup struct {
 	// Subgroup ID
 	ID *string
@@ -382,7 +382,7 @@ type GroupsioSubgroup struct {
 }
 
 // GroupsioSubgroupList is the result type of the mailing-list service
-// list-groupsio-subgroups method.
+// list-groupsio-mailing-lists method.
 type GroupsioSubgroupList struct {
 	// List of subgroups
 	Items []*GroupsioSubgroup
@@ -399,6 +399,17 @@ type InviteGroupsioMembersPayload struct {
 	SubgroupID string
 	// Email addresses to invite
 	Emails []string
+}
+
+// ListGroupsioMailingListsPayload is the payload type of the mailing-list
+// service list-groupsio-mailing-lists method.
+type ListGroupsioMailingListsPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// LFX v2 project UID filter
+	ProjectUID *string
+	// LFX v2 committee UID filter
+	CommitteeUID *string
 }
 
 // ListGroupsioMembersPayload is the payload type of the mailing-list service
@@ -419,15 +430,29 @@ type ListGroupsioServicesPayload struct {
 	ProjectUID *string
 }
 
-// ListGroupsioSubgroupsPayload is the payload type of the mailing-list service
-// list-groupsio-subgroups method.
-type ListGroupsioSubgroupsPayload struct {
+// UpdateGroupsioMailingListPayload is the payload type of the mailing-list
+// service update-groupsio-mailing-list method.
+type UpdateGroupsioMailingListPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
-	// LFX v2 project UID filter
+	// Subgroup ID
+	SubgroupID string
+	// LFX v2 project UID
 	ProjectUID *string
-	// LFX v2 committee UID filter
+	// LFX v2 committee UID
 	CommitteeUID *string
+	// Parent GroupsIO service ID
+	ServiceID *string
+	// GroupsIO group ID
+	GroupID *int64
+	// Subgroup name
+	Name *string
+	// Subgroup description
+	Description *string
+	// Subgroup type
+	Type *string
+	// Audience access setting
+	AudienceAccess *string
 }
 
 // UpdateGroupsioMemberPayload is the payload type of the mailing-list service
@@ -476,31 +501,6 @@ type UpdateGroupsioServicePayload struct {
 	Prefix *string
 	// Service status
 	Status *string
-}
-
-// UpdateGroupsioSubgroupPayload is the payload type of the mailing-list
-// service update-groupsio-subgroup method.
-type UpdateGroupsioSubgroupPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// Subgroup ID
-	SubgroupID string
-	// LFX v2 project UID
-	ProjectUID *string
-	// LFX v2 committee UID
-	CommitteeUID *string
-	// Parent GroupsIO service ID
-	ServiceID *string
-	// GroupsIO group ID
-	GroupID *int64
-	// Subgroup name
-	Name *string
-	// Subgroup description
-	Description *string
-	// Subgroup type
-	Type *string
-	// Audience access setting
-	AudienceAccess *string
 }
 
 type BadRequestError struct {

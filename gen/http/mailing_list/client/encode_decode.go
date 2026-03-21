@@ -1059,14 +1059,14 @@ func DecodeFindParentGroupsioServiceResponse(decoder func(*http.Response) goahtt
 	}
 }
 
-// BuildListGroupsioSubgroupsRequest instantiates a HTTP request object with
+// BuildListGroupsioMailingListsRequest instantiates a HTTP request object with
 // method and path set to call the "mailing-list" service
-// "list-groupsio-subgroups" endpoint
-func (c *Client) BuildListGroupsioSubgroupsRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListGroupsioSubgroupsMailingListPath()}
+// "list-groupsio-mailing-lists" endpoint
+func (c *Client) BuildListGroupsioMailingListsRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListGroupsioMailingListsMailingListPath()}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "list-groupsio-subgroups", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "list-groupsio-mailing-lists", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1075,13 +1075,13 @@ func (c *Client) BuildListGroupsioSubgroupsRequest(ctx context.Context, v any) (
 	return req, nil
 }
 
-// EncodeListGroupsioSubgroupsRequest returns an encoder for requests sent to
-// the mailing-list list-groupsio-subgroups server.
-func EncodeListGroupsioSubgroupsRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeListGroupsioMailingListsRequest returns an encoder for requests sent
+// to the mailing-list list-groupsio-mailing-lists server.
+func EncodeListGroupsioMailingListsRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.ListGroupsioSubgroupsPayload)
+		p, ok := v.(*mailinglist.ListGroupsioMailingListsPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "list-groupsio-subgroups", "*mailinglist.ListGroupsioSubgroupsPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "list-groupsio-mailing-lists", "*mailinglist.ListGroupsioMailingListsPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1103,15 +1103,16 @@ func EncodeListGroupsioSubgroupsRequest(encoder func(*http.Request) goahttp.Enco
 	}
 }
 
-// DecodeListGroupsioSubgroupsResponse returns a decoder for responses returned
-// by the mailing-list list-groupsio-subgroups endpoint. restoreBody controls
-// whether the response body should be restored after having been read.
-// DecodeListGroupsioSubgroupsResponse may return the following errors:
+// DecodeListGroupsioMailingListsResponse returns a decoder for responses
+// returned by the mailing-list list-groupsio-mailing-lists endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeListGroupsioMailingListsResponse may return the following errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeListGroupsioSubgroupsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeListGroupsioMailingListsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1128,76 +1129,76 @@ func DecodeListGroupsioSubgroupsResponse(decoder func(*http.Response) goahttp.De
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body ListGroupsioSubgroupsResponseBody
+				body ListGroupsioMailingListsResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			err = ValidateListGroupsioSubgroupsResponseBody(&body)
+			err = ValidateListGroupsioMailingListsResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			res := NewListGroupsioSubgroupsGroupsioSubgroupListOK(&body)
+			res := NewListGroupsioMailingListsGroupsioSubgroupListOK(&body)
 			return res, nil
 		case http.StatusBadRequest:
 			var (
-				body ListGroupsioSubgroupsBadRequestResponseBody
+				body ListGroupsioMailingListsBadRequestResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			err = ValidateListGroupsioSubgroupsBadRequestResponseBody(&body)
+			err = ValidateListGroupsioMailingListsBadRequestResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			return nil, NewListGroupsioSubgroupsBadRequest(&body)
+			return nil, NewListGroupsioMailingListsBadRequest(&body)
 		case http.StatusInternalServerError:
 			var (
-				body ListGroupsioSubgroupsInternalServerErrorResponseBody
+				body ListGroupsioMailingListsInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			err = ValidateListGroupsioSubgroupsInternalServerErrorResponseBody(&body)
+			err = ValidateListGroupsioMailingListsInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			return nil, NewListGroupsioSubgroupsInternalServerError(&body)
+			return nil, NewListGroupsioMailingListsInternalServerError(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body ListGroupsioSubgroupsServiceUnavailableResponseBody
+				body ListGroupsioMailingListsServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			err = ValidateListGroupsioSubgroupsServiceUnavailableResponseBody(&body)
+			err = ValidateListGroupsioMailingListsServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-subgroups", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "list-groupsio-mailing-lists", err)
 			}
-			return nil, NewListGroupsioSubgroupsServiceUnavailable(&body)
+			return nil, NewListGroupsioMailingListsServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "list-groupsio-subgroups", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "list-groupsio-mailing-lists", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildCreateGroupsioSubgroupRequest instantiates a HTTP request object with
-// method and path set to call the "mailing-list" service
-// "create-groupsio-subgroup" endpoint
-func (c *Client) BuildCreateGroupsioSubgroupRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CreateGroupsioSubgroupMailingListPath()}
+// BuildCreateGroupsioMailingListRequest instantiates a HTTP request object
+// with method and path set to call the "mailing-list" service
+// "create-groupsio-mailing-list" endpoint
+func (c *Client) BuildCreateGroupsioMailingListRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CreateGroupsioMailingListMailingListPath()}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "create-groupsio-subgroup", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "create-groupsio-mailing-list", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1206,13 +1207,13 @@ func (c *Client) BuildCreateGroupsioSubgroupRequest(ctx context.Context, v any) 
 	return req, nil
 }
 
-// EncodeCreateGroupsioSubgroupRequest returns an encoder for requests sent to
-// the mailing-list create-groupsio-subgroup server.
-func EncodeCreateGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeCreateGroupsioMailingListRequest returns an encoder for requests sent
+// to the mailing-list create-groupsio-mailing-list server.
+func EncodeCreateGroupsioMailingListRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.CreateGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.CreateGroupsioMailingListPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "create-groupsio-subgroup", "*mailinglist.CreateGroupsioSubgroupPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "create-groupsio-mailing-list", "*mailinglist.CreateGroupsioMailingListPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1222,24 +1223,25 @@ func EncodeCreateGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Enc
 				req.Header.Set("Authorization", head)
 			}
 		}
-		body := NewCreateGroupsioSubgroupRequestBody(p)
+		body := NewCreateGroupsioMailingListRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("mailing-list", "create-groupsio-subgroup", err)
+			return goahttp.ErrEncodingError("mailing-list", "create-groupsio-mailing-list", err)
 		}
 		return nil
 	}
 }
 
-// DecodeCreateGroupsioSubgroupResponse returns a decoder for responses
-// returned by the mailing-list create-groupsio-subgroup endpoint. restoreBody
-// controls whether the response body should be restored after having been read.
-// DecodeCreateGroupsioSubgroupResponse may return the following errors:
+// DecodeCreateGroupsioMailingListResponse returns a decoder for responses
+// returned by the mailing-list create-groupsio-mailing-list endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeCreateGroupsioMailingListResponse may return the following errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
 //   - "Conflict" (type *mailinglist.ConflictError): http.StatusConflict
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeCreateGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeCreateGroupsioMailingListResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1256,100 +1258,100 @@ func DecodeCreateGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.D
 		switch resp.StatusCode {
 		case http.StatusCreated:
 			var (
-				body CreateGroupsioSubgroupResponseBody
+				body CreateGroupsioMailingListResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			err = ValidateCreateGroupsioSubgroupResponseBody(&body)
+			err = ValidateCreateGroupsioMailingListResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			res := NewCreateGroupsioSubgroupGroupsioSubgroupCreated(&body)
+			res := NewCreateGroupsioMailingListGroupsioSubgroupCreated(&body)
 			return res, nil
 		case http.StatusBadRequest:
 			var (
-				body CreateGroupsioSubgroupBadRequestResponseBody
+				body CreateGroupsioMailingListBadRequestResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			err = ValidateCreateGroupsioSubgroupBadRequestResponseBody(&body)
+			err = ValidateCreateGroupsioMailingListBadRequestResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			return nil, NewCreateGroupsioSubgroupBadRequest(&body)
+			return nil, NewCreateGroupsioMailingListBadRequest(&body)
 		case http.StatusConflict:
 			var (
-				body CreateGroupsioSubgroupConflictResponseBody
+				body CreateGroupsioMailingListConflictResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			err = ValidateCreateGroupsioSubgroupConflictResponseBody(&body)
+			err = ValidateCreateGroupsioMailingListConflictResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			return nil, NewCreateGroupsioSubgroupConflict(&body)
+			return nil, NewCreateGroupsioMailingListConflict(&body)
 		case http.StatusInternalServerError:
 			var (
-				body CreateGroupsioSubgroupInternalServerErrorResponseBody
+				body CreateGroupsioMailingListInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			err = ValidateCreateGroupsioSubgroupInternalServerErrorResponseBody(&body)
+			err = ValidateCreateGroupsioMailingListInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			return nil, NewCreateGroupsioSubgroupInternalServerError(&body)
+			return nil, NewCreateGroupsioMailingListInternalServerError(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body CreateGroupsioSubgroupServiceUnavailableResponseBody
+				body CreateGroupsioMailingListServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			err = ValidateCreateGroupsioSubgroupServiceUnavailableResponseBody(&body)
+			err = ValidateCreateGroupsioMailingListServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "create-groupsio-mailing-list", err)
 			}
-			return nil, NewCreateGroupsioSubgroupServiceUnavailable(&body)
+			return nil, NewCreateGroupsioMailingListServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "create-groupsio-subgroup", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "create-groupsio-mailing-list", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildGetGroupsioSubgroupRequest instantiates a HTTP request object with
+// BuildGetGroupsioMailingListRequest instantiates a HTTP request object with
 // method and path set to call the "mailing-list" service
-// "get-groupsio-subgroup" endpoint
-func (c *Client) BuildGetGroupsioSubgroupRequest(ctx context.Context, v any) (*http.Request, error) {
+// "get-groupsio-mailing-list" endpoint
+func (c *Client) BuildGetGroupsioMailingListRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		subgroupID string
 	)
 	{
-		p, ok := v.(*mailinglist.GetGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.GetGroupsioMailingListPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-subgroup", "*mailinglist.GetGroupsioSubgroupPayload", v)
+			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list", "*mailinglist.GetGroupsioMailingListPayload", v)
 		}
 		subgroupID = p.SubgroupID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioSubgroupMailingListPath(subgroupID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioMailingListMailingListPath(subgroupID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-subgroup", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-mailing-list", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1358,13 +1360,13 @@ func (c *Client) BuildGetGroupsioSubgroupRequest(ctx context.Context, v any) (*h
 	return req, nil
 }
 
-// EncodeGetGroupsioSubgroupRequest returns an encoder for requests sent to the
-// mailing-list get-groupsio-subgroup server.
-func EncodeGetGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeGetGroupsioMailingListRequest returns an encoder for requests sent to
+// the mailing-list get-groupsio-mailing-list server.
+func EncodeGetGroupsioMailingListRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.GetGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.GetGroupsioMailingListPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-subgroup", "*mailinglist.GetGroupsioSubgroupPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list", "*mailinglist.GetGroupsioMailingListPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1378,15 +1380,15 @@ func EncodeGetGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Encode
 	}
 }
 
-// DecodeGetGroupsioSubgroupResponse returns a decoder for responses returned
-// by the mailing-list get-groupsio-subgroup endpoint. restoreBody controls
-// whether the response body should be restored after having been read.
-// DecodeGetGroupsioSubgroupResponse may return the following errors:
+// DecodeGetGroupsioMailingListResponse returns a decoder for responses
+// returned by the mailing-list get-groupsio-mailing-list endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeGetGroupsioMailingListResponse may return the following errors:
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeGetGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetGroupsioMailingListResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1403,86 +1405,86 @@ func DecodeGetGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.Deco
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body GetGroupsioSubgroupResponseBody
+				body GetGroupsioMailingListResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			err = ValidateGetGroupsioSubgroupResponseBody(&body)
+			err = ValidateGetGroupsioMailingListResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			res := NewGetGroupsioSubgroupGroupsioSubgroupOK(&body)
+			res := NewGetGroupsioMailingListGroupsioSubgroupOK(&body)
 			return res, nil
 		case http.StatusInternalServerError:
 			var (
-				body GetGroupsioSubgroupInternalServerErrorResponseBody
+				body GetGroupsioMailingListInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			err = ValidateGetGroupsioSubgroupInternalServerErrorResponseBody(&body)
+			err = ValidateGetGroupsioMailingListInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			return nil, NewGetGroupsioSubgroupInternalServerError(&body)
+			return nil, NewGetGroupsioMailingListInternalServerError(&body)
 		case http.StatusNotFound:
 			var (
-				body GetGroupsioSubgroupNotFoundResponseBody
+				body GetGroupsioMailingListNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			err = ValidateGetGroupsioSubgroupNotFoundResponseBody(&body)
+			err = ValidateGetGroupsioMailingListNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			return nil, NewGetGroupsioSubgroupNotFound(&body)
+			return nil, NewGetGroupsioMailingListNotFound(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body GetGroupsioSubgroupServiceUnavailableResponseBody
+				body GetGroupsioMailingListServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			err = ValidateGetGroupsioSubgroupServiceUnavailableResponseBody(&body)
+			err = ValidateGetGroupsioMailingListServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list", err)
 			}
-			return nil, NewGetGroupsioSubgroupServiceUnavailable(&body)
+			return nil, NewGetGroupsioMailingListServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-subgroup", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-mailing-list", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildUpdateGroupsioSubgroupRequest instantiates a HTTP request object with
-// method and path set to call the "mailing-list" service
-// "update-groupsio-subgroup" endpoint
-func (c *Client) BuildUpdateGroupsioSubgroupRequest(ctx context.Context, v any) (*http.Request, error) {
+// BuildUpdateGroupsioMailingListRequest instantiates a HTTP request object
+// with method and path set to call the "mailing-list" service
+// "update-groupsio-mailing-list" endpoint
+func (c *Client) BuildUpdateGroupsioMailingListRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		subgroupID string
 	)
 	{
-		p, ok := v.(*mailinglist.UpdateGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.UpdateGroupsioMailingListPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("mailing-list", "update-groupsio-subgroup", "*mailinglist.UpdateGroupsioSubgroupPayload", v)
+			return nil, goahttp.ErrInvalidType("mailing-list", "update-groupsio-mailing-list", "*mailinglist.UpdateGroupsioMailingListPayload", v)
 		}
 		subgroupID = p.SubgroupID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateGroupsioSubgroupMailingListPath(subgroupID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateGroupsioMailingListMailingListPath(subgroupID)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "update-groupsio-subgroup", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "update-groupsio-mailing-list", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1491,13 +1493,13 @@ func (c *Client) BuildUpdateGroupsioSubgroupRequest(ctx context.Context, v any) 
 	return req, nil
 }
 
-// EncodeUpdateGroupsioSubgroupRequest returns an encoder for requests sent to
-// the mailing-list update-groupsio-subgroup server.
-func EncodeUpdateGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeUpdateGroupsioMailingListRequest returns an encoder for requests sent
+// to the mailing-list update-groupsio-mailing-list server.
+func EncodeUpdateGroupsioMailingListRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.UpdateGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.UpdateGroupsioMailingListPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "update-groupsio-subgroup", "*mailinglist.UpdateGroupsioSubgroupPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "update-groupsio-mailing-list", "*mailinglist.UpdateGroupsioMailingListPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1507,24 +1509,25 @@ func EncodeUpdateGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Enc
 				req.Header.Set("Authorization", head)
 			}
 		}
-		body := NewUpdateGroupsioSubgroupRequestBody(p)
+		body := NewUpdateGroupsioMailingListRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("mailing-list", "update-groupsio-subgroup", err)
+			return goahttp.ErrEncodingError("mailing-list", "update-groupsio-mailing-list", err)
 		}
 		return nil
 	}
 }
 
-// DecodeUpdateGroupsioSubgroupResponse returns a decoder for responses
-// returned by the mailing-list update-groupsio-subgroup endpoint. restoreBody
-// controls whether the response body should be restored after having been read.
-// DecodeUpdateGroupsioSubgroupResponse may return the following errors:
+// DecodeUpdateGroupsioMailingListResponse returns a decoder for responses
+// returned by the mailing-list update-groupsio-mailing-list endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeUpdateGroupsioMailingListResponse may return the following errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeUpdateGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeUpdateGroupsioMailingListResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1541,100 +1544,100 @@ func DecodeUpdateGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.D
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body UpdateGroupsioSubgroupResponseBody
+				body UpdateGroupsioMailingListResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			err = ValidateUpdateGroupsioSubgroupResponseBody(&body)
+			err = ValidateUpdateGroupsioMailingListResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			res := NewUpdateGroupsioSubgroupGroupsioSubgroupOK(&body)
+			res := NewUpdateGroupsioMailingListGroupsioSubgroupOK(&body)
 			return res, nil
 		case http.StatusBadRequest:
 			var (
-				body UpdateGroupsioSubgroupBadRequestResponseBody
+				body UpdateGroupsioMailingListBadRequestResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			err = ValidateUpdateGroupsioSubgroupBadRequestResponseBody(&body)
+			err = ValidateUpdateGroupsioMailingListBadRequestResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			return nil, NewUpdateGroupsioSubgroupBadRequest(&body)
+			return nil, NewUpdateGroupsioMailingListBadRequest(&body)
 		case http.StatusInternalServerError:
 			var (
-				body UpdateGroupsioSubgroupInternalServerErrorResponseBody
+				body UpdateGroupsioMailingListInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			err = ValidateUpdateGroupsioSubgroupInternalServerErrorResponseBody(&body)
+			err = ValidateUpdateGroupsioMailingListInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			return nil, NewUpdateGroupsioSubgroupInternalServerError(&body)
+			return nil, NewUpdateGroupsioMailingListInternalServerError(&body)
 		case http.StatusNotFound:
 			var (
-				body UpdateGroupsioSubgroupNotFoundResponseBody
+				body UpdateGroupsioMailingListNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			err = ValidateUpdateGroupsioSubgroupNotFoundResponseBody(&body)
+			err = ValidateUpdateGroupsioMailingListNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			return nil, NewUpdateGroupsioSubgroupNotFound(&body)
+			return nil, NewUpdateGroupsioMailingListNotFound(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body UpdateGroupsioSubgroupServiceUnavailableResponseBody
+				body UpdateGroupsioMailingListServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			err = ValidateUpdateGroupsioSubgroupServiceUnavailableResponseBody(&body)
+			err = ValidateUpdateGroupsioMailingListServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "update-groupsio-mailing-list", err)
 			}
-			return nil, NewUpdateGroupsioSubgroupServiceUnavailable(&body)
+			return nil, NewUpdateGroupsioMailingListServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "update-groupsio-subgroup", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "update-groupsio-mailing-list", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildDeleteGroupsioSubgroupRequest instantiates a HTTP request object with
-// method and path set to call the "mailing-list" service
-// "delete-groupsio-subgroup" endpoint
-func (c *Client) BuildDeleteGroupsioSubgroupRequest(ctx context.Context, v any) (*http.Request, error) {
+// BuildDeleteGroupsioMailingListRequest instantiates a HTTP request object
+// with method and path set to call the "mailing-list" service
+// "delete-groupsio-mailing-list" endpoint
+func (c *Client) BuildDeleteGroupsioMailingListRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		subgroupID string
 	)
 	{
-		p, ok := v.(*mailinglist.DeleteGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.DeleteGroupsioMailingListPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("mailing-list", "delete-groupsio-subgroup", "*mailinglist.DeleteGroupsioSubgroupPayload", v)
+			return nil, goahttp.ErrInvalidType("mailing-list", "delete-groupsio-mailing-list", "*mailinglist.DeleteGroupsioMailingListPayload", v)
 		}
 		subgroupID = p.SubgroupID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteGroupsioSubgroupMailingListPath(subgroupID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteGroupsioMailingListMailingListPath(subgroupID)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "delete-groupsio-subgroup", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "delete-groupsio-mailing-list", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1643,13 +1646,13 @@ func (c *Client) BuildDeleteGroupsioSubgroupRequest(ctx context.Context, v any) 
 	return req, nil
 }
 
-// EncodeDeleteGroupsioSubgroupRequest returns an encoder for requests sent to
-// the mailing-list delete-groupsio-subgroup server.
-func EncodeDeleteGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeDeleteGroupsioMailingListRequest returns an encoder for requests sent
+// to the mailing-list delete-groupsio-mailing-list server.
+func EncodeDeleteGroupsioMailingListRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.DeleteGroupsioSubgroupPayload)
+		p, ok := v.(*mailinglist.DeleteGroupsioMailingListPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "delete-groupsio-subgroup", "*mailinglist.DeleteGroupsioSubgroupPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "delete-groupsio-mailing-list", "*mailinglist.DeleteGroupsioMailingListPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1663,15 +1666,16 @@ func EncodeDeleteGroupsioSubgroupRequest(encoder func(*http.Request) goahttp.Enc
 	}
 }
 
-// DecodeDeleteGroupsioSubgroupResponse returns a decoder for responses
-// returned by the mailing-list delete-groupsio-subgroup endpoint. restoreBody
-// controls whether the response body should be restored after having been read.
-// DecodeDeleteGroupsioSubgroupResponse may return the following errors:
+// DecodeDeleteGroupsioMailingListResponse returns a decoder for responses
+// returned by the mailing-list delete-groupsio-mailing-list endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeDeleteGroupsioMailingListResponse may return the following errors:
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeDeleteGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeDeleteGroupsioMailingListResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1690,61 +1694,61 @@ func DecodeDeleteGroupsioSubgroupResponse(decoder func(*http.Response) goahttp.D
 			return nil, nil
 		case http.StatusInternalServerError:
 			var (
-				body DeleteGroupsioSubgroupInternalServerErrorResponseBody
+				body DeleteGroupsioMailingListInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			err = ValidateDeleteGroupsioSubgroupInternalServerErrorResponseBody(&body)
+			err = ValidateDeleteGroupsioMailingListInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			return nil, NewDeleteGroupsioSubgroupInternalServerError(&body)
+			return nil, NewDeleteGroupsioMailingListInternalServerError(&body)
 		case http.StatusNotFound:
 			var (
-				body DeleteGroupsioSubgroupNotFoundResponseBody
+				body DeleteGroupsioMailingListNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			err = ValidateDeleteGroupsioSubgroupNotFoundResponseBody(&body)
+			err = ValidateDeleteGroupsioMailingListNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			return nil, NewDeleteGroupsioSubgroupNotFound(&body)
+			return nil, NewDeleteGroupsioMailingListNotFound(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body DeleteGroupsioSubgroupServiceUnavailableResponseBody
+				body DeleteGroupsioMailingListServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			err = ValidateDeleteGroupsioSubgroupServiceUnavailableResponseBody(&body)
+			err = ValidateDeleteGroupsioMailingListServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-subgroup", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "delete-groupsio-mailing-list", err)
 			}
-			return nil, NewDeleteGroupsioSubgroupServiceUnavailable(&body)
+			return nil, NewDeleteGroupsioMailingListServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "delete-groupsio-subgroup", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "delete-groupsio-mailing-list", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildGetGroupsioSubgroupCountRequest instantiates a HTTP request object with
-// method and path set to call the "mailing-list" service
-// "get-groupsio-subgroup-count" endpoint
-func (c *Client) BuildGetGroupsioSubgroupCountRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioSubgroupCountMailingListPath()}
+// BuildGetGroupsioMailingListCountRequest instantiates a HTTP request object
+// with method and path set to call the "mailing-list" service
+// "get-groupsio-mailing-list-count" endpoint
+func (c *Client) BuildGetGroupsioMailingListCountRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioMailingListCountMailingListPath()}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-subgroup-count", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-mailing-list-count", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1753,13 +1757,13 @@ func (c *Client) BuildGetGroupsioSubgroupCountRequest(ctx context.Context, v any
 	return req, nil
 }
 
-// EncodeGetGroupsioSubgroupCountRequest returns an encoder for requests sent
-// to the mailing-list get-groupsio-subgroup-count server.
-func EncodeGetGroupsioSubgroupCountRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeGetGroupsioMailingListCountRequest returns an encoder for requests
+// sent to the mailing-list get-groupsio-mailing-list-count server.
+func EncodeGetGroupsioMailingListCountRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.GetGroupsioSubgroupCountPayload)
+		p, ok := v.(*mailinglist.GetGroupsioMailingListCountPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-subgroup-count", "*mailinglist.GetGroupsioSubgroupCountPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list-count", "*mailinglist.GetGroupsioMailingListCountPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1776,16 +1780,16 @@ func EncodeGetGroupsioSubgroupCountRequest(encoder func(*http.Request) goahttp.E
 	}
 }
 
-// DecodeGetGroupsioSubgroupCountResponse returns a decoder for responses
-// returned by the mailing-list get-groupsio-subgroup-count endpoint.
+// DecodeGetGroupsioMailingListCountResponse returns a decoder for responses
+// returned by the mailing-list get-groupsio-mailing-list-count endpoint.
 // restoreBody controls whether the response body should be restored after
 // having been read.
-// DecodeGetGroupsioSubgroupCountResponse may return the following errors:
+// DecodeGetGroupsioMailingListCountResponse may return the following errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeGetGroupsioSubgroupCountResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetGroupsioMailingListCountResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1802,86 +1806,86 @@ func DecodeGetGroupsioSubgroupCountResponse(decoder func(*http.Response) goahttp
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body GetGroupsioSubgroupCountResponseBody
+				body GetGroupsioMailingListCountResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupCountResponseBody(&body)
+			err = ValidateGetGroupsioMailingListCountResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			res := NewGetGroupsioSubgroupCountGroupsioCountOK(&body)
+			res := NewGetGroupsioMailingListCountGroupsioCountOK(&body)
 			return res, nil
 		case http.StatusBadRequest:
 			var (
-				body GetGroupsioSubgroupCountBadRequestResponseBody
+				body GetGroupsioMailingListCountBadRequestResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupCountBadRequestResponseBody(&body)
+			err = ValidateGetGroupsioMailingListCountBadRequestResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupCountBadRequest(&body)
+			return nil, NewGetGroupsioMailingListCountBadRequest(&body)
 		case http.StatusInternalServerError:
 			var (
-				body GetGroupsioSubgroupCountInternalServerErrorResponseBody
+				body GetGroupsioMailingListCountInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupCountInternalServerErrorResponseBody(&body)
+			err = ValidateGetGroupsioMailingListCountInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupCountInternalServerError(&body)
+			return nil, NewGetGroupsioMailingListCountInternalServerError(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body GetGroupsioSubgroupCountServiceUnavailableResponseBody
+				body GetGroupsioMailingListCountServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupCountServiceUnavailableResponseBody(&body)
+			err = ValidateGetGroupsioMailingListCountServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupCountServiceUnavailable(&body)
+			return nil, NewGetGroupsioMailingListCountServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-subgroup-count", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-mailing-list-count", resp.StatusCode, string(body))
 		}
 	}
 }
 
-// BuildGetGroupsioSubgroupMemberCountRequest instantiates a HTTP request
+// BuildGetGroupsioMailingListMemberCountRequest instantiates a HTTP request
 // object with method and path set to call the "mailing-list" service
-// "get-groupsio-subgroup-member-count" endpoint
-func (c *Client) BuildGetGroupsioSubgroupMemberCountRequest(ctx context.Context, v any) (*http.Request, error) {
+// "get-groupsio-mailing-list-member-count" endpoint
+func (c *Client) BuildGetGroupsioMailingListMemberCountRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		subgroupID string
 	)
 	{
-		p, ok := v.(*mailinglist.GetGroupsioSubgroupMemberCountPayload)
+		p, ok := v.(*mailinglist.GetGroupsioMailingListMemberCountPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-subgroup-member-count", "*mailinglist.GetGroupsioSubgroupMemberCountPayload", v)
+			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list-member-count", "*mailinglist.GetGroupsioMailingListMemberCountPayload", v)
 		}
 		subgroupID = p.SubgroupID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioSubgroupMemberCountMailingListPath(subgroupID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioMailingListMemberCountMailingListPath(subgroupID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-subgroup-member-count", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-mailing-list-member-count", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1890,13 +1894,14 @@ func (c *Client) BuildGetGroupsioSubgroupMemberCountRequest(ctx context.Context,
 	return req, nil
 }
 
-// EncodeGetGroupsioSubgroupMemberCountRequest returns an encoder for requests
-// sent to the mailing-list get-groupsio-subgroup-member-count server.
-func EncodeGetGroupsioSubgroupMemberCountRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeGetGroupsioMailingListMemberCountRequest returns an encoder for
+// requests sent to the mailing-list get-groupsio-mailing-list-member-count
+// server.
+func EncodeGetGroupsioMailingListMemberCountRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.GetGroupsioSubgroupMemberCountPayload)
+		p, ok := v.(*mailinglist.GetGroupsioMailingListMemberCountPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-subgroup-member-count", "*mailinglist.GetGroupsioSubgroupMemberCountPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list-member-count", "*mailinglist.GetGroupsioMailingListMemberCountPayload", v)
 		}
 		if p.BearerToken != nil {
 			head := *p.BearerToken
@@ -1910,16 +1915,17 @@ func EncodeGetGroupsioSubgroupMemberCountRequest(encoder func(*http.Request) goa
 	}
 }
 
-// DecodeGetGroupsioSubgroupMemberCountResponse returns a decoder for responses
-// returned by the mailing-list get-groupsio-subgroup-member-count endpoint.
-// restoreBody controls whether the response body should be restored after
-// having been read.
-// DecodeGetGroupsioSubgroupMemberCountResponse may return the following errors:
+// DecodeGetGroupsioMailingListMemberCountResponse returns a decoder for
+// responses returned by the mailing-list
+// get-groupsio-mailing-list-member-count endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeGetGroupsioMailingListMemberCountResponse may return the following
+// errors:
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeGetGroupsioSubgroupMemberCountResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetGroupsioMailingListMemberCountResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1936,64 +1942,64 @@ func DecodeGetGroupsioSubgroupMemberCountResponse(decoder func(*http.Response) g
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body GetGroupsioSubgroupMemberCountResponseBody
+				body GetGroupsioMailingListMemberCountResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupMemberCountResponseBody(&body)
+			err = ValidateGetGroupsioMailingListMemberCountResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			res := NewGetGroupsioSubgroupMemberCountGroupsioCountOK(&body)
+			res := NewGetGroupsioMailingListMemberCountGroupsioCountOK(&body)
 			return res, nil
 		case http.StatusInternalServerError:
 			var (
-				body GetGroupsioSubgroupMemberCountInternalServerErrorResponseBody
+				body GetGroupsioMailingListMemberCountInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupMemberCountInternalServerErrorResponseBody(&body)
+			err = ValidateGetGroupsioMailingListMemberCountInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupMemberCountInternalServerError(&body)
+			return nil, NewGetGroupsioMailingListMemberCountInternalServerError(&body)
 		case http.StatusNotFound:
 			var (
-				body GetGroupsioSubgroupMemberCountNotFoundResponseBody
+				body GetGroupsioMailingListMemberCountNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupMemberCountNotFoundResponseBody(&body)
+			err = ValidateGetGroupsioMailingListMemberCountNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupMemberCountNotFound(&body)
+			return nil, NewGetGroupsioMailingListMemberCountNotFound(&body)
 		case http.StatusServiceUnavailable:
 			var (
-				body GetGroupsioSubgroupMemberCountServiceUnavailableResponseBody
+				body GetGroupsioMailingListMemberCountServiceUnavailableResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			err = ValidateGetGroupsioSubgroupMemberCountServiceUnavailableResponseBody(&body)
+			err = ValidateGetGroupsioMailingListMemberCountServiceUnavailableResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-subgroup-member-count", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-member-count", err)
 			}
-			return nil, NewGetGroupsioSubgroupMemberCountServiceUnavailable(&body)
+			return nil, NewGetGroupsioMailingListMemberCountServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-subgroup-member-count", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-mailing-list-member-count", resp.StatusCode, string(body))
 		}
 	}
 }

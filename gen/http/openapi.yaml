@@ -63,6 +63,664 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists:
+        get:
+            tags:
+                - mailing-list
+            summary: list-groupsio-mailing-lists mailing-list
+            description: List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
+            operationId: mailing-list#list-groupsio-mailing-lists
+            parameters:
+                - name: project_uid
+                  in: query
+                  description: LFX v2 project UID filter
+                  required: false
+                  type: string
+                  format: uuid
+                - name: committee_uid
+                  in: query
+                  description: LFX v2 committee UID filter
+                  required: false
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSubgroupList'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        post:
+            tags:
+                - mailing-list
+            summary: create-groupsio-mailing-list mailing-list
+            description: Create a GroupsIO subgroup
+            operationId: mailing-list#create-groupsio-mailing-list
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Create-Groupsio-Mailing-ListRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListCreateGroupsioMailingListRequestBody'
+            responses:
+                "201":
+                    description: Created response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSubgroup'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list mailing-list
+            description: Get a GroupsIO subgroup by ID
+            operationId: mailing-list#get-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSubgroup'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-groupsio-mailing-list mailing-list
+            description: Update a GroupsIO subgroup
+            operationId: mailing-list#update-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Update-Groupsio-Mailing-ListRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGroupsioMailingListRequestBody'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSubgroup'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-groupsio-mailing-list mailing-list
+            description: Delete a GroupsIO subgroup
+            operationId: mailing-list#delete-groupsio-mailing-list
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/invitemembers:
+        post:
+            tags:
+                - mailing-list
+            summary: invite-groupsio-members mailing-list
+            description: Invite members to a GroupsIO subgroup by email
+            operationId: mailing-list#invite-groupsio-members
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Invite-Groupsio-MembersRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListInviteGroupsioMembersRequestBody'
+                    required:
+                        - emails
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/member_count:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-member-count mailing-list
+            description: Get count of members in a GroupsIO subgroup
+            operationId: mailing-list#get-groupsio-mailing-list-member-count
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioCount'
+                        required:
+                            - count
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/members:
+        get:
+            tags:
+                - mailing-list
+            summary: list-groupsio-members mailing-list
+            description: List members of a GroupsIO subgroup
+            operationId: mailing-list#list-groupsio-members
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioMemberList'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        post:
+            tags:
+                - mailing-list
+            summary: add-groupsio-member mailing-list
+            description: Add a member to a GroupsIO subgroup
+            operationId: mailing-list#add-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Add-Groupsio-MemberRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListAddGroupsioMemberRequestBody'
+            responses:
+                "201":
+                    description: Created response.
+                    schema:
+                        $ref: '#/definitions/GroupsioMember'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/members/{member_id}:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-member mailing-list
+            description: Get a member of a GroupsIO subgroup by ID
+            operationId: mailing-list#get-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioMember'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        put:
+            tags:
+                - mailing-list
+            summary: update-groupsio-member mailing-list
+            description: Update a member of a GroupsIO subgroup
+            operationId: mailing-list#update-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+                - name: Update-Groupsio-MemberRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListUpdateGroupsioMemberRequestBody'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioMember'
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+        delete:
+            tags:
+                - mailing-list
+            summary: delete-groupsio-member mailing-list
+            description: Delete a member from a GroupsIO subgroup
+            operationId: mailing-list#delete-groupsio-member
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: member_id
+                  in: path
+                  description: Member ID
+                  required: true
+                  type: string
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/count:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-count mailing-list
+            description: Get count of GroupsIO subgroups for a project
+            operationId: mailing-list#get-groupsio-mailing-list-count
+            parameters:
+                - name: project_uid
+                  in: query
+                  description: LFX v2 project UID
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token issued by Heimdall
+                  required: false
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioCount'
+                        required:
+                            - count
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/services:
         get:
             tags:
@@ -369,664 +1027,6 @@ paths:
                     description: Not Found response.
                     schema:
                         $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups:
-        get:
-            tags:
-                - mailing-list
-            summary: list-groupsio-subgroups mailing-list
-            description: List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
-            operationId: mailing-list#list-groupsio-subgroups
-            parameters:
-                - name: project_uid
-                  in: query
-                  description: LFX v2 project UID filter
-                  required: false
-                  type: string
-                  format: uuid
-                - name: committee_uid
-                  in: query
-                  description: LFX v2 committee UID filter
-                  required: false
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioSubgroupList'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        post:
-            tags:
-                - mailing-list
-            summary: create-groupsio-subgroup mailing-list
-            description: Create a GroupsIO subgroup
-            operationId: mailing-list#create-groupsio-subgroup
-            parameters:
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: Create-Groupsio-SubgroupRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListCreateGroupsioSubgroupRequestBody'
-            responses:
-                "201":
-                    description: Created response.
-                    schema:
-                        $ref: '#/definitions/GroupsioSubgroup'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup mailing-list
-            description: Get a GroupsIO subgroup by ID
-            operationId: mailing-list#get-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioSubgroup'
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        put:
-            tags:
-                - mailing-list
-            summary: update-groupsio-subgroup mailing-list
-            description: Update a GroupsIO subgroup
-            operationId: mailing-list#update-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: Update-Groupsio-SubgroupRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListUpdateGroupsioSubgroupRequestBody'
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioSubgroup'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-groupsio-subgroup mailing-list
-            description: Delete a GroupsIO subgroup
-            operationId: mailing-list#delete-groupsio-subgroup
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/invitemembers:
-        post:
-            tags:
-                - mailing-list
-            summary: invite-groupsio-members mailing-list
-            description: Invite members to a GroupsIO subgroup by email
-            operationId: mailing-list#invite-groupsio-members
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: Invite-Groupsio-MembersRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListInviteGroupsioMembersRequestBody'
-                    required:
-                        - emails
-            responses:
-                "204":
-                    description: No Content response.
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/member_count:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup-member-count mailing-list
-            description: Get count of members in a GroupsIO subgroup
-            operationId: mailing-list#get-groupsio-subgroup-member-count
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioCount'
-                        required:
-                            - count
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/members:
-        get:
-            tags:
-                - mailing-list
-            summary: list-groupsio-members mailing-list
-            description: List members of a GroupsIO subgroup
-            operationId: mailing-list#list-groupsio-members
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioMemberList'
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        post:
-            tags:
-                - mailing-list
-            summary: add-groupsio-member mailing-list
-            description: Add a member to a GroupsIO subgroup
-            operationId: mailing-list#add-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: Add-Groupsio-MemberRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListAddGroupsioMemberRequestBody'
-            responses:
-                "201":
-                    description: Created response.
-                    schema:
-                        $ref: '#/definitions/GroupsioMember'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "409":
-                    description: Conflict response.
-                    schema:
-                        $ref: '#/definitions/ConflictError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/{subgroup_id}/members/{member_id}:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-member mailing-list
-            description: Get a member of a GroupsIO subgroup by ID
-            operationId: mailing-list#get-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioMember'
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        put:
-            tags:
-                - mailing-list
-            summary: update-groupsio-member mailing-list
-            description: Update a member of a GroupsIO subgroup
-            operationId: mailing-list#update-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-                - name: Update-Groupsio-MemberRequestBody
-                  in: body
-                  required: true
-                  schema:
-                    $ref: '#/definitions/MailingListUpdateGroupsioMemberRequestBody'
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioMember'
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
-                        required:
-                            - message
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-        delete:
-            tags:
-                - mailing-list
-            summary: delete-groupsio-member mailing-list
-            description: Delete a member from a GroupsIO subgroup
-            operationId: mailing-list#delete-groupsio-member
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  type: string
-                - name: member_id
-                  in: path
-                  description: Member ID
-                  required: true
-                  type: string
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "204":
-                    description: No Content response.
-                "404":
-                    description: Not Found response.
-                    schema:
-                        $ref: '#/definitions/NotFoundError'
-                        required:
-                            - message
-                "500":
-                    description: Internal Server Error response.
-                    schema:
-                        $ref: '#/definitions/InternalServerError'
-                        required:
-                            - message
-                "503":
-                    description: Service Unavailable response.
-                    schema:
-                        $ref: '#/definitions/ServiceUnavailableError'
-                        required:
-                            - message
-            schemes:
-                - http
-            security:
-                - jwt_header_Authorization: []
-    /groupsio/subgroups/count:
-        get:
-            tags:
-                - mailing-list
-            summary: get-groupsio-subgroup-count mailing-list
-            description: Get count of GroupsIO subgroups for a project
-            operationId: mailing-list#get-groupsio-subgroup-count
-            parameters:
-                - name: project_uid
-                  in: query
-                  description: LFX v2 project UID
-                  required: true
-                  type: string
-                  format: uuid
-                - name: Authorization
-                  in: header
-                  description: JWT token issued by Heimdall
-                  required: false
-                  type: string
-            responses:
-                "200":
-                    description: OK response.
-                    schema:
-                        $ref: '#/definitions/GroupsioCount'
-                        required:
-                            - count
-                "400":
-                    description: Bad Request response.
-                    schema:
-                        $ref: '#/definitions/BadRequestError'
                         required:
                             - message
                 "500":
@@ -1771,49 +1771,8 @@ definitions:
         required:
             - email
             - subgroup_id
-    MailingListCreateGroupsioServiceRequestBody:
-        title: MailingListCreateGroupsioServiceRequestBody
-        type: object
-        properties:
-            domain:
-                type: string
-                description: Service domain
-                example: Omnis eveniet.
-            group_id:
-                type: integer
-                description: GroupsIO group ID
-                example: 6179739698945150393
-                format: int64
-            prefix:
-                type: string
-                description: Email prefix
-                example: Odio incidunt expedita quia.
-            project_uid:
-                type: string
-                description: LFX v2 project UID
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
-            status:
-                type: string
-                description: Service status
-                example: Dolor deserunt voluptatem deserunt optio eius.
-            type:
-                type: string
-                description: Service type
-                example: v2_primary
-                enum:
-                    - v2_primary
-                    - v2_formation
-                    - v2_shared
-        example:
-            domain: Repellendus aut veritatis mollitia et.
-            group_id: 2880193156100813046
-            prefix: Repudiandae libero.
-            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            status: Nisi doloribus numquam rerum et molestias aspernatur.
-            type: v2_primary
-    MailingListCreateGroupsioSubgroupRequestBody:
-        title: MailingListCreateGroupsioSubgroupRequestBody
+    MailingListCreateGroupsioMailingListRequestBody:
+        title: MailingListCreateGroupsioMailingListRequestBody
         type: object
         properties:
             audience_access:
@@ -1860,6 +1819,47 @@ definitions:
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             service_id: Fugiat tempora.
             type: Molestias quia adipisci alias unde.
+    MailingListCreateGroupsioServiceRequestBody:
+        title: MailingListCreateGroupsioServiceRequestBody
+        type: object
+        properties:
+            domain:
+                type: string
+                description: Service domain
+                example: Omnis eveniet.
+            group_id:
+                type: integer
+                description: GroupsIO group ID
+                example: 6179739698945150393
+                format: int64
+            prefix:
+                type: string
+                description: Email prefix
+                example: Odio incidunt expedita quia.
+            project_uid:
+                type: string
+                description: LFX v2 project UID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            status:
+                type: string
+                description: Service status
+                example: Dolor deserunt voluptatem deserunt optio eius.
+            type:
+                type: string
+                description: Service type
+                example: v2_primary
+                enum:
+                    - v2_primary
+                    - v2_formation
+                    - v2_shared
+        example:
+            domain: Repellendus aut veritatis mollitia et.
+            group_id: 2880193156100813046
+            prefix: Repudiandae libero.
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            status: Nisi doloribus numquam rerum et molestias aspernatur.
+            type: v2_primary
     MailingListInviteGroupsioMembersRequestBody:
         title: MailingListInviteGroupsioMembersRequestBody
         type: object
@@ -1881,6 +1881,54 @@ definitions:
                 - Voluptas sed sapiente autem.
         required:
             - emails
+    MailingListUpdateGroupsioMailingListRequestBody:
+        title: MailingListUpdateGroupsioMailingListRequestBody
+        type: object
+        properties:
+            audience_access:
+                type: string
+                description: Audience access setting
+                example: Molestiae dolore sapiente sit.
+            committee_uid:
+                type: string
+                description: LFX v2 committee UID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            description:
+                type: string
+                description: Subgroup description
+                example: Ipsum maiores quod in est architecto ea.
+            group_id:
+                type: integer
+                description: GroupsIO group ID
+                example: 2949878369576992115
+                format: int64
+            name:
+                type: string
+                description: Subgroup name
+                example: Rerum molestias natus.
+            project_uid:
+                type: string
+                description: LFX v2 project UID
+                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                format: uuid
+            service_id:
+                type: string
+                description: Parent GroupsIO service ID
+                example: Aut tempora.
+            type:
+                type: string
+                description: Subgroup type
+                example: Quisquam doloremque autem maiores veritatis ut repudiandae.
+        example:
+            audience_access: Reprehenderit voluptatibus voluptatem qui commodi in.
+            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            description: Explicabo officia et dignissimos ut.
+            group_id: 346261777347400272
+            name: Iure alias sequi unde repudiandae expedita.
+            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+            service_id: Sunt vitae quos.
+            type: Fuga id non.
     MailingListUpdateGroupsioMemberRequestBody:
         title: MailingListUpdateGroupsioMemberRequestBody
         type: object
@@ -1979,54 +2027,6 @@ definitions:
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             status: Culpa adipisci.
             type: v2_primary
-    MailingListUpdateGroupsioSubgroupRequestBody:
-        title: MailingListUpdateGroupsioSubgroupRequestBody
-        type: object
-        properties:
-            audience_access:
-                type: string
-                description: Audience access setting
-                example: Molestiae dolore sapiente sit.
-            committee_uid:
-                type: string
-                description: LFX v2 committee UID
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
-            description:
-                type: string
-                description: Subgroup description
-                example: Ipsum maiores quod in est architecto ea.
-            group_id:
-                type: integer
-                description: GroupsIO group ID
-                example: 2949878369576992115
-                format: int64
-            name:
-                type: string
-                description: Subgroup name
-                example: Rerum molestias natus.
-            project_uid:
-                type: string
-                description: LFX v2 project UID
-                example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
-            service_id:
-                type: string
-                description: Parent GroupsIO service ID
-                example: Aut tempora.
-            type:
-                type: string
-                description: Subgroup type
-                example: Quisquam doloremque autem maiores veritatis ut repudiandae.
-        example:
-            audience_access: Reprehenderit voluptatibus voluptatem qui commodi in.
-            committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            description: Explicabo officia et dignissimos ut.
-            group_id: 346261777347400272
-            name: Iure alias sequi unde repudiandae expedita.
-            project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-            service_id: Sunt vitae quos.
-            type: Fuga id non.
     NotFoundError:
         title: NotFoundError
         type: object

@@ -18,8 +18,7 @@ type BaseGrpsIOWriter interface {
 
 // GrpsIOWriter combines all writer operations for services, mailing lists, and members
 type GrpsIOWriter interface {
-	GrpsIOServiceWriter
-	GrpsIOMailingListWriter
+	GroupsIOServiceWriter
 	GrpsIOMemberWriter
 	BaseGrpsIOWriter
 }

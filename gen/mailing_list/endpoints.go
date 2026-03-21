@@ -17,29 +17,29 @@ import (
 
 // Endpoints wraps the "mailing-list" service endpoints.
 type Endpoints struct {
-	Livez                          goa.Endpoint
-	Readyz                         goa.Endpoint
-	ListGroupsioServices           goa.Endpoint
-	CreateGroupsioService          goa.Endpoint
-	GetGroupsioService             goa.Endpoint
-	UpdateGroupsioService          goa.Endpoint
-	DeleteGroupsioService          goa.Endpoint
-	GetGroupsioServiceProjects     goa.Endpoint
-	FindParentGroupsioService      goa.Endpoint
-	ListGroupsioSubgroups          goa.Endpoint
-	CreateGroupsioSubgroup         goa.Endpoint
-	GetGroupsioSubgroup            goa.Endpoint
-	UpdateGroupsioSubgroup         goa.Endpoint
-	DeleteGroupsioSubgroup         goa.Endpoint
-	GetGroupsioSubgroupCount       goa.Endpoint
-	GetGroupsioSubgroupMemberCount goa.Endpoint
-	ListGroupsioMembers            goa.Endpoint
-	AddGroupsioMember              goa.Endpoint
-	GetGroupsioMember              goa.Endpoint
-	UpdateGroupsioMember           goa.Endpoint
-	DeleteGroupsioMember           goa.Endpoint
-	InviteGroupsioMembers          goa.Endpoint
-	CheckGroupsioSubscriber        goa.Endpoint
+	Livez                             goa.Endpoint
+	Readyz                            goa.Endpoint
+	ListGroupsioServices              goa.Endpoint
+	CreateGroupsioService             goa.Endpoint
+	GetGroupsioService                goa.Endpoint
+	UpdateGroupsioService             goa.Endpoint
+	DeleteGroupsioService             goa.Endpoint
+	GetGroupsioServiceProjects        goa.Endpoint
+	FindParentGroupsioService         goa.Endpoint
+	ListGroupsioMailingLists          goa.Endpoint
+	CreateGroupsioMailingList         goa.Endpoint
+	GetGroupsioMailingList            goa.Endpoint
+	UpdateGroupsioMailingList         goa.Endpoint
+	DeleteGroupsioMailingList         goa.Endpoint
+	GetGroupsioMailingListCount       goa.Endpoint
+	GetGroupsioMailingListMemberCount goa.Endpoint
+	ListGroupsioMembers               goa.Endpoint
+	AddGroupsioMember                 goa.Endpoint
+	GetGroupsioMember                 goa.Endpoint
+	UpdateGroupsioMember              goa.Endpoint
+	DeleteGroupsioMember              goa.Endpoint
+	InviteGroupsioMembers             goa.Endpoint
+	CheckGroupsioSubscriber           goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -47,29 +47,29 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		Livez:                          NewLivezEndpoint(s),
-		Readyz:                         NewReadyzEndpoint(s),
-		ListGroupsioServices:           NewListGroupsioServicesEndpoint(s, a.JWTAuth),
-		CreateGroupsioService:          NewCreateGroupsioServiceEndpoint(s, a.JWTAuth),
-		GetGroupsioService:             NewGetGroupsioServiceEndpoint(s, a.JWTAuth),
-		UpdateGroupsioService:          NewUpdateGroupsioServiceEndpoint(s, a.JWTAuth),
-		DeleteGroupsioService:          NewDeleteGroupsioServiceEndpoint(s, a.JWTAuth),
-		GetGroupsioServiceProjects:     NewGetGroupsioServiceProjectsEndpoint(s, a.JWTAuth),
-		FindParentGroupsioService:      NewFindParentGroupsioServiceEndpoint(s, a.JWTAuth),
-		ListGroupsioSubgroups:          NewListGroupsioSubgroupsEndpoint(s, a.JWTAuth),
-		CreateGroupsioSubgroup:         NewCreateGroupsioSubgroupEndpoint(s, a.JWTAuth),
-		GetGroupsioSubgroup:            NewGetGroupsioSubgroupEndpoint(s, a.JWTAuth),
-		UpdateGroupsioSubgroup:         NewUpdateGroupsioSubgroupEndpoint(s, a.JWTAuth),
-		DeleteGroupsioSubgroup:         NewDeleteGroupsioSubgroupEndpoint(s, a.JWTAuth),
-		GetGroupsioSubgroupCount:       NewGetGroupsioSubgroupCountEndpoint(s, a.JWTAuth),
-		GetGroupsioSubgroupMemberCount: NewGetGroupsioSubgroupMemberCountEndpoint(s, a.JWTAuth),
-		ListGroupsioMembers:            NewListGroupsioMembersEndpoint(s, a.JWTAuth),
-		AddGroupsioMember:              NewAddGroupsioMemberEndpoint(s, a.JWTAuth),
-		GetGroupsioMember:              NewGetGroupsioMemberEndpoint(s, a.JWTAuth),
-		UpdateGroupsioMember:           NewUpdateGroupsioMemberEndpoint(s, a.JWTAuth),
-		DeleteGroupsioMember:           NewDeleteGroupsioMemberEndpoint(s, a.JWTAuth),
-		InviteGroupsioMembers:          NewInviteGroupsioMembersEndpoint(s, a.JWTAuth),
-		CheckGroupsioSubscriber:        NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
+		Livez:                             NewLivezEndpoint(s),
+		Readyz:                            NewReadyzEndpoint(s),
+		ListGroupsioServices:              NewListGroupsioServicesEndpoint(s, a.JWTAuth),
+		CreateGroupsioService:             NewCreateGroupsioServiceEndpoint(s, a.JWTAuth),
+		GetGroupsioService:                NewGetGroupsioServiceEndpoint(s, a.JWTAuth),
+		UpdateGroupsioService:             NewUpdateGroupsioServiceEndpoint(s, a.JWTAuth),
+		DeleteGroupsioService:             NewDeleteGroupsioServiceEndpoint(s, a.JWTAuth),
+		GetGroupsioServiceProjects:        NewGetGroupsioServiceProjectsEndpoint(s, a.JWTAuth),
+		FindParentGroupsioService:         NewFindParentGroupsioServiceEndpoint(s, a.JWTAuth),
+		ListGroupsioMailingLists:          NewListGroupsioMailingListsEndpoint(s, a.JWTAuth),
+		CreateGroupsioMailingList:         NewCreateGroupsioMailingListEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingList:            NewGetGroupsioMailingListEndpoint(s, a.JWTAuth),
+		UpdateGroupsioMailingList:         NewUpdateGroupsioMailingListEndpoint(s, a.JWTAuth),
+		DeleteGroupsioMailingList:         NewDeleteGroupsioMailingListEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListCount:       NewGetGroupsioMailingListCountEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListMemberCount: NewGetGroupsioMailingListMemberCountEndpoint(s, a.JWTAuth),
+		ListGroupsioMembers:               NewListGroupsioMembersEndpoint(s, a.JWTAuth),
+		AddGroupsioMember:                 NewAddGroupsioMemberEndpoint(s, a.JWTAuth),
+		GetGroupsioMember:                 NewGetGroupsioMemberEndpoint(s, a.JWTAuth),
+		UpdateGroupsioMember:              NewUpdateGroupsioMemberEndpoint(s, a.JWTAuth),
+		DeleteGroupsioMember:              NewDeleteGroupsioMemberEndpoint(s, a.JWTAuth),
+		InviteGroupsioMembers:             NewInviteGroupsioMembersEndpoint(s, a.JWTAuth),
+		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -84,13 +84,13 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DeleteGroupsioService = m(e.DeleteGroupsioService)
 	e.GetGroupsioServiceProjects = m(e.GetGroupsioServiceProjects)
 	e.FindParentGroupsioService = m(e.FindParentGroupsioService)
-	e.ListGroupsioSubgroups = m(e.ListGroupsioSubgroups)
-	e.CreateGroupsioSubgroup = m(e.CreateGroupsioSubgroup)
-	e.GetGroupsioSubgroup = m(e.GetGroupsioSubgroup)
-	e.UpdateGroupsioSubgroup = m(e.UpdateGroupsioSubgroup)
-	e.DeleteGroupsioSubgroup = m(e.DeleteGroupsioSubgroup)
-	e.GetGroupsioSubgroupCount = m(e.GetGroupsioSubgroupCount)
-	e.GetGroupsioSubgroupMemberCount = m(e.GetGroupsioSubgroupMemberCount)
+	e.ListGroupsioMailingLists = m(e.ListGroupsioMailingLists)
+	e.CreateGroupsioMailingList = m(e.CreateGroupsioMailingList)
+	e.GetGroupsioMailingList = m(e.GetGroupsioMailingList)
+	e.UpdateGroupsioMailingList = m(e.UpdateGroupsioMailingList)
+	e.DeleteGroupsioMailingList = m(e.DeleteGroupsioMailingList)
+	e.GetGroupsioMailingListCount = m(e.GetGroupsioMailingListCount)
+	e.GetGroupsioMailingListMemberCount = m(e.GetGroupsioMailingListMemberCount)
 	e.ListGroupsioMembers = m(e.ListGroupsioMembers)
 	e.AddGroupsioMember = m(e.AddGroupsioMember)
 	e.GetGroupsioMember = m(e.GetGroupsioMember)
@@ -277,11 +277,11 @@ func NewFindParentGroupsioServiceEndpoint(s Service, authJWTFn security.AuthJWTF
 	}
 }
 
-// NewListGroupsioSubgroupsEndpoint returns an endpoint function that calls the
-// method "list-groupsio-subgroups" of service "mailing-list".
-func NewListGroupsioSubgroupsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewListGroupsioMailingListsEndpoint returns an endpoint function that calls
+// the method "list-groupsio-mailing-lists" of service "mailing-list".
+func NewListGroupsioMailingListsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*ListGroupsioSubgroupsPayload)
+		p := req.(*ListGroupsioMailingListsPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -296,15 +296,15 @@ func NewListGroupsioSubgroupsEndpoint(s Service, authJWTFn security.AuthJWTFunc)
 		if err != nil {
 			return nil, err
 		}
-		return s.ListGroupsioSubgroups(ctx, p)
+		return s.ListGroupsioMailingLists(ctx, p)
 	}
 }
 
-// NewCreateGroupsioSubgroupEndpoint returns an endpoint function that calls
-// the method "create-groupsio-subgroup" of service "mailing-list".
-func NewCreateGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewCreateGroupsioMailingListEndpoint returns an endpoint function that calls
+// the method "create-groupsio-mailing-list" of service "mailing-list".
+func NewCreateGroupsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*CreateGroupsioSubgroupPayload)
+		p := req.(*CreateGroupsioMailingListPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -319,15 +319,15 @@ func NewCreateGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc
 		if err != nil {
 			return nil, err
 		}
-		return s.CreateGroupsioSubgroup(ctx, p)
+		return s.CreateGroupsioMailingList(ctx, p)
 	}
 }
 
-// NewGetGroupsioSubgroupEndpoint returns an endpoint function that calls the
-// method "get-groupsio-subgroup" of service "mailing-list".
-func NewGetGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewGetGroupsioMailingListEndpoint returns an endpoint function that calls
+// the method "get-groupsio-mailing-list" of service "mailing-list".
+func NewGetGroupsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*GetGroupsioSubgroupPayload)
+		p := req.(*GetGroupsioMailingListPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -342,15 +342,15 @@ func NewGetGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc) g
 		if err != nil {
 			return nil, err
 		}
-		return s.GetGroupsioSubgroup(ctx, p)
+		return s.GetGroupsioMailingList(ctx, p)
 	}
 }
 
-// NewUpdateGroupsioSubgroupEndpoint returns an endpoint function that calls
-// the method "update-groupsio-subgroup" of service "mailing-list".
-func NewUpdateGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewUpdateGroupsioMailingListEndpoint returns an endpoint function that calls
+// the method "update-groupsio-mailing-list" of service "mailing-list".
+func NewUpdateGroupsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*UpdateGroupsioSubgroupPayload)
+		p := req.(*UpdateGroupsioMailingListPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -365,15 +365,15 @@ func NewUpdateGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc
 		if err != nil {
 			return nil, err
 		}
-		return s.UpdateGroupsioSubgroup(ctx, p)
+		return s.UpdateGroupsioMailingList(ctx, p)
 	}
 }
 
-// NewDeleteGroupsioSubgroupEndpoint returns an endpoint function that calls
-// the method "delete-groupsio-subgroup" of service "mailing-list".
-func NewDeleteGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewDeleteGroupsioMailingListEndpoint returns an endpoint function that calls
+// the method "delete-groupsio-mailing-list" of service "mailing-list".
+func NewDeleteGroupsioMailingListEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*DeleteGroupsioSubgroupPayload)
+		p := req.(*DeleteGroupsioMailingListPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -388,15 +388,15 @@ func NewDeleteGroupsioSubgroupEndpoint(s Service, authJWTFn security.AuthJWTFunc
 		if err != nil {
 			return nil, err
 		}
-		return nil, s.DeleteGroupsioSubgroup(ctx, p)
+		return nil, s.DeleteGroupsioMailingList(ctx, p)
 	}
 }
 
-// NewGetGroupsioSubgroupCountEndpoint returns an endpoint function that calls
-// the method "get-groupsio-subgroup-count" of service "mailing-list".
-func NewGetGroupsioSubgroupCountEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+// NewGetGroupsioMailingListCountEndpoint returns an endpoint function that
+// calls the method "get-groupsio-mailing-list-count" of service "mailing-list".
+func NewGetGroupsioMailingListCountEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*GetGroupsioSubgroupCountPayload)
+		p := req.(*GetGroupsioMailingListCountPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -411,16 +411,16 @@ func NewGetGroupsioSubgroupCountEndpoint(s Service, authJWTFn security.AuthJWTFu
 		if err != nil {
 			return nil, err
 		}
-		return s.GetGroupsioSubgroupCount(ctx, p)
+		return s.GetGroupsioMailingListCount(ctx, p)
 	}
 }
 
-// NewGetGroupsioSubgroupMemberCountEndpoint returns an endpoint function that
-// calls the method "get-groupsio-subgroup-member-count" of service
+// NewGetGroupsioMailingListMemberCountEndpoint returns an endpoint function
+// that calls the method "get-groupsio-mailing-list-member-count" of service
 // "mailing-list".
-func NewGetGroupsioSubgroupMemberCountEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+func NewGetGroupsioMailingListMemberCountEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*GetGroupsioSubgroupMemberCountPayload)
+		p := req.(*GetGroupsioMailingListMemberCountPayload)
 		var err error
 		sc := security.JWTScheme{
 			Name:           "jwt",
@@ -435,7 +435,7 @@ func NewGetGroupsioSubgroupMemberCountEndpoint(s Service, authJWTFn security.Aut
 		if err != nil {
 			return nil, err
 		}
-		return s.GetGroupsioSubgroupMemberCount(ctx, p)
+		return s.GetGroupsioMailingListMemberCount(ctx, p)
 	}
 }
 

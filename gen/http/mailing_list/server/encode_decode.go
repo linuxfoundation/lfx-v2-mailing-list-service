@@ -809,21 +809,21 @@ func EncodeFindParentGroupsioServiceError(encoder func(context.Context, http.Res
 	}
 }
 
-// EncodeListGroupsioSubgroupsResponse returns an encoder for responses
-// returned by the mailing-list list-groupsio-subgroups endpoint.
-func EncodeListGroupsioSubgroupsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeListGroupsioMailingListsResponse returns an encoder for responses
+// returned by the mailing-list list-groupsio-mailing-lists endpoint.
+func EncodeListGroupsioMailingListsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioSubgroupList)
 		enc := encoder(ctx, w)
-		body := NewListGroupsioSubgroupsResponseBody(res)
+		body := NewListGroupsioMailingListsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeListGroupsioSubgroupsRequest returns a decoder for requests sent to
-// the mailing-list list-groupsio-subgroups endpoint.
-func DecodeListGroupsioSubgroupsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeListGroupsioMailingListsRequest returns a decoder for requests sent to
+// the mailing-list list-groupsio-mailing-lists endpoint.
+func DecodeListGroupsioMailingListsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			projectUID   *string
@@ -853,7 +853,7 @@ func DecodeListGroupsioSubgroupsRequest(mux goahttp.Muxer, decoder func(*http.Re
 		if err != nil {
 			return nil, err
 		}
-		payload := NewListGroupsioSubgroupsPayload(projectUID, committeeUID, bearerToken)
+		payload := NewListGroupsioMailingListsPayload(projectUID, committeeUID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -866,9 +866,9 @@ func DecodeListGroupsioSubgroupsRequest(mux goahttp.Muxer, decoder func(*http.Re
 	}
 }
 
-// EncodeListGroupsioSubgroupsError returns an encoder for errors returned by
-// the list-groupsio-subgroups mailing-list endpoint.
-func EncodeListGroupsioSubgroupsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeListGroupsioMailingListsError returns an encoder for errors returned
+// by the list-groupsio-mailing-lists mailing-list endpoint.
+func EncodeListGroupsioMailingListsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -884,7 +884,7 @@ func EncodeListGroupsioSubgroupsError(encoder func(context.Context, http.Respons
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewListGroupsioSubgroupsBadRequestResponseBody(res)
+				body = NewListGroupsioMailingListsBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -897,7 +897,7 @@ func EncodeListGroupsioSubgroupsError(encoder func(context.Context, http.Respons
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewListGroupsioSubgroupsInternalServerErrorResponseBody(res)
+				body = NewListGroupsioMailingListsInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -910,7 +910,7 @@ func EncodeListGroupsioSubgroupsError(encoder func(context.Context, http.Respons
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewListGroupsioSubgroupsServiceUnavailableResponseBody(res)
+				body = NewListGroupsioMailingListsServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -921,24 +921,24 @@ func EncodeListGroupsioSubgroupsError(encoder func(context.Context, http.Respons
 	}
 }
 
-// EncodeCreateGroupsioSubgroupResponse returns an encoder for responses
-// returned by the mailing-list create-groupsio-subgroup endpoint.
-func EncodeCreateGroupsioSubgroupResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeCreateGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list create-groupsio-mailing-list endpoint.
+func EncodeCreateGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioSubgroup)
 		enc := encoder(ctx, w)
-		body := NewCreateGroupsioSubgroupResponseBody(res)
+		body := NewCreateGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusCreated)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeCreateGroupsioSubgroupRequest returns a decoder for requests sent to
-// the mailing-list create-groupsio-subgroup endpoint.
-func DecodeCreateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeCreateGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list create-groupsio-mailing-list endpoint.
+func DecodeCreateGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body CreateGroupsioSubgroupRequestBody
+			body CreateGroupsioMailingListRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -952,7 +952,7 @@ func DecodeCreateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateGroupsioSubgroupRequestBody(&body)
+		err = ValidateCreateGroupsioMailingListRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
@@ -964,7 +964,7 @@ func DecodeCreateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload := NewCreateGroupsioSubgroupPayload(&body, bearerToken)
+		payload := NewCreateGroupsioMailingListPayload(&body, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -977,9 +977,9 @@ func DecodeCreateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 	}
 }
 
-// EncodeCreateGroupsioSubgroupError returns an encoder for errors returned by
-// the create-groupsio-subgroup mailing-list endpoint.
-func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeCreateGroupsioMailingListError returns an encoder for errors returned
+// by the create-groupsio-mailing-list mailing-list endpoint.
+func EncodeCreateGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -995,7 +995,7 @@ func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGroupsioSubgroupBadRequestResponseBody(res)
+				body = NewCreateGroupsioMailingListBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1008,7 +1008,7 @@ func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGroupsioSubgroupConflictResponseBody(res)
+				body = NewCreateGroupsioMailingListConflictResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -1021,7 +1021,7 @@ func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGroupsioSubgroupInternalServerErrorResponseBody(res)
+				body = NewCreateGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1034,7 +1034,7 @@ func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGroupsioSubgroupServiceUnavailableResponseBody(res)
+				body = NewCreateGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1045,21 +1045,21 @@ func EncodeCreateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 	}
 }
 
-// EncodeGetGroupsioSubgroupResponse returns an encoder for responses returned
-// by the mailing-list get-groupsio-subgroup endpoint.
-func EncodeGetGroupsioSubgroupResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-mailing-list endpoint.
+func EncodeGetGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioSubgroup)
 		enc := encoder(ctx, w)
-		body := NewGetGroupsioSubgroupResponseBody(res)
+		body := NewGetGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGroupsioSubgroupRequest returns a decoder for requests sent to the
-// mailing-list get-groupsio-subgroup endpoint.
-func DecodeGetGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMailingListRequest returns a decoder for requests sent to
+// the mailing-list get-groupsio-mailing-list endpoint.
+func DecodeGetGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			subgroupID  string
@@ -1072,7 +1072,7 @@ func DecodeGetGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload := NewGetGroupsioSubgroupPayload(subgroupID, bearerToken)
+		payload := NewGetGroupsioMailingListPayload(subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1085,9 +1085,9 @@ func DecodeGetGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Requ
 	}
 }
 
-// EncodeGetGroupsioSubgroupError returns an encoder for errors returned by the
-// get-groupsio-subgroup mailing-list endpoint.
-func EncodeGetGroupsioSubgroupError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListError returns an encoder for errors returned by
+// the get-groupsio-mailing-list mailing-list endpoint.
+func EncodeGetGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1103,7 +1103,7 @@ func EncodeGetGroupsioSubgroupError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1116,7 +1116,7 @@ func EncodeGetGroupsioSubgroupError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupNotFoundResponseBody(res)
+				body = NewGetGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1129,7 +1129,7 @@ func EncodeGetGroupsioSubgroupError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1140,24 +1140,24 @@ func EncodeGetGroupsioSubgroupError(encoder func(context.Context, http.ResponseW
 	}
 }
 
-// EncodeUpdateGroupsioSubgroupResponse returns an encoder for responses
-// returned by the mailing-list update-groupsio-subgroup endpoint.
-func EncodeUpdateGroupsioSubgroupResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeUpdateGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list update-groupsio-mailing-list endpoint.
+func EncodeUpdateGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioSubgroup)
 		enc := encoder(ctx, w)
-		body := NewUpdateGroupsioSubgroupResponseBody(res)
+		body := NewUpdateGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeUpdateGroupsioSubgroupRequest returns a decoder for requests sent to
-// the mailing-list update-groupsio-subgroup endpoint.
-func DecodeUpdateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeUpdateGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list update-groupsio-mailing-list endpoint.
+func DecodeUpdateGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGroupsioSubgroupRequestBody
+			body UpdateGroupsioMailingListRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -1171,7 +1171,7 @@ func DecodeUpdateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateGroupsioSubgroupRequestBody(&body)
+		err = ValidateUpdateGroupsioMailingListRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
@@ -1187,7 +1187,7 @@ func DecodeUpdateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload := NewUpdateGroupsioSubgroupPayload(&body, subgroupID, bearerToken)
+		payload := NewUpdateGroupsioMailingListPayload(&body, subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1200,9 +1200,9 @@ func DecodeUpdateGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 	}
 }
 
-// EncodeUpdateGroupsioSubgroupError returns an encoder for errors returned by
-// the update-groupsio-subgroup mailing-list endpoint.
-func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeUpdateGroupsioMailingListError returns an encoder for errors returned
+// by the update-groupsio-mailing-list mailing-list endpoint.
+func EncodeUpdateGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1218,7 +1218,7 @@ func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGroupsioSubgroupBadRequestResponseBody(res)
+				body = NewUpdateGroupsioMailingListBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1231,7 +1231,7 @@ func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGroupsioSubgroupInternalServerErrorResponseBody(res)
+				body = NewUpdateGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1244,7 +1244,7 @@ func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGroupsioSubgroupNotFoundResponseBody(res)
+				body = NewUpdateGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1257,7 +1257,7 @@ func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGroupsioSubgroupServiceUnavailableResponseBody(res)
+				body = NewUpdateGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1268,18 +1268,18 @@ func EncodeUpdateGroupsioSubgroupError(encoder func(context.Context, http.Respon
 	}
 }
 
-// EncodeDeleteGroupsioSubgroupResponse returns an encoder for responses
-// returned by the mailing-list delete-groupsio-subgroup endpoint.
-func EncodeDeleteGroupsioSubgroupResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeDeleteGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list delete-groupsio-mailing-list endpoint.
+func EncodeDeleteGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
 
-// DecodeDeleteGroupsioSubgroupRequest returns a decoder for requests sent to
-// the mailing-list delete-groupsio-subgroup endpoint.
-func DecodeDeleteGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeDeleteGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list delete-groupsio-mailing-list endpoint.
+func DecodeDeleteGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			subgroupID  string
@@ -1292,7 +1292,7 @@ func DecodeDeleteGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload := NewDeleteGroupsioSubgroupPayload(subgroupID, bearerToken)
+		payload := NewDeleteGroupsioMailingListPayload(subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1305,9 +1305,9 @@ func DecodeDeleteGroupsioSubgroupRequest(mux goahttp.Muxer, decoder func(*http.R
 	}
 }
 
-// EncodeDeleteGroupsioSubgroupError returns an encoder for errors returned by
-// the delete-groupsio-subgroup mailing-list endpoint.
-func EncodeDeleteGroupsioSubgroupError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeDeleteGroupsioMailingListError returns an encoder for errors returned
+// by the delete-groupsio-mailing-list mailing-list endpoint.
+func EncodeDeleteGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1323,7 +1323,7 @@ func EncodeDeleteGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGroupsioSubgroupInternalServerErrorResponseBody(res)
+				body = NewDeleteGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1336,7 +1336,7 @@ func EncodeDeleteGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGroupsioSubgroupNotFoundResponseBody(res)
+				body = NewDeleteGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1349,7 +1349,7 @@ func EncodeDeleteGroupsioSubgroupError(encoder func(context.Context, http.Respon
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGroupsioSubgroupServiceUnavailableResponseBody(res)
+				body = NewDeleteGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1360,21 +1360,21 @@ func EncodeDeleteGroupsioSubgroupError(encoder func(context.Context, http.Respon
 	}
 }
 
-// EncodeGetGroupsioSubgroupCountResponse returns an encoder for responses
-// returned by the mailing-list get-groupsio-subgroup-count endpoint.
-func EncodeGetGroupsioSubgroupCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMailingListCountResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-mailing-list-count endpoint.
+func EncodeGetGroupsioMailingListCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioCount)
 		enc := encoder(ctx, w)
-		body := NewGetGroupsioSubgroupCountResponseBody(res)
+		body := NewGetGroupsioMailingListCountResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGroupsioSubgroupCountRequest returns a decoder for requests sent to
-// the mailing-list get-groupsio-subgroup-count endpoint.
-func DecodeGetGroupsioSubgroupCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMailingListCountRequest returns a decoder for requests sent
+// to the mailing-list get-groupsio-mailing-list-count endpoint.
+func DecodeGetGroupsioMailingListCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			projectUID  string
@@ -1393,7 +1393,7 @@ func DecodeGetGroupsioSubgroupCountRequest(mux goahttp.Muxer, decoder func(*http
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetGroupsioSubgroupCountPayload(projectUID, bearerToken)
+		payload := NewGetGroupsioMailingListCountPayload(projectUID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1406,9 +1406,9 @@ func DecodeGetGroupsioSubgroupCountRequest(mux goahttp.Muxer, decoder func(*http
 	}
 }
 
-// EncodeGetGroupsioSubgroupCountError returns an encoder for errors returned
-// by the get-groupsio-subgroup-count mailing-list endpoint.
-func EncodeGetGroupsioSubgroupCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListCountError returns an encoder for errors
+// returned by the get-groupsio-mailing-list-count mailing-list endpoint.
+func EncodeGetGroupsioMailingListCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1424,7 +1424,7 @@ func EncodeGetGroupsioSubgroupCountError(encoder func(context.Context, http.Resp
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupCountBadRequestResponseBody(res)
+				body = NewGetGroupsioMailingListCountBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1437,7 +1437,7 @@ func EncodeGetGroupsioSubgroupCountError(encoder func(context.Context, http.Resp
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupCountInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListCountInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1450,7 +1450,7 @@ func EncodeGetGroupsioSubgroupCountError(encoder func(context.Context, http.Resp
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupCountServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListCountServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1461,22 +1461,23 @@ func EncodeGetGroupsioSubgroupCountError(encoder func(context.Context, http.Resp
 	}
 }
 
-// EncodeGetGroupsioSubgroupMemberCountResponse returns an encoder for
-// responses returned by the mailing-list get-groupsio-subgroup-member-count
-// endpoint.
-func EncodeGetGroupsioSubgroupMemberCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMailingListMemberCountResponse returns an encoder for
+// responses returned by the mailing-list
+// get-groupsio-mailing-list-member-count endpoint.
+func EncodeGetGroupsioMailingListMemberCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*mailinglist.GroupsioCount)
 		enc := encoder(ctx, w)
-		body := NewGetGroupsioSubgroupMemberCountResponseBody(res)
+		body := NewGetGroupsioMailingListMemberCountResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGroupsioSubgroupMemberCountRequest returns a decoder for requests
-// sent to the mailing-list get-groupsio-subgroup-member-count endpoint.
-func DecodeGetGroupsioSubgroupMemberCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMailingListMemberCountRequest returns a decoder for
+// requests sent to the mailing-list get-groupsio-mailing-list-member-count
+// endpoint.
+func DecodeGetGroupsioMailingListMemberCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			subgroupID  string
@@ -1489,7 +1490,7 @@ func DecodeGetGroupsioSubgroupMemberCountRequest(mux goahttp.Muxer, decoder func
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload := NewGetGroupsioSubgroupMemberCountPayload(subgroupID, bearerToken)
+		payload := NewGetGroupsioMailingListMemberCountPayload(subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1502,9 +1503,9 @@ func DecodeGetGroupsioSubgroupMemberCountRequest(mux goahttp.Muxer, decoder func
 	}
 }
 
-// EncodeGetGroupsioSubgroupMemberCountError returns an encoder for errors
-// returned by the get-groupsio-subgroup-member-count mailing-list endpoint.
-func EncodeGetGroupsioSubgroupMemberCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListMemberCountError returns an encoder for errors
+// returned by the get-groupsio-mailing-list-member-count mailing-list endpoint.
+func EncodeGetGroupsioMailingListMemberCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1520,7 +1521,7 @@ func EncodeGetGroupsioSubgroupMemberCountError(encoder func(context.Context, htt
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupMemberCountInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1533,7 +1534,7 @@ func EncodeGetGroupsioSubgroupMemberCountError(encoder func(context.Context, htt
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupMemberCountNotFoundResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1546,7 +1547,7 @@ func EncodeGetGroupsioSubgroupMemberCountError(encoder func(context.Context, htt
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGroupsioSubgroupMemberCountServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)

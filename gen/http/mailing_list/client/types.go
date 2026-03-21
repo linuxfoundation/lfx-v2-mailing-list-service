@@ -47,9 +47,9 @@ type UpdateGroupsioServiceRequestBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 }
 
-// CreateGroupsioSubgroupRequestBody is the type of the "mailing-list" service
-// "create-groupsio-subgroup" endpoint HTTP request body.
-type CreateGroupsioSubgroupRequestBody struct {
+// CreateGroupsioMailingListRequestBody is the type of the "mailing-list"
+// service "create-groupsio-mailing-list" endpoint HTTP request body.
+type CreateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
@@ -68,9 +68,9 @@ type CreateGroupsioSubgroupRequestBody struct {
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
 }
 
-// UpdateGroupsioSubgroupRequestBody is the type of the "mailing-list" service
-// "update-groupsio-subgroup" endpoint HTTP request body.
-type UpdateGroupsioSubgroupRequestBody struct {
+// UpdateGroupsioMailingListRequestBody is the type of the "mailing-list"
+// service "update-groupsio-mailing-list" endpoint HTTP request body.
+type UpdateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX v2 committee UID
@@ -255,18 +255,18 @@ type FindParentGroupsioServiceResponseBody struct {
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 }
 
-// ListGroupsioSubgroupsResponseBody is the type of the "mailing-list" service
-// "list-groupsio-subgroups" endpoint HTTP response body.
-type ListGroupsioSubgroupsResponseBody struct {
+// ListGroupsioMailingListsResponseBody is the type of the "mailing-list"
+// service "list-groupsio-mailing-lists" endpoint HTTP response body.
+type ListGroupsioMailingListsResponseBody struct {
 	// List of subgroups
 	Items []*GroupsioSubgroupResponseBody `form:"items,omitempty" json:"items,omitempty" xml:"items,omitempty"`
 	// Total count
 	Total *int `form:"total,omitempty" json:"total,omitempty" xml:"total,omitempty"`
 }
 
-// CreateGroupsioSubgroupResponseBody is the type of the "mailing-list" service
-// "create-groupsio-subgroup" endpoint HTTP response body.
-type CreateGroupsioSubgroupResponseBody struct {
+// CreateGroupsioMailingListResponseBody is the type of the "mailing-list"
+// service "create-groupsio-mailing-list" endpoint HTTP response body.
+type CreateGroupsioMailingListResponseBody struct {
 	// Subgroup ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// LFX v2 project UID
@@ -291,9 +291,9 @@ type CreateGroupsioSubgroupResponseBody struct {
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 }
 
-// GetGroupsioSubgroupResponseBody is the type of the "mailing-list" service
-// "get-groupsio-subgroup" endpoint HTTP response body.
-type GetGroupsioSubgroupResponseBody struct {
+// GetGroupsioMailingListResponseBody is the type of the "mailing-list" service
+// "get-groupsio-mailing-list" endpoint HTTP response body.
+type GetGroupsioMailingListResponseBody struct {
 	// Subgroup ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// LFX v2 project UID
@@ -318,9 +318,9 @@ type GetGroupsioSubgroupResponseBody struct {
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 }
 
-// UpdateGroupsioSubgroupResponseBody is the type of the "mailing-list" service
-// "update-groupsio-subgroup" endpoint HTTP response body.
-type UpdateGroupsioSubgroupResponseBody struct {
+// UpdateGroupsioMailingListResponseBody is the type of the "mailing-list"
+// service "update-groupsio-mailing-list" endpoint HTTP response body.
+type UpdateGroupsioMailingListResponseBody struct {
 	// Subgroup ID
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// LFX v2 project UID
@@ -345,16 +345,17 @@ type UpdateGroupsioSubgroupResponseBody struct {
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 }
 
-// GetGroupsioSubgroupCountResponseBody is the type of the "mailing-list"
-// service "get-groupsio-subgroup-count" endpoint HTTP response body.
-type GetGroupsioSubgroupCountResponseBody struct {
+// GetGroupsioMailingListCountResponseBody is the type of the "mailing-list"
+// service "get-groupsio-mailing-list-count" endpoint HTTP response body.
+type GetGroupsioMailingListCountResponseBody struct {
 	// Count value
 	Count *int `form:"count,omitempty" json:"count,omitempty" xml:"count,omitempty"`
 }
 
-// GetGroupsioSubgroupMemberCountResponseBody is the type of the "mailing-list"
-// service "get-groupsio-subgroup-member-count" endpoint HTTP response body.
-type GetGroupsioSubgroupMemberCountResponseBody struct {
+// GetGroupsioMailingListMemberCountResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-member-count" endpoint
+// HTTP response body.
+type GetGroupsioMailingListMemberCountResponseBody struct {
 	// Count value
 	Count *int `form:"count,omitempty" json:"count,omitempty" xml:"count,omitempty"`
 }
@@ -672,186 +673,186 @@ type FindParentGroupsioServiceServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// ListGroupsioSubgroupsBadRequestResponseBody is the type of the
-// "mailing-list" service "list-groupsio-subgroups" endpoint HTTP response body
-// for the "BadRequest" error.
-type ListGroupsioSubgroupsBadRequestResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// ListGroupsioSubgroupsInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "list-groupsio-subgroups" endpoint HTTP response body
-// for the "InternalServerError" error.
-type ListGroupsioSubgroupsInternalServerErrorResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// ListGroupsioSubgroupsServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "list-groupsio-subgroups" endpoint HTTP response body
-// for the "ServiceUnavailable" error.
-type ListGroupsioSubgroupsServiceUnavailableResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// CreateGroupsioSubgroupBadRequestResponseBody is the type of the
-// "mailing-list" service "create-groupsio-subgroup" endpoint HTTP response
+// ListGroupsioMailingListsBadRequestResponseBody is the type of the
+// "mailing-list" service "list-groupsio-mailing-lists" endpoint HTTP response
 // body for the "BadRequest" error.
-type CreateGroupsioSubgroupBadRequestResponseBody struct {
+type ListGroupsioMailingListsBadRequestResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// CreateGroupsioSubgroupConflictResponseBody is the type of the "mailing-list"
-// service "create-groupsio-subgroup" endpoint HTTP response body for the
-// "Conflict" error.
-type CreateGroupsioSubgroupConflictResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// CreateGroupsioSubgroupInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "create-groupsio-subgroup" endpoint HTTP response
+// ListGroupsioMailingListsInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "list-groupsio-mailing-lists" endpoint HTTP response
 // body for the "InternalServerError" error.
-type CreateGroupsioSubgroupInternalServerErrorResponseBody struct {
+type ListGroupsioMailingListsInternalServerErrorResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// CreateGroupsioSubgroupServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "create-groupsio-subgroup" endpoint HTTP response
+// ListGroupsioMailingListsServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "list-groupsio-mailing-lists" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
-type CreateGroupsioSubgroupServiceUnavailableResponseBody struct {
+type ListGroupsioMailingListsServiceUnavailableResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup" endpoint HTTP response body
-// for the "InternalServerError" error.
-type GetGroupsioSubgroupInternalServerErrorResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// GetGroupsioSubgroupNotFoundResponseBody is the type of the "mailing-list"
-// service "get-groupsio-subgroup" endpoint HTTP response body for the
-// "NotFound" error.
-type GetGroupsioSubgroupNotFoundResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// GetGroupsioSubgroupServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup" endpoint HTTP response body
-// for the "ServiceUnavailable" error.
-type GetGroupsioSubgroupServiceUnavailableResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// UpdateGroupsioSubgroupBadRequestResponseBody is the type of the
-// "mailing-list" service "update-groupsio-subgroup" endpoint HTTP response
+// CreateGroupsioMailingListBadRequestResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
 // body for the "BadRequest" error.
-type UpdateGroupsioSubgroupBadRequestResponseBody struct {
+type CreateGroupsioMailingListBadRequestResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// UpdateGroupsioSubgroupInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "update-groupsio-subgroup" endpoint HTTP response
+// CreateGroupsioMailingListConflictResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
+// body for the "Conflict" error.
+type CreateGroupsioMailingListConflictResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateGroupsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
 // body for the "InternalServerError" error.
-type UpdateGroupsioSubgroupInternalServerErrorResponseBody struct {
+type CreateGroupsioMailingListInternalServerErrorResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// UpdateGroupsioSubgroupNotFoundResponseBody is the type of the "mailing-list"
-// service "update-groupsio-subgroup" endpoint HTTP response body for the
-// "NotFound" error.
-type UpdateGroupsioSubgroupNotFoundResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// UpdateGroupsioSubgroupServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "update-groupsio-subgroup" endpoint HTTP response
+// CreateGroupsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
-type UpdateGroupsioSubgroupServiceUnavailableResponseBody struct {
+type CreateGroupsioMailingListServiceUnavailableResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// DeleteGroupsioSubgroupInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "delete-groupsio-subgroup" endpoint HTTP response
+// GetGroupsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list" endpoint HTTP response
 // body for the "InternalServerError" error.
-type DeleteGroupsioSubgroupInternalServerErrorResponseBody struct {
+type GetGroupsioMailingListInternalServerErrorResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// DeleteGroupsioSubgroupNotFoundResponseBody is the type of the "mailing-list"
-// service "delete-groupsio-subgroup" endpoint HTTP response body for the
+// GetGroupsioMailingListNotFoundResponseBody is the type of the "mailing-list"
+// service "get-groupsio-mailing-list" endpoint HTTP response body for the
 // "NotFound" error.
-type DeleteGroupsioSubgroupNotFoundResponseBody struct {
+type GetGroupsioMailingListNotFoundResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// DeleteGroupsioSubgroupServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "delete-groupsio-subgroup" endpoint HTTP response
+// GetGroupsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
-type DeleteGroupsioSubgroupServiceUnavailableResponseBody struct {
+type GetGroupsioMailingListServiceUnavailableResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupCountBadRequestResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup-count" endpoint HTTP response
+// UpdateGroupsioMailingListBadRequestResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
 // body for the "BadRequest" error.
-type GetGroupsioSubgroupCountBadRequestResponseBody struct {
+type UpdateGroupsioMailingListBadRequestResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupCountInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup-count" endpoint HTTP response
+// UpdateGroupsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
 // body for the "InternalServerError" error.
-type GetGroupsioSubgroupCountInternalServerErrorResponseBody struct {
+type UpdateGroupsioMailingListInternalServerErrorResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupCountServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup-count" endpoint HTTP response
+// UpdateGroupsioMailingListNotFoundResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
+// body for the "NotFound" error.
+type UpdateGroupsioMailingListNotFoundResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateGroupsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
-type GetGroupsioSubgroupCountServiceUnavailableResponseBody struct {
+type UpdateGroupsioMailingListServiceUnavailableResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupMemberCountInternalServerErrorResponseBody is the type of
-// the "mailing-list" service "get-groupsio-subgroup-member-count" endpoint
-// HTTP response body for the "InternalServerError" error.
-type GetGroupsioSubgroupMemberCountInternalServerErrorResponseBody struct {
+// DeleteGroupsioMailingListInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "delete-groupsio-mailing-list" endpoint HTTP response
+// body for the "InternalServerError" error.
+type DeleteGroupsioMailingListInternalServerErrorResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupMemberCountNotFoundResponseBody is the type of the
-// "mailing-list" service "get-groupsio-subgroup-member-count" endpoint HTTP
-// response body for the "NotFound" error.
-type GetGroupsioSubgroupMemberCountNotFoundResponseBody struct {
+// DeleteGroupsioMailingListNotFoundResponseBody is the type of the
+// "mailing-list" service "delete-groupsio-mailing-list" endpoint HTTP response
+// body for the "NotFound" error.
+type DeleteGroupsioMailingListNotFoundResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// GetGroupsioSubgroupMemberCountServiceUnavailableResponseBody is the type of
-// the "mailing-list" service "get-groupsio-subgroup-member-count" endpoint
-// HTTP response body for the "ServiceUnavailable" error.
-type GetGroupsioSubgroupMemberCountServiceUnavailableResponseBody struct {
+// DeleteGroupsioMailingListServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "delete-groupsio-mailing-list" endpoint HTTP response
+// body for the "ServiceUnavailable" error.
+type DeleteGroupsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListCountBadRequestResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-count" endpoint HTTP
+// response body for the "BadRequest" error.
+type GetGroupsioMailingListCountBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListCountInternalServerErrorResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-count" endpoint HTTP
+// response body for the "InternalServerError" error.
+type GetGroupsioMailingListCountInternalServerErrorResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListCountServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-count" endpoint HTTP
+// response body for the "ServiceUnavailable" error.
+type GetGroupsioMailingListCountServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListMemberCountInternalServerErrorResponseBody is the type
+// of the "mailing-list" service "get-groupsio-mailing-list-member-count"
+// endpoint HTTP response body for the "InternalServerError" error.
+type GetGroupsioMailingListMemberCountInternalServerErrorResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListMemberCountNotFoundResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-member-count" endpoint
+// HTTP response body for the "NotFound" error.
+type GetGroupsioMailingListMemberCountNotFoundResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListMemberCountServiceUnavailableResponseBody is the type
+// of the "mailing-list" service "get-groupsio-mailing-list-member-count"
+// endpoint HTTP response body for the "ServiceUnavailable" error.
+type GetGroupsioMailingListMemberCountServiceUnavailableResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
@@ -1168,11 +1169,11 @@ func NewUpdateGroupsioServiceRequestBody(p *mailinglist.UpdateGroupsioServicePay
 	return body
 }
 
-// NewCreateGroupsioSubgroupRequestBody builds the HTTP request body from the
-// payload of the "create-groupsio-subgroup" endpoint of the "mailing-list"
-// service.
-func NewCreateGroupsioSubgroupRequestBody(p *mailinglist.CreateGroupsioSubgroupPayload) *CreateGroupsioSubgroupRequestBody {
-	body := &CreateGroupsioSubgroupRequestBody{
+// NewCreateGroupsioMailingListRequestBody builds the HTTP request body from
+// the payload of the "create-groupsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewCreateGroupsioMailingListRequestBody(p *mailinglist.CreateGroupsioMailingListPayload) *CreateGroupsioMailingListRequestBody {
+	body := &CreateGroupsioMailingListRequestBody{
 		ProjectUID:     p.ProjectUID,
 		CommitteeUID:   p.CommitteeUID,
 		ServiceID:      p.ServiceID,
@@ -1185,11 +1186,11 @@ func NewCreateGroupsioSubgroupRequestBody(p *mailinglist.CreateGroupsioSubgroupP
 	return body
 }
 
-// NewUpdateGroupsioSubgroupRequestBody builds the HTTP request body from the
-// payload of the "update-groupsio-subgroup" endpoint of the "mailing-list"
-// service.
-func NewUpdateGroupsioSubgroupRequestBody(p *mailinglist.UpdateGroupsioSubgroupPayload) *UpdateGroupsioSubgroupRequestBody {
-	body := &UpdateGroupsioSubgroupRequestBody{
+// NewUpdateGroupsioMailingListRequestBody builds the HTTP request body from
+// the payload of the "update-groupsio-mailing-list" endpoint of the
+// "mailing-list" service.
+func NewUpdateGroupsioMailingListRequestBody(p *mailinglist.UpdateGroupsioMailingListPayload) *UpdateGroupsioMailingListRequestBody {
+	body := &UpdateGroupsioMailingListRequestBody{
 		ProjectUID:     p.ProjectUID,
 		CommitteeUID:   p.CommitteeUID,
 		ServiceID:      p.ServiceID,
@@ -1607,9 +1608,10 @@ func NewFindParentGroupsioServiceServiceUnavailable(body *FindParentGroupsioServ
 	return v
 }
 
-// NewListGroupsioSubgroupsGroupsioSubgroupListOK builds a "mailing-list"
-// service "list-groupsio-subgroups" endpoint result from a HTTP "OK" response.
-func NewListGroupsioSubgroupsGroupsioSubgroupListOK(body *ListGroupsioSubgroupsResponseBody) *mailinglist.GroupsioSubgroupList {
+// NewListGroupsioMailingListsGroupsioSubgroupListOK builds a "mailing-list"
+// service "list-groupsio-mailing-lists" endpoint result from a HTTP "OK"
+// response.
+func NewListGroupsioMailingListsGroupsioSubgroupListOK(body *ListGroupsioMailingListsResponseBody) *mailinglist.GroupsioSubgroupList {
 	v := &mailinglist.GroupsioSubgroupList{
 		Total: body.Total,
 	}
@@ -1623,9 +1625,9 @@ func NewListGroupsioSubgroupsGroupsioSubgroupListOK(body *ListGroupsioSubgroupsR
 	return v
 }
 
-// NewListGroupsioSubgroupsBadRequest builds a mailing-list service
-// list-groupsio-subgroups endpoint BadRequest error.
-func NewListGroupsioSubgroupsBadRequest(body *ListGroupsioSubgroupsBadRequestResponseBody) *mailinglist.BadRequestError {
+// NewListGroupsioMailingListsBadRequest builds a mailing-list service
+// list-groupsio-mailing-lists endpoint BadRequest error.
+func NewListGroupsioMailingListsBadRequest(body *ListGroupsioMailingListsBadRequestResponseBody) *mailinglist.BadRequestError {
 	v := &mailinglist.BadRequestError{
 		Message: *body.Message,
 	}
@@ -1633,9 +1635,9 @@ func NewListGroupsioSubgroupsBadRequest(body *ListGroupsioSubgroupsBadRequestRes
 	return v
 }
 
-// NewListGroupsioSubgroupsInternalServerError builds a mailing-list service
-// list-groupsio-subgroups endpoint InternalServerError error.
-func NewListGroupsioSubgroupsInternalServerError(body *ListGroupsioSubgroupsInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewListGroupsioMailingListsInternalServerError builds a mailing-list service
+// list-groupsio-mailing-lists endpoint InternalServerError error.
+func NewListGroupsioMailingListsInternalServerError(body *ListGroupsioMailingListsInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1643,9 +1645,9 @@ func NewListGroupsioSubgroupsInternalServerError(body *ListGroupsioSubgroupsInte
 	return v
 }
 
-// NewListGroupsioSubgroupsServiceUnavailable builds a mailing-list service
-// list-groupsio-subgroups endpoint ServiceUnavailable error.
-func NewListGroupsioSubgroupsServiceUnavailable(body *ListGroupsioSubgroupsServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewListGroupsioMailingListsServiceUnavailable builds a mailing-list service
+// list-groupsio-mailing-lists endpoint ServiceUnavailable error.
+func NewListGroupsioMailingListsServiceUnavailable(body *ListGroupsioMailingListsServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1653,10 +1655,10 @@ func NewListGroupsioSubgroupsServiceUnavailable(body *ListGroupsioSubgroupsServi
 	return v
 }
 
-// NewCreateGroupsioSubgroupGroupsioSubgroupCreated builds a "mailing-list"
-// service "create-groupsio-subgroup" endpoint result from a HTTP "Created"
+// NewCreateGroupsioMailingListGroupsioSubgroupCreated builds a "mailing-list"
+// service "create-groupsio-mailing-list" endpoint result from a HTTP "Created"
 // response.
-func NewCreateGroupsioSubgroupGroupsioSubgroupCreated(body *CreateGroupsioSubgroupResponseBody) *mailinglist.GroupsioSubgroup {
+func NewCreateGroupsioMailingListGroupsioSubgroupCreated(body *CreateGroupsioMailingListResponseBody) *mailinglist.GroupsioSubgroup {
 	v := &mailinglist.GroupsioSubgroup{
 		ID:             body.ID,
 		ProjectUID:     body.ProjectUID,
@@ -1674,9 +1676,9 @@ func NewCreateGroupsioSubgroupGroupsioSubgroupCreated(body *CreateGroupsioSubgro
 	return v
 }
 
-// NewCreateGroupsioSubgroupBadRequest builds a mailing-list service
-// create-groupsio-subgroup endpoint BadRequest error.
-func NewCreateGroupsioSubgroupBadRequest(body *CreateGroupsioSubgroupBadRequestResponseBody) *mailinglist.BadRequestError {
+// NewCreateGroupsioMailingListBadRequest builds a mailing-list service
+// create-groupsio-mailing-list endpoint BadRequest error.
+func NewCreateGroupsioMailingListBadRequest(body *CreateGroupsioMailingListBadRequestResponseBody) *mailinglist.BadRequestError {
 	v := &mailinglist.BadRequestError{
 		Message: *body.Message,
 	}
@@ -1684,9 +1686,9 @@ func NewCreateGroupsioSubgroupBadRequest(body *CreateGroupsioSubgroupBadRequestR
 	return v
 }
 
-// NewCreateGroupsioSubgroupConflict builds a mailing-list service
-// create-groupsio-subgroup endpoint Conflict error.
-func NewCreateGroupsioSubgroupConflict(body *CreateGroupsioSubgroupConflictResponseBody) *mailinglist.ConflictError {
+// NewCreateGroupsioMailingListConflict builds a mailing-list service
+// create-groupsio-mailing-list endpoint Conflict error.
+func NewCreateGroupsioMailingListConflict(body *CreateGroupsioMailingListConflictResponseBody) *mailinglist.ConflictError {
 	v := &mailinglist.ConflictError{
 		Message: *body.Message,
 	}
@@ -1694,9 +1696,9 @@ func NewCreateGroupsioSubgroupConflict(body *CreateGroupsioSubgroupConflictRespo
 	return v
 }
 
-// NewCreateGroupsioSubgroupInternalServerError builds a mailing-list service
-// create-groupsio-subgroup endpoint InternalServerError error.
-func NewCreateGroupsioSubgroupInternalServerError(body *CreateGroupsioSubgroupInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewCreateGroupsioMailingListInternalServerError builds a mailing-list
+// service create-groupsio-mailing-list endpoint InternalServerError error.
+func NewCreateGroupsioMailingListInternalServerError(body *CreateGroupsioMailingListInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1704,9 +1706,9 @@ func NewCreateGroupsioSubgroupInternalServerError(body *CreateGroupsioSubgroupIn
 	return v
 }
 
-// NewCreateGroupsioSubgroupServiceUnavailable builds a mailing-list service
-// create-groupsio-subgroup endpoint ServiceUnavailable error.
-func NewCreateGroupsioSubgroupServiceUnavailable(body *CreateGroupsioSubgroupServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewCreateGroupsioMailingListServiceUnavailable builds a mailing-list service
+// create-groupsio-mailing-list endpoint ServiceUnavailable error.
+func NewCreateGroupsioMailingListServiceUnavailable(body *CreateGroupsioMailingListServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1714,9 +1716,9 @@ func NewCreateGroupsioSubgroupServiceUnavailable(body *CreateGroupsioSubgroupSer
 	return v
 }
 
-// NewGetGroupsioSubgroupGroupsioSubgroupOK builds a "mailing-list" service
-// "get-groupsio-subgroup" endpoint result from a HTTP "OK" response.
-func NewGetGroupsioSubgroupGroupsioSubgroupOK(body *GetGroupsioSubgroupResponseBody) *mailinglist.GroupsioSubgroup {
+// NewGetGroupsioMailingListGroupsioSubgroupOK builds a "mailing-list" service
+// "get-groupsio-mailing-list" endpoint result from a HTTP "OK" response.
+func NewGetGroupsioMailingListGroupsioSubgroupOK(body *GetGroupsioMailingListResponseBody) *mailinglist.GroupsioSubgroup {
 	v := &mailinglist.GroupsioSubgroup{
 		ID:             body.ID,
 		ProjectUID:     body.ProjectUID,
@@ -1734,9 +1736,9 @@ func NewGetGroupsioSubgroupGroupsioSubgroupOK(body *GetGroupsioSubgroupResponseB
 	return v
 }
 
-// NewGetGroupsioSubgroupInternalServerError builds a mailing-list service
-// get-groupsio-subgroup endpoint InternalServerError error.
-func NewGetGroupsioSubgroupInternalServerError(body *GetGroupsioSubgroupInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewGetGroupsioMailingListInternalServerError builds a mailing-list service
+// get-groupsio-mailing-list endpoint InternalServerError error.
+func NewGetGroupsioMailingListInternalServerError(body *GetGroupsioMailingListInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1744,9 +1746,9 @@ func NewGetGroupsioSubgroupInternalServerError(body *GetGroupsioSubgroupInternal
 	return v
 }
 
-// NewGetGroupsioSubgroupNotFound builds a mailing-list service
-// get-groupsio-subgroup endpoint NotFound error.
-func NewGetGroupsioSubgroupNotFound(body *GetGroupsioSubgroupNotFoundResponseBody) *mailinglist.NotFoundError {
+// NewGetGroupsioMailingListNotFound builds a mailing-list service
+// get-groupsio-mailing-list endpoint NotFound error.
+func NewGetGroupsioMailingListNotFound(body *GetGroupsioMailingListNotFoundResponseBody) *mailinglist.NotFoundError {
 	v := &mailinglist.NotFoundError{
 		Message: *body.Message,
 	}
@@ -1754,9 +1756,9 @@ func NewGetGroupsioSubgroupNotFound(body *GetGroupsioSubgroupNotFoundResponseBod
 	return v
 }
 
-// NewGetGroupsioSubgroupServiceUnavailable builds a mailing-list service
-// get-groupsio-subgroup endpoint ServiceUnavailable error.
-func NewGetGroupsioSubgroupServiceUnavailable(body *GetGroupsioSubgroupServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewGetGroupsioMailingListServiceUnavailable builds a mailing-list service
+// get-groupsio-mailing-list endpoint ServiceUnavailable error.
+func NewGetGroupsioMailingListServiceUnavailable(body *GetGroupsioMailingListServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1764,9 +1766,10 @@ func NewGetGroupsioSubgroupServiceUnavailable(body *GetGroupsioSubgroupServiceUn
 	return v
 }
 
-// NewUpdateGroupsioSubgroupGroupsioSubgroupOK builds a "mailing-list" service
-// "update-groupsio-subgroup" endpoint result from a HTTP "OK" response.
-func NewUpdateGroupsioSubgroupGroupsioSubgroupOK(body *UpdateGroupsioSubgroupResponseBody) *mailinglist.GroupsioSubgroup {
+// NewUpdateGroupsioMailingListGroupsioSubgroupOK builds a "mailing-list"
+// service "update-groupsio-mailing-list" endpoint result from a HTTP "OK"
+// response.
+func NewUpdateGroupsioMailingListGroupsioSubgroupOK(body *UpdateGroupsioMailingListResponseBody) *mailinglist.GroupsioSubgroup {
 	v := &mailinglist.GroupsioSubgroup{
 		ID:             body.ID,
 		ProjectUID:     body.ProjectUID,
@@ -1784,9 +1787,9 @@ func NewUpdateGroupsioSubgroupGroupsioSubgroupOK(body *UpdateGroupsioSubgroupRes
 	return v
 }
 
-// NewUpdateGroupsioSubgroupBadRequest builds a mailing-list service
-// update-groupsio-subgroup endpoint BadRequest error.
-func NewUpdateGroupsioSubgroupBadRequest(body *UpdateGroupsioSubgroupBadRequestResponseBody) *mailinglist.BadRequestError {
+// NewUpdateGroupsioMailingListBadRequest builds a mailing-list service
+// update-groupsio-mailing-list endpoint BadRequest error.
+func NewUpdateGroupsioMailingListBadRequest(body *UpdateGroupsioMailingListBadRequestResponseBody) *mailinglist.BadRequestError {
 	v := &mailinglist.BadRequestError{
 		Message: *body.Message,
 	}
@@ -1794,9 +1797,9 @@ func NewUpdateGroupsioSubgroupBadRequest(body *UpdateGroupsioSubgroupBadRequestR
 	return v
 }
 
-// NewUpdateGroupsioSubgroupInternalServerError builds a mailing-list service
-// update-groupsio-subgroup endpoint InternalServerError error.
-func NewUpdateGroupsioSubgroupInternalServerError(body *UpdateGroupsioSubgroupInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewUpdateGroupsioMailingListInternalServerError builds a mailing-list
+// service update-groupsio-mailing-list endpoint InternalServerError error.
+func NewUpdateGroupsioMailingListInternalServerError(body *UpdateGroupsioMailingListInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1804,9 +1807,9 @@ func NewUpdateGroupsioSubgroupInternalServerError(body *UpdateGroupsioSubgroupIn
 	return v
 }
 
-// NewUpdateGroupsioSubgroupNotFound builds a mailing-list service
-// update-groupsio-subgroup endpoint NotFound error.
-func NewUpdateGroupsioSubgroupNotFound(body *UpdateGroupsioSubgroupNotFoundResponseBody) *mailinglist.NotFoundError {
+// NewUpdateGroupsioMailingListNotFound builds a mailing-list service
+// update-groupsio-mailing-list endpoint NotFound error.
+func NewUpdateGroupsioMailingListNotFound(body *UpdateGroupsioMailingListNotFoundResponseBody) *mailinglist.NotFoundError {
 	v := &mailinglist.NotFoundError{
 		Message: *body.Message,
 	}
@@ -1814,9 +1817,9 @@ func NewUpdateGroupsioSubgroupNotFound(body *UpdateGroupsioSubgroupNotFoundRespo
 	return v
 }
 
-// NewUpdateGroupsioSubgroupServiceUnavailable builds a mailing-list service
-// update-groupsio-subgroup endpoint ServiceUnavailable error.
-func NewUpdateGroupsioSubgroupServiceUnavailable(body *UpdateGroupsioSubgroupServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewUpdateGroupsioMailingListServiceUnavailable builds a mailing-list service
+// update-groupsio-mailing-list endpoint ServiceUnavailable error.
+func NewUpdateGroupsioMailingListServiceUnavailable(body *UpdateGroupsioMailingListServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1824,9 +1827,9 @@ func NewUpdateGroupsioSubgroupServiceUnavailable(body *UpdateGroupsioSubgroupSer
 	return v
 }
 
-// NewDeleteGroupsioSubgroupInternalServerError builds a mailing-list service
-// delete-groupsio-subgroup endpoint InternalServerError error.
-func NewDeleteGroupsioSubgroupInternalServerError(body *DeleteGroupsioSubgroupInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewDeleteGroupsioMailingListInternalServerError builds a mailing-list
+// service delete-groupsio-mailing-list endpoint InternalServerError error.
+func NewDeleteGroupsioMailingListInternalServerError(body *DeleteGroupsioMailingListInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1834,9 +1837,9 @@ func NewDeleteGroupsioSubgroupInternalServerError(body *DeleteGroupsioSubgroupIn
 	return v
 }
 
-// NewDeleteGroupsioSubgroupNotFound builds a mailing-list service
-// delete-groupsio-subgroup endpoint NotFound error.
-func NewDeleteGroupsioSubgroupNotFound(body *DeleteGroupsioSubgroupNotFoundResponseBody) *mailinglist.NotFoundError {
+// NewDeleteGroupsioMailingListNotFound builds a mailing-list service
+// delete-groupsio-mailing-list endpoint NotFound error.
+func NewDeleteGroupsioMailingListNotFound(body *DeleteGroupsioMailingListNotFoundResponseBody) *mailinglist.NotFoundError {
 	v := &mailinglist.NotFoundError{
 		Message: *body.Message,
 	}
@@ -1844,9 +1847,9 @@ func NewDeleteGroupsioSubgroupNotFound(body *DeleteGroupsioSubgroupNotFoundRespo
 	return v
 }
 
-// NewDeleteGroupsioSubgroupServiceUnavailable builds a mailing-list service
-// delete-groupsio-subgroup endpoint ServiceUnavailable error.
-func NewDeleteGroupsioSubgroupServiceUnavailable(body *DeleteGroupsioSubgroupServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewDeleteGroupsioMailingListServiceUnavailable builds a mailing-list service
+// delete-groupsio-mailing-list endpoint ServiceUnavailable error.
+func NewDeleteGroupsioMailingListServiceUnavailable(body *DeleteGroupsioMailingListServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1854,9 +1857,10 @@ func NewDeleteGroupsioSubgroupServiceUnavailable(body *DeleteGroupsioSubgroupSer
 	return v
 }
 
-// NewGetGroupsioSubgroupCountGroupsioCountOK builds a "mailing-list" service
-// "get-groupsio-subgroup-count" endpoint result from a HTTP "OK" response.
-func NewGetGroupsioSubgroupCountGroupsioCountOK(body *GetGroupsioSubgroupCountResponseBody) *mailinglist.GroupsioCount {
+// NewGetGroupsioMailingListCountGroupsioCountOK builds a "mailing-list"
+// service "get-groupsio-mailing-list-count" endpoint result from a HTTP "OK"
+// response.
+func NewGetGroupsioMailingListCountGroupsioCountOK(body *GetGroupsioMailingListCountResponseBody) *mailinglist.GroupsioCount {
 	v := &mailinglist.GroupsioCount{
 		Count: *body.Count,
 	}
@@ -1864,9 +1868,9 @@ func NewGetGroupsioSubgroupCountGroupsioCountOK(body *GetGroupsioSubgroupCountRe
 	return v
 }
 
-// NewGetGroupsioSubgroupCountBadRequest builds a mailing-list service
-// get-groupsio-subgroup-count endpoint BadRequest error.
-func NewGetGroupsioSubgroupCountBadRequest(body *GetGroupsioSubgroupCountBadRequestResponseBody) *mailinglist.BadRequestError {
+// NewGetGroupsioMailingListCountBadRequest builds a mailing-list service
+// get-groupsio-mailing-list-count endpoint BadRequest error.
+func NewGetGroupsioMailingListCountBadRequest(body *GetGroupsioMailingListCountBadRequestResponseBody) *mailinglist.BadRequestError {
 	v := &mailinglist.BadRequestError{
 		Message: *body.Message,
 	}
@@ -1874,9 +1878,9 @@ func NewGetGroupsioSubgroupCountBadRequest(body *GetGroupsioSubgroupCountBadRequ
 	return v
 }
 
-// NewGetGroupsioSubgroupCountInternalServerError builds a mailing-list service
-// get-groupsio-subgroup-count endpoint InternalServerError error.
-func NewGetGroupsioSubgroupCountInternalServerError(body *GetGroupsioSubgroupCountInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewGetGroupsioMailingListCountInternalServerError builds a mailing-list
+// service get-groupsio-mailing-list-count endpoint InternalServerError error.
+func NewGetGroupsioMailingListCountInternalServerError(body *GetGroupsioMailingListCountInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1884,9 +1888,9 @@ func NewGetGroupsioSubgroupCountInternalServerError(body *GetGroupsioSubgroupCou
 	return v
 }
 
-// NewGetGroupsioSubgroupCountServiceUnavailable builds a mailing-list service
-// get-groupsio-subgroup-count endpoint ServiceUnavailable error.
-func NewGetGroupsioSubgroupCountServiceUnavailable(body *GetGroupsioSubgroupCountServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewGetGroupsioMailingListCountServiceUnavailable builds a mailing-list
+// service get-groupsio-mailing-list-count endpoint ServiceUnavailable error.
+func NewGetGroupsioMailingListCountServiceUnavailable(body *GetGroupsioMailingListCountServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -1894,10 +1898,10 @@ func NewGetGroupsioSubgroupCountServiceUnavailable(body *GetGroupsioSubgroupCoun
 	return v
 }
 
-// NewGetGroupsioSubgroupMemberCountGroupsioCountOK builds a "mailing-list"
-// service "get-groupsio-subgroup-member-count" endpoint result from a HTTP
+// NewGetGroupsioMailingListMemberCountGroupsioCountOK builds a "mailing-list"
+// service "get-groupsio-mailing-list-member-count" endpoint result from a HTTP
 // "OK" response.
-func NewGetGroupsioSubgroupMemberCountGroupsioCountOK(body *GetGroupsioSubgroupMemberCountResponseBody) *mailinglist.GroupsioCount {
+func NewGetGroupsioMailingListMemberCountGroupsioCountOK(body *GetGroupsioMailingListMemberCountResponseBody) *mailinglist.GroupsioCount {
 	v := &mailinglist.GroupsioCount{
 		Count: *body.Count,
 	}
@@ -1905,10 +1909,10 @@ func NewGetGroupsioSubgroupMemberCountGroupsioCountOK(body *GetGroupsioSubgroupM
 	return v
 }
 
-// NewGetGroupsioSubgroupMemberCountInternalServerError builds a mailing-list
-// service get-groupsio-subgroup-member-count endpoint InternalServerError
-// error.
-func NewGetGroupsioSubgroupMemberCountInternalServerError(body *GetGroupsioSubgroupMemberCountInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+// NewGetGroupsioMailingListMemberCountInternalServerError builds a
+// mailing-list service get-groupsio-mailing-list-member-count endpoint
+// InternalServerError error.
+func NewGetGroupsioMailingListMemberCountInternalServerError(body *GetGroupsioMailingListMemberCountInternalServerErrorResponseBody) *mailinglist.InternalServerError {
 	v := &mailinglist.InternalServerError{
 		Message: *body.Message,
 	}
@@ -1916,9 +1920,9 @@ func NewGetGroupsioSubgroupMemberCountInternalServerError(body *GetGroupsioSubgr
 	return v
 }
 
-// NewGetGroupsioSubgroupMemberCountNotFound builds a mailing-list service
-// get-groupsio-subgroup-member-count endpoint NotFound error.
-func NewGetGroupsioSubgroupMemberCountNotFound(body *GetGroupsioSubgroupMemberCountNotFoundResponseBody) *mailinglist.NotFoundError {
+// NewGetGroupsioMailingListMemberCountNotFound builds a mailing-list service
+// get-groupsio-mailing-list-member-count endpoint NotFound error.
+func NewGetGroupsioMailingListMemberCountNotFound(body *GetGroupsioMailingListMemberCountNotFoundResponseBody) *mailinglist.NotFoundError {
 	v := &mailinglist.NotFoundError{
 		Message: *body.Message,
 	}
@@ -1926,9 +1930,10 @@ func NewGetGroupsioSubgroupMemberCountNotFound(body *GetGroupsioSubgroupMemberCo
 	return v
 }
 
-// NewGetGroupsioSubgroupMemberCountServiceUnavailable builds a mailing-list
-// service get-groupsio-subgroup-member-count endpoint ServiceUnavailable error.
-func NewGetGroupsioSubgroupMemberCountServiceUnavailable(body *GetGroupsioSubgroupMemberCountServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+// NewGetGroupsioMailingListMemberCountServiceUnavailable builds a mailing-list
+// service get-groupsio-mailing-list-member-count endpoint ServiceUnavailable
+// error.
+func NewGetGroupsioMailingListMemberCountServiceUnavailable(body *GetGroupsioMailingListMemberCountServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
 		Message: *body.Message,
 	}
@@ -2334,9 +2339,9 @@ func ValidateFindParentGroupsioServiceResponseBody(body *FindParentGroupsioServi
 	return
 }
 
-// ValidateListGroupsioSubgroupsResponseBody runs the validations defined on
-// List-Groupsio-SubgroupsResponseBody
-func ValidateListGroupsioSubgroupsResponseBody(body *ListGroupsioSubgroupsResponseBody) (err error) {
+// ValidateListGroupsioMailingListsResponseBody runs the validations defined on
+// List-Groupsio-Mailing-ListsResponseBody
+func ValidateListGroupsioMailingListsResponseBody(body *ListGroupsioMailingListsResponseBody) (err error) {
 	for _, e := range body.Items {
 		if e != nil {
 			if err2 := ValidateGroupsioSubgroupResponseBody(e); err2 != nil {
@@ -2347,9 +2352,9 @@ func ValidateListGroupsioSubgroupsResponseBody(body *ListGroupsioSubgroupsRespon
 	return
 }
 
-// ValidateCreateGroupsioSubgroupResponseBody runs the validations defined on
-// Create-Groupsio-SubgroupResponseBody
-func ValidateCreateGroupsioSubgroupResponseBody(body *CreateGroupsioSubgroupResponseBody) (err error) {
+// ValidateCreateGroupsioMailingListResponseBody runs the validations defined
+// on Create-Groupsio-Mailing-ListResponseBody
+func ValidateCreateGroupsioMailingListResponseBody(body *CreateGroupsioMailingListResponseBody) (err error) {
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
@@ -2359,9 +2364,9 @@ func ValidateCreateGroupsioSubgroupResponseBody(body *CreateGroupsioSubgroupResp
 	return
 }
 
-// ValidateGetGroupsioSubgroupResponseBody runs the validations defined on
-// Get-Groupsio-SubgroupResponseBody
-func ValidateGetGroupsioSubgroupResponseBody(body *GetGroupsioSubgroupResponseBody) (err error) {
+// ValidateGetGroupsioMailingListResponseBody runs the validations defined on
+// Get-Groupsio-Mailing-ListResponseBody
+func ValidateGetGroupsioMailingListResponseBody(body *GetGroupsioMailingListResponseBody) (err error) {
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
@@ -2371,9 +2376,9 @@ func ValidateGetGroupsioSubgroupResponseBody(body *GetGroupsioSubgroupResponseBo
 	return
 }
 
-// ValidateUpdateGroupsioSubgroupResponseBody runs the validations defined on
-// Update-Groupsio-SubgroupResponseBody
-func ValidateUpdateGroupsioSubgroupResponseBody(body *UpdateGroupsioSubgroupResponseBody) (err error) {
+// ValidateUpdateGroupsioMailingListResponseBody runs the validations defined
+// on Update-Groupsio-Mailing-ListResponseBody
+func ValidateUpdateGroupsioMailingListResponseBody(body *UpdateGroupsioMailingListResponseBody) (err error) {
 	if body.ProjectUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
@@ -2383,18 +2388,18 @@ func ValidateUpdateGroupsioSubgroupResponseBody(body *UpdateGroupsioSubgroupResp
 	return
 }
 
-// ValidateGetGroupsioSubgroupCountResponseBody runs the validations defined on
-// Get-Groupsio-Subgroup-CountResponseBody
-func ValidateGetGroupsioSubgroupCountResponseBody(body *GetGroupsioSubgroupCountResponseBody) (err error) {
+// ValidateGetGroupsioMailingListCountResponseBody runs the validations defined
+// on Get-Groupsio-Mailing-List-CountResponseBody
+func ValidateGetGroupsioMailingListCountResponseBody(body *GetGroupsioMailingListCountResponseBody) (err error) {
 	if body.Count == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("count", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupMemberCountResponseBody runs the validations
-// defined on Get-Groupsio-Subgroup-Member-CountResponseBody
-func ValidateGetGroupsioSubgroupMemberCountResponseBody(body *GetGroupsioSubgroupMemberCountResponseBody) (err error) {
+// ValidateGetGroupsioMailingListMemberCountResponseBody runs the validations
+// defined on Get-Groupsio-Mailing-List-Member-CountResponseBody
+func ValidateGetGroupsioMailingListMemberCountResponseBody(body *GetGroupsioMailingListMemberCountResponseBody) (err error) {
 	if body.Count == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("count", "body"))
 	}
@@ -2678,221 +2683,223 @@ func ValidateFindParentGroupsioServiceServiceUnavailableResponseBody(body *FindP
 	return
 }
 
-// ValidateListGroupsioSubgroupsBadRequestResponseBody runs the validations
-// defined on list-groupsio-subgroups_BadRequest_response_body
-func ValidateListGroupsioSubgroupsBadRequestResponseBody(body *ListGroupsioSubgroupsBadRequestResponseBody) (err error) {
+// ValidateListGroupsioMailingListsBadRequestResponseBody runs the validations
+// defined on list-groupsio-mailing-lists_BadRequest_response_body
+func ValidateListGroupsioMailingListsBadRequestResponseBody(body *ListGroupsioMailingListsBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateListGroupsioSubgroupsInternalServerErrorResponseBody runs the
+// ValidateListGroupsioMailingListsInternalServerErrorResponseBody runs the
 // validations defined on
-// list-groupsio-subgroups_InternalServerError_response_body
-func ValidateListGroupsioSubgroupsInternalServerErrorResponseBody(body *ListGroupsioSubgroupsInternalServerErrorResponseBody) (err error) {
+// list-groupsio-mailing-lists_InternalServerError_response_body
+func ValidateListGroupsioMailingListsInternalServerErrorResponseBody(body *ListGroupsioMailingListsInternalServerErrorResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateListGroupsioSubgroupsServiceUnavailableResponseBody runs the
+// ValidateListGroupsioMailingListsServiceUnavailableResponseBody runs the
 // validations defined on
-// list-groupsio-subgroups_ServiceUnavailable_response_body
-func ValidateListGroupsioSubgroupsServiceUnavailableResponseBody(body *ListGroupsioSubgroupsServiceUnavailableResponseBody) (err error) {
+// list-groupsio-mailing-lists_ServiceUnavailable_response_body
+func ValidateListGroupsioMailingListsServiceUnavailableResponseBody(body *ListGroupsioMailingListsServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateCreateGroupsioSubgroupBadRequestResponseBody runs the validations
-// defined on create-groupsio-subgroup_BadRequest_response_body
-func ValidateCreateGroupsioSubgroupBadRequestResponseBody(body *CreateGroupsioSubgroupBadRequestResponseBody) (err error) {
+// ValidateCreateGroupsioMailingListBadRequestResponseBody runs the validations
+// defined on create-groupsio-mailing-list_BadRequest_response_body
+func ValidateCreateGroupsioMailingListBadRequestResponseBody(body *CreateGroupsioMailingListBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateCreateGroupsioSubgroupConflictResponseBody runs the validations
-// defined on create-groupsio-subgroup_Conflict_response_body
-func ValidateCreateGroupsioSubgroupConflictResponseBody(body *CreateGroupsioSubgroupConflictResponseBody) (err error) {
+// ValidateCreateGroupsioMailingListConflictResponseBody runs the validations
+// defined on create-groupsio-mailing-list_Conflict_response_body
+func ValidateCreateGroupsioMailingListConflictResponseBody(body *CreateGroupsioMailingListConflictResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateCreateGroupsioSubgroupInternalServerErrorResponseBody runs the
+// ValidateCreateGroupsioMailingListInternalServerErrorResponseBody runs the
 // validations defined on
-// create-groupsio-subgroup_InternalServerError_response_body
-func ValidateCreateGroupsioSubgroupInternalServerErrorResponseBody(body *CreateGroupsioSubgroupInternalServerErrorResponseBody) (err error) {
+// create-groupsio-mailing-list_InternalServerError_response_body
+func ValidateCreateGroupsioMailingListInternalServerErrorResponseBody(body *CreateGroupsioMailingListInternalServerErrorResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateCreateGroupsioSubgroupServiceUnavailableResponseBody runs the
+// ValidateCreateGroupsioMailingListServiceUnavailableResponseBody runs the
 // validations defined on
-// create-groupsio-subgroup_ServiceUnavailable_response_body
-func ValidateCreateGroupsioSubgroupServiceUnavailableResponseBody(body *CreateGroupsioSubgroupServiceUnavailableResponseBody) (err error) {
+// create-groupsio-mailing-list_ServiceUnavailable_response_body
+func ValidateCreateGroupsioMailingListServiceUnavailableResponseBody(body *CreateGroupsioMailingListServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupInternalServerErrorResponseBody runs the
+// ValidateGetGroupsioMailingListInternalServerErrorResponseBody runs the
 // validations defined on
-// get-groupsio-subgroup_InternalServerError_response_body
-func ValidateGetGroupsioSubgroupInternalServerErrorResponseBody(body *GetGroupsioSubgroupInternalServerErrorResponseBody) (err error) {
+// get-groupsio-mailing-list_InternalServerError_response_body
+func ValidateGetGroupsioMailingListInternalServerErrorResponseBody(body *GetGroupsioMailingListInternalServerErrorResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupNotFoundResponseBody runs the validations defined
-// on get-groupsio-subgroup_NotFound_response_body
-func ValidateGetGroupsioSubgroupNotFoundResponseBody(body *GetGroupsioSubgroupNotFoundResponseBody) (err error) {
+// ValidateGetGroupsioMailingListNotFoundResponseBody runs the validations
+// defined on get-groupsio-mailing-list_NotFound_response_body
+func ValidateGetGroupsioMailingListNotFoundResponseBody(body *GetGroupsioMailingListNotFoundResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupServiceUnavailableResponseBody runs the
-// validations defined on get-groupsio-subgroup_ServiceUnavailable_response_body
-func ValidateGetGroupsioSubgroupServiceUnavailableResponseBody(body *GetGroupsioSubgroupServiceUnavailableResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateUpdateGroupsioSubgroupBadRequestResponseBody runs the validations
-// defined on update-groupsio-subgroup_BadRequest_response_body
-func ValidateUpdateGroupsioSubgroupBadRequestResponseBody(body *UpdateGroupsioSubgroupBadRequestResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateUpdateGroupsioSubgroupInternalServerErrorResponseBody runs the
+// ValidateGetGroupsioMailingListServiceUnavailableResponseBody runs the
 // validations defined on
-// update-groupsio-subgroup_InternalServerError_response_body
-func ValidateUpdateGroupsioSubgroupInternalServerErrorResponseBody(body *UpdateGroupsioSubgroupInternalServerErrorResponseBody) (err error) {
+// get-groupsio-mailing-list_ServiceUnavailable_response_body
+func ValidateGetGroupsioMailingListServiceUnavailableResponseBody(body *GetGroupsioMailingListServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateUpdateGroupsioSubgroupNotFoundResponseBody runs the validations
-// defined on update-groupsio-subgroup_NotFound_response_body
-func ValidateUpdateGroupsioSubgroupNotFoundResponseBody(body *UpdateGroupsioSubgroupNotFoundResponseBody) (err error) {
+// ValidateUpdateGroupsioMailingListBadRequestResponseBody runs the validations
+// defined on update-groupsio-mailing-list_BadRequest_response_body
+func ValidateUpdateGroupsioMailingListBadRequestResponseBody(body *UpdateGroupsioMailingListBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateUpdateGroupsioSubgroupServiceUnavailableResponseBody runs the
+// ValidateUpdateGroupsioMailingListInternalServerErrorResponseBody runs the
 // validations defined on
-// update-groupsio-subgroup_ServiceUnavailable_response_body
-func ValidateUpdateGroupsioSubgroupServiceUnavailableResponseBody(body *UpdateGroupsioSubgroupServiceUnavailableResponseBody) (err error) {
+// update-groupsio-mailing-list_InternalServerError_response_body
+func ValidateUpdateGroupsioMailingListInternalServerErrorResponseBody(body *UpdateGroupsioMailingListInternalServerErrorResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateDeleteGroupsioSubgroupInternalServerErrorResponseBody runs the
+// ValidateUpdateGroupsioMailingListNotFoundResponseBody runs the validations
+// defined on update-groupsio-mailing-list_NotFound_response_body
+func ValidateUpdateGroupsioMailingListNotFoundResponseBody(body *UpdateGroupsioMailingListNotFoundResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateGroupsioMailingListServiceUnavailableResponseBody runs the
 // validations defined on
-// delete-groupsio-subgroup_InternalServerError_response_body
-func ValidateDeleteGroupsioSubgroupInternalServerErrorResponseBody(body *DeleteGroupsioSubgroupInternalServerErrorResponseBody) (err error) {
+// update-groupsio-mailing-list_ServiceUnavailable_response_body
+func ValidateUpdateGroupsioMailingListServiceUnavailableResponseBody(body *UpdateGroupsioMailingListServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateDeleteGroupsioSubgroupNotFoundResponseBody runs the validations
-// defined on delete-groupsio-subgroup_NotFound_response_body
-func ValidateDeleteGroupsioSubgroupNotFoundResponseBody(body *DeleteGroupsioSubgroupNotFoundResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateDeleteGroupsioSubgroupServiceUnavailableResponseBody runs the
+// ValidateDeleteGroupsioMailingListInternalServerErrorResponseBody runs the
 // validations defined on
-// delete-groupsio-subgroup_ServiceUnavailable_response_body
-func ValidateDeleteGroupsioSubgroupServiceUnavailableResponseBody(body *DeleteGroupsioSubgroupServiceUnavailableResponseBody) (err error) {
+// delete-groupsio-mailing-list_InternalServerError_response_body
+func ValidateDeleteGroupsioMailingListInternalServerErrorResponseBody(body *DeleteGroupsioMailingListInternalServerErrorResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupCountBadRequestResponseBody runs the validations
-// defined on get-groupsio-subgroup-count_BadRequest_response_body
-func ValidateGetGroupsioSubgroupCountBadRequestResponseBody(body *GetGroupsioSubgroupCountBadRequestResponseBody) (err error) {
+// ValidateDeleteGroupsioMailingListNotFoundResponseBody runs the validations
+// defined on delete-groupsio-mailing-list_NotFound_response_body
+func ValidateDeleteGroupsioMailingListNotFoundResponseBody(body *DeleteGroupsioMailingListNotFoundResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupCountInternalServerErrorResponseBody runs the
+// ValidateDeleteGroupsioMailingListServiceUnavailableResponseBody runs the
 // validations defined on
-// get-groupsio-subgroup-count_InternalServerError_response_body
-func ValidateGetGroupsioSubgroupCountInternalServerErrorResponseBody(body *GetGroupsioSubgroupCountInternalServerErrorResponseBody) (err error) {
+// delete-groupsio-mailing-list_ServiceUnavailable_response_body
+func ValidateDeleteGroupsioMailingListServiceUnavailableResponseBody(body *DeleteGroupsioMailingListServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupCountServiceUnavailableResponseBody runs the
+// ValidateGetGroupsioMailingListCountBadRequestResponseBody runs the
 // validations defined on
-// get-groupsio-subgroup-count_ServiceUnavailable_response_body
-func ValidateGetGroupsioSubgroupCountServiceUnavailableResponseBody(body *GetGroupsioSubgroupCountServiceUnavailableResponseBody) (err error) {
+// get-groupsio-mailing-list-count_BadRequest_response_body
+func ValidateGetGroupsioMailingListCountBadRequestResponseBody(body *GetGroupsioMailingListCountBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
 
-// ValidateGetGroupsioSubgroupMemberCountInternalServerErrorResponseBody runs
+// ValidateGetGroupsioMailingListCountInternalServerErrorResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-count_InternalServerError_response_body
+func ValidateGetGroupsioMailingListCountInternalServerErrorResponseBody(body *GetGroupsioMailingListCountInternalServerErrorResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListCountServiceUnavailableResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-count_ServiceUnavailable_response_body
+func ValidateGetGroupsioMailingListCountServiceUnavailableResponseBody(body *GetGroupsioMailingListCountServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListMemberCountInternalServerErrorResponseBody
+// runs the validations defined on
+// get-groupsio-mailing-list-member-count_InternalServerError_response_body
+func ValidateGetGroupsioMailingListMemberCountInternalServerErrorResponseBody(body *GetGroupsioMailingListMemberCountInternalServerErrorResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListMemberCountNotFoundResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-member-count_NotFound_response_body
+func ValidateGetGroupsioMailingListMemberCountNotFoundResponseBody(body *GetGroupsioMailingListMemberCountNotFoundResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListMemberCountServiceUnavailableResponseBody runs
 // the validations defined on
-// get-groupsio-subgroup-member-count_InternalServerError_response_body
-func ValidateGetGroupsioSubgroupMemberCountInternalServerErrorResponseBody(body *GetGroupsioSubgroupMemberCountInternalServerErrorResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateGetGroupsioSubgroupMemberCountNotFoundResponseBody runs the
-// validations defined on
-// get-groupsio-subgroup-member-count_NotFound_response_body
-func ValidateGetGroupsioSubgroupMemberCountNotFoundResponseBody(body *GetGroupsioSubgroupMemberCountNotFoundResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateGetGroupsioSubgroupMemberCountServiceUnavailableResponseBody runs
-// the validations defined on
-// get-groupsio-subgroup-member-count_ServiceUnavailable_response_body
-func ValidateGetGroupsioSubgroupMemberCountServiceUnavailableResponseBody(body *GetGroupsioSubgroupMemberCountServiceUnavailableResponseBody) (err error) {
+// get-groupsio-mailing-list-member-count_ServiceUnavailable_response_body
+func ValidateGetGroupsioMailingListMemberCountServiceUnavailableResponseBody(body *GetGroupsioMailingListMemberCountServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

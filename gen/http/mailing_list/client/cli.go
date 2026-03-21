@@ -199,14 +199,14 @@ func BuildFindParentGroupsioServicePayload(mailingListFindParentGroupsioServiceP
 	return v, nil
 }
 
-// BuildListGroupsioSubgroupsPayload builds the payload for the mailing-list
-// list-groupsio-subgroups endpoint from CLI flags.
-func BuildListGroupsioSubgroupsPayload(mailingListListGroupsioSubgroupsProjectUID string, mailingListListGroupsioSubgroupsCommitteeUID string, mailingListListGroupsioSubgroupsBearerToken string) (*mailinglist.ListGroupsioSubgroupsPayload, error) {
+// BuildListGroupsioMailingListsPayload builds the payload for the mailing-list
+// list-groupsio-mailing-lists endpoint from CLI flags.
+func BuildListGroupsioMailingListsPayload(mailingListListGroupsioMailingListsProjectUID string, mailingListListGroupsioMailingListsCommitteeUID string, mailingListListGroupsioMailingListsBearerToken string) (*mailinglist.ListGroupsioMailingListsPayload, error) {
 	var err error
 	var projectUID *string
 	{
-		if mailingListListGroupsioSubgroupsProjectUID != "" {
-			projectUID = &mailingListListGroupsioSubgroupsProjectUID
+		if mailingListListGroupsioMailingListsProjectUID != "" {
+			projectUID = &mailingListListGroupsioMailingListsProjectUID
 			err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", *projectUID, goa.FormatUUID))
 			if err != nil {
 				return nil, err
@@ -215,8 +215,8 @@ func BuildListGroupsioSubgroupsPayload(mailingListListGroupsioSubgroupsProjectUI
 	}
 	var committeeUID *string
 	{
-		if mailingListListGroupsioSubgroupsCommitteeUID != "" {
-			committeeUID = &mailingListListGroupsioSubgroupsCommitteeUID
+		if mailingListListGroupsioMailingListsCommitteeUID != "" {
+			committeeUID = &mailingListListGroupsioMailingListsCommitteeUID
 			err = goa.MergeErrors(err, goa.ValidateFormat("committee_uid", *committeeUID, goa.FormatUUID))
 			if err != nil {
 				return nil, err
@@ -225,11 +225,11 @@ func BuildListGroupsioSubgroupsPayload(mailingListListGroupsioSubgroupsProjectUI
 	}
 	var bearerToken *string
 	{
-		if mailingListListGroupsioSubgroupsBearerToken != "" {
-			bearerToken = &mailingListListGroupsioSubgroupsBearerToken
+		if mailingListListGroupsioMailingListsBearerToken != "" {
+			bearerToken = &mailingListListGroupsioMailingListsBearerToken
 		}
 	}
-	v := &mailinglist.ListGroupsioSubgroupsPayload{}
+	v := &mailinglist.ListGroupsioMailingListsPayload{}
 	v.ProjectUID = projectUID
 	v.CommitteeUID = committeeUID
 	v.BearerToken = bearerToken
@@ -237,24 +237,24 @@ func BuildListGroupsioSubgroupsPayload(mailingListListGroupsioSubgroupsProjectUI
 	return v, nil
 }
 
-// BuildCreateGroupsioSubgroupPayload builds the payload for the mailing-list
-// create-groupsio-subgroup endpoint from CLI flags.
-func BuildCreateGroupsioSubgroupPayload(mailingListCreateGroupsioSubgroupBody string, mailingListCreateGroupsioSubgroupBearerToken string) (*mailinglist.CreateGroupsioSubgroupPayload, error) {
+// BuildCreateGroupsioMailingListPayload builds the payload for the
+// mailing-list create-groupsio-mailing-list endpoint from CLI flags.
+func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListBody string, mailingListCreateGroupsioMailingListBearerToken string) (*mailinglist.CreateGroupsioMailingListPayload, error) {
 	var err error
-	var body CreateGroupsioSubgroupRequestBody
+	var body CreateGroupsioMailingListRequestBody
 	{
-		err = json.Unmarshal([]byte(mailingListCreateGroupsioSubgroupBody), &body)
+		err = json.Unmarshal([]byte(mailingListCreateGroupsioMailingListBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Vel eos laboriosam eaque aliquam exercitationem.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Recusandae ducimus sed.\",\n      \"group_id\": 8887327035954549420,\n      \"name\": \"Similique quisquam voluptate.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Voluptatem commodi qui.\",\n      \"type\": \"Sunt amet itaque delectus.\"\n   }'")
 		}
 	}
 	var bearerToken *string
 	{
-		if mailingListCreateGroupsioSubgroupBearerToken != "" {
-			bearerToken = &mailingListCreateGroupsioSubgroupBearerToken
+		if mailingListCreateGroupsioMailingListBearerToken != "" {
+			bearerToken = &mailingListCreateGroupsioMailingListBearerToken
 		}
 	}
-	v := &mailinglist.CreateGroupsioSubgroupPayload{
+	v := &mailinglist.CreateGroupsioMailingListPayload{
 		ProjectUID:     body.ProjectUID,
 		CommitteeUID:   body.CommitteeUID,
 		ServiceID:      body.ServiceID,
@@ -269,33 +269,33 @@ func BuildCreateGroupsioSubgroupPayload(mailingListCreateGroupsioSubgroupBody st
 	return v, nil
 }
 
-// BuildGetGroupsioSubgroupPayload builds the payload for the mailing-list
-// get-groupsio-subgroup endpoint from CLI flags.
-func BuildGetGroupsioSubgroupPayload(mailingListGetGroupsioSubgroupSubgroupID string, mailingListGetGroupsioSubgroupBearerToken string) (*mailinglist.GetGroupsioSubgroupPayload, error) {
+// BuildGetGroupsioMailingListPayload builds the payload for the mailing-list
+// get-groupsio-mailing-list endpoint from CLI flags.
+func BuildGetGroupsioMailingListPayload(mailingListGetGroupsioMailingListSubgroupID string, mailingListGetGroupsioMailingListBearerToken string) (*mailinglist.GetGroupsioMailingListPayload, error) {
 	var subgroupID string
 	{
-		subgroupID = mailingListGetGroupsioSubgroupSubgroupID
+		subgroupID = mailingListGetGroupsioMailingListSubgroupID
 	}
 	var bearerToken *string
 	{
-		if mailingListGetGroupsioSubgroupBearerToken != "" {
-			bearerToken = &mailingListGetGroupsioSubgroupBearerToken
+		if mailingListGetGroupsioMailingListBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListBearerToken
 		}
 	}
-	v := &mailinglist.GetGroupsioSubgroupPayload{}
+	v := &mailinglist.GetGroupsioMailingListPayload{}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
 
 	return v, nil
 }
 
-// BuildUpdateGroupsioSubgroupPayload builds the payload for the mailing-list
-// update-groupsio-subgroup endpoint from CLI flags.
-func BuildUpdateGroupsioSubgroupPayload(mailingListUpdateGroupsioSubgroupBody string, mailingListUpdateGroupsioSubgroupSubgroupID string, mailingListUpdateGroupsioSubgroupBearerToken string) (*mailinglist.UpdateGroupsioSubgroupPayload, error) {
+// BuildUpdateGroupsioMailingListPayload builds the payload for the
+// mailing-list update-groupsio-mailing-list endpoint from CLI flags.
+func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListBody string, mailingListUpdateGroupsioMailingListSubgroupID string, mailingListUpdateGroupsioMailingListBearerToken string) (*mailinglist.UpdateGroupsioMailingListPayload, error) {
 	var err error
-	var body UpdateGroupsioSubgroupRequestBody
+	var body UpdateGroupsioMailingListRequestBody
 	{
-		err = json.Unmarshal([]byte(mailingListUpdateGroupsioSubgroupBody), &body)
+		err = json.Unmarshal([]byte(mailingListUpdateGroupsioMailingListBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Distinctio dolore voluptas occaecati.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Labore fuga.\",\n      \"group_id\": 8823882162391895104,\n      \"name\": \"Nobis est.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Enim adipisci expedita et ducimus repellendus eveniet.\",\n      \"type\": \"Enim at.\"\n   }'")
 		}
@@ -311,15 +311,15 @@ func BuildUpdateGroupsioSubgroupPayload(mailingListUpdateGroupsioSubgroupBody st
 	}
 	var subgroupID string
 	{
-		subgroupID = mailingListUpdateGroupsioSubgroupSubgroupID
+		subgroupID = mailingListUpdateGroupsioMailingListSubgroupID
 	}
 	var bearerToken *string
 	{
-		if mailingListUpdateGroupsioSubgroupBearerToken != "" {
-			bearerToken = &mailingListUpdateGroupsioSubgroupBearerToken
+		if mailingListUpdateGroupsioMailingListBearerToken != "" {
+			bearerToken = &mailingListUpdateGroupsioMailingListBearerToken
 		}
 	}
-	v := &mailinglist.UpdateGroupsioSubgroupPayload{
+	v := &mailinglist.UpdateGroupsioMailingListPayload{
 		ProjectUID:     body.ProjectUID,
 		CommitteeUID:   body.CommitteeUID,
 		ServiceID:      body.ServiceID,
@@ -335,33 +335,33 @@ func BuildUpdateGroupsioSubgroupPayload(mailingListUpdateGroupsioSubgroupBody st
 	return v, nil
 }
 
-// BuildDeleteGroupsioSubgroupPayload builds the payload for the mailing-list
-// delete-groupsio-subgroup endpoint from CLI flags.
-func BuildDeleteGroupsioSubgroupPayload(mailingListDeleteGroupsioSubgroupSubgroupID string, mailingListDeleteGroupsioSubgroupBearerToken string) (*mailinglist.DeleteGroupsioSubgroupPayload, error) {
+// BuildDeleteGroupsioMailingListPayload builds the payload for the
+// mailing-list delete-groupsio-mailing-list endpoint from CLI flags.
+func BuildDeleteGroupsioMailingListPayload(mailingListDeleteGroupsioMailingListSubgroupID string, mailingListDeleteGroupsioMailingListBearerToken string) (*mailinglist.DeleteGroupsioMailingListPayload, error) {
 	var subgroupID string
 	{
-		subgroupID = mailingListDeleteGroupsioSubgroupSubgroupID
+		subgroupID = mailingListDeleteGroupsioMailingListSubgroupID
 	}
 	var bearerToken *string
 	{
-		if mailingListDeleteGroupsioSubgroupBearerToken != "" {
-			bearerToken = &mailingListDeleteGroupsioSubgroupBearerToken
+		if mailingListDeleteGroupsioMailingListBearerToken != "" {
+			bearerToken = &mailingListDeleteGroupsioMailingListBearerToken
 		}
 	}
-	v := &mailinglist.DeleteGroupsioSubgroupPayload{}
+	v := &mailinglist.DeleteGroupsioMailingListPayload{}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
 
 	return v, nil
 }
 
-// BuildGetGroupsioSubgroupCountPayload builds the payload for the mailing-list
-// get-groupsio-subgroup-count endpoint from CLI flags.
-func BuildGetGroupsioSubgroupCountPayload(mailingListGetGroupsioSubgroupCountProjectUID string, mailingListGetGroupsioSubgroupCountBearerToken string) (*mailinglist.GetGroupsioSubgroupCountPayload, error) {
+// BuildGetGroupsioMailingListCountPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-count endpoint from CLI flags.
+func BuildGetGroupsioMailingListCountPayload(mailingListGetGroupsioMailingListCountProjectUID string, mailingListGetGroupsioMailingListCountBearerToken string) (*mailinglist.GetGroupsioMailingListCountPayload, error) {
 	var err error
 	var projectUID string
 	{
-		projectUID = mailingListGetGroupsioSubgroupCountProjectUID
+		projectUID = mailingListGetGroupsioMailingListCountProjectUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", projectUID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -369,31 +369,31 @@ func BuildGetGroupsioSubgroupCountPayload(mailingListGetGroupsioSubgroupCountPro
 	}
 	var bearerToken *string
 	{
-		if mailingListGetGroupsioSubgroupCountBearerToken != "" {
-			bearerToken = &mailingListGetGroupsioSubgroupCountBearerToken
+		if mailingListGetGroupsioMailingListCountBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListCountBearerToken
 		}
 	}
-	v := &mailinglist.GetGroupsioSubgroupCountPayload{}
+	v := &mailinglist.GetGroupsioMailingListCountPayload{}
 	v.ProjectUID = projectUID
 	v.BearerToken = bearerToken
 
 	return v, nil
 }
 
-// BuildGetGroupsioSubgroupMemberCountPayload builds the payload for the
-// mailing-list get-groupsio-subgroup-member-count endpoint from CLI flags.
-func BuildGetGroupsioSubgroupMemberCountPayload(mailingListGetGroupsioSubgroupMemberCountSubgroupID string, mailingListGetGroupsioSubgroupMemberCountBearerToken string) (*mailinglist.GetGroupsioSubgroupMemberCountPayload, error) {
+// BuildGetGroupsioMailingListMemberCountPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-member-count endpoint from CLI flags.
+func BuildGetGroupsioMailingListMemberCountPayload(mailingListGetGroupsioMailingListMemberCountSubgroupID string, mailingListGetGroupsioMailingListMemberCountBearerToken string) (*mailinglist.GetGroupsioMailingListMemberCountPayload, error) {
 	var subgroupID string
 	{
-		subgroupID = mailingListGetGroupsioSubgroupMemberCountSubgroupID
+		subgroupID = mailingListGetGroupsioMailingListMemberCountSubgroupID
 	}
 	var bearerToken *string
 	{
-		if mailingListGetGroupsioSubgroupMemberCountBearerToken != "" {
-			bearerToken = &mailingListGetGroupsioSubgroupMemberCountBearerToken
+		if mailingListGetGroupsioMailingListMemberCountBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListMemberCountBearerToken
 		}
 	}
-	v := &mailinglist.GetGroupsioSubgroupMemberCountPayload{}
+	v := &mailinglist.GetGroupsioMailingListMemberCountPayload{}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
 

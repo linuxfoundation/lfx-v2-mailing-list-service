@@ -224,9 +224,9 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	// ---- GroupsIO Subgroup endpoints ----
+	// ---- GroupsIO Mailing List endpoints ----
 
-	dsl.Method("list-groupsio-subgroups", func() {
+	dsl.Method("list-groupsio-mailing-lists", func() {
 		dsl.Description("List GroupsIO subgroups, optionally filtered by project UID and/or committee UID")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -244,7 +244,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups")
+			dsl.GET("/groupsio/mailing-lists")
 			dsl.Param("project_uid")
 			dsl.Param("committee_uid")
 			dsl.Header("bearer_token:Authorization")
@@ -255,7 +255,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("create-groupsio-subgroup", func() {
+	dsl.Method("create-groupsio-mailing-list", func() {
 		dsl.Description("Create a GroupsIO subgroup")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -269,7 +269,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.POST("/groupsio/subgroups")
+			dsl.POST("/groupsio/mailing-lists")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusCreated)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
@@ -279,7 +279,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("get-groupsio-subgroup", func() {
+	dsl.Method("get-groupsio-mailing-list", func() {
 		dsl.Description("Get a GroupsIO subgroup by ID")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -293,7 +293,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups/{subgroup_id}")
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
@@ -303,7 +303,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("update-groupsio-subgroup", func() {
+	dsl.Method("update-groupsio-mailing-list", func() {
 		dsl.Description("Update a GroupsIO subgroup")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -319,7 +319,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.PUT("/groupsio/subgroups/{subgroup_id}")
+			dsl.PUT("/groupsio/mailing-lists/{subgroup_id}")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
@@ -330,7 +330,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("delete-groupsio-subgroup", func() {
+	dsl.Method("delete-groupsio-mailing-list", func() {
 		dsl.Description("Delete a GroupsIO subgroup")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -343,7 +343,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.DELETE("/groupsio/subgroups/{subgroup_id}")
+			dsl.DELETE("/groupsio/mailing-lists/{subgroup_id}")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusNoContent)
@@ -353,7 +353,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("get-groupsio-subgroup-count", func() {
+	dsl.Method("get-groupsio-mailing-list-count", func() {
 		dsl.Description("Get count of GroupsIO subgroups for a project")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -369,7 +369,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups/count")
+			dsl.GET("/groupsio/mailing-lists/count")
 			dsl.Param("project_uid")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
@@ -379,7 +379,7 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	dsl.Method("get-groupsio-subgroup-member-count", func() {
+	dsl.Method("get-groupsio-mailing-list-member-count", func() {
 		dsl.Description("Get count of members in a GroupsIO subgroup")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
@@ -393,7 +393,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups/{subgroup_id}/member_count")
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/member_count")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
@@ -419,7 +419,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups/{subgroup_id}/members")
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/members")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
@@ -446,7 +446,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.POST("/groupsio/subgroups/{subgroup_id}/members")
+			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/members")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusCreated)
@@ -473,7 +473,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.GET("/groupsio/subgroups/{subgroup_id}/members/{member_id}")
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/members/{member_id}")
 			dsl.Param("subgroup_id")
 			dsl.Param("member_id")
 			dsl.Header("bearer_token:Authorization")
@@ -501,7 +501,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.PUT("/groupsio/subgroups/{subgroup_id}/members/{member_id}")
+			dsl.PUT("/groupsio/mailing-lists/{subgroup_id}/members/{member_id}")
 			dsl.Param("subgroup_id")
 			dsl.Param("member_id")
 			dsl.Header("bearer_token:Authorization")
@@ -527,7 +527,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.DELETE("/groupsio/subgroups/{subgroup_id}/members/{member_id}")
+			dsl.DELETE("/groupsio/mailing-lists/{subgroup_id}/members/{member_id}")
 			dsl.Param("subgroup_id")
 			dsl.Param("member_id")
 			dsl.Header("bearer_token:Authorization")
@@ -553,7 +553,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.POST("/groupsio/subgroups/{subgroup_id}/invitemembers")
+			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/invitemembers")
 			dsl.Param("subgroup_id")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusNoContent)
