@@ -4,9 +4,9 @@
 // Package port defines the interfaces for external dependencies and adapters.
 package port
 
-// GroupsIOReaderWriter combines service reader and writer into a single interface,
-// used by infrastructure adapters (e.g. the ITX proxy) that implement both.
+// GroupsIOReaderWriter combines all ITX proxy operations into a single interface.
 type GroupsIOReaderWriter interface {
 	GroupsIOServiceReader
 	GroupsIOServiceWriter
+	GroupsIOMailingListWriter
 }

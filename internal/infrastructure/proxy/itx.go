@@ -19,7 +19,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	pkgauth "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/auth"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/httpclient"
 	"golang.org/x/oauth2"
 )
@@ -66,38 +65,6 @@ func (c *itx) handleRequestError(err error) error {
 		return c.mapHTTPError(retryErr.StatusCode, []byte(retryErr.Message))
 	}
 	return domain.NewUnavailableError("ITX service request failed", err)
-}
-
-// ---- wire ↔ domain translation helpers ----
-
-func fromWireService(w *serviceWire) *model.GroupsIOService {
-	if w == nil {
-		return nil
-	}
-	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
-	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
-	return &model.GroupsIOService{
-		UID:        w.ID,
-		ProjectUID: w.ProjectID,
-		Type:       w.Type,
-		GroupID:    converter.NonZeroInt64(w.GroupID),
-		Domain:     w.Domain,
-		Prefix:     w.Prefix,
-		Status:     w.Status,
-		CreatedAt:  createdAt,
-		UpdatedAt:  updatedAt,
-	}
-}
-
-func toWireServiceRequest(svc *model.GroupsIOService) *serviceRequestWire {
-	return &serviceRequestWire{
-		ProjectID: svc.ProjectUID,
-		Type:      svc.Type,
-		GroupID:   converter.Int64Val(svc.GroupID),
-		Domain:    svc.Domain,
-		Prefix:    svc.Prefix,
-		Status:    svc.Status,
-	}
 }
 
 // ---- GroupsIOServiceWriter implementation ----
@@ -170,6 +137,76 @@ func (c *itx) getService(ctx context.Context, serviceID string) (*model.GroupsIO
 		return nil, domain.NewInternalError("failed to parse response", err)
 	}
 	return fromWireService(&wire), nil
+}
+
+// ---- GroupsIOMailingListWriter implementation ----
+
+func (c *itx) getSubgroup(ctx context.Context, mailingListID string) (*model.GroupsIOMailingList, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+	var wire subgroupWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireSubgroup(&wire), nil
+}
+
+// CreateMailingList creates a new GroupsIO mailing list (subgroup).
+func (c *itx) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	bodyBytes, err := json.Marshal(toWireSubgroupRequest(ml))
+	if err != nil {
+		return nil, domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_subgroup", c.config.BaseURL)
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+
+	var wire subgroupWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireSubgroup(&wire), nil
+}
+
+// UpdateMailingList updates an existing GroupsIO mailing list (subgroup).
+func (c *itx) UpdateMailingList(ctx context.Context, mailingListID string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	bodyBytes, err := json.Marshal(toWireSubgroupRequest(ml))
+	if err != nil {
+		return nil, domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
+	resp, err := c.httpClient.Request(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+
+	// ITX returns 204 No Content on successful update; fetch the updated resource.
+	if len(resp.Body) == 0 {
+		return c.getSubgroup(ctx, mailingListID)
+	}
+
+	var wire subgroupWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireSubgroup(&wire), nil
+}
+
+// DeleteMailingList deletes a GroupsIO mailing list (subgroup).
+func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
+	_, err := c.httpClient.Request(ctx, http.MethodDelete, url, nil, nil)
+	if err != nil {
+		return c.handleRequestError(err)
+	}
+	return nil
 }
 
 // ---- GroupsIOServiceReader implementation ----

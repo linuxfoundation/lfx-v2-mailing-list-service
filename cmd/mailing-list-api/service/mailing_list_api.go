@@ -21,9 +21,10 @@ import (
 
 // mailingListAPI implements the generated mailinglist.Service interface.
 type mailingListAPI struct {
-	auth          port.Authenticator
-	serviceReader port.GroupsIOServiceReader
-	serviceWriter port.GroupsIOServiceWriter
+	auth              port.Authenticator
+	serviceReader     port.GroupsIOServiceReader
+	serviceWriter     port.GroupsIOServiceWriter
+	mailingListWriter port.GroupsIOMailingListWriter
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -31,11 +32,13 @@ func NewMailingListAPI(
 	auth port.Authenticator,
 	serviceReader port.GroupsIOServiceReader,
 	serviceWriter port.GroupsIOServiceWriter,
+	mailingListWriter port.GroupsIOMailingListWriter,
 ) mailinglist.Service {
 	return &mailingListAPI{
-		auth:          auth,
-		serviceReader: serviceReader,
-		serviceWriter: serviceWriter,
+		auth:              auth,
+		serviceReader:     serviceReader,
+		serviceWriter:     serviceWriter,
+		mailingListWriter: mailingListWriter,
 	}
 }
 
@@ -138,20 +141,50 @@ func (s *mailingListAPI) ListGroupsioMailingLists(_ context.Context, _ *mailingl
 	return nil, mapDomainError(domain.NewInternalError("not implemented"))
 }
 
-func (s *mailingListAPI) CreateGroupsioMailingList(_ context.Context, _ *mailinglist.CreateGroupsioMailingListPayload) (*mailinglist.GroupsioSubgroup, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) CreateGroupsioMailingList(ctx context.Context, p *mailinglist.CreateGroupsioMailingListPayload) (*mailinglist.GroupsioSubgroup, error) {
+	ml := &model.GroupsIOMailingList{
+		ProjectUID:     converter.StringVal(p.ProjectUID),
+		ServiceUID:     converter.StringVal(p.ServiceID),
+		GroupName:      converter.StringVal(p.Name),
+		Description:    converter.StringVal(p.Description),
+		Type:           converter.StringVal(p.Type),
+		AudienceAccess: converter.StringVal(p.AudienceAccess),
+	}
+	if committeeUID := converter.StringVal(p.CommitteeUID); committeeUID != "" {
+		ml.Committees = []model.Committee{{UID: committeeUID}}
+	}
+	resp, err := s.mailingListWriter.CreateMailingList(ctx, ml)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertMailingList(resp), nil
 }
 
 func (s *mailingListAPI) GetGroupsioMailingList(_ context.Context, _ *mailinglist.GetGroupsioMailingListPayload) (*mailinglist.GroupsioSubgroup, error) {
 	return nil, mapDomainError(domain.NewInternalError("not implemented"))
 }
 
-func (s *mailingListAPI) UpdateGroupsioMailingList(_ context.Context, _ *mailinglist.UpdateGroupsioMailingListPayload) (*mailinglist.GroupsioSubgroup, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) UpdateGroupsioMailingList(ctx context.Context, p *mailinglist.UpdateGroupsioMailingListPayload) (*mailinglist.GroupsioSubgroup, error) {
+	ml := &model.GroupsIOMailingList{
+		ProjectUID:     converter.StringVal(p.ProjectUID),
+		ServiceUID:     converter.StringVal(p.ServiceID),
+		GroupName:      converter.StringVal(p.Name),
+		Description:    converter.StringVal(p.Description),
+		Type:           converter.StringVal(p.Type),
+		AudienceAccess: converter.StringVal(p.AudienceAccess),
+	}
+	if committeeUID := converter.StringVal(p.CommitteeUID); committeeUID != "" {
+		ml.Committees = []model.Committee{{UID: committeeUID}}
+	}
+	resp, err := s.mailingListWriter.UpdateMailingList(ctx, p.SubgroupID, ml)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertMailingList(resp), nil
 }
 
-func (s *mailingListAPI) DeleteGroupsioMailingList(_ context.Context, _ *mailinglist.DeleteGroupsioMailingListPayload) error {
-	return mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) DeleteGroupsioMailingList(ctx context.Context, p *mailinglist.DeleteGroupsioMailingListPayload) error {
+	return mapDomainError(s.mailingListWriter.DeleteMailingList(ctx, p.SubgroupID))
 }
 
 func (s *mailingListAPI) GetGroupsioMailingListCount(_ context.Context, _ *mailinglist.GetGroupsioMailingListCountPayload) (*mailinglist.GroupsioCount, error) {
