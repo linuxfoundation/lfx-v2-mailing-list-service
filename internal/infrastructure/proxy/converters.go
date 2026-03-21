@@ -87,8 +87,9 @@ func fromWireMember(w *memberWire) *model.GrpsIOMember {
 	}
 	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
 	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
-	uid := ""
-	if w.MemberID != 0 {
+	// Resolve UID: POST responses return member_id (int), GET responses return id (string).
+	uid := w.ID
+	if uid == "" && w.MemberID != 0 {
 		uid = strconv.FormatInt(w.MemberID, 10)
 	}
 	m := &model.GrpsIOMember{
@@ -110,6 +111,10 @@ func fromWireMember(w *memberWire) *model.GrpsIOMember {
 	}
 	if w.MemberID != 0 {
 		m.MemberID = &w.MemberID
+	} else if w.ID != "" {
+		if id, err := strconv.ParseInt(w.ID, 10, 64); err == nil {
+			m.MemberID = &id
+		}
 	}
 	return m
 }

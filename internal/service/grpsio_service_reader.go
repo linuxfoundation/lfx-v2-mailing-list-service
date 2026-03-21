@@ -119,7 +119,9 @@ func (o *GroupsIOServiceReaderOrchestrator) mapServiceResponse(ctx context.Conte
 		if err != nil {
 			return nil, err
 		}
-		svc.ProjectUID = v2UID
+		copy := *svc
+		copy.ProjectUID = v2UID
+		return &copy, nil
 	}
 	return svc, nil
 }

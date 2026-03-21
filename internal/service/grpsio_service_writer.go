@@ -89,7 +89,9 @@ func (o *GroupsIOServiceOrchestrator) mapServiceResponse(ctx context.Context, sv
 		if err != nil {
 			return nil, err
 		}
-		svc.ProjectUID = v2UID
+		copy := *svc
+		copy.ProjectUID = v2UID
+		return &copy, nil
 	}
 	return svc, nil
 }

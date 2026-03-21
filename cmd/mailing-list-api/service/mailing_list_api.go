@@ -26,6 +26,7 @@ type mailingListAPI struct {
 	serviceWriter     port.GroupsIOServiceWriter
 	mailingListReader port.GroupsIOMailingListReader
 	mailingListWriter port.GroupsIOMailingListWriter
+	memberReader      port.GroupsIOMailingListMemberReader
 	memberWriter      port.GroupsIOMailingListMemberWriter
 }
 
@@ -36,6 +37,7 @@ func NewMailingListAPI(
 	serviceWriter port.GroupsIOServiceWriter,
 	mailingListReader port.GroupsIOMailingListReader,
 	mailingListWriter port.GroupsIOMailingListWriter,
+	memberReader port.GroupsIOMailingListMemberReader,
 	memberWriter port.GroupsIOMailingListMemberWriter,
 ) mailinglist.Service {
 	return &mailingListAPI{
@@ -44,6 +46,7 @@ func NewMailingListAPI(
 		serviceWriter:     serviceWriter,
 		mailingListReader: mailingListReader,
 		mailingListWriter: mailingListWriter,
+		memberReader:      memberReader,
 		memberWriter:      memberWriter,
 	}
 }
@@ -223,8 +226,16 @@ func (s *mailingListAPI) GetGroupsioMailingListMemberCount(ctx context.Context, 
 
 // ---- GroupsIO Member endpoints ----
 
-func (s *mailingListAPI) ListGroupsioMembers(_ context.Context, _ *mailinglist.ListGroupsioMembersPayload) (*mailinglist.GroupsioMemberList, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) ListGroupsioMembers(ctx context.Context, p *mailinglist.ListGroupsioMembersPayload) (*mailinglist.GroupsioMemberList, error) {
+	items, total, err := s.memberReader.ListMembers(ctx, p.SubgroupID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	result := make([]*mailinglist.GroupsioMember, len(items))
+	for i, m := range items {
+		result[i] = convertMember(m)
+	}
+	return &mailinglist.GroupsioMemberList{Items: result, Total: &total}, nil
 }
 
 func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
@@ -245,8 +256,12 @@ func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.A
 	return convertMember(resp), nil
 }
 
-func (s *mailingListAPI) GetGroupsioMember(_ context.Context, _ *mailinglist.GetGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) GetGroupsioMember(ctx context.Context, p *mailinglist.GetGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
+	m, err := s.memberReader.GetMember(ctx, p.SubgroupID, p.MemberID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertMember(m), nil
 }
 
 func (s *mailingListAPI) UpdateGroupsioMember(ctx context.Context, p *mailinglist.UpdateGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
@@ -275,8 +290,12 @@ func (s *mailingListAPI) InviteGroupsioMembers(ctx context.Context, p *mailingli
 	return mapDomainError(s.memberWriter.InviteMembers(ctx, p.SubgroupID, p.Emails))
 }
 
-func (s *mailingListAPI) CheckGroupsioSubscriber(_ context.Context, _ *mailinglist.CheckGroupsioSubscriberPayload) (*mailinglist.GroupsioCheckSubscriberResponse, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) CheckGroupsioSubscriber(ctx context.Context, p *mailinglist.CheckGroupsioSubscriberPayload) (*mailinglist.GroupsioCheckSubscriberResponse, error) {
+	subscribed, err := s.memberReader.CheckSubscriber(ctx, p.SubgroupID, p.Email)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return &mailinglist.GroupsioCheckSubscriberResponse{Subscribed: subscribed}, nil
 }
 
 // ---- Helpers ----

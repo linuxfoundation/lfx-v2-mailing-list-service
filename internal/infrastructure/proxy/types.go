@@ -71,10 +71,12 @@ type countResponseWire struct {
 }
 
 // memberWire represents a GroupsIO member as returned by the ITX API.
+// POST responses use "member_id" (int); GET responses use "id" (string).
 type memberWire struct {
-	MemberID     int64  `json:"member_id,omitempty"`
+	MemberID     int64  `json:"member_id,omitempty"` // POST create / list response
+	ID           string `json:"id,omitempty"`        // GET single response
 	Email        string `json:"email,omitempty"`
-	Name         string `json:"name,omitempty"`
+	Name         string `json:"full_name,omitempty"`
 	MemberType   string `json:"member_type,omitempty"`
 	DeliveryMode string `json:"delivery_mode,omitempty"`
 	ModStatus    string `json:"mod_status,omitempty"`
@@ -99,6 +101,22 @@ type memberRequestWire struct {
 	ModStatus    string `json:"mod_status,omitempty"`
 	Organization string `json:"organization,omitempty"`
 	JobTitle     string `json:"job_title,omitempty"`
+}
+
+// memberListResponseWire represents a list response of GroupsIO members from the ITX API.
+type memberListResponseWire struct {
+	Data []*memberWire `json:"data"`
+}
+
+// checkSubscriberResponseWire represents the response to a check-subscriber request.
+type checkSubscriberResponseWire struct {
+	Subscribed bool `json:"subscribed"`
+}
+
+// checkSubscriberRequestWire represents the request body for checking a subscriber.
+type checkSubscriberRequestWire struct {
+	Email      string `json:"email"`
+	SubgroupID string `json:"subgroup_id"`
 }
 
 // inviteMembersRequestWire represents an invite members request for a GroupsIO subgroup.

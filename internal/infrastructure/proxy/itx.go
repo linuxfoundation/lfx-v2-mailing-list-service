@@ -209,6 +209,53 @@ func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error
 	return nil
 }
 
+// ---- GroupsIOMailingListMemberReader implementation ----
+
+// ListMembers lists all members of a GroupsIO mailing list.
+func (c *itx) ListMembers(ctx context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members", c.config.BaseURL, mailingListID)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return nil, 0, c.handleRequestError(err)
+	}
+
+	var wire memberListResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, 0, domain.NewInternalError("failed to parse response", err)
+	}
+
+	items := make([]*model.GrpsIOMember, len(wire.Data))
+	for i, item := range wire.Data {
+		items[i] = fromWireMember(item)
+	}
+	return items, len(items), nil
+}
+
+// GetMember retrieves a GroupsIO member by ID.
+func (c *itx) GetMember(ctx context.Context, mailingListID string, memberID string) (*model.GrpsIOMember, error) {
+	return c.getMember(ctx, mailingListID, memberID)
+}
+
+// CheckSubscriber checks whether an email address is subscribed to a GroupsIO mailing list.
+func (c *itx) CheckSubscriber(ctx context.Context, mailingListID string, email string) (bool, error) {
+	bodyBytes, err := json.Marshal(&checkSubscriberRequestWire{Email: email, SubgroupID: mailingListID})
+	if err != nil {
+		return false, domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_checksubscriber", c.config.BaseURL)
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return false, c.handleRequestError(err)
+	}
+
+	var wire checkSubscriberResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return false, domain.NewInternalError("failed to parse response", err)
+	}
+	return wire.Subscribed, nil
+}
+
 // ---- GroupsIOMailingListMemberWriter implementation ----
 
 // getMember retrieves a GroupsIO member by ID (used internally by UpdateMember on 204 responses).
