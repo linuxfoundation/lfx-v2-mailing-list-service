@@ -209,6 +209,92 @@ func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error
 	return nil
 }
 
+// ---- GroupsIOMailingListMemberWriter implementation ----
+
+// getMember retrieves a GroupsIO member by ID (used internally by UpdateMember on 204 responses).
+func (c *itx) getMember(ctx context.Context, mailingListID string, memberID string) (*model.GrpsIOMember, error) {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+	var wire memberWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireMember(&wire), nil
+}
+
+// AddMember adds a new member to a GroupsIO mailing list (subgroup).
+func (c *itx) AddMember(ctx context.Context, mailingListID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error) {
+	bodyBytes, err := json.Marshal(toWireMemberRequest(member))
+	if err != nil {
+		return nil, domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members", c.config.BaseURL, mailingListID)
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+
+	var wire memberWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireMember(&wire), nil
+}
+
+// UpdateMember updates an existing GroupsIO member.
+func (c *itx) UpdateMember(ctx context.Context, mailingListID string, memberID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error) {
+	bodyBytes, err := json.Marshal(toWireMemberRequest(member))
+	if err != nil {
+		return nil, domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
+	resp, err := c.httpClient.Request(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+
+	// ITX returns 204 No Content on successful update; fetch the updated resource.
+	if len(resp.Body) == 0 {
+		return c.getMember(ctx, mailingListID, memberID)
+	}
+
+	var wire memberWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return fromWireMember(&wire), nil
+}
+
+// DeleteMember removes a member from a GroupsIO mailing list.
+func (c *itx) DeleteMember(ctx context.Context, mailingListID string, memberID string) error {
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
+	_, err := c.httpClient.Request(ctx, http.MethodDelete, url, nil, nil)
+	if err != nil {
+		return c.handleRequestError(err)
+	}
+	return nil
+}
+
+// InviteMembers sends invitations to a list of emails for a GroupsIO mailing list.
+func (c *itx) InviteMembers(ctx context.Context, mailingListID string, emails []string) error {
+	bodyBytes, err := json.Marshal(&inviteMembersRequestWire{Emails: emails})
+	if err != nil {
+		return domain.NewInternalError("failed to marshal request", err)
+	}
+
+	url := fmt.Sprintf("%s/groupsio_subgroup/%s/invite_members", c.config.BaseURL, mailingListID)
+	_, err = c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		return c.handleRequestError(err)
+	}
+	return nil
+}
+
 // ---- GroupsIOMailingListReader implementation ----
 
 // ListMailingLists lists GroupsIO mailing lists, optionally filtered by project and/or committee v1 IDs.

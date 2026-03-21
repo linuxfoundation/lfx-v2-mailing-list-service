@@ -9,24 +9,17 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// GrpsIOMemberWriter defines the interface for writing member data
-type GrpsIOMemberWriter interface {
+// GroupsIOMailingListMemberWriter defines the application-level interface for GroupsIO member write operations.
+type GroupsIOMailingListMemberWriter interface {
+	// AddMember adds a new member to a mailing list.
+	AddMember(ctx context.Context, mailingListID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error)
 
-	// CreateGrpsIOMember creates a new member and returns it with revision
-	CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error)
+	// UpdateMember updates an existing member in a mailing list.
+	UpdateMember(ctx context.Context, mailingListID string, memberID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error)
 
-	// UpdateGrpsIOMember updates an existing member with optimistic concurrency control
-	UpdateGrpsIOMember(ctx context.Context, uid string, member *model.GrpsIOMember, expectedRevision uint64) (*model.GrpsIOMember, uint64, error)
+	// DeleteMember removes a member from a mailing list.
+	DeleteMember(ctx context.Context, mailingListID string, memberID string) error
 
-	// DeleteGrpsIOMember deletes a member with optimistic concurrency control
-	// The member parameter provides context for constraint cleanup and should contain the existing member data
-	DeleteGrpsIOMember(ctx context.Context, uid string, expectedRevision uint64, member *model.GrpsIOMember) error
-
-	// UniqueMember validates member email is unique within mailing list
-	UniqueMember(ctx context.Context, member *model.GrpsIOMember) (string, error)
-
-	// CreateMemberSecondaryIndices creates lookup indices for Groups.io IDs
-	// Returns keys created (for rollback) and error if index creation fails
-	// Pattern mirrors createMailingListSecondaryIndices
-	CreateMemberSecondaryIndices(ctx context.Context, member *model.GrpsIOMember) ([]string, error)
+	// InviteMembers sends invitations to the given email addresses to join a mailing list.
+	InviteMembers(ctx context.Context, mailingListID string, emails []string) error
 }

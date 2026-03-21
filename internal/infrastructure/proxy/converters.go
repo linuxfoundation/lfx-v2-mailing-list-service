@@ -78,3 +78,51 @@ func toWireSubgroupRequest(ml *model.GroupsIOMailingList) *subgroupRequestWire {
 	}
 	return req
 }
+
+// ---- member wire ↔ domain translation helpers ----
+
+func fromWireMember(w *memberWire) *model.GrpsIOMember {
+	if w == nil {
+		return nil
+	}
+	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
+	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
+	uid := ""
+	if w.MemberID != 0 {
+		uid = strconv.FormatInt(w.MemberID, 10)
+	}
+	m := &model.GrpsIOMember{
+		UID:            uid,
+		Email:          w.Email,
+		GroupsFullName: w.Name,
+		Username:       w.Username,
+		DeliveryMode:   w.DeliveryMode,
+		ModStatus:      w.ModStatus,
+		Status:         w.Status,
+		MemberType:     w.MemberType,
+		VotingStatus:   w.VotingStatus,
+		UserID:         w.UserID,
+		Organization:   w.Organization,
+		JobTitle:       w.JobTitle,
+		Role:           w.Role,
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
+	}
+	if w.MemberID != 0 {
+		m.MemberID = &w.MemberID
+	}
+	return m
+}
+
+func toWireMemberRequest(m *model.GrpsIOMember) *memberRequestWire {
+	return &memberRequestWire{
+		Email:        m.Email,
+		Name:         m.GroupsFullName,
+		UserID:       m.UserID,
+		DeliveryMode: m.DeliveryMode,
+		MemberType:   m.MemberType,
+		ModStatus:    m.ModStatus,
+		Organization: m.Organization,
+		JobTitle:     m.JobTitle,
+	}
+}

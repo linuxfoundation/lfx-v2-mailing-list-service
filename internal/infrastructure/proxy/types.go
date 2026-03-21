@@ -36,9 +36,9 @@ type serviceListResponseWire struct {
 // subgroupWire represents a GroupsIO subgroup (mailing list) as returned by the ITX API.
 type subgroupWire struct {
 	ID             string `json:"id,omitempty"`
-	ProjectID      string `json:"project_id,omitempty"`  // v1 SFID
-	CommitteeID    string `json:"committee,omitempty"`   // v1 UUID
-	ParentID       string `json:"parent_id,omitempty"`   // v1 Service ID
+	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
+	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
+	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
 	GroupID        int64  `json:"group_id,omitempty"`
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`
@@ -68,4 +68,40 @@ type subgroupListResponseWire struct {
 // countResponseWire represents a count response from the ITX API.
 type countResponseWire struct {
 	Count int `json:"count"`
+}
+
+// memberWire represents a GroupsIO member as returned by the ITX API.
+type memberWire struct {
+	MemberID     int64  `json:"member_id,omitempty"`
+	Email        string `json:"email,omitempty"`
+	Name         string `json:"name,omitempty"`
+	MemberType   string `json:"member_type,omitempty"`
+	DeliveryMode string `json:"delivery_mode,omitempty"`
+	ModStatus    string `json:"mod_status,omitempty"`
+	Status       string `json:"status,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	JobTitle     string `json:"job_title,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Role         string `json:"role,omitempty"`
+	VotingStatus string `json:"voting_status,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	UpdatedAt    string `json:"last_modified_at,omitempty"`
+}
+
+// memberRequestWire represents a create/update request for a GroupsIO member.
+type memberRequestWire struct {
+	Email        string `json:"email,omitempty"`
+	Name         string `json:"name,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	DeliveryMode string `json:"delivery_mode,omitempty"`
+	MemberType   string `json:"member_type,omitempty"`
+	ModStatus    string `json:"mod_status,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	JobTitle     string `json:"job_title,omitempty"`
+}
+
+// inviteMembersRequestWire represents an invite members request for a GroupsIO subgroup.
+type inviteMembersRequestWire struct {
+	Emails []string `json:"emails"`
 }

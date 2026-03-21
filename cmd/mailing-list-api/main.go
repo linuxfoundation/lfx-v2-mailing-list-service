@@ -87,6 +87,10 @@ func main() {
 		orchestrator.WithMailingListTranslator(translator),
 	)
 
+	memberWriterOrchestrator := orchestrator.NewGroupsIOMailingListMemberWriterOrchestrator(
+		orchestrator.WithMemberWriter(proxyClient),
+	)
+
 	slog.InfoContext(ctx, "ITX proxy client initialized")
 
 	// Create the mailing list API service
@@ -96,6 +100,7 @@ func main() {
 		serviceOrchestrator,
 		mailingListReaderOrchestrator,
 		mailingListOrchestrator,
+		memberWriterOrchestrator,
 	)
 
 	// Wrap the services in endpoints
