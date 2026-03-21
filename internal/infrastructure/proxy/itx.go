@@ -172,8 +172,83 @@ func (c *itx) getService(ctx context.Context, serviceID string) (*model.GroupsIO
 	return fromWireService(&wire), nil
 }
 
+// ---- GroupsIOServiceReader implementation ----
+
+// listServices retrieves a list of GroupsIO services, optionally filtered by project_id.
+func (c *itx) listServices(ctx context.Context, projectID string) (*serviceListResponseWire, error) {
+	url := fmt.Sprintf("%s/groupsio_service", c.config.BaseURL)
+	if projectID != "" {
+		url = fmt.Sprintf("%s?project_id=%s", url, projectID)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+
+	var wire serviceListResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+	return &wire, nil
+}
+
+// ListServices lists GroupsIO services, optionally filtered by project_id.
+func (c *itx) ListServices(ctx context.Context, projectID string) ([]*model.GroupsIOService, int, error) {
+	wire, err := c.listServices(ctx, projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	svcs := make([]*model.GroupsIOService, len(wire.Items))
+	for i, item := range wire.Items {
+		svcs[i] = fromWireService(item)
+	}
+	return svcs, wire.Total, nil
+}
+
+// GetService retrieves a GroupsIO service by ID.
+func (c *itx) GetService(ctx context.Context, serviceID string) (*model.GroupsIOService, error) {
+	return c.getService(ctx, serviceID)
+}
+
+// GetProjects returns the v1 project IDs that have at least one GroupsIO service.
+func (c *itx) GetProjects(ctx context.Context) ([]string, error) {
+	wire, err := c.listServices(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]struct{}, len(wire.Items))
+	for _, item := range wire.Items {
+		if item.ProjectID != "" {
+			seen[item.ProjectID] = struct{}{}
+		}
+	}
+
+	projectIDs := make([]string, 0, len(seen))
+	for id := range seen {
+		projectIDs = append(projectIDs, id)
+	}
+	return projectIDs, nil
+}
+
+// FindParentService finds the primary service for a given v1 project ID.
+func (c *itx) FindParentService(ctx context.Context, projectID string) (*model.GroupsIOService, error) {
+	wire, err := c.listServices(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range wire.Items {
+		if item.Type == "v2_primary" {
+			return fromWireService(item), nil
+		}
+	}
+	return nil, domain.NewNotFoundError("no parent service found for project")
+}
+
 // NewProxy creates a new ITX proxy client with OAuth2 M2M authentication using private key.
-func NewProxy(ctx context.Context, config Config) (port.GroupsIOServiceWriter, error) {
+func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, error) {
 
 	if config.PrivateKey == "" {
 		slog.ErrorContext(ctx, "ITX client private key is not set")

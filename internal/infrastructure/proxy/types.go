@@ -26,3 +26,9 @@ type serviceRequestWire struct {
 	Prefix    string `json:"prefix,omitempty"`
 	Status    string `json:"status,omitempty"`
 }
+
+// serviceListResponseWire represents a list response of GroupsIO services from the ITX API.
+type serviceListResponseWire struct {
+	Items []*serviceWire `json:"items"`
+	Total int            `json:"total"`
+}

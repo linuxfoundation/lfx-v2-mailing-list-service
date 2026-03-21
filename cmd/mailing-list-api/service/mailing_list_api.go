@@ -22,16 +22,19 @@ import (
 // mailingListAPI implements the generated mailinglist.Service interface.
 type mailingListAPI struct {
 	auth          port.Authenticator
+	serviceReader port.GroupsIOServiceReader
 	serviceWriter port.GroupsIOServiceWriter
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
 func NewMailingListAPI(
 	auth port.Authenticator,
+	serviceReader port.GroupsIOServiceReader,
 	serviceWriter port.GroupsIOServiceWriter,
 ) mailinglist.Service {
 	return &mailingListAPI{
 		auth:          auth,
+		serviceReader: serviceReader,
 		serviceWriter: serviceWriter,
 	}
 }
@@ -57,8 +60,16 @@ func (s *mailingListAPI) Readyz(_ context.Context) ([]byte, error) {
 
 // ---- GroupsIO Service endpoints ----
 
-func (s *mailingListAPI) ListGroupsioServices(_ context.Context, _ *mailinglist.ListGroupsioServicesPayload) (*mailinglist.GroupsioServiceList, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) ListGroupsioServices(ctx context.Context, p *mailinglist.ListGroupsioServicesPayload) (*mailinglist.GroupsioServiceList, error) {
+	svcs, total, err := s.serviceReader.ListServices(ctx, converter.StringVal(p.ProjectUID))
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	items := make([]*mailinglist.GroupsioService, len(svcs))
+	for i, svc := range svcs {
+		items[i] = convertService(svc)
+	}
+	return &mailinglist.GroupsioServiceList{Items: items, Total: &total}, nil
 }
 
 func (s *mailingListAPI) CreateGroupsioService(ctx context.Context, p *mailinglist.CreateGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
@@ -77,8 +88,12 @@ func (s *mailingListAPI) CreateGroupsioService(ctx context.Context, p *mailingli
 	return convertService(resp), nil
 }
 
-func (s *mailingListAPI) GetGroupsioService(_ context.Context, _ *mailinglist.GetGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) GetGroupsioService(ctx context.Context, p *mailinglist.GetGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
+	svc, err := s.serviceReader.GetService(ctx, p.ServiceID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertService(svc), nil
 }
 
 func (s *mailingListAPI) UpdateGroupsioService(ctx context.Context, p *mailinglist.UpdateGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
@@ -101,12 +116,20 @@ func (s *mailingListAPI) DeleteGroupsioService(ctx context.Context, p *mailingli
 	return mapDomainError(s.serviceWriter.DeleteService(ctx, p.ServiceID))
 }
 
-func (s *mailingListAPI) GetGroupsioServiceProjects(_ context.Context, _ *mailinglist.GetGroupsioServiceProjectsPayload) (*mailinglist.GroupsioProjectsResponse, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) GetGroupsioServiceProjects(ctx context.Context, _ *mailinglist.GetGroupsioServiceProjectsPayload) (*mailinglist.GroupsioProjectsResponse, error) {
+	projects, err := s.serviceReader.GetProjects(ctx)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return &mailinglist.GroupsioProjectsResponse{Projects: projects}, nil
 }
 
-func (s *mailingListAPI) FindParentGroupsioService(_ context.Context, _ *mailinglist.FindParentGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
-	return nil, mapDomainError(domain.NewInternalError("not implemented"))
+func (s *mailingListAPI) FindParentGroupsioService(ctx context.Context, p *mailinglist.FindParentGroupsioServicePayload) (*mailinglist.GroupsioService, error) {
+	svc, err := s.serviceReader.FindParentService(ctx, p.ProjectUID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertService(svc), nil
 }
 
 // ---- GroupsIO Mailing List endpoints ----

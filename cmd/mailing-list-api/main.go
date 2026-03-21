@@ -60,15 +60,20 @@ func main() {
 	// Initialize ID translator
 	translator := service.Translator(ctx)
 
-	// Initialize GroupsIO service writer (ITX proxy + orchestrator)
-	slog.InfoContext(ctx, "initializing GroupsIO service writer")
-	proxyWriter, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
+	// Initialize GroupsIO service proxy (ITX proxy + orchestrators)
+	slog.InfoContext(ctx, "initializing GroupsIO service proxy")
+	proxyClient, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
 	if err != nil {
 		log.Fatalf("failed to initialize ITX proxy client: %v", err)
 	}
 
+	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
+		orchestrator.WithServiceReader(proxyClient),
+		orchestrator.WithServiceReaderTranslator(translator),
+	)
+
 	serviceOrchestrator := orchestrator.NewGroupsIOServiceOrchestrator(
-		orchestrator.WithServiceWriter(proxyWriter),
+		orchestrator.WithServiceWriter(proxyClient),
 		orchestrator.WithServiceTranslator(translator),
 	)
 
@@ -77,6 +82,7 @@ func main() {
 	// Create the mailing list API service
 	mailingListSvc := service.NewMailingListAPI(
 		authService,
+		serviceReaderOrchestrator,
 		serviceOrchestrator,
 	)
 

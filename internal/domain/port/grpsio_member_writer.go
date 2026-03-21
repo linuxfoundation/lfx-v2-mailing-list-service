@@ -11,7 +11,6 @@ import (
 
 // GrpsIOMemberWriter defines the interface for writing member data
 type GrpsIOMemberWriter interface {
-	BaseGrpsIOWriter
 
 	// CreateGrpsIOMember creates a new member and returns it with revision
 	CreateGrpsIOMember(ctx context.Context, member *model.GrpsIOMember) (*model.GrpsIOMember, uint64, error)
