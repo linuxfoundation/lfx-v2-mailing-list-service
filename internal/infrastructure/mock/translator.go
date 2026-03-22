@@ -9,11 +9,11 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
-
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+
+	"gopkg.in/yaml.v3"
 )
 
 // translatorMappingsFile is the YAML schema for translator_mappings.yaml.
@@ -56,7 +56,7 @@ func NewMockTranslator(filePath string) (*MockTranslator, error) {
 // NATSTranslator so that callers see no behavioural difference.
 func (m *MockTranslator) MapID(_ context.Context, subject, direction, fromID string) (string, error) {
 	if fromID == "" {
-		return "", domain.NewValidationError(fmt.Sprintf("%s ID is required", subject))
+		return "", errs.NewValidation(fmt.Sprintf("%s ID is required", subject))
 	}
 
 	key, err := mockBuildKey(subject, direction, fromID)
@@ -66,7 +66,7 @@ func (m *MockTranslator) MapID(_ context.Context, subject, direction, fromID str
 
 	response, ok := m.mappings[key]
 	if !ok || response == "" {
-		return "", domain.NewValidationError(fmt.Sprintf("mapping not found for %s", key))
+		return "", errs.NewValidation(fmt.Sprintf("mapping not found for %s", key))
 	}
 
 	if subject == constants.TranslationSubjectCommittee && direction == constants.TranslationDirectionV2ToV1 {
@@ -83,7 +83,7 @@ func mockBuildKey(subject, direction, fromID string) (string, error) {
 	case constants.TranslationDirectionV1ToV2:
 		return fmt.Sprintf("%s.sfid.%s", subject, fromID), nil
 	default:
-		return "", domain.NewValidationError(fmt.Sprintf("unknown translation direction: %s", direction))
+		return "", errs.NewValidation(fmt.Sprintf("unknown translation direction: %s", direction))
 	}
 }
 
@@ -93,7 +93,7 @@ func mockParseCommitteeV2ToV1Response(response string) (string, error) {
 		return response, nil
 	}
 	if len(parts) != 2 || parts[1] == "" {
-		return "", domain.NewUnavailableError(fmt.Sprintf("unexpected committee mapping format: %s", response))
+		return "", errs.NewServiceUnavailable(fmt.Sprintf("unexpected committee mapping format: %s", response))
 	}
 	return parts[1], nil
 }

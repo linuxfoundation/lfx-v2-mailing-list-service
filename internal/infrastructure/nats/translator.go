@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/nats-io/nats.go"
 )
 
@@ -33,7 +33,7 @@ type NATSTranslator struct {
 // Returns the translated ID or a domain error if the mapping is not found.
 func (t *NATSTranslator) MapID(ctx context.Context, subject, direction, fromID string) (string, error) {
 	if fromID == "" {
-		return "", domain.NewValidationError(fmt.Sprintf("%s ID is required", subject))
+		return "", errs.NewValidation(fmt.Sprintf("%s ID is required", subject))
 	}
 
 	key, err := buildKey(subject, direction, fromID)
@@ -62,7 +62,7 @@ func buildKey(subject, direction, fromID string) (string, error) {
 	case constants.TranslationDirectionV1ToV2:
 		return fmt.Sprintf("%s.sfid.%s", subject, fromID), nil
 	default:
-		return "", domain.NewValidationError(fmt.Sprintf("unknown translation direction: %s", direction))
+		return "", errs.NewValidation(fmt.Sprintf("unknown translation direction: %s", direction))
 	}
 }
 
@@ -71,20 +71,20 @@ func (t *NATSTranslator) lookup(ctx context.Context, key string) (string, error)
 	msg, err := t.conn.RequestWithContext(ctx, lookupSubject, []byte(key))
 	if err != nil {
 		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
-			return "", domain.NewUnavailableError("v1-sync-helper lookup timed out", err)
+			return "", errs.NewServiceUnavailable("v1-sync-helper lookup timed out", err)
 		}
-		return "", domain.NewUnavailableError("failed to lookup ID mapping", err)
+		return "", errs.NewServiceUnavailable("failed to lookup ID mapping", err)
 	}
 
 	response := string(msg.Data)
 
 	if strings.HasPrefix(response, "error: ") {
 		errMsg := strings.TrimPrefix(response, "error: ")
-		return "", domain.NewUnavailableError(fmt.Sprintf("v1-sync-helper error: %s", errMsg))
+		return "", errs.NewServiceUnavailable(fmt.Sprintf("v1-sync-helper error: %s", errMsg))
 	}
 
 	if response == "" {
-		return "", domain.NewValidationError(fmt.Sprintf("mapping not found for %s", key))
+		return "", errs.NewValidation(fmt.Sprintf("mapping not found for %s", key))
 	}
 
 	return response, nil
@@ -98,7 +98,7 @@ func parseCommitteeV2ToV1Response(response string) (string, error) {
 		return response, nil
 	}
 	if len(parts) != 2 || parts[1] == "" {
-		return "", domain.NewUnavailableError(fmt.Sprintf("unexpected committee mapping format: %s", response))
+		return "", errs.NewServiceUnavailable(fmt.Sprintf("unexpected committee mapping format: %s", response))
 	}
 	return parts[1], nil
 }

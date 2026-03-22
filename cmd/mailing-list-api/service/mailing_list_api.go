@@ -10,11 +10,11 @@ import (
 	"log/slog"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 
 	"goa.design/goa/v3/security"
 )
@@ -304,20 +304,21 @@ func mapDomainError(err error) error {
 	if err == nil {
 		return nil
 	}
-	var domErr *domain.DomainError
-	if !errors.As(err, &domErr) {
-		return &mailinglist.InternalServerError{Message: err.Error()}
+	var notFound errs.NotFound
+	if errors.As(err, &notFound) {
+		return &mailinglist.NotFoundError{Message: notFound.Error()}
 	}
-	switch domErr.Type {
-	case domain.ErrorTypeNotFound:
-		return &mailinglist.NotFoundError{Message: domErr.Message}
-	case domain.ErrorTypeValidation:
-		return &mailinglist.BadRequestError{Message: domErr.Message}
-	case domain.ErrorTypeConflict:
-		return &mailinglist.ConflictError{Message: domErr.Message}
-	case domain.ErrorTypeUnavailable:
-		return &mailinglist.ServiceUnavailableError{Message: domErr.Message}
-	default:
-		return &mailinglist.InternalServerError{Message: domErr.Message}
+	var validation errs.Validation
+	if errors.As(err, &validation) {
+		return &mailinglist.BadRequestError{Message: validation.Error()}
 	}
+	var conflict errs.Conflict
+	if errors.As(err, &conflict) {
+		return &mailinglist.ConflictError{Message: conflict.Error()}
+	}
+	var unavailable errs.ServiceUnavailable
+	if errors.As(err, &unavailable) {
+		return &mailinglist.ServiceUnavailableError{Message: unavailable.Error()}
+	}
+	return &mailinglist.InternalServerError{Message: err.Error()}
 }

@@ -34,6 +34,9 @@ func convertMember(m *model.GrpsIOMember) *mailinglist.GroupsioMember {
 		UserID:       converter.NonEmptyString(m.UserID),
 		Organization: converter.NonEmptyString(m.Organization),
 		JobTitle:     converter.NonEmptyString(m.JobTitle),
+		Username:     converter.NonEmptyString(m.Username),
+		Role:         converter.NonEmptyString(m.Role),
+		VotingStatus: converter.NonEmptyString(m.VotingStatus),
 		CreatedAt:    converter.NonEmptyString(createdAt),
 		UpdatedAt:    converter.NonEmptyString(updatedAt),
 	}

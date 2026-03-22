@@ -98,7 +98,7 @@ type AddGroupsioMemberPayload struct {
 	Email *string
 	// Member display name
 	Name *string
-	// Member type
+	// Member type; only 'direct' is accepted for API-managed members
 	MemberType *string
 	// Moderation status
 	ModStatus *string
@@ -468,7 +468,7 @@ type UpdateGroupsioMemberPayload struct {
 	Email *string
 	// Member display name
 	Name *string
-	// Member type
+	// Member type; only 'direct' is accepted for API-managed members
 	MemberType *string
 	// Moderation status
 	ModStatus *string

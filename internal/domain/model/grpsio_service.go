@@ -41,7 +41,7 @@ type GrpsIOServiceSettings struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// Tags generates a consistent set of tags for the GroupsIOServices ettings
+// Tags generates a consistent set of tags for the GroupsIOService settings
 func (s *GrpsIOServiceSettings) Tags() []string {
 	var tags []string
 

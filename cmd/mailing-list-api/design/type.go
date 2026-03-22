@@ -190,7 +190,9 @@ var GroupsioMemberRequestType = dsl.Type("groupsio-member-request", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
 	dsl.Attribute("name", dsl.String, "Member display name")
-	dsl.Attribute("member_type", dsl.String, "Member type")
+	dsl.Attribute("member_type", dsl.String, "Member type; only 'direct' is accepted for API-managed members", func() {
+		dsl.Enum("direct")
+	})
 	dsl.Attribute("mod_status", dsl.String, "Moderation status", func() {
 		dsl.Enum("none", "moderator", "owner")
 	})

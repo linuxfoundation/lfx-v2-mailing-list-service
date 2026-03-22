@@ -51,7 +51,7 @@ func BuildCreateGroupsioServicePayload(mailingListCreateGroupsioServiceBody stri
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGroupsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Sapiente velit molestias molestiae.\",\n      \"group_id\": 1916170486845057797,\n      \"prefix\": \"Sunt ea nisi sapiente.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Qui aut molestiae aliquid dicta non blanditiis.\",\n      \"type\": \"v2_primary\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Perferendis eum ut blanditiis.\",\n      \"group_id\": 8652374089567614400,\n      \"prefix\": \"Rerum quasi molestias.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Voluptatem itaque deleniti possimus distinctio magnam.\",\n      \"type\": \"v2_primary\"\n   }'")
 		}
 	}
 	var bearerToken *string
@@ -101,7 +101,7 @@ func BuildUpdateGroupsioServicePayload(mailingListUpdateGroupsioServiceBody stri
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioServiceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Eveniet nesciunt ex ab.\",\n      \"group_id\": 3454711477715090973,\n      \"prefix\": \"Architecto rerum ducimus.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Deleniti quisquam vel.\",\n      \"type\": \"v2_primary\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"domain\": \"Aliquid distinctio mollitia.\",\n      \"group_id\": 7267254203065811520,\n      \"prefix\": \"Et aut iste quaerat sit porro molestias.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"status\": \"Quibusdam odit omnis.\",\n      \"type\": \"v2_primary\"\n   }'")
 		}
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -245,7 +245,7 @@ func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Vel eos laboriosam eaque aliquam exercitationem.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Recusandae ducimus sed.\",\n      \"group_id\": 8887327035954549420,\n      \"name\": \"Similique quisquam voluptate.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Voluptatem commodi qui.\",\n      \"type\": \"Sunt amet itaque delectus.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Similique doloribus est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Quasi natus totam in sunt exercitationem.\",\n      \"group_id\": 6153133482692657833,\n      \"name\": \"Reprehenderit pariatur quam.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Non sed velit.\",\n      \"type\": \"Animi dolore facilis ad nostrum ea.\"\n   }'")
 		}
 	}
 	var bearerToken *string
@@ -297,7 +297,7 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Distinctio dolore voluptas occaecati.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Labore fuga.\",\n      \"group_id\": 8823882162391895104,\n      \"name\": \"Nobis est.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Enim adipisci expedita et ducimus repellendus eveniet.\",\n      \"type\": \"Enim at.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"At quae distinctio dolore voluptas occaecati culpa.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Adipisci expedita et ducimus repellendus eveniet.\",\n      \"group_id\": 5572662436592214257,\n      \"name\": \"Aut et enim ut laudantium rerum at.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Praesentium molestiae consequatur impedit esse mollitia voluptatem.\",\n      \"type\": \"Quia nobis est ut labore fuga in.\"\n   }'")
 		}
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -428,10 +428,15 @@ func BuildAddGroupsioMemberPayload(mailingListAddGroupsioMemberBody string, mail
 	{
 		err = json.Unmarshal([]byte(mailingListAddGroupsioMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"email_delivery_summary\",\n      \"email\": \"brando@koepp.name\",\n      \"job_title\": \"Eos dicta id quis et quibusdam.\",\n      \"member_type\": \"Quia in alias voluptas illum ipsum cupiditate.\",\n      \"mod_status\": \"none\",\n      \"name\": \"Et ipsam ducimus deserunt vitae.\",\n      \"organization\": \"Aut suscipit non dolor fugit aut.\",\n      \"user_id\": \"Iusto sed voluptate perspiciatis inventore.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"email_delivery_single\",\n      \"email\": \"neoma@collier.info\",\n      \"job_title\": \"Fugit aut non eos.\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"name\": \"Quia in alias voluptas illum ipsum cupiditate.\",\n      \"organization\": \"Inventore soluta aut suscipit non.\",\n      \"user_id\": \"Sed voluptate.\"\n   }'")
 		}
 		if body.Email != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+		}
+		if body.MemberType != nil {
+			if !(*body.MemberType == "direct") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"direct"}))
+			}
 		}
 		if body.ModStatus != nil {
 			if !(*body.ModStatus == "none" || *body.ModStatus == "moderator" || *body.ModStatus == "owner") {
@@ -506,10 +511,15 @@ func BuildUpdateGroupsioMemberPayload(mailingListUpdateGroupsioMemberBody string
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioMemberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"email_delivery_digest\",\n      \"email\": \"cornelius@price.net\",\n      \"job_title\": \"In esse voluptas et iusto.\",\n      \"member_type\": \"Quia blanditiis unde porro qui commodi.\",\n      \"mod_status\": \"none\",\n      \"name\": \"Eius quo.\",\n      \"organization\": \"Velit nihil quibusdam voluptatum soluta sapiente error.\",\n      \"user_id\": \"Excepturi nam debitis quisquam.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"delivery_mode\": \"email_delivery_single\",\n      \"email\": \"jamie_beatty@strosinratke.com\",\n      \"job_title\": \"Quisquam voluptas velit nihil.\",\n      \"member_type\": \"direct\",\n      \"mod_status\": \"owner\",\n      \"name\": \"Accusantium in veniam.\",\n      \"organization\": \"Quis voluptatem excepturi nam.\",\n      \"user_id\": \"Quia blanditiis unde porro qui commodi.\"\n   }'")
 		}
 		if body.Email != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+		}
+		if body.MemberType != nil {
+			if !(*body.MemberType == "direct") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"direct"}))
+			}
 		}
 		if body.ModStatus != nil {
 			if !(*body.ModStatus == "none" || *body.ModStatus == "moderator" || *body.ModStatus == "owner") {
@@ -589,7 +599,7 @@ func BuildInviteGroupsioMembersPayload(mailingListInviteGroupsioMembersBody stri
 	{
 		err = json.Unmarshal([]byte(mailingListInviteGroupsioMembersBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"emails\": [\n         \"Explicabo non quibusdam ut facilis.\",\n         \"Blanditiis quisquam quia voluptatem molestiae qui qui.\",\n         \"Minus est molestiae repudiandae odit.\",\n         \"Rem soluta ut nesciunt.\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"emails\": [\n         \"Tempora odit possimus libero temporibus distinctio et.\",\n         \"Earum explicabo non quibusdam ut facilis voluptate.\",\n         \"Quisquam quia voluptatem molestiae.\"\n      ]\n   }'")
 		}
 		if body.Emails == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("emails", "body"))
@@ -631,7 +641,7 @@ func BuildCheckGroupsioSubscriberPayload(mailingListCheckGroupsioSubscriberBody 
 	{
 		err = json.Unmarshal([]byte(mailingListCheckGroupsioSubscriberBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"andres.weimann@cummerata.com\",\n      \"subgroup_id\": \"Quas occaecati quia enim expedita.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"email\": \"rhiannon_hackett@feestsimonis.com\",\n      \"subgroup_id\": \"Ut a blanditiis.\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
 		if err != nil {

@@ -435,7 +435,7 @@ List GroupsIO services, optionally filtered by project UID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list list-groupsio-services --project-uid "d3d842f7-ccf5-4d74-bca7-4be4f3f2a5ad" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list list-groupsio-services --project-uid "3c007744-9efd-46c3-9885-da1856ec6d80" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -448,11 +448,11 @@ Create a GroupsIO service
 
 Example:
     %[1]s mailing-list create-groupsio-service --body '{
-      "domain": "Sapiente velit molestias molestiae.",
-      "group_id": 1916170486845057797,
-      "prefix": "Sunt ea nisi sapiente.",
+      "domain": "Perferendis eum ut blanditiis.",
+      "group_id": 8652374089567614400,
+      "prefix": "Rerum quasi molestias.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "status": "Qui aut molestiae aliquid dicta non blanditiis.",
+      "status": "Voluptatem itaque deleniti possimus distinctio magnam.",
       "type": "v2_primary"
    }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
@@ -466,7 +466,7 @@ Get a GroupsIO service by ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-groupsio-service --service-id "Aliquam molestiae voluptas neque velit." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-service --service-id "Quia voluptas dolorem inventore ducimus expedita." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -480,13 +480,13 @@ Update a GroupsIO service
 
 Example:
     %[1]s mailing-list update-groupsio-service --body '{
-      "domain": "Eveniet nesciunt ex ab.",
-      "group_id": 3454711477715090973,
-      "prefix": "Architecto rerum ducimus.",
+      "domain": "Aliquid distinctio mollitia.",
+      "group_id": 7267254203065811520,
+      "prefix": "Et aut iste quaerat sit porro molestias.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "status": "Deleniti quisquam vel.",
+      "status": "Quibusdam odit omnis.",
       "type": "v2_primary"
-   }' --service-id "Ea ad dolorum doloribus magni pariatur." --bearer-token "eyJhbGci..."
+   }' --service-id "Similique consectetur." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -498,7 +498,7 @@ Delete a GroupsIO service
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list delete-groupsio-service --service-id "Quae dolore qui quas." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list delete-groupsio-service --service-id "Occaecati eum labore et et adipisci quia." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -521,7 +521,7 @@ Find the parent GroupsIO service for a project
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list find-parent-groupsio-service --project-uid "bdcc0494-3976-425b-9800-9814cbf5c5b8" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list find-parent-groupsio-service --project-uid "406091c3-9777-4ffc-aef4-3e8410e4b396" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -534,7 +534,7 @@ List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list list-groupsio-mailing-lists --project-uid "29920df9-9cbb-426f-97da-08a404adc385" --committee-uid "433a141d-0008-4e4b-b4dc-58e1be21ae26" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list list-groupsio-mailing-lists --project-uid "92bb1617-869d-4116-9621-9dfbe201b83c" --committee-uid "0c1d24c2-7641-430a-8d1f-acb054dd0bc1" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -547,14 +547,14 @@ Create a GroupsIO subgroup
 
 Example:
     %[1]s mailing-list create-groupsio-mailing-list --body '{
-      "audience_access": "Vel eos laboriosam eaque aliquam exercitationem.",
+      "audience_access": "Similique doloribus est.",
       "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "description": "Recusandae ducimus sed.",
-      "group_id": 8887327035954549420,
-      "name": "Similique quisquam voluptate.",
+      "description": "Quasi natus totam in sunt exercitationem.",
+      "group_id": 6153133482692657833,
+      "name": "Reprehenderit pariatur quam.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "service_id": "Voluptatem commodi qui.",
-      "type": "Sunt amet itaque delectus."
+      "service_id": "Non sed velit.",
+      "type": "Animi dolore facilis ad nostrum ea."
    }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
@@ -567,7 +567,7 @@ Get a GroupsIO subgroup by ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-groupsio-mailing-list --subgroup-id "Deserunt reiciendis facilis." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-mailing-list --subgroup-id "Totam blanditiis consequatur molestiae odio." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -581,15 +581,15 @@ Update a GroupsIO subgroup
 
 Example:
     %[1]s mailing-list update-groupsio-mailing-list --body '{
-      "audience_access": "Distinctio dolore voluptas occaecati.",
+      "audience_access": "At quae distinctio dolore voluptas occaecati culpa.",
       "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "description": "Labore fuga.",
-      "group_id": 8823882162391895104,
-      "name": "Nobis est.",
+      "description": "Adipisci expedita et ducimus repellendus eveniet.",
+      "group_id": 5572662436592214257,
+      "name": "Aut et enim ut laudantium rerum at.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "service_id": "Enim adipisci expedita et ducimus repellendus eveniet.",
-      "type": "Enim at."
-   }' --subgroup-id "Itaque pariatur quos sunt sint." --bearer-token "eyJhbGci..."
+      "service_id": "Praesentium molestiae consequatur impedit esse mollitia voluptatem.",
+      "type": "Quia nobis est ut labore fuga in."
+   }' --subgroup-id "Pariatur quos sunt sint qui delectus eius." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -601,7 +601,7 @@ Delete a GroupsIO subgroup
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list delete-groupsio-mailing-list --subgroup-id "Necessitatibus praesentium." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list delete-groupsio-mailing-list --subgroup-id "Non magni." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -613,7 +613,7 @@ Get count of GroupsIO subgroups for a project
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-groupsio-mailing-list-count --project-uid "c726c81c-183b-4e88-8a80-0df333733355" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-mailing-list-count --project-uid "4ca7a3d4-ecd1-47f6-ad40-0fbfbd7293e9" --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -625,7 +625,7 @@ Get count of members in a GroupsIO subgroup
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-groupsio-mailing-list-member-count --subgroup-id "Vero qui est nostrum sit." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-mailing-list-member-count --subgroup-id "Nihil officiis dignissimos nulla reiciendis voluptatibus." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -637,7 +637,7 @@ List members of a GroupsIO subgroup
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list list-groupsio-members --subgroup-id "Illum ut et." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list list-groupsio-members --subgroup-id "Vel adipisci a quam." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -651,15 +651,15 @@ Add a member to a GroupsIO subgroup
 
 Example:
     %[1]s mailing-list add-groupsio-member --body '{
-      "delivery_mode": "email_delivery_summary",
-      "email": "brando@koepp.name",
-      "job_title": "Eos dicta id quis et quibusdam.",
-      "member_type": "Quia in alias voluptas illum ipsum cupiditate.",
-      "mod_status": "none",
-      "name": "Et ipsam ducimus deserunt vitae.",
-      "organization": "Aut suscipit non dolor fugit aut.",
-      "user_id": "Iusto sed voluptate perspiciatis inventore."
-   }' --subgroup-id "Nam velit." --bearer-token "eyJhbGci..."
+      "delivery_mode": "email_delivery_single",
+      "email": "neoma@collier.info",
+      "job_title": "Fugit aut non eos.",
+      "member_type": "direct",
+      "mod_status": "owner",
+      "name": "Quia in alias voluptas illum ipsum cupiditate.",
+      "organization": "Inventore soluta aut suscipit non.",
+      "user_id": "Sed voluptate."
+   }' --subgroup-id "Id quis et quibusdam et." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -672,7 +672,7 @@ Get a member of a GroupsIO subgroup by ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-groupsio-member --subgroup-id "Non sint architecto quaerat voluptas modi alias." --member-id "Aut enim." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-member --subgroup-id "Voluptas ipsum eum quia." --member-id "Voluptatem omnis similique." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -687,15 +687,15 @@ Update a member of a GroupsIO subgroup
 
 Example:
     %[1]s mailing-list update-groupsio-member --body '{
-      "delivery_mode": "email_delivery_digest",
-      "email": "cornelius@price.net",
-      "job_title": "In esse voluptas et iusto.",
-      "member_type": "Quia blanditiis unde porro qui commodi.",
-      "mod_status": "none",
-      "name": "Eius quo.",
-      "organization": "Velit nihil quibusdam voluptatum soluta sapiente error.",
-      "user_id": "Excepturi nam debitis quisquam."
-   }' --subgroup-id "Autem non dolore." --member-id "Quis architecto dolores repellat sit repudiandae." --bearer-token "eyJhbGci..."
+      "delivery_mode": "email_delivery_single",
+      "email": "jamie_beatty@strosinratke.com",
+      "job_title": "Quisquam voluptas velit nihil.",
+      "member_type": "direct",
+      "mod_status": "owner",
+      "name": "Accusantium in veniam.",
+      "organization": "Quis voluptatem excepturi nam.",
+      "user_id": "Quia blanditiis unde porro qui commodi."
+   }' --subgroup-id "Voluptatum soluta." --member-id "Error ut in esse." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -708,7 +708,7 @@ Delete a member from a GroupsIO subgroup
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list delete-groupsio-member --subgroup-id "Id sed." --member-id "Quam tempora odit possimus." --bearer-token "eyJhbGci..."
+    %[1]s mailing-list delete-groupsio-member --subgroup-id "Sequi autem ut dolorem nihil nesciunt." --member-id "Corporis doloribus omnis adipisci qui deleniti dolores." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -723,12 +723,11 @@ Invite members to a GroupsIO subgroup by email
 Example:
     %[1]s mailing-list invite-groupsio-members --body '{
       "emails": [
-         "Explicabo non quibusdam ut facilis.",
-         "Blanditiis quisquam quia voluptatem molestiae qui qui.",
-         "Minus est molestiae repudiandae odit.",
-         "Rem soluta ut nesciunt."
+         "Tempora odit possimus libero temporibus distinctio et.",
+         "Earum explicabo non quibusdam ut facilis voluptate.",
+         "Quisquam quia voluptatem molestiae."
       ]
-   }' --subgroup-id "Tempora autem." --bearer-token "eyJhbGci..."
+   }' --subgroup-id "Qui eius minus est." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
@@ -741,8 +740,8 @@ Check if an email address is subscribed to a GroupsIO subgroup
 
 Example:
     %[1]s mailing-list check-groupsio-subscriber --body '{
-      "email": "andres.weimann@cummerata.com",
-      "subgroup_id": "Quas occaecati quia enim expedita."
+      "email": "rhiannon_hackett@feestsimonis.com",
+      "subgroup_id": "Ut a blanditiis."
    }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }

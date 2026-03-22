@@ -142,7 +142,9 @@ func main() {
 
 	// Wrap the services in endpoints
 	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListSvc)
-	mailingListServiceEndpoints.Use(debug.LogPayloads())
+	if *dbgF {
+		mailingListServiceEndpoints.Use(debug.LogPayloads())
+	}
 
 	errc := make(chan error)
 

@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/auth0/go-auth0/authentication"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	pkgauth "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/auth"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/httpclient"
 	"golang.org/x/oauth2"
 )
@@ -46,15 +46,15 @@ func (c *itx) mapHTTPError(statusCode int, body []byte) error {
 	msg := string(body)
 	switch statusCode {
 	case http.StatusNotFound:
-		return domain.NewNotFoundError(fmt.Sprintf("resource not found: %s", msg))
+		return errs.NewNotFound(fmt.Sprintf("resource not found: %s", msg))
 	case http.StatusBadRequest:
-		return domain.NewValidationError(fmt.Sprintf("bad request: %s", msg))
+		return errs.NewValidation(fmt.Sprintf("bad request: %s", msg))
 	case http.StatusConflict:
-		return domain.NewConflictError(fmt.Sprintf("conflict: %s", msg))
+		return errs.NewConflict(fmt.Sprintf("conflict: %s", msg))
 	case http.StatusServiceUnavailable, http.StatusBadGateway, http.StatusGatewayTimeout:
-		return domain.NewUnavailableError(fmt.Sprintf("ITX service unavailable: %s", msg))
+		return errs.NewServiceUnavailable(fmt.Sprintf("ITX service unavailable: %s", msg))
 	default:
-		return domain.NewInternalError(fmt.Sprintf("ITX error (status %d): %s", statusCode, msg))
+		return errs.NewUnexpected(fmt.Sprintf("ITX error (status %d): %s", statusCode, msg))
 	}
 }
 
@@ -64,7 +64,7 @@ func (c *itx) handleRequestError(err error) error {
 	if errors.As(err, &retryErr) {
 		return c.mapHTTPError(retryErr.StatusCode, []byte(retryErr.Message))
 	}
-	return domain.NewUnavailableError("ITX service request failed", err)
+	return errs.NewServiceUnavailable("ITX service request failed", err)
 }
 
 // ---- GroupsIOServiceWriter implementation ----
@@ -73,7 +73,7 @@ func (c *itx) handleRequestError(err error) error {
 func (c *itx) CreateService(ctx context.Context, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
 	bodyBytes, err := json.Marshal(toWireServiceRequest(svc))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_service", c.config.BaseURL)
@@ -84,7 +84,7 @@ func (c *itx) CreateService(ctx context.Context, svc *model.GroupsIOService) (*m
 
 	var wire serviceWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireService(&wire), nil
 }
@@ -93,7 +93,7 @@ func (c *itx) CreateService(ctx context.Context, svc *model.GroupsIOService) (*m
 func (c *itx) UpdateService(ctx context.Context, serviceID string, svc *model.GroupsIOService) (*model.GroupsIOService, error) {
 	bodyBytes, err := json.Marshal(toWireServiceRequest(svc))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_service/%s", c.config.BaseURL, serviceID)
@@ -109,7 +109,7 @@ func (c *itx) UpdateService(ctx context.Context, serviceID string, svc *model.Gr
 
 	var wire serviceWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireService(&wire), nil
 }
@@ -134,7 +134,7 @@ func (c *itx) getService(ctx context.Context, serviceID string) (*model.GroupsIO
 
 	var wire serviceWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireService(&wire), nil
 }
@@ -149,7 +149,7 @@ func (c *itx) getSubgroup(ctx context.Context, mailingListID string) (*model.Gro
 	}
 	var wire subgroupWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireSubgroup(&wire), nil
 }
@@ -158,7 +158,7 @@ func (c *itx) getSubgroup(ctx context.Context, mailingListID string) (*model.Gro
 func (c *itx) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
 	bodyBytes, err := json.Marshal(toWireSubgroupRequest(ml))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_subgroup", c.config.BaseURL)
@@ -169,7 +169,7 @@ func (c *itx) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingLi
 
 	var wire subgroupWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireSubgroup(&wire), nil
 }
@@ -178,7 +178,7 @@ func (c *itx) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingLi
 func (c *itx) UpdateMailingList(ctx context.Context, mailingListID string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
 	bodyBytes, err := json.Marshal(toWireSubgroupRequest(ml))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
@@ -194,7 +194,7 @@ func (c *itx) UpdateMailingList(ctx context.Context, mailingListID string, ml *m
 
 	var wire subgroupWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireSubgroup(&wire), nil
 }
@@ -221,7 +221,7 @@ func (c *itx) ListMembers(ctx context.Context, mailingListID string) ([]*model.G
 
 	var wire memberListResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, 0, domain.NewInternalError("failed to parse response", err)
+		return nil, 0, errs.NewUnexpected("failed to parse response", err)
 	}
 
 	items := make([]*model.GrpsIOMember, len(wire.Data))
@@ -240,7 +240,7 @@ func (c *itx) GetMember(ctx context.Context, mailingListID string, memberID stri
 func (c *itx) CheckSubscriber(ctx context.Context, mailingListID string, email string) (bool, error) {
 	bodyBytes, err := json.Marshal(&checkSubscriberRequestWire{Email: email, SubgroupID: mailingListID})
 	if err != nil {
-		return false, domain.NewInternalError("failed to marshal request", err)
+		return false, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_checksubscriber", c.config.BaseURL)
@@ -251,7 +251,7 @@ func (c *itx) CheckSubscriber(ctx context.Context, mailingListID string, email s
 
 	var wire checkSubscriberResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return false, domain.NewInternalError("failed to parse response", err)
+		return false, errs.NewUnexpected("failed to parse response", err)
 	}
 	return wire.Subscribed, nil
 }
@@ -267,7 +267,7 @@ func (c *itx) getMember(ctx context.Context, mailingListID string, memberID stri
 	}
 	var wire memberWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireMember(&wire), nil
 }
@@ -276,7 +276,7 @@ func (c *itx) getMember(ctx context.Context, mailingListID string, memberID stri
 func (c *itx) AddMember(ctx context.Context, mailingListID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error) {
 	bodyBytes, err := json.Marshal(toWireMemberRequest(member))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members", c.config.BaseURL, mailingListID)
@@ -287,7 +287,7 @@ func (c *itx) AddMember(ctx context.Context, mailingListID string, member *model
 
 	var wire memberWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireMember(&wire), nil
 }
@@ -296,7 +296,7 @@ func (c *itx) AddMember(ctx context.Context, mailingListID string, member *model
 func (c *itx) UpdateMember(ctx context.Context, mailingListID string, memberID string, member *model.GrpsIOMember) (*model.GrpsIOMember, error) {
 	bodyBytes, err := json.Marshal(toWireMemberRequest(member))
 	if err != nil {
-		return nil, domain.NewInternalError("failed to marshal request", err)
+		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
@@ -312,7 +312,7 @@ func (c *itx) UpdateMember(ctx context.Context, mailingListID string, memberID s
 
 	var wire memberWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return fromWireMember(&wire), nil
 }
@@ -331,7 +331,7 @@ func (c *itx) DeleteMember(ctx context.Context, mailingListID string, memberID s
 func (c *itx) InviteMembers(ctx context.Context, mailingListID string, emails []string) error {
 	bodyBytes, err := json.Marshal(&inviteMembersRequestWire{Emails: emails})
 	if err != nil {
-		return domain.NewInternalError("failed to marshal request", err)
+		return errs.NewUnexpected("failed to marshal request", err)
 	}
 
 	url := fmt.Sprintf("%s/groupsio_subgroup/%s/invite_members", c.config.BaseURL, mailingListID)
@@ -363,7 +363,7 @@ func (c *itx) ListMailingLists(ctx context.Context, projectID string, committeeI
 
 	var wire subgroupListResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, 0, domain.NewInternalError("failed to parse response", err)
+		return nil, 0, errs.NewUnexpected("failed to parse response", err)
 	}
 
 	items := make([]*model.GroupsIOMailingList, len(wire.Items))
@@ -388,7 +388,7 @@ func (c *itx) GetMailingListCount(ctx context.Context, projectID string) (int, e
 
 	var wire countResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return 0, domain.NewInternalError("failed to parse response", err)
+		return 0, errs.NewUnexpected("failed to parse response", err)
 	}
 	return wire.Count, nil
 }
@@ -403,7 +403,7 @@ func (c *itx) GetMailingListMemberCount(ctx context.Context, mailingListID strin
 
 	var wire countResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return 0, domain.NewInternalError("failed to parse response", err)
+		return 0, errs.NewUnexpected("failed to parse response", err)
 	}
 	return wire.Count, nil
 }
@@ -423,7 +423,7 @@ func (c *itx) listServices(ctx context.Context, projectID string) (*serviceListR
 
 	var wire serviceListResponseWire
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
-		return nil, domain.NewInternalError("failed to parse response", err)
+		return nil, errs.NewUnexpected("failed to parse response", err)
 	}
 	return &wire, nil
 }
@@ -480,7 +480,7 @@ func (c *itx) FindParentService(ctx context.Context, projectID string) (*model.G
 			return fromWireService(item), nil
 		}
 	}
-	return nil, domain.NewNotFoundError("no parent service found for project")
+	return nil, errs.NewNotFound("no parent service found for project")
 }
 
 // NewProxy creates a new ITX proxy client with OAuth2 M2M authentication using private key.
