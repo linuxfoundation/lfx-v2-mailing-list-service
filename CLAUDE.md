@@ -47,7 +47,9 @@ The codebase follows hexagonal/clean architecture principles:
   - `grpsio_mailing_list_reader.go`, `grpsio_mailing_list_writer.go` - Mailing list orchestrators
   - `grpsio_member_reader.go`, `grpsio_member_writer.go` - Member orchestrators
   - `grpsio_webhook_processor.go` - Webhook event processor
-  - `datastream_member_handler.go`, `datastream_subgroup_handler.go` - Committee member synchronization to mailing lists
+  - `datastream_service_handler.go` - v1 DynamoDB KV event processor for GroupsIO services
+  - `datastream_member_handler.go` - v1 DynamoDB KV event processor for GroupsIO members
+  - `datastream_subgroup_handler.go` - v1 DynamoDB KV event processor for GroupsIO subgroups
 
 **Middleware Layer** (`internal/middleware/`):
 - `authorization.go` - JWT-based authorization middleware
@@ -62,7 +64,7 @@ The codebase follows hexagonal/clean architecture principles:
 ### NATS Integration
 - **JetStream Storage**: Key-value storage for services, mailing lists, and members
 - **Message Publishing**: Publishes indexing and access control events
-- **Event Subscriptions**: Subscribes to committee member events for automatic synchronization
+- **Data Stream**: Subscribes to v1 DynamoDB KV events for data migration/sync
 - **Connection Management**: Reconnection handling and readiness checks
 - **Queue Groups**: Uses `lfx-v2-mailing-list-api` queue for load balancing
 
@@ -74,11 +76,6 @@ The codebase follows hexagonal/clean architecture principles:
 - `lfx.delete_all_access.groupsio_service` - Service access deletion
 - `lfx.update_access.groupsio_mailing_list` - Mailing list access control
 - `lfx.delete_all_access.groupsio_mailing_list` - Mailing list access deletion
-
-#### NATS Subjects (Subscriptions)
-- `lfx.committee-api.committee_member.created` - Committee member creation events
-- `lfx.committee-api.committee_member.updated` - Committee member update events
-- `lfx.committee-api.committee_member.deleted` - Committee member deletion events
 
 ### Error Handling
 Custom error types in `pkg/errors/`:
@@ -92,18 +89,6 @@ Request-scoped data flows through context.Context:
 - Principal from JWT auth
 - Context keys defined in `pkg/constants/context.go`
 - Storage constants defined in `pkg/constants/storage.go`
-
-### Committee Integration
-The service automatically synchronizes committee members to mailing lists:
-- **Event-Driven**: Listens to committee-api events via NATS subscriptions
-- **Filter-Based Membership**: Mailing lists can specify `committee_filters` (voting status values)
-- **Member Types**:
-  - `committee` - Members added via committee sync (automatic)
-  - `direct` - Members added directly via API (manual)
-- **Removal Behavior**:
-  - Public lists: Committee members converted to `direct` type when removed from committee
-  - Private lists: Committee members fully deleted when removed from committee
-- **Idempotency**: Duplicate events are safely handled
 
 ## Development Notes
 
@@ -134,8 +119,8 @@ Environment-based configuration for:
 
 ### Key Files to Understand
 - [`cmd/mailing-list-api/main.go`](cmd/mailing-list-api/main.go) - Application entry point, service initialization
-- [`cmd/mailing-list-api/committee.go`](cmd/mailing-list-api/committee.go) - Committee event subscription setup
-- [`internal/domain/model/committee_events.go`](internal/domain/model/committee_events.go) - Committee event structures
+- [`internal/infrastructure/proxy/`](internal/infrastructure/proxy/) - ITX proxy client and converters
+- [`internal/service/datastream_member_handler.go`](internal/service/datastream_member_handler.go) - v1 KV event processing for members
 - [`pkg/constants/subjects.go`](pkg/constants/subjects.go) - NATS subject definitions
 
 ### Local Development & Testing
@@ -216,8 +201,8 @@ if o.groupsClient != nil {
 3. **Testable**: Domain logic fully tested without external API dependencies
 4. **Configurable**: Easy switching between mock and real modes
 
-### Testing Committee Synchronization
-To test committee member synchronization locally:
+### Testing the Data Stream Processor
+To test the v1 DynamoDB KV event processor locally:
 
 1. **Start the service with mock mode**:
    ```bash
@@ -229,19 +214,7 @@ To test committee member synchronization locally:
    make run
    ```
 
-2. **Publish test committee events** to NATS:
-   - Use `nats pub` command or NATS client to publish to:
-     - `lfx.committee-api.committee_member.created`
-     - `lfx.committee-api.committee_member.updated`
-     - `lfx.committee-api.committee_member.deleted`
-   - Event payloads defined in [`internal/domain/model/committee_events.go`](internal/domain/model/committee_events.go)
-
-3. **Verify synchronization**:
-   - Check logs for "processing committee member created/updated/deleted event"
-   - Query mailing list members to verify additions/removals
-   - Verify member types (`committee` vs `direct`)
-
-4. **Run unit tests**:
+2. **Run unit tests**:
    ```bash
    go test -v ./internal/service/...
    ```
