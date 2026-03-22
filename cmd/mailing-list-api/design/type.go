@@ -72,7 +72,7 @@ var GroupsioServiceType = dsl.Type("groupsio-service", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("type", dsl.String, "Service type", func() {
-		dsl.Example("primary")
+		dsl.Example("v2_primary")
 	})
 	dsl.Attribute("group_id", dsl.Int64, "GroupsIO group ID")
 	dsl.Attribute("domain", dsl.String, "Service domain")

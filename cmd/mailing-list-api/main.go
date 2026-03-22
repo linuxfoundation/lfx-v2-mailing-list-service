@@ -9,7 +9,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -22,8 +21,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	orchestrator "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 
 	"goa.design/clue/debug"
+)
+
+// Build-time variables set via ldflags
+var (
+	Version   = "dev"
+	BuildTime = "unknown"
+	GitCommit = "unknown"
 )
 
 const (
@@ -48,10 +55,34 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
+
+	// Set up OpenTelemetry SDK.
+	// Command-line/environment OTEL_SERVICE_VERSION takes precedence over
+	// the build-time Version variable.
+	otelConfig := utils.OTelConfigFromEnv()
+	if otelConfig.ServiceVersion == "" {
+		otelConfig.ServiceVersion = Version
+	}
+	otelShutdown, err := utils.SetupOTelSDKWithConfig(ctx, otelConfig)
+	if err != nil {
+		slog.ErrorContext(ctx, "error setting up OpenTelemetry SDK", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
+		defer cancel()
+		if shutdownErr := otelShutdown(shutdownCtx); shutdownErr != nil {
+			slog.ErrorContext(ctx, "error shutting down OpenTelemetry SDK", "error", shutdownErr)
+		}
+	}()
+
 	slog.InfoContext(ctx, "Starting ITX mailing list proxy service",
 		"bind", *bind,
 		"http-port", *port,
 		"graceful-shutdown-seconds", gracefulShutdownSeconds,
+		"version", Version,
+		"build-time", BuildTime,
+		"git-commit", GitCommit,
 	)
 
 	// Initialize authentication service
@@ -64,7 +95,8 @@ func main() {
 	slog.InfoContext(ctx, "initializing GroupsIO service proxy")
 	proxyClient, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
 	if err != nil {
-		log.Fatalf("failed to initialize ITX proxy client: %v", err)
+		slog.ErrorContext(ctx, "failed to initialize ITX proxy client", "error", err)
+		os.Exit(1)
 	}
 
 	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(

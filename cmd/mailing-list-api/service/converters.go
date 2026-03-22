@@ -47,7 +47,10 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 	if len(ml.Committees) > 0 {
 		committeeUID = ml.Committees[0].UID
 	}
-	createdAt := ml.CreatedAt.Format(time.RFC3339)
+	createdAt := ""
+	if !ml.CreatedAt.IsZero() {
+		createdAt = ml.CreatedAt.Format(time.RFC3339)
+	}
 	updatedAt := ""
 	if !ml.UpdatedAt.IsZero() {
 		updatedAt = ml.UpdatedAt.Format(time.RFC3339)
@@ -62,7 +65,7 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		Description:    &ml.Description,
 		Type:           &ml.Type,
 		AudienceAccess: &ml.AudienceAccess,
-		CreatedAt:      &createdAt,
+		CreatedAt:      converter.NonEmptyString(createdAt),
 		UpdatedAt:      converter.NonEmptyString(updatedAt),
 	}
 }
@@ -71,7 +74,10 @@ func convertService(svc *model.GroupsIOService) *mailinglist.GroupsioService {
 	if svc == nil {
 		return nil
 	}
-	createdAt := svc.CreatedAt.Format(time.RFC3339)
+	createdAt := ""
+	if !svc.CreatedAt.IsZero() {
+		createdAt = svc.CreatedAt.Format(time.RFC3339)
+	}
 	updatedAt := ""
 	if !svc.UpdatedAt.IsZero() {
 		updatedAt = svc.UpdatedAt.Format(time.RFC3339)
@@ -84,7 +90,7 @@ func convertService(svc *model.GroupsIOService) *mailinglist.GroupsioService {
 		Domain:     &svc.Domain,
 		Prefix:     &svc.Prefix,
 		Status:     &svc.Status,
-		CreatedAt:  &createdAt,
+		CreatedAt:  converter.NonEmptyString(createdAt),
 		UpdatedAt:  converter.NonEmptyString(updatedAt),
 	}
 }
