@@ -16,49 +16,57 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint                           goa.Endpoint
-	ReadyzEndpoint                          goa.Endpoint
-	CreateGrpsioServiceEndpoint             goa.Endpoint
-	GetGrpsioServiceEndpoint                goa.Endpoint
-	UpdateGrpsioServiceEndpoint             goa.Endpoint
-	DeleteGrpsioServiceEndpoint             goa.Endpoint
-	GetGrpsioServiceSettingsEndpoint        goa.Endpoint
-	UpdateGrpsioServiceSettingsEndpoint     goa.Endpoint
-	CreateGrpsioMailingListEndpoint         goa.Endpoint
-	GetGrpsioMailingListEndpoint            goa.Endpoint
-	UpdateGrpsioMailingListEndpoint         goa.Endpoint
-	DeleteGrpsioMailingListEndpoint         goa.Endpoint
-	GetGrpsioMailingListSettingsEndpoint    goa.Endpoint
-	UpdateGrpsioMailingListSettingsEndpoint goa.Endpoint
-	CreateGrpsioMailingListMemberEndpoint   goa.Endpoint
-	GetGrpsioMailingListMemberEndpoint      goa.Endpoint
-	UpdateGrpsioMailingListMemberEndpoint   goa.Endpoint
-	DeleteGrpsioMailingListMemberEndpoint   goa.Endpoint
-	GroupsioWebhookEndpoint                 goa.Endpoint
+	LivezEndpoint                             goa.Endpoint
+	ReadyzEndpoint                            goa.Endpoint
+	ListGroupsioServicesEndpoint              goa.Endpoint
+	CreateGroupsioServiceEndpoint             goa.Endpoint
+	GetGroupsioServiceEndpoint                goa.Endpoint
+	UpdateGroupsioServiceEndpoint             goa.Endpoint
+	DeleteGroupsioServiceEndpoint             goa.Endpoint
+	GetGroupsioServiceProjectsEndpoint        goa.Endpoint
+	FindParentGroupsioServiceEndpoint         goa.Endpoint
+	ListGroupsioMailingListsEndpoint          goa.Endpoint
+	CreateGroupsioMailingListEndpoint         goa.Endpoint
+	GetGroupsioMailingListEndpoint            goa.Endpoint
+	UpdateGroupsioMailingListEndpoint         goa.Endpoint
+	DeleteGroupsioMailingListEndpoint         goa.Endpoint
+	GetGroupsioMailingListCountEndpoint       goa.Endpoint
+	GetGroupsioMailingListMemberCountEndpoint goa.Endpoint
+	ListGroupsioMembersEndpoint               goa.Endpoint
+	AddGroupsioMemberEndpoint                 goa.Endpoint
+	GetGroupsioMemberEndpoint                 goa.Endpoint
+	UpdateGroupsioMemberEndpoint              goa.Endpoint
+	DeleteGroupsioMemberEndpoint              goa.Endpoint
+	InviteGroupsioMembersEndpoint             goa.Endpoint
+	CheckGroupsioSubscriberEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, createGrpsioService, getGrpsioService, updateGrpsioService, deleteGrpsioService, getGrpsioServiceSettings, updateGrpsioServiceSettings, createGrpsioMailingList, getGrpsioMailingList, updateGrpsioMailingList, deleteGrpsioMailingList, getGrpsioMailingListSettings, updateGrpsioMailingListSettings, createGrpsioMailingListMember, getGrpsioMailingListMember, updateGrpsioMailingListMember, deleteGrpsioMailingListMember, groupsioWebhook goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:                           livez,
-		ReadyzEndpoint:                          readyz,
-		CreateGrpsioServiceEndpoint:             createGrpsioService,
-		GetGrpsioServiceEndpoint:                getGrpsioService,
-		UpdateGrpsioServiceEndpoint:             updateGrpsioService,
-		DeleteGrpsioServiceEndpoint:             deleteGrpsioService,
-		GetGrpsioServiceSettingsEndpoint:        getGrpsioServiceSettings,
-		UpdateGrpsioServiceSettingsEndpoint:     updateGrpsioServiceSettings,
-		CreateGrpsioMailingListEndpoint:         createGrpsioMailingList,
-		GetGrpsioMailingListEndpoint:            getGrpsioMailingList,
-		UpdateGrpsioMailingListEndpoint:         updateGrpsioMailingList,
-		DeleteGrpsioMailingListEndpoint:         deleteGrpsioMailingList,
-		GetGrpsioMailingListSettingsEndpoint:    getGrpsioMailingListSettings,
-		UpdateGrpsioMailingListSettingsEndpoint: updateGrpsioMailingListSettings,
-		CreateGrpsioMailingListMemberEndpoint:   createGrpsioMailingListMember,
-		GetGrpsioMailingListMemberEndpoint:      getGrpsioMailingListMember,
-		UpdateGrpsioMailingListMemberEndpoint:   updateGrpsioMailingListMember,
-		DeleteGrpsioMailingListMemberEndpoint:   deleteGrpsioMailingListMember,
-		GroupsioWebhookEndpoint:                 groupsioWebhook,
+		LivezEndpoint:                             livez,
+		ReadyzEndpoint:                            readyz,
+		ListGroupsioServicesEndpoint:              listGroupsioServices,
+		CreateGroupsioServiceEndpoint:             createGroupsioService,
+		GetGroupsioServiceEndpoint:                getGroupsioService,
+		UpdateGroupsioServiceEndpoint:             updateGroupsioService,
+		DeleteGroupsioServiceEndpoint:             deleteGroupsioService,
+		GetGroupsioServiceProjectsEndpoint:        getGroupsioServiceProjects,
+		FindParentGroupsioServiceEndpoint:         findParentGroupsioService,
+		ListGroupsioMailingListsEndpoint:          listGroupsioMailingLists,
+		CreateGroupsioMailingListEndpoint:         createGroupsioMailingList,
+		GetGroupsioMailingListEndpoint:            getGroupsioMailingList,
+		UpdateGroupsioMailingListEndpoint:         updateGroupsioMailingList,
+		DeleteGroupsioMailingListEndpoint:         deleteGroupsioMailingList,
+		GetGroupsioMailingListCountEndpoint:       getGroupsioMailingListCount,
+		GetGroupsioMailingListMemberCountEndpoint: getGroupsioMailingListMemberCount,
+		ListGroupsioMembersEndpoint:               listGroupsioMembers,
+		AddGroupsioMemberEndpoint:                 addGroupsioMember,
+		GetGroupsioMemberEndpoint:                 getGroupsioMember,
+		UpdateGroupsioMemberEndpoint:              updateGroupsioMember,
+		DeleteGroupsioMemberEndpoint:              deleteGroupsioMember,
+		InviteGroupsioMembersEndpoint:             inviteGroupsioMembers,
+		CheckGroupsioSubscriberEndpoint:           checkGroupsioSubscriber,
 	}
 }
 
@@ -85,284 +93,331 @@ func (c *Client) Readyz(ctx context.Context) (res []byte, err error) {
 	return ires.([]byte), nil
 }
 
-// CreateGrpsioService calls the "create-grpsio-service" endpoint of the
+// ListGroupsioServices calls the "list-groupsio-services" endpoint of the
 // "mailing-list" service.
-// CreateGrpsioService may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request - Invalid type, missing required fields, or validation failures
-//   - "NotFound" (type *NotFoundError): Resource not found
+// ListGroupsioServices may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) ListGroupsioServices(ctx context.Context, p *ListGroupsioServicesPayload) (res *GroupsioServiceList, err error) {
+	var ires any
+	ires, err = c.ListGroupsioServicesEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioServiceList), nil
+}
+
+// CreateGroupsioService calls the "create-groupsio-service" endpoint of the
+// "mailing-list" service.
+// CreateGroupsioService may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
 //   - "Conflict" (type *ConflictError): Conflict
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioService(ctx context.Context, p *CreateGrpsioServicePayload) (res *GrpsIoServiceFull, err error) {
+func (c *Client) CreateGroupsioService(ctx context.Context, p *CreateGroupsioServicePayload) (res *GroupsioService, err error) {
 	var ires any
-	ires, err = c.CreateGrpsioServiceEndpoint(ctx, p)
+	ires, err = c.CreateGroupsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoServiceFull), nil
+	return ires.(*GroupsioService), nil
 }
 
-// GetGrpsioService calls the "get-grpsio-service" endpoint of the
+// GetGroupsioService calls the "get-groupsio-service" endpoint of the
 // "mailing-list" service.
-// GetGrpsioService may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Resource not found
+// GetGroupsioService may return the following errors:
+//   - "NotFound" (type *NotFoundError): Service not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGrpsioService(ctx context.Context, p *GetGrpsioServicePayload) (res *GetGrpsioServiceResult, err error) {
+func (c *Client) GetGroupsioService(ctx context.Context, p *GetGroupsioServicePayload) (res *GroupsioService, err error) {
 	var ires any
-	ires, err = c.GetGrpsioServiceEndpoint(ctx, p)
+	ires, err = c.GetGroupsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GetGrpsioServiceResult), nil
+	return ires.(*GroupsioService), nil
 }
 
-// UpdateGrpsioService calls the "update-grpsio-service" endpoint of the
+// UpdateGroupsioService calls the "update-groupsio-service" endpoint of the
 // "mailing-list" service.
-// UpdateGrpsioService may return the following errors:
+// UpdateGroupsioService may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Resource not found
-//   - "Conflict" (type *ConflictError): Conflict
+//   - "NotFound" (type *NotFoundError): Service not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioService(ctx context.Context, p *UpdateGrpsioServicePayload) (res *GrpsIoServiceWithReadonlyAttributes, err error) {
+func (c *Client) UpdateGroupsioService(ctx context.Context, p *UpdateGroupsioServicePayload) (res *GroupsioService, err error) {
 	var ires any
-	ires, err = c.UpdateGrpsioServiceEndpoint(ctx, p)
+	ires, err = c.UpdateGroupsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoServiceWithReadonlyAttributes), nil
+	return ires.(*GroupsioService), nil
 }
 
-// DeleteGrpsioService calls the "delete-grpsio-service" endpoint of the
+// DeleteGroupsioService calls the "delete-groupsio-service" endpoint of the
 // "mailing-list" service.
-// DeleteGrpsioService may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Resource not found
-//   - "Conflict" (type *ConflictError): Conflict
+// DeleteGroupsioService may return the following errors:
+//   - "NotFound" (type *NotFoundError): Service not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) DeleteGrpsioService(ctx context.Context, p *DeleteGrpsioServicePayload) (err error) {
-	_, err = c.DeleteGrpsioServiceEndpoint(ctx, p)
+func (c *Client) DeleteGroupsioService(ctx context.Context, p *DeleteGroupsioServicePayload) (err error) {
+	_, err = c.DeleteGroupsioServiceEndpoint(ctx, p)
 	return
 }
 
-// GetGrpsioServiceSettings calls the "get-grpsio-service-settings" endpoint of
-// the "mailing-list" service.
-// GetGrpsioServiceSettings may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Service settings not found
-//   - "InternalServerError" (type *InternalServerError): Internal server error
-//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
-//   - error: internal error
-func (c *Client) GetGrpsioServiceSettings(ctx context.Context, p *GetGrpsioServiceSettingsPayload) (res *GetGrpsioServiceSettingsResult, err error) {
-	var ires any
-	ires, err = c.GetGrpsioServiceSettingsEndpoint(ctx, p)
-	if err != nil {
-		return
-	}
-	return ires.(*GetGrpsioServiceSettingsResult), nil
-}
-
-// UpdateGrpsioServiceSettings calls the "update-grpsio-service-settings"
+// GetGroupsioServiceProjects calls the "get-groupsio-service-projects"
 // endpoint of the "mailing-list" service.
-// UpdateGrpsioServiceSettings may return the following errors:
+// GetGroupsioServiceProjects may return the following errors:
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioServiceProjects(ctx context.Context, p *GetGroupsioServiceProjectsPayload) (res *GroupsioProjectsResponse, err error) {
+	var ires any
+	ires, err = c.GetGroupsioServiceProjectsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioProjectsResponse), nil
+}
+
+// FindParentGroupsioService calls the "find-parent-groupsio-service" endpoint
+// of the "mailing-list" service.
+// FindParentGroupsioService may return the following errors:
+//   - "NotFound" (type *NotFoundError): Parent service not found
 //   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Service settings not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioServiceSettings(ctx context.Context, p *UpdateGrpsioServiceSettingsPayload) (res *GrpsIoServiceSettings, err error) {
+func (c *Client) FindParentGroupsioService(ctx context.Context, p *FindParentGroupsioServicePayload) (res *GroupsioService, err error) {
 	var ires any
-	ires, err = c.UpdateGrpsioServiceSettingsEndpoint(ctx, p)
+	ires, err = c.FindParentGroupsioServiceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoServiceSettings), nil
+	return ires.(*GroupsioService), nil
 }
 
-// CreateGrpsioMailingList calls the "create-grpsio-mailing-list" endpoint of
+// ListGroupsioMailingLists calls the "list-groupsio-mailing-lists" endpoint of
 // the "mailing-list" service.
-// CreateGrpsioMailingList may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request - Invalid data, missing required fields, or validation failures
-//   - "NotFound" (type *NotFoundError): Parent service not found or committee not found
-//   - "Conflict" (type *ConflictError): Mailing list with same name already exists
+// ListGroupsioMailingLists may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioMailingList(ctx context.Context, p *CreateGrpsioMailingListPayload) (res *GrpsIoMailingListFull, err error) {
+func (c *Client) ListGroupsioMailingLists(ctx context.Context, p *ListGroupsioMailingListsPayload) (res *GroupsioSubgroupList, err error) {
 	var ires any
-	ires, err = c.CreateGrpsioMailingListEndpoint(ctx, p)
+	ires, err = c.ListGroupsioMailingListsEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoMailingListFull), nil
+	return ires.(*GroupsioSubgroupList), nil
 }
 
-// GetGrpsioMailingList calls the "get-grpsio-mailing-list" endpoint of the
+// CreateGroupsioMailingList calls the "create-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// CreateGroupsioMailingList may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) CreateGroupsioMailingList(ctx context.Context, p *CreateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
+	var ires any
+	ires, err = c.CreateGroupsioMailingListEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSubgroup), nil
+}
+
+// GetGroupsioMailingList calls the "get-groupsio-mailing-list" endpoint of the
 // "mailing-list" service.
-// GetGrpsioMailingList may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list not found
+// GetGroupsioMailingList may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGrpsioMailingList(ctx context.Context, p *GetGrpsioMailingListPayload) (res *GetGrpsioMailingListResult, err error) {
+func (c *Client) GetGroupsioMailingList(ctx context.Context, p *GetGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
 	var ires any
-	ires, err = c.GetGrpsioMailingListEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GetGrpsioMailingListResult), nil
+	return ires.(*GroupsioSubgroup), nil
 }
 
-// UpdateGrpsioMailingList calls the "update-grpsio-mailing-list" endpoint of
-// the "mailing-list" service.
-// UpdateGrpsioMailingList may return the following errors:
+// UpdateGroupsioMailingList calls the "update-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// UpdateGroupsioMailingList may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or validation failure
+//   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioMailingList(ctx context.Context, p *UpdateGrpsioMailingListPayload) (res *GrpsIoMailingListWithReadonlyAttributes, err error) {
+func (c *Client) UpdateGroupsioMailingList(ctx context.Context, p *UpdateGroupsioMailingListPayload) (res *GroupsioSubgroup, err error) {
 	var ires any
-	ires, err = c.UpdateGrpsioMailingListEndpoint(ctx, p)
+	ires, err = c.UpdateGroupsioMailingListEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoMailingListWithReadonlyAttributes), nil
+	return ires.(*GroupsioSubgroup), nil
 }
 
-// DeleteGrpsioMailingList calls the "delete-grpsio-mailing-list" endpoint of
-// the "mailing-list" service.
-// DeleteGrpsioMailingList may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or deletion not allowed
+// DeleteGroupsioMailingList calls the "delete-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+// DeleteGroupsioMailingList may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) DeleteGrpsioMailingList(ctx context.Context, p *DeleteGrpsioMailingListPayload) (err error) {
-	_, err = c.DeleteGrpsioMailingListEndpoint(ctx, p)
+func (c *Client) DeleteGroupsioMailingList(ctx context.Context, p *DeleteGroupsioMailingListPayload) (err error) {
+	_, err = c.DeleteGroupsioMailingListEndpoint(ctx, p)
 	return
 }
 
-// GetGrpsioMailingListSettings calls the "get-grpsio-mailing-list-settings"
+// GetGroupsioMailingListCount calls the "get-groupsio-mailing-list-count"
 // endpoint of the "mailing-list" service.
-// GetGrpsioMailingListSettings may return the following errors:
+// GetGroupsioMailingListCount may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list settings not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGrpsioMailingListSettings(ctx context.Context, p *GetGrpsioMailingListSettingsPayload) (res *GetGrpsioMailingListSettingsResult, err error) {
+func (c *Client) GetGroupsioMailingListCount(ctx context.Context, p *GetGroupsioMailingListCountPayload) (res *GroupsioCount, err error) {
 	var ires any
-	ires, err = c.GetGrpsioMailingListSettingsEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListCountEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GetGrpsioMailingListSettingsResult), nil
+	return ires.(*GroupsioCount), nil
 }
 
-// UpdateGrpsioMailingListSettings calls the
-// "update-grpsio-mailing-list-settings" endpoint of the "mailing-list" service.
-// UpdateGrpsioMailingListSettings may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list settings not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
+// GetGroupsioMailingListMemberCount calls the
+// "get-groupsio-mailing-list-member-count" endpoint of the "mailing-list"
+// service.
+// GetGroupsioMailingListMemberCount may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioMailingListSettings(ctx context.Context, p *UpdateGrpsioMailingListSettingsPayload) (res *GrpsIoMailingListSettings, err error) {
+func (c *Client) GetGroupsioMailingListMemberCount(ctx context.Context, p *GetGroupsioMailingListMemberCountPayload) (res *GroupsioCount, err error) {
 	var ires any
-	ires, err = c.UpdateGrpsioMailingListSettingsEndpoint(ctx, p)
+	ires, err = c.GetGroupsioMailingListMemberCountEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoMailingListSettings), nil
+	return ires.(*GroupsioCount), nil
 }
 
-// CreateGrpsioMailingListMember calls the "create-grpsio-mailing-list-member"
-// endpoint of the "mailing-list" service.
-// CreateGrpsioMailingListMember may return the following errors:
+// ListGroupsioMembers calls the "list-groupsio-members" endpoint of the
+// "mailing-list" service.
+// ListGroupsioMembers may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) ListGroupsioMembers(ctx context.Context, p *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error) {
+	var ires any
+	ires, err = c.ListGroupsioMembersEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioMemberList), nil
+}
+
+// AddGroupsioMember calls the "add-groupsio-member" endpoint of the
+// "mailing-list" service.
+// AddGroupsioMember may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
-//   - "NotFound" (type *NotFoundError): Mailing list not found
+//   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "Conflict" (type *ConflictError): Member already exists
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) CreateGrpsioMailingListMember(ctx context.Context, p *CreateGrpsioMailingListMemberPayload) (res *GrpsIoMemberFull, err error) {
+func (c *Client) AddGroupsioMember(ctx context.Context, p *AddGroupsioMemberPayload) (res *GroupsioMember, err error) {
 	var ires any
-	ires, err = c.CreateGrpsioMailingListMemberEndpoint(ctx, p)
+	ires, err = c.AddGroupsioMemberEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoMemberFull), nil
+	return ires.(*GroupsioMember), nil
 }
 
-// GetGrpsioMailingListMember calls the "get-grpsio-mailing-list-member"
-// endpoint of the "mailing-list" service.
-// GetGrpsioMailingListMember may return the following errors:
+// GetGroupsioMember calls the "get-groupsio-member" endpoint of the
+// "mailing-list" service.
+// GetGroupsioMember may return the following errors:
+//   - "NotFound" (type *NotFoundError): Member not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioMember(ctx context.Context, p *GetGroupsioMemberPayload) (res *GroupsioMember, err error) {
+	var ires any
+	ires, err = c.GetGroupsioMemberEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioMember), nil
+}
+
+// UpdateGroupsioMember calls the "update-groupsio-member" endpoint of the
+// "mailing-list" service.
+// UpdateGroupsioMember may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "NotFound" (type *NotFoundError): Member not found
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) GetGrpsioMailingListMember(ctx context.Context, p *GetGrpsioMailingListMemberPayload) (res *GetGrpsioMailingListMemberResult, err error) {
+func (c *Client) UpdateGroupsioMember(ctx context.Context, p *UpdateGroupsioMemberPayload) (res *GroupsioMember, err error) {
 	var ires any
-	ires, err = c.GetGrpsioMailingListMemberEndpoint(ctx, p)
+	ires, err = c.UpdateGroupsioMemberEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GetGrpsioMailingListMemberResult), nil
+	return ires.(*GroupsioMember), nil
 }
 
-// UpdateGrpsioMailingListMember calls the "update-grpsio-mailing-list-member"
-// endpoint of the "mailing-list" service.
-// UpdateGrpsioMailingListMember may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request - Invalid data or immutable field modification
+// DeleteGroupsioMember calls the "delete-groupsio-member" endpoint of the
+// "mailing-list" service.
+// DeleteGroupsioMember may return the following errors:
 //   - "NotFound" (type *NotFoundError): Member not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch or validation failure
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) UpdateGrpsioMailingListMember(ctx context.Context, p *UpdateGrpsioMailingListMemberPayload) (res *GrpsIoMemberWithReadonlyAttributes, err error) {
+func (c *Client) DeleteGroupsioMember(ctx context.Context, p *DeleteGroupsioMemberPayload) (err error) {
+	_, err = c.DeleteGroupsioMemberEndpoint(ctx, p)
+	return
+}
+
+// InviteGroupsioMembers calls the "invite-groupsio-members" endpoint of the
+// "mailing-list" service.
+// InviteGroupsioMembers may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "NotFound" (type *NotFoundError): Subgroup not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) InviteGroupsioMembers(ctx context.Context, p *InviteGroupsioMembersPayload) (err error) {
+	_, err = c.InviteGroupsioMembersEndpoint(ctx, p)
+	return
+}
+
+// CheckGroupsioSubscriber calls the "check-groupsio-subscriber" endpoint of
+// the "mailing-list" service.
+// CheckGroupsioSubscriber may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) CheckGroupsioSubscriber(ctx context.Context, p *CheckGroupsioSubscriberPayload) (res *GroupsioCheckSubscriberResponse, err error) {
 	var ires any
-	ires, err = c.UpdateGrpsioMailingListMemberEndpoint(ctx, p)
+	ires, err = c.CheckGroupsioSubscriberEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*GrpsIoMemberWithReadonlyAttributes), nil
-}
-
-// DeleteGrpsioMailingListMember calls the "delete-grpsio-mailing-list-member"
-// endpoint of the "mailing-list" service.
-// DeleteGrpsioMailingListMember may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Bad request - Cannot remove sole owner
-//   - "NotFound" (type *NotFoundError): Member not found
-//   - "Conflict" (type *ConflictError): Conflict - ETag mismatch
-//   - "InternalServerError" (type *InternalServerError): Internal server error
-//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
-//   - error: internal error
-func (c *Client) DeleteGrpsioMailingListMember(ctx context.Context, p *DeleteGrpsioMailingListMemberPayload) (err error) {
-	_, err = c.DeleteGrpsioMailingListMemberEndpoint(ctx, p)
-	return
-}
-
-// GroupsioWebhook calls the "groupsio-webhook" endpoint of the "mailing-list"
-// service.
-// GroupsioWebhook may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Invalid webhook payload or signature
-//   - "Unauthorized" (type *UnauthorizedError): Invalid webhook signature
-//   - error: internal error
-func (c *Client) GroupsioWebhook(ctx context.Context, p *GroupsioWebhookPayload) (err error) {
-	_, err = c.GroupsioWebhookEndpoint(ctx, p)
-	return
+	return ires.(*GroupsioCheckSubscriberResponse), nil
 }

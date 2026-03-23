@@ -5,130 +5,121 @@ package service
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
-// GetGrpsIOMailingList retrieves a single mailing list by UID with revision
-func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingList(ctx context.Context, uid string) (*model.GrpsIOMailingList, uint64, error) {
-	slog.DebugContext(ctx, "executing get mailing list use case",
-		"mailing_list_uid", uid,
-	)
+// GroupsIOMailingListReaderOrchestrator implements port.GroupsIOMailingListReader by wrapping an inner
+// GroupsIOMailingListReader and translating v2 UUIDs to v1 SFIDs before forwarding requests.
+type GroupsIOMailingListReaderOrchestrator struct {
+	reader     port.GroupsIOMailingListReader
+	translator port.Translator
+}
 
-	// Get mailing list from storage
-	mailingList, revision, err := mlr.grpsIOReader.GetGrpsIOMailingList(ctx, uid)
+// MailingListReaderOrchestratorOption configures a GroupsIOMailingListReaderOrchestrator.
+type MailingListReaderOrchestratorOption func(*GroupsIOMailingListReaderOrchestrator)
+
+// WithMailingListReader sets the underlying reader (e.g. the ITX proxy client).
+func WithMailingListReader(r port.GroupsIOMailingListReader) MailingListReaderOrchestratorOption {
+	return func(o *GroupsIOMailingListReaderOrchestrator) {
+		o.reader = r
+	}
+}
+
+// WithMailingListReaderTranslator sets the ID translator.
+func WithMailingListReaderTranslator(t port.Translator) MailingListReaderOrchestratorOption {
+	return func(o *GroupsIOMailingListReaderOrchestrator) {
+		o.translator = t
+	}
+}
+
+// ListMailingLists lists mailing lists, translating v2 projectUID and committeeUID to v1 before forwarding,
+// then translating v1 IDs back to v2 in each response item.
+func (o *GroupsIOMailingListReaderOrchestrator) ListMailingLists(ctx context.Context, projectUID string, committeeUID string) ([]*model.GroupsIOMailingList, int, error) {
+	v1ProjectID := projectUID
+	if projectUID != "" {
+		id, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, projectUID)
+		if err != nil {
+			return nil, 0, err
+		}
+		v1ProjectID = id
+	}
+
+	v1CommitteeID := committeeUID
+	if committeeUID != "" {
+		id, err := o.translator.MapID(ctx, constants.TranslationSubjectCommittee, constants.TranslationDirectionV2ToV1, committeeUID)
+		if err != nil {
+			return nil, 0, err
+		}
+		v1CommitteeID = id
+	}
+
+	items, total, err := o.reader.ListMailingLists(ctx, v1ProjectID, v1CommitteeID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list",
-			"error", err,
-			"mailing_list_uid", uid,
-		)
 		return nil, 0, err
 	}
 
-	slog.DebugContext(ctx, "mailing list retrieved successfully",
-		"mailing_list_uid", uid,
-		"group_name", mailingList.GroupName,
-		"revision", revision,
-	)
-
-	return mailingList, revision, nil
+	for _, ml := range items {
+		if err := o.translateMailingListResponse(ctx, ml); err != nil {
+			return nil, 0, err
+		}
+	}
+	return items, total, nil
 }
 
-// GetMailingListRevision retrieves only the revision for a given UID
-func (mlr *grpsIOReaderOrchestrator) GetMailingListRevision(ctx context.Context, uid string) (uint64, error) {
-	slog.DebugContext(ctx, "executing get mailing list revision use case",
-		"mailing_list_uid", uid,
-	)
-
-	// Get revision from storage
-	revision, err := mlr.grpsIOReader.GetMailingListRevision(ctx, uid)
+// GetMailingList retrieves a mailing list by ID and translates v1 IDs to v2 in the response.
+func (o *GroupsIOMailingListReaderOrchestrator) GetMailingList(ctx context.Context, mailingListID string) (*model.GroupsIOMailingList, error) {
+	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list revision",
-			"error", err,
-			"mailing_list_uid", uid,
-		)
+		return nil, err
+	}
+	if err := o.translateMailingListResponse(ctx, ml); err != nil {
+		return nil, err
+	}
+	return ml, nil
+}
+
+// GetMailingListCount returns the count of mailing lists for a given v2 projectUID.
+func (o *GroupsIOMailingListReaderOrchestrator) GetMailingListCount(ctx context.Context, projectUID string) (int, error) {
+	v1ProjectID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, projectUID)
+	if err != nil {
 		return 0, err
 	}
-
-	slog.DebugContext(ctx, "mailing list revision retrieved successfully",
-		"mailing_list_uid", uid,
-		"revision", revision,
-	)
-
-	return revision, nil
+	return o.reader.GetMailingListCount(ctx, v1ProjectID)
 }
 
-// GetMailingListByGroupID retrieves a mailing list by GroupsIO subgroup ID
-func (mlr *grpsIOReaderOrchestrator) GetMailingListByGroupID(ctx context.Context, groupID uint64) (*model.GrpsIOMailingList, uint64, error) {
-	slog.DebugContext(ctx, "executing get mailing list by group_id use case",
-		"group_id", groupID,
-	)
-
-	// Get mailing list from storage
-	mailingList, revision, err := mlr.grpsIOReader.GetMailingListByGroupID(ctx, groupID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list by group_id",
-			"error", err,
-			"group_id", groupID,
-		)
-		return nil, 0, err
-	}
-
-	slog.DebugContext(ctx, "mailing list retrieved successfully by group_id",
-		"mailing_list_uid", mailingList.UID,
-		"group_name", mailingList.GroupName,
-		"group_id", groupID,
-		"revision", revision,
-	)
-
-	return mailingList, revision, nil
+// GetMailingListMemberCount returns the count of members in a given mailing list.
+func (o *GroupsIOMailingListReaderOrchestrator) GetMailingListMemberCount(ctx context.Context, mailingListID string) (int, error) {
+	return o.reader.GetMailingListMemberCount(ctx, mailingListID)
 }
 
-// GetGrpsIOMailingListSettings retrieves mailing list settings by UID with revision
-func (mlr *grpsIOReaderOrchestrator) GetGrpsIOMailingListSettings(ctx context.Context, uid string) (*model.GrpsIOMailingListSettings, uint64, error) {
-	slog.DebugContext(ctx, "executing get mailing list settings use case",
-		"mailing_list_uid", uid,
-	)
-
-	// Get settings from storage
-	settings, revision, err := mlr.grpsIOReader.GetGrpsIOMailingListSettings(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list settings",
-			"error", err,
-			"mailing_list_uid", uid,
-		)
-		return nil, 0, err
+// translateMailingListResponse translates v1 IDs to v2 in-place on a mailing list response from ITX.
+func (o *GroupsIOMailingListReaderOrchestrator) translateMailingListResponse(ctx context.Context, ml *model.GroupsIOMailingList) error {
+	if ml.ProjectUID != "" {
+		v2UID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV1ToV2, ml.ProjectUID)
+		if err != nil {
+			return err
+		}
+		ml.ProjectUID = v2UID
 	}
 
-	slog.DebugContext(ctx, "mailing list settings retrieved successfully",
-		"mailing_list_uid", uid,
-		"revision", revision,
-	)
-
-	return settings, revision, nil
+	if len(ml.Committees) > 0 && ml.Committees[0].UID != "" {
+		v2UID, err := o.translator.MapID(ctx, constants.TranslationSubjectCommittee, constants.TranslationDirectionV1ToV2, ml.Committees[0].UID)
+		if err != nil {
+			return err
+		}
+		ml.Committees[0].UID = v2UID
+	}
+	return nil
 }
 
-// GetMailingListSettingsRevision retrieves only the revision for mailing list settings
-func (mlr *grpsIOReaderOrchestrator) GetMailingListSettingsRevision(ctx context.Context, uid string) (uint64, error) {
-	slog.DebugContext(ctx, "executing get mailing list settings revision use case",
-		"mailing_list_uid", uid,
-	)
-
-	// Get revision from storage
-	revision, err := mlr.grpsIOReader.GetMailingListSettingsRevision(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get mailing list settings revision",
-			"error", err,
-			"mailing_list_uid", uid,
-		)
-		return 0, err
+// NewGroupsIOMailingListReaderOrchestrator creates a new reader orchestrator with the given options.
+func NewGroupsIOMailingListReaderOrchestrator(opts ...MailingListReaderOrchestratorOption) port.GroupsIOMailingListReader {
+	o := &GroupsIOMailingListReaderOrchestrator{}
+	for _, opt := range opts {
+		opt(o)
 	}
-
-	slog.DebugContext(ctx, "mailing list settings revision retrieved successfully",
-		"mailing_list_uid", uid,
-		"revision", revision,
-	)
-
-	return revision, nil
+	return o
 }

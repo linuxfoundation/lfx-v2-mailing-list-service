@@ -18,16 +18,3 @@ type Config struct {
 	// ReconnectWait is the time to wait between reconnection attempts
 	ReconnectWait time.Duration `json:"reconnect_wait"`
 }
-
-// AccessCheckNATSRequest represents a NATS request for access checking
-type AccessCheckNATSRequest struct {
-	// Subject is the NATS subject for the request
-	Subject string `json:"subject"`
-	// Message is the serialized request data
-	Message []byte `json:"message"`
-	// Timeout is the request timeout duration
-	Timeout time.Duration `json:"timeout"`
-}
-
-// AccessCheckNATSResponse represents a NATS response for access checking
-type AccessCheckNATSResponse map[string]string

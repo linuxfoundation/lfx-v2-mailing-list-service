@@ -9,28 +9,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// GrpsIOMailingListWriter defines the interface for writing mailing list data
-type GrpsIOMailingListWriter interface {
-	BaseGrpsIOWriter
+// GroupsIOMailingListWriter defines the application-level interface for GroupsIO mailing list operations.
+// All IDs are v2 UUIDs. Implementations are responsible for v1/v2 ID translation
+// when communicating with the ITX proxy.
+type GroupsIOMailingListWriter interface {
+	// CreateMailingList creates a new mailing list.
+	CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error)
 
-	// CreateGrpsIOMailingList creates a new GroupsIO mailing list and returns the mailing list with revision
-	CreateGrpsIOMailingList(ctx context.Context, mailingList *model.GrpsIOMailingList) (*model.GrpsIOMailingList, uint64, error)
+	// UpdateMailingList updates an existing mailing list.
+	UpdateMailingList(ctx context.Context, mailingListID string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error)
 
-	// UpdateGrpsIOMailingList updates an existing GroupsIO mailing list with optimistic concurrency control
-	UpdateGrpsIOMailingList(ctx context.Context, uid string, mailingList *model.GrpsIOMailingList, expectedRevision uint64) (*model.GrpsIOMailingList, uint64, error)
-
-	// DeleteGrpsIOMailingList deletes a GroupsIO mailing list with optimistic concurrency control
-	DeleteGrpsIOMailingList(ctx context.Context, uid string, expectedRevision uint64, mailingList *model.GrpsIOMailingList) error
-
-	// CreateSecondaryIndices creates secondary indices for a mailing list and returns the created keys
-	CreateSecondaryIndices(ctx context.Context, mailingList *model.GrpsIOMailingList) ([]string, error)
-
-	// UniqueMailingListGroupName validates that group name is unique within parent service
-	UniqueMailingListGroupName(ctx context.Context, mailingList *model.GrpsIOMailingList) (string, error)
-
-	// CreateGrpsIOMailingListSettings creates new mailing list settings and returns the settings with revision
-	CreateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings) (*model.GrpsIOMailingListSettings, uint64, error)
-
-	// UpdateGrpsIOMailingListSettings updates mailing list settings with expected revision and returns updated settings with new revision
-	UpdateGrpsIOMailingListSettings(ctx context.Context, settings *model.GrpsIOMailingListSettings, expectedRevision uint64) (*model.GrpsIOMailingListSettings, uint64, error)
+	// DeleteMailingList deletes a mailing list.
+	DeleteMailingList(ctx context.Context, mailingListID string) error
 }

@@ -141,8 +141,8 @@ func buildServiceSettings(uid string, data map[string]any) *model.GrpsIOServiceS
 
 // transformV1ToGrpsIOService maps v1 DynamoDB fields to the GrpsIOService domain model.
 // Source is always "v1-sync" to distinguish these from API-created records.
-func transformV1ToGrpsIOService(uid string, data map[string]any) *model.GrpsIOService {
-	svc := &model.GrpsIOService{
+func transformV1ToGrpsIOService(uid string, data map[string]any) *model.GroupsIOService {
+	svc := &model.GroupsIOService{
 		UID:         uid,
 		Type:        mapconv.StringVal(data, "group_service_type"),
 		Domain:      mapconv.StringVal(data, "domain"),

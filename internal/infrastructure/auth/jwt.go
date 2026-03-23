@@ -65,6 +65,14 @@ type JWTAuth struct {
 
 // ParsePrincipal extracts the principal from the JWT claims.
 func (j *JWTAuth) ParsePrincipal(ctx context.Context, token string, logger *slog.Logger) (string, error) {
+  	// To avoid having to use a valid JWT token for local development, we can use the
+	// MockLocalPrincipal configuration parameter.
+	if j.config.MockLocalPrincipal != "" {
+		logger.InfoContext(ctx, "JWT authentication is disabled, returning mock principal",
+			"principal", j.config.MockLocalPrincipal,
+		)
+		return j.config.MockLocalPrincipal, nil
+	}
 
 	if j.validator == nil {
 		return "", errors.New("JWT validator is not set up")
