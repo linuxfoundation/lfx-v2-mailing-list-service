@@ -153,6 +153,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var)
+	if err := handleDataStream(ctx, &wg); err != nil {
+		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
+		os.Exit(1)
+	}
+
 	// Wait for signal.
 	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
 		"signal", <-errc,

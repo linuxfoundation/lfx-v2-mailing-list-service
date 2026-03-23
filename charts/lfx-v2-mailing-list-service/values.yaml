@@ -11,7 +11,7 @@ image:
   pullPolicy: IfNotPresent
 
 # replicaCount is the number of replicas for the deployment
-replicaCount: 3
+replicaCount: 1
 
 # podAnnotations are additional annotations applied to the pod template.
 # Example:
@@ -302,12 +302,18 @@ app:
     # GROUPSIO_EMAIL is the Groups.io account email for authentication
     # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
     GROUPSIO_EMAIL:
-      value: null
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-mailing-list-service
+          key: GROUPSIO_EMAIL
 
     # GROUPSIO_PASSWORD is the Groups.io account password for authentication
     # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
     GROUPSIO_PASSWORD:
-      value: null
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-mailing-list-service
+          key: GROUPSIO_PASSWORD
 
     # GROUPSIO_TIMEOUT is the HTTP client timeout for Groups.io requests (e.g., "30s", "1m")
     GROUPSIO_TIMEOUT:
@@ -324,12 +330,18 @@ app:
     # GROUPSIO_WEBHOOK_SECRET is the secret for GroupsIO webhook validation
     # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
     GROUPSIO_WEBHOOK_SECRET:
-      value: null
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-mailing-list-service
+          key: GROUPSIO_WEBHOOK_SECRET
+
+    EVENTING_ENABLED:
+      value: "true"
 
 # External Secrets Operator
 externalSecretsOperator:
   # Enable/disable External Secrets Operator integration
-  enabled: true
+  enabled: false
 
   # ExternalSecret configuration
   externalSecret:

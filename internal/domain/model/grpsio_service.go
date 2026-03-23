@@ -93,6 +93,7 @@ type GrpsIOService struct {
 	Public           bool      `json:"public"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
+	SystemUpdatedAt  time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
 // BuildIndexKey generates a SHA-256 hash for use as a NATS KV key

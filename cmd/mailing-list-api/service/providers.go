@@ -18,6 +18,7 @@ import (
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
 var (
@@ -497,4 +498,15 @@ func GetNATSClient(ctx context.Context) *nats.NATSClient {
 		panic("NATS storage implementation error")
 	}
 	return storageImpl.Client()
+}
+
+// MappingReaderWriter initializes the v1-mappings KV abstraction used by the
+// data stream event handler for idempotency tracking.
+func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
+	client := GetNATSClient(ctx)
+	kv, err := client.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	if err != nil {
+		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
+	}
+	return nats.NewMappingReaderWriter(kv)
 }
