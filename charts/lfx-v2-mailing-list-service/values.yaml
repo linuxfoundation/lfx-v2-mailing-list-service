@@ -282,77 +282,24 @@ app:
     REPOSITORY_SOURCE:
       value: nats
 
-    # GroupsIO Integration Configuration
-    # GROUPSIO_SOURCE determines the GroupsIO implementation: 'groupsio' for production, 'mock' for testing
-    # Use 'groupsio' for production, 'mock' for testing. Empty string defaults to production in code.
-    GROUPSIO_SOURCE:
-      value: groupsio
 
-    # GROUPSIO_BASE_URL is the Groups.io API base URL
-    GROUPSIO_BASE_URL:
-      value: "https://groups.io/api"
+    # ITX Proxy Configuration
+    ITX_BASE_URL:
+      value: ""
 
-    # GROUPSIO_EMAIL is the Groups.io account email for authentication
+    ITX_CLIENT_ID:
+      value: ""
+
+    # ITX_CLIENT_PRIVATE_KEY is the private key for ITX proxy authentication
     # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
-    GROUPSIO_EMAIL:
-      valueFrom:
-        secretKeyRef:
-          name: lfx-v2-mailing-list-service
-          key: GROUPSIO_EMAIL
+    ITX_CLIENT_PRIVATE_KEY:
+      value: ""
 
-    # GROUPSIO_PASSWORD is the Groups.io account password for authentication
-    # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
-    GROUPSIO_PASSWORD:
-      valueFrom:
-        secretKeyRef:
-          name: lfx-v2-mailing-list-service
-          key: GROUPSIO_PASSWORD
+    ITX_AUTH0_DOMAIN:
+      value: ""
 
-    # GROUPSIO_TIMEOUT is the HTTP client timeout for Groups.io requests (e.g., "30s", "1m")
-    GROUPSIO_TIMEOUT:
-      value: "30s"
-
-    # GROUPSIO_MAX_RETRIES is the maximum number of retry attempts for failed requests
-    GROUPSIO_MAX_RETRIES:
-      value: "3"
-
-    # GROUPSIO_RETRY_DELAY is the delay between retry attempts (e.g., "1s", "500ms")
-    GROUPSIO_RETRY_DELAY:
-      value: "1s"
-
-    # GROUPSIO_WEBHOOK_SECRET is the secret for GroupsIO webhook validation
-    # WARNING: Do not commit actual credentials to this file - should be set via Kubernetes secrets using valueFrom
-    GROUPSIO_WEBHOOK_SECRET:
-      valueFrom:
-        secretKeyRef:
-          name: lfx-v2-mailing-list-service
-          key: GROUPSIO_WEBHOOK_SECRET
+    ITX_AUDIENCE:
+      value: ""
 
     EVENTING_ENABLED:
       value: "true"
-
-# External Secrets Operator
-externalSecretsOperator:
-  # Enable/disable External Secrets Operator integration
-  enabled: false
-
-  # ExternalSecret configuration
-  externalSecret:
-    # How often to refresh secrets from AWS
-    refreshInterval: "10m"
-
-    # Secret data mappings
-    # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
-    data:
-      - secretKey: GROUPSIO_EMAIL
-        remoteRef:
-          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
-          property: groupsio_email
-      - secretKey: GROUPSIO_PASSWORD
-        remoteRef:
-          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
-          property: groupsio_password
-      - secretKey: GROUPSIO_WEBHOOK_SECRET
-        remoteRef:
-          key: /cloudops/managed-secrets/cloud/groupsio/lfx-v2-mailing-list-service
-          property: groupsio_webhook_secret
