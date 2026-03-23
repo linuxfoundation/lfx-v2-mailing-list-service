@@ -21,18 +21,22 @@ func TestProxyConverters(t *testing.T) {
 
 func (s *ProxyConvertersSuite) TestFromWireService() {
 	groupID42 := int64(42)
+	ts1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts2 := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name           string
-		input          *serviceWire
-		expectNil      bool
-		expectGroupID  *int64
-		expectUID      string
-		expectProject  string
-		expectType     string
-		expectDomain   string
-		expectPrefix   string
-		expectStatus   string
+		name            string
+		input           *serviceWire
+		expectNil       bool
+		expectGroupID   *int64
+		expectUID       string
+		expectProject   string
+		expectType      string
+		expectDomain    string
+		expectPrefix    string
+		expectStatus    string
+		expectCreatedAt time.Time
+		expectUpdatedAt time.Time
 	}{
 		{
 			name:      "nil input returns nil",
@@ -50,6 +54,20 @@ func (s *ProxyConvertersSuite) TestFromWireService() {
 			input:         &serviceWire{ID: "svc-1", GroupID: 42},
 			expectUID:     "svc-1",
 			expectGroupID: &groupID42,
+		},
+		{
+			name:            "valid RFC3339 timestamps are parsed",
+			input:           &serviceWire{ID: "svc-1", CreatedAt: "2024-01-01T00:00:00Z", UpdatedAt: "2024-06-01T12:00:00Z"},
+			expectUID:       "svc-1",
+			expectCreatedAt: ts1,
+			expectUpdatedAt: ts2,
+		},
+		{
+			name:            "empty timestamps produce zero time",
+			input:           &serviceWire{ID: "svc-1"},
+			expectUID:       "svc-1",
+			expectCreatedAt: time.Time{},
+			expectUpdatedAt: time.Time{},
 		},
 		{
 			name: "fields map correctly",
@@ -86,6 +104,8 @@ func (s *ProxyConvertersSuite) TestFromWireService() {
 			s.Equal(tt.expectDomain, got.Domain)
 			s.Equal(tt.expectPrefix, got.Prefix)
 			s.Equal(tt.expectStatus, got.Status)
+			s.Equal(tt.expectCreatedAt, got.CreatedAt)
+			s.Equal(tt.expectUpdatedAt, got.UpdatedAt)
 			if tt.expectGroupID == nil {
 				s.Nil(got.GroupID)
 			} else {

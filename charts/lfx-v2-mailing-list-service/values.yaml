@@ -253,7 +253,7 @@ app:
 
     # LOG_LEVEL is the log level (debug, info, warn, error) - optional, defaults to info
     LOG_LEVEL:
-      value: info
+      value: debug
 
     # LOG_ADD_SOURCE determines if log source should be added - optional, defaults to true
     LOG_ADD_SOURCE:
@@ -303,3 +303,26 @@ app:
 
     EVENTING_ENABLED:
       value: "true"
+
+# externalSecretsOperator is the configuration for the External Secrets Operator integration
+externalSecretsOperator:
+  # Enable/disable External Secrets Operator integration
+  enabled: false
+
+  # ExternalSecret configuration
+  externalSecret:
+    # How often to refresh secrets from AWS
+    refreshInterval: "10m"
+
+    # Secret data mappings
+    # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
+    # NOTE: client_private_key should be stored as raw PEM format (not base64-encoded)
+    data:
+      - secretKey: ITX_CLIENT_ID
+        remoteRef:
+          key: /cloudops/managed-secrets/auth0/LFX_V2_Mailing_List_Service
+          property: auth0_client_id
+      - secretKey: ITX_CLIENT_PRIVATE_KEY
+        remoteRef:
+          key: /cloudops/managed-secrets/auth0/LFX_V2_Mailing_List_Service
+          property: auth0_client_private_key

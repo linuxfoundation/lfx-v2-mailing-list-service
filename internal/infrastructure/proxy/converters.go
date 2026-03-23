@@ -16,6 +16,8 @@ func fromWireService(w *serviceWire) *model.GroupsIOService {
 	if w == nil {
 		return nil
 	}
+	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
+	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
 	return &model.GroupsIOService{
 		UID:        w.ID,
 		ProjectUID: w.ProjectID,
@@ -24,6 +26,8 @@ func fromWireService(w *serviceWire) *model.GroupsIOService {
 		Domain:     w.Domain,
 		Prefix:     w.Prefix,
 		Status:     w.Status,
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
 	}
 }
 
