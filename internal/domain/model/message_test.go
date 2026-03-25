@@ -217,7 +217,7 @@ func TestIndexerMessage_Build(t *testing.T) {
 
 func TestIndexerMessage_BuildWithValidInput(t *testing.T) {
 	// Test with a real domain model
-	ml := &GrpsIOMailingList{
+	ml := &GroupsIOMailingList{
 		UID:       "ml-123",
 		GroupName: "test-group",
 		Public:    true,

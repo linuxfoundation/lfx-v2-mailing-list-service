@@ -10,21 +10,14 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// GrpsIOMemberReader defines the interface for reading member data
-type GrpsIOMemberReader interface {
-	// GetGrpsIOMember retrieves a member by UID with revision
-	GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error)
+// GroupsIOMailingListMemberReader defines the application-level interface for GroupsIO member read operations.
+type GroupsIOMailingListMemberReader interface {
+	// ListMembers lists all members of a mailing list.
+	ListMembers(ctx context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error)
 
-	// GetMemberRevision retrieves only the revision for a given UID
-	GetMemberRevision(ctx context.Context, uid string) (uint64, error)
+	// GetMember retrieves a member by ID from a mailing list.
+	GetMember(ctx context.Context, mailingListID string, memberID string) (*model.GrpsIOMember, error)
 
-	// GetMemberByGroupsIOMemberID retrieves member by Groups.io member ID using secondary index
-	// Returns NotFound if no member has this Groups.io ID
-	// Used by webhook handlers to find existing members
-	GetMemberByGroupsIOMemberID(ctx context.Context, memberID uint64) (*model.GrpsIOMember, uint64, error)
-
-	// GetMemberByEmail retrieves member by email within mailing list
-	// Returns NotFound if no member with this email exists in the mailing list
-	// Used by orchestrator for idempotency checks
-	GetMemberByEmail(ctx context.Context, mailingListUID, email string) (*model.GrpsIOMember, uint64, error)
+	// CheckSubscriber checks whether an email is subscribed to a mailing list.
+	CheckSubscriber(ctx context.Context, mailingListID string, email string) (bool, error)
 }

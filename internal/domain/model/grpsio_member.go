@@ -5,16 +5,8 @@
 package model
 
 import (
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"log/slog"
-	"strings"
 	"time"
-
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 )
 
 // GrpsIOMember represents a GroupsIO mailing list member
@@ -28,8 +20,8 @@ type GrpsIOMember struct {
 	Source   string `json:"source"`    // "api", "webhook", or "mock" - tracks origin for business logic
 
 	// Member Information
-	UserID       string `json:"user_id,omitempty"`  // User-service ID of the member
-	Username     string `json:"username"`            // Username
+	UserID       string `json:"user_id,omitempty"` // User-service ID of the member
+	Username     string `json:"username"`          // Username
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Email        string `json:"email"`        // Required, RFC 5322
@@ -63,27 +55,6 @@ type GrpsIOMember struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	SystemUpdatedAt time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
-}
-
-// BuildIndexKey generates a SHA-256 hash for use as a NATS KV key.
-// This enforces uniqueness for members within a mailing list.
-func (m *GrpsIOMember) BuildIndexKey(ctx context.Context) string {
-	mailingList := strings.TrimSpace(strings.ToLower(m.MailingListUID))
-	email := strings.TrimSpace(strings.ToLower(m.Email))
-
-	// Combine normalized values with a delimiter
-	data := fmt.Sprintf("%s|%s", mailingList, email)
-
-	hash := sha256.Sum256([]byte(data))
-	key := hex.EncodeToString(hash[:])
-
-	slog.DebugContext(ctx, "member index key built",
-		"mailing_list_uid", m.MailingListUID,
-		"email", redaction.RedactEmail(m.Email),
-		"key", key,
-	)
-
-	return key
 }
 
 // Tags generates a consistent set of tags for the member.
@@ -121,16 +92,4 @@ func (m *GrpsIOMember) Tags() []string {
 	}
 
 	return tags
-}
-
-// ValidateLastReviewedAt validates the LastReviewedAt timestamp format.
-// Returns nil if the field is nil (allowed) or contains a valid RFC3339 timestamp.
-func (m *GrpsIOMember) ValidateLastReviewedAt() error {
-	return utils.ValidateRFC3339Ptr(m.LastReviewedAt)
-}
-
-// GetLastReviewedAtTime safely parses LastReviewedAt into a time.Time pointer.
-// Returns nil if the field is nil or empty, or the parsed time if valid.
-func (m *GrpsIOMember) GetLastReviewedAtTime() (*time.Time, error) {
-	return utils.ParseTimestampPtr(m.LastReviewedAt)
 }

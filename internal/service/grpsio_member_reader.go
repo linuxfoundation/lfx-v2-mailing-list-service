@@ -5,104 +5,48 @@ package service
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
 
-// GetGrpsIOMember retrieves a member by UID
-func (r *grpsIOReaderOrchestrator) GetGrpsIOMember(ctx context.Context, uid string) (*model.GrpsIOMember, uint64, error) {
-	if r.grpsIOReader == nil {
-		panic("grpsIOReader dependency is required but was not provided")
-	}
-
-	slog.DebugContext(ctx, "executing get member use case",
-		"member_uid", uid,
-	)
-
-	// Get member from storage
-	member, revision, err := r.grpsIOReader.GetGrpsIOMember(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get member",
-			"error", err,
-			"member_uid", uid,
-		)
-		return nil, 0, err
-	}
-
-	slog.DebugContext(ctx, "member retrieved successfully",
-		"member_uid", uid,
-		"revision", revision,
-	)
-
-	return member, revision, nil
+// GroupsIOMailingListMemberReaderOrchestrator implements port.GroupsIOMailingListMemberReader
+// by wrapping an inner GroupsIOMailingListMemberReader and forwarding requests.
+// Member IDs are numeric strings assigned by Groups.io; no v1/v2 UUID translation is needed.
+type GroupsIOMailingListMemberReaderOrchestrator struct {
+	reader port.GroupsIOMailingListMemberReader
 }
 
-// GetMemberRevision retrieves only the revision for a given member UID
-func (r *grpsIOReaderOrchestrator) GetMemberRevision(ctx context.Context, uid string) (uint64, error) {
-	if r.grpsIOReader == nil {
-		panic("grpsIOReader dependency is required but was not provided")
+// MemberReaderOrchestratorOption configures a GroupsIOMailingListMemberReaderOrchestrator.
+type MemberReaderOrchestratorOption func(*GroupsIOMailingListMemberReaderOrchestrator)
+
+// WithMemberReader sets the underlying reader (e.g. the ITX proxy client).
+func WithMemberReader(r port.GroupsIOMailingListMemberReader) MemberReaderOrchestratorOption {
+	return func(o *GroupsIOMailingListMemberReaderOrchestrator) {
+		o.reader = r
 	}
-
-	slog.DebugContext(ctx, "executing get member revision use case", "member_uid", uid)
-
-	revision, err := r.grpsIOReader.GetMemberRevision(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get member revision", "error", err, "member_uid", uid)
-		return 0, err
-	}
-
-	slog.DebugContext(ctx, "member revision retrieved successfully", "member_uid", uid, "revision", revision)
-	return revision, nil
 }
 
-// GetMemberByGroupsIOMemberID retrieves member by Groups.io member ID
-func (r *grpsIOReaderOrchestrator) GetMemberByGroupsIOMemberID(ctx context.Context, memberID uint64) (*model.GrpsIOMember, uint64, error) {
-	if r.grpsIOReader == nil {
-		panic("grpsIOReader dependency is required but was not provided")
-	}
-
-	slog.DebugContext(ctx, "executing get member by Groups.io member ID use case",
-		"member_id", memberID)
-
-	member, revision, err := r.grpsIOReader.GetMemberByGroupsIOMemberID(ctx, memberID)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get member by Groups.io member ID",
-			"error", err,
-			"member_id", memberID)
-		return nil, 0, err
-	}
-
-	slog.DebugContext(ctx, "member retrieved successfully by Groups.io member ID",
-		"member_uid", member.UID,
-		"member_id", memberID,
-		"revision", revision)
-
-	return member, revision, nil
+// ListMembers lists all members of a mailing list.
+func (o *GroupsIOMailingListMemberReaderOrchestrator) ListMembers(ctx context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error) {
+	return o.reader.ListMembers(ctx, mailingListID)
 }
 
-// GetMemberByEmail retrieves member by email within mailing list
-func (r *grpsIOReaderOrchestrator) GetMemberByEmail(ctx context.Context, mailingListUID, email string) (*model.GrpsIOMember, uint64, error) {
-	if r.grpsIOReader == nil {
-		panic("grpsIOReader dependency is required but was not provided")
+// GetMember retrieves a member by ID from a mailing list.
+func (o *GroupsIOMailingListMemberReaderOrchestrator) GetMember(ctx context.Context, mailingListID string, memberID string) (*model.GrpsIOMember, error) {
+	return o.reader.GetMember(ctx, mailingListID, memberID)
+}
+
+// CheckSubscriber checks whether an email is subscribed to a mailing list.
+func (o *GroupsIOMailingListMemberReaderOrchestrator) CheckSubscriber(ctx context.Context, mailingListID string, email string) (bool, error) {
+	return o.reader.CheckSubscriber(ctx, mailingListID, email)
+}
+
+// NewGroupsIOMailingListMemberReaderOrchestrator creates a new member reader orchestrator with the given options.
+func NewGroupsIOMailingListMemberReaderOrchestrator(opts ...MemberReaderOrchestratorOption) port.GroupsIOMailingListMemberReader {
+	o := &GroupsIOMailingListMemberReaderOrchestrator{}
+	for _, opt := range opts {
+		opt(o)
 	}
-
-	slog.DebugContext(ctx, "executing get member by email use case",
-		"mailing_list_uid", mailingListUID,
-		"email", email)
-
-	member, revision, err := r.grpsIOReader.GetMemberByEmail(ctx, mailingListUID, email)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get member by email",
-			"error", err,
-			"mailing_list_uid", mailingListUID)
-		return nil, 0, err
-	}
-
-	slog.DebugContext(ctx, "member retrieved successfully by email",
-		"member_uid", member.UID,
-		"mailing_list_uid", mailingListUID,
-		"revision", revision)
-
-	return member, revision, nil
+	return o
 }

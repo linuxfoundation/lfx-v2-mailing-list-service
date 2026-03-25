@@ -23,7 +23,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `mailing-list (livez|readyz|create-grpsio-service|get-grpsio-service|update-grpsio-service|delete-grpsio-service|get-grpsio-service-settings|update-grpsio-service-settings|create-grpsio-mailing-list|get-grpsio-mailing-list|update-grpsio-mailing-list|delete-grpsio-mailing-list|get-grpsio-mailing-list-settings|update-grpsio-mailing-list-settings|create-grpsio-mailing-list-member|get-grpsio-mailing-list-member|update-grpsio-mailing-list-member|delete-grpsio-mailing-list-member|groupsio-webhook)
+	return `mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber)
 `
 }
 
@@ -49,127 +49,122 @@ func ParseEndpoint(
 
 		mailingListReadyzFlags = flag.NewFlagSet("readyz", flag.ExitOnError)
 
-		mailingListCreateGrpsioServiceFlags           = flag.NewFlagSet("create-grpsio-service", flag.ExitOnError)
-		mailingListCreateGrpsioServiceBodyFlag        = mailingListCreateGrpsioServiceFlags.String("body", "REQUIRED", "")
-		mailingListCreateGrpsioServiceVersionFlag     = mailingListCreateGrpsioServiceFlags.String("version", "REQUIRED", "")
-		mailingListCreateGrpsioServiceBearerTokenFlag = mailingListCreateGrpsioServiceFlags.String("bearer-token", "", "")
+		mailingListListGroupsioServicesFlags           = flag.NewFlagSet("list-groupsio-services", flag.ExitOnError)
+		mailingListListGroupsioServicesProjectUIDFlag  = mailingListListGroupsioServicesFlags.String("project-uid", "", "")
+		mailingListListGroupsioServicesBearerTokenFlag = mailingListListGroupsioServicesFlags.String("bearer-token", "", "")
 
-		mailingListGetGrpsioServiceFlags           = flag.NewFlagSet("get-grpsio-service", flag.ExitOnError)
-		mailingListGetGrpsioServiceUIDFlag         = mailingListGetGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
-		mailingListGetGrpsioServiceVersionFlag     = mailingListGetGrpsioServiceFlags.String("version", "", "")
-		mailingListGetGrpsioServiceBearerTokenFlag = mailingListGetGrpsioServiceFlags.String("bearer-token", "", "")
+		mailingListCreateGroupsioServiceFlags           = flag.NewFlagSet("create-groupsio-service", flag.ExitOnError)
+		mailingListCreateGroupsioServiceBodyFlag        = mailingListCreateGroupsioServiceFlags.String("body", "REQUIRED", "")
+		mailingListCreateGroupsioServiceBearerTokenFlag = mailingListCreateGroupsioServiceFlags.String("bearer-token", "", "")
 
-		mailingListUpdateGrpsioServiceFlags           = flag.NewFlagSet("update-grpsio-service", flag.ExitOnError)
-		mailingListUpdateGrpsioServiceBodyFlag        = mailingListUpdateGrpsioServiceFlags.String("body", "REQUIRED", "")
-		mailingListUpdateGrpsioServiceUIDFlag         = mailingListUpdateGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
-		mailingListUpdateGrpsioServiceVersionFlag     = mailingListUpdateGrpsioServiceFlags.String("version", "REQUIRED", "")
-		mailingListUpdateGrpsioServiceBearerTokenFlag = mailingListUpdateGrpsioServiceFlags.String("bearer-token", "", "")
-		mailingListUpdateGrpsioServiceIfMatchFlag     = mailingListUpdateGrpsioServiceFlags.String("if-match", "", "")
+		mailingListGetGroupsioServiceFlags           = flag.NewFlagSet("get-groupsio-service", flag.ExitOnError)
+		mailingListGetGroupsioServiceServiceIDFlag   = mailingListGetGroupsioServiceFlags.String("service-id", "REQUIRED", "Service ID")
+		mailingListGetGroupsioServiceBearerTokenFlag = mailingListGetGroupsioServiceFlags.String("bearer-token", "", "")
 
-		mailingListDeleteGrpsioServiceFlags           = flag.NewFlagSet("delete-grpsio-service", flag.ExitOnError)
-		mailingListDeleteGrpsioServiceUIDFlag         = mailingListDeleteGrpsioServiceFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
-		mailingListDeleteGrpsioServiceVersionFlag     = mailingListDeleteGrpsioServiceFlags.String("version", "", "")
-		mailingListDeleteGrpsioServiceBearerTokenFlag = mailingListDeleteGrpsioServiceFlags.String("bearer-token", "", "")
-		mailingListDeleteGrpsioServiceIfMatchFlag     = mailingListDeleteGrpsioServiceFlags.String("if-match", "", "")
+		mailingListUpdateGroupsioServiceFlags           = flag.NewFlagSet("update-groupsio-service", flag.ExitOnError)
+		mailingListUpdateGroupsioServiceBodyFlag        = mailingListUpdateGroupsioServiceFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGroupsioServiceServiceIDFlag   = mailingListUpdateGroupsioServiceFlags.String("service-id", "REQUIRED", "Service ID")
+		mailingListUpdateGroupsioServiceBearerTokenFlag = mailingListUpdateGroupsioServiceFlags.String("bearer-token", "", "")
 
-		mailingListGetGrpsioServiceSettingsFlags           = flag.NewFlagSet("get-grpsio-service-settings", flag.ExitOnError)
-		mailingListGetGrpsioServiceSettingsUIDFlag         = mailingListGetGrpsioServiceSettingsFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
-		mailingListGetGrpsioServiceSettingsVersionFlag     = mailingListGetGrpsioServiceSettingsFlags.String("version", "", "")
-		mailingListGetGrpsioServiceSettingsBearerTokenFlag = mailingListGetGrpsioServiceSettingsFlags.String("bearer-token", "", "")
+		mailingListDeleteGroupsioServiceFlags           = flag.NewFlagSet("delete-groupsio-service", flag.ExitOnError)
+		mailingListDeleteGroupsioServiceServiceIDFlag   = mailingListDeleteGroupsioServiceFlags.String("service-id", "REQUIRED", "Service ID")
+		mailingListDeleteGroupsioServiceBearerTokenFlag = mailingListDeleteGroupsioServiceFlags.String("bearer-token", "", "")
 
-		mailingListUpdateGrpsioServiceSettingsFlags           = flag.NewFlagSet("update-grpsio-service-settings", flag.ExitOnError)
-		mailingListUpdateGrpsioServiceSettingsBodyFlag        = mailingListUpdateGrpsioServiceSettingsFlags.String("body", "REQUIRED", "")
-		mailingListUpdateGrpsioServiceSettingsUIDFlag         = mailingListUpdateGrpsioServiceSettingsFlags.String("uid", "REQUIRED", "Service UID -- unique identifier for the service")
-		mailingListUpdateGrpsioServiceSettingsVersionFlag     = mailingListUpdateGrpsioServiceSettingsFlags.String("version", "REQUIRED", "")
-		mailingListUpdateGrpsioServiceSettingsBearerTokenFlag = mailingListUpdateGrpsioServiceSettingsFlags.String("bearer-token", "", "")
-		mailingListUpdateGrpsioServiceSettingsIfMatchFlag     = mailingListUpdateGrpsioServiceSettingsFlags.String("if-match", "", "")
+		mailingListGetGroupsioServiceProjectsFlags           = flag.NewFlagSet("get-groupsio-service-projects", flag.ExitOnError)
+		mailingListGetGroupsioServiceProjectsBearerTokenFlag = mailingListGetGroupsioServiceProjectsFlags.String("bearer-token", "", "")
 
-		mailingListCreateGrpsioMailingListFlags           = flag.NewFlagSet("create-grpsio-mailing-list", flag.ExitOnError)
-		mailingListCreateGrpsioMailingListBodyFlag        = mailingListCreateGrpsioMailingListFlags.String("body", "REQUIRED", "")
-		mailingListCreateGrpsioMailingListVersionFlag     = mailingListCreateGrpsioMailingListFlags.String("version", "REQUIRED", "")
-		mailingListCreateGrpsioMailingListBearerTokenFlag = mailingListCreateGrpsioMailingListFlags.String("bearer-token", "", "")
+		mailingListFindParentGroupsioServiceFlags           = flag.NewFlagSet("find-parent-groupsio-service", flag.ExitOnError)
+		mailingListFindParentGroupsioServiceProjectUIDFlag  = mailingListFindParentGroupsioServiceFlags.String("project-uid", "REQUIRED", "")
+		mailingListFindParentGroupsioServiceBearerTokenFlag = mailingListFindParentGroupsioServiceFlags.String("bearer-token", "", "")
 
-		mailingListGetGrpsioMailingListFlags           = flag.NewFlagSet("get-grpsio-mailing-list", flag.ExitOnError)
-		mailingListGetGrpsioMailingListUIDFlag         = mailingListGetGrpsioMailingListFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListGetGrpsioMailingListVersionFlag     = mailingListGetGrpsioMailingListFlags.String("version", "REQUIRED", "")
-		mailingListGetGrpsioMailingListBearerTokenFlag = mailingListGetGrpsioMailingListFlags.String("bearer-token", "REQUIRED", "")
+		mailingListListGroupsioMailingListsFlags            = flag.NewFlagSet("list-groupsio-mailing-lists", flag.ExitOnError)
+		mailingListListGroupsioMailingListsProjectUIDFlag   = mailingListListGroupsioMailingListsFlags.String("project-uid", "", "")
+		mailingListListGroupsioMailingListsCommitteeUIDFlag = mailingListListGroupsioMailingListsFlags.String("committee-uid", "", "")
+		mailingListListGroupsioMailingListsBearerTokenFlag  = mailingListListGroupsioMailingListsFlags.String("bearer-token", "", "")
 
-		mailingListUpdateGrpsioMailingListFlags           = flag.NewFlagSet("update-grpsio-mailing-list", flag.ExitOnError)
-		mailingListUpdateGrpsioMailingListBodyFlag        = mailingListUpdateGrpsioMailingListFlags.String("body", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListUIDFlag         = mailingListUpdateGrpsioMailingListFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListUpdateGrpsioMailingListVersionFlag     = mailingListUpdateGrpsioMailingListFlags.String("version", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListBearerTokenFlag = mailingListUpdateGrpsioMailingListFlags.String("bearer-token", "", "")
-		mailingListUpdateGrpsioMailingListIfMatchFlag     = mailingListUpdateGrpsioMailingListFlags.String("if-match", "", "")
+		mailingListCreateGroupsioMailingListFlags           = flag.NewFlagSet("create-groupsio-mailing-list", flag.ExitOnError)
+		mailingListCreateGroupsioMailingListBodyFlag        = mailingListCreateGroupsioMailingListFlags.String("body", "REQUIRED", "")
+		mailingListCreateGroupsioMailingListBearerTokenFlag = mailingListCreateGroupsioMailingListFlags.String("bearer-token", "", "")
 
-		mailingListDeleteGrpsioMailingListFlags           = flag.NewFlagSet("delete-grpsio-mailing-list", flag.ExitOnError)
-		mailingListDeleteGrpsioMailingListUIDFlag         = mailingListDeleteGrpsioMailingListFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListDeleteGrpsioMailingListVersionFlag     = mailingListDeleteGrpsioMailingListFlags.String("version", "", "")
-		mailingListDeleteGrpsioMailingListBearerTokenFlag = mailingListDeleteGrpsioMailingListFlags.String("bearer-token", "", "")
-		mailingListDeleteGrpsioMailingListIfMatchFlag     = mailingListDeleteGrpsioMailingListFlags.String("if-match", "", "")
+		mailingListGetGroupsioMailingListFlags           = flag.NewFlagSet("get-groupsio-mailing-list", flag.ExitOnError)
+		mailingListGetGroupsioMailingListSubgroupIDFlag  = mailingListGetGroupsioMailingListFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMailingListBearerTokenFlag = mailingListGetGroupsioMailingListFlags.String("bearer-token", "", "")
 
-		mailingListGetGrpsioMailingListSettingsFlags           = flag.NewFlagSet("get-grpsio-mailing-list-settings", flag.ExitOnError)
-		mailingListGetGrpsioMailingListSettingsUIDFlag         = mailingListGetGrpsioMailingListSettingsFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListGetGrpsioMailingListSettingsVersionFlag     = mailingListGetGrpsioMailingListSettingsFlags.String("version", "", "")
-		mailingListGetGrpsioMailingListSettingsBearerTokenFlag = mailingListGetGrpsioMailingListSettingsFlags.String("bearer-token", "", "")
+		mailingListUpdateGroupsioMailingListFlags           = flag.NewFlagSet("update-groupsio-mailing-list", flag.ExitOnError)
+		mailingListUpdateGroupsioMailingListBodyFlag        = mailingListUpdateGroupsioMailingListFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGroupsioMailingListSubgroupIDFlag  = mailingListUpdateGroupsioMailingListFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListUpdateGroupsioMailingListBearerTokenFlag = mailingListUpdateGroupsioMailingListFlags.String("bearer-token", "", "")
 
-		mailingListUpdateGrpsioMailingListSettingsFlags           = flag.NewFlagSet("update-grpsio-mailing-list-settings", flag.ExitOnError)
-		mailingListUpdateGrpsioMailingListSettingsBodyFlag        = mailingListUpdateGrpsioMailingListSettingsFlags.String("body", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListSettingsUIDFlag         = mailingListUpdateGrpsioMailingListSettingsFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListUpdateGrpsioMailingListSettingsVersionFlag     = mailingListUpdateGrpsioMailingListSettingsFlags.String("version", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListSettingsBearerTokenFlag = mailingListUpdateGrpsioMailingListSettingsFlags.String("bearer-token", "", "")
-		mailingListUpdateGrpsioMailingListSettingsIfMatchFlag     = mailingListUpdateGrpsioMailingListSettingsFlags.String("if-match", "", "")
+		mailingListDeleteGroupsioMailingListFlags           = flag.NewFlagSet("delete-groupsio-mailing-list", flag.ExitOnError)
+		mailingListDeleteGroupsioMailingListSubgroupIDFlag  = mailingListDeleteGroupsioMailingListFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListDeleteGroupsioMailingListBearerTokenFlag = mailingListDeleteGroupsioMailingListFlags.String("bearer-token", "", "")
 
-		mailingListCreateGrpsioMailingListMemberFlags           = flag.NewFlagSet("create-grpsio-mailing-list-member", flag.ExitOnError)
-		mailingListCreateGrpsioMailingListMemberBodyFlag        = mailingListCreateGrpsioMailingListMemberFlags.String("body", "REQUIRED", "")
-		mailingListCreateGrpsioMailingListMemberUIDFlag         = mailingListCreateGrpsioMailingListMemberFlags.String("uid", "REQUIRED", "Mailing list UID")
-		mailingListCreateGrpsioMailingListMemberVersionFlag     = mailingListCreateGrpsioMailingListMemberFlags.String("version", "REQUIRED", "")
-		mailingListCreateGrpsioMailingListMemberBearerTokenFlag = mailingListCreateGrpsioMailingListMemberFlags.String("bearer-token", "", "")
+		mailingListGetGroupsioMailingListCountFlags           = flag.NewFlagSet("get-groupsio-mailing-list-count", flag.ExitOnError)
+		mailingListGetGroupsioMailingListCountProjectUIDFlag  = mailingListGetGroupsioMailingListCountFlags.String("project-uid", "REQUIRED", "")
+		mailingListGetGroupsioMailingListCountBearerTokenFlag = mailingListGetGroupsioMailingListCountFlags.String("bearer-token", "", "")
 
-		mailingListGetGrpsioMailingListMemberFlags           = flag.NewFlagSet("get-grpsio-mailing-list-member", flag.ExitOnError)
-		mailingListGetGrpsioMailingListMemberUIDFlag         = mailingListGetGrpsioMailingListMemberFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListGetGrpsioMailingListMemberMemberUIDFlag   = mailingListGetGrpsioMailingListMemberFlags.String("member-uid", "REQUIRED", "Member UID -- unique identifier for the member")
-		mailingListGetGrpsioMailingListMemberVersionFlag     = mailingListGetGrpsioMailingListMemberFlags.String("version", "REQUIRED", "")
-		mailingListGetGrpsioMailingListMemberBearerTokenFlag = mailingListGetGrpsioMailingListMemberFlags.String("bearer-token", "REQUIRED", "")
+		mailingListGetGroupsioMailingListMemberCountFlags           = flag.NewFlagSet("get-groupsio-mailing-list-member-count", flag.ExitOnError)
+		mailingListGetGroupsioMailingListMemberCountSubgroupIDFlag  = mailingListGetGroupsioMailingListMemberCountFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMailingListMemberCountBearerTokenFlag = mailingListGetGroupsioMailingListMemberCountFlags.String("bearer-token", "", "")
 
-		mailingListUpdateGrpsioMailingListMemberFlags           = flag.NewFlagSet("update-grpsio-mailing-list-member", flag.ExitOnError)
-		mailingListUpdateGrpsioMailingListMemberBodyFlag        = mailingListUpdateGrpsioMailingListMemberFlags.String("body", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListMemberUIDFlag         = mailingListUpdateGrpsioMailingListMemberFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListUpdateGrpsioMailingListMemberMemberUIDFlag   = mailingListUpdateGrpsioMailingListMemberFlags.String("member-uid", "REQUIRED", "Member UID -- unique identifier for the member")
-		mailingListUpdateGrpsioMailingListMemberVersionFlag     = mailingListUpdateGrpsioMailingListMemberFlags.String("version", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListMemberBearerTokenFlag = mailingListUpdateGrpsioMailingListMemberFlags.String("bearer-token", "REQUIRED", "")
-		mailingListUpdateGrpsioMailingListMemberIfMatchFlag     = mailingListUpdateGrpsioMailingListMemberFlags.String("if-match", "REQUIRED", "")
+		mailingListListGroupsioMembersFlags           = flag.NewFlagSet("list-groupsio-members", flag.ExitOnError)
+		mailingListListGroupsioMembersSubgroupIDFlag  = mailingListListGroupsioMembersFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListListGroupsioMembersBearerTokenFlag = mailingListListGroupsioMembersFlags.String("bearer-token", "", "")
 
-		mailingListDeleteGrpsioMailingListMemberFlags           = flag.NewFlagSet("delete-grpsio-mailing-list-member", flag.ExitOnError)
-		mailingListDeleteGrpsioMailingListMemberUIDFlag         = mailingListDeleteGrpsioMailingListMemberFlags.String("uid", "REQUIRED", "Mailing list UID -- unique identifier for the mailing list")
-		mailingListDeleteGrpsioMailingListMemberMemberUIDFlag   = mailingListDeleteGrpsioMailingListMemberFlags.String("member-uid", "REQUIRED", "Member UID -- unique identifier for the member")
-		mailingListDeleteGrpsioMailingListMemberVersionFlag     = mailingListDeleteGrpsioMailingListMemberFlags.String("version", "REQUIRED", "")
-		mailingListDeleteGrpsioMailingListMemberBearerTokenFlag = mailingListDeleteGrpsioMailingListMemberFlags.String("bearer-token", "REQUIRED", "")
-		mailingListDeleteGrpsioMailingListMemberIfMatchFlag     = mailingListDeleteGrpsioMailingListMemberFlags.String("if-match", "REQUIRED", "")
+		mailingListAddGroupsioMemberFlags           = flag.NewFlagSet("add-groupsio-member", flag.ExitOnError)
+		mailingListAddGroupsioMemberBodyFlag        = mailingListAddGroupsioMemberFlags.String("body", "REQUIRED", "")
+		mailingListAddGroupsioMemberSubgroupIDFlag  = mailingListAddGroupsioMemberFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListAddGroupsioMemberBearerTokenFlag = mailingListAddGroupsioMemberFlags.String("bearer-token", "", "")
 
-		mailingListGroupsioWebhookFlags         = flag.NewFlagSet("groupsio-webhook", flag.ExitOnError)
-		mailingListGroupsioWebhookBodyFlag      = mailingListGroupsioWebhookFlags.String("body", "REQUIRED", "")
-		mailingListGroupsioWebhookSignatureFlag = mailingListGroupsioWebhookFlags.String("signature", "REQUIRED", "")
+		mailingListGetGroupsioMemberFlags           = flag.NewFlagSet("get-groupsio-member", flag.ExitOnError)
+		mailingListGetGroupsioMemberSubgroupIDFlag  = mailingListGetGroupsioMemberFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMemberMemberIDFlag    = mailingListGetGroupsioMemberFlags.String("member-id", "REQUIRED", "Member ID")
+		mailingListGetGroupsioMemberBearerTokenFlag = mailingListGetGroupsioMemberFlags.String("bearer-token", "", "")
+
+		mailingListUpdateGroupsioMemberFlags           = flag.NewFlagSet("update-groupsio-member", flag.ExitOnError)
+		mailingListUpdateGroupsioMemberBodyFlag        = mailingListUpdateGroupsioMemberFlags.String("body", "REQUIRED", "")
+		mailingListUpdateGroupsioMemberSubgroupIDFlag  = mailingListUpdateGroupsioMemberFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListUpdateGroupsioMemberMemberIDFlag    = mailingListUpdateGroupsioMemberFlags.String("member-id", "REQUIRED", "Member ID")
+		mailingListUpdateGroupsioMemberBearerTokenFlag = mailingListUpdateGroupsioMemberFlags.String("bearer-token", "", "")
+
+		mailingListDeleteGroupsioMemberFlags           = flag.NewFlagSet("delete-groupsio-member", flag.ExitOnError)
+		mailingListDeleteGroupsioMemberSubgroupIDFlag  = mailingListDeleteGroupsioMemberFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListDeleteGroupsioMemberMemberIDFlag    = mailingListDeleteGroupsioMemberFlags.String("member-id", "REQUIRED", "Member ID")
+		mailingListDeleteGroupsioMemberBearerTokenFlag = mailingListDeleteGroupsioMemberFlags.String("bearer-token", "", "")
+
+		mailingListInviteGroupsioMembersFlags           = flag.NewFlagSet("invite-groupsio-members", flag.ExitOnError)
+		mailingListInviteGroupsioMembersBodyFlag        = mailingListInviteGroupsioMembersFlags.String("body", "REQUIRED", "")
+		mailingListInviteGroupsioMembersSubgroupIDFlag  = mailingListInviteGroupsioMembersFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListInviteGroupsioMembersBearerTokenFlag = mailingListInviteGroupsioMembersFlags.String("bearer-token", "", "")
+
+		mailingListCheckGroupsioSubscriberFlags           = flag.NewFlagSet("check-groupsio-subscriber", flag.ExitOnError)
+		mailingListCheckGroupsioSubscriberBodyFlag        = mailingListCheckGroupsioSubscriberFlags.String("body", "REQUIRED", "")
+		mailingListCheckGroupsioSubscriberBearerTokenFlag = mailingListCheckGroupsioSubscriberFlags.String("bearer-token", "", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
 	mailingListLivezFlags.Usage = mailingListLivezUsage
 	mailingListReadyzFlags.Usage = mailingListReadyzUsage
-	mailingListCreateGrpsioServiceFlags.Usage = mailingListCreateGrpsioServiceUsage
-	mailingListGetGrpsioServiceFlags.Usage = mailingListGetGrpsioServiceUsage
-	mailingListUpdateGrpsioServiceFlags.Usage = mailingListUpdateGrpsioServiceUsage
-	mailingListDeleteGrpsioServiceFlags.Usage = mailingListDeleteGrpsioServiceUsage
-	mailingListGetGrpsioServiceSettingsFlags.Usage = mailingListGetGrpsioServiceSettingsUsage
-	mailingListUpdateGrpsioServiceSettingsFlags.Usage = mailingListUpdateGrpsioServiceSettingsUsage
-	mailingListCreateGrpsioMailingListFlags.Usage = mailingListCreateGrpsioMailingListUsage
-	mailingListGetGrpsioMailingListFlags.Usage = mailingListGetGrpsioMailingListUsage
-	mailingListUpdateGrpsioMailingListFlags.Usage = mailingListUpdateGrpsioMailingListUsage
-	mailingListDeleteGrpsioMailingListFlags.Usage = mailingListDeleteGrpsioMailingListUsage
-	mailingListGetGrpsioMailingListSettingsFlags.Usage = mailingListGetGrpsioMailingListSettingsUsage
-	mailingListUpdateGrpsioMailingListSettingsFlags.Usage = mailingListUpdateGrpsioMailingListSettingsUsage
-	mailingListCreateGrpsioMailingListMemberFlags.Usage = mailingListCreateGrpsioMailingListMemberUsage
-	mailingListGetGrpsioMailingListMemberFlags.Usage = mailingListGetGrpsioMailingListMemberUsage
-	mailingListUpdateGrpsioMailingListMemberFlags.Usage = mailingListUpdateGrpsioMailingListMemberUsage
-	mailingListDeleteGrpsioMailingListMemberFlags.Usage = mailingListDeleteGrpsioMailingListMemberUsage
-	mailingListGroupsioWebhookFlags.Usage = mailingListGroupsioWebhookUsage
+	mailingListListGroupsioServicesFlags.Usage = mailingListListGroupsioServicesUsage
+	mailingListCreateGroupsioServiceFlags.Usage = mailingListCreateGroupsioServiceUsage
+	mailingListGetGroupsioServiceFlags.Usage = mailingListGetGroupsioServiceUsage
+	mailingListUpdateGroupsioServiceFlags.Usage = mailingListUpdateGroupsioServiceUsage
+	mailingListDeleteGroupsioServiceFlags.Usage = mailingListDeleteGroupsioServiceUsage
+	mailingListGetGroupsioServiceProjectsFlags.Usage = mailingListGetGroupsioServiceProjectsUsage
+	mailingListFindParentGroupsioServiceFlags.Usage = mailingListFindParentGroupsioServiceUsage
+	mailingListListGroupsioMailingListsFlags.Usage = mailingListListGroupsioMailingListsUsage
+	mailingListCreateGroupsioMailingListFlags.Usage = mailingListCreateGroupsioMailingListUsage
+	mailingListGetGroupsioMailingListFlags.Usage = mailingListGetGroupsioMailingListUsage
+	mailingListUpdateGroupsioMailingListFlags.Usage = mailingListUpdateGroupsioMailingListUsage
+	mailingListDeleteGroupsioMailingListFlags.Usage = mailingListDeleteGroupsioMailingListUsage
+	mailingListGetGroupsioMailingListCountFlags.Usage = mailingListGetGroupsioMailingListCountUsage
+	mailingListGetGroupsioMailingListMemberCountFlags.Usage = mailingListGetGroupsioMailingListMemberCountUsage
+	mailingListListGroupsioMembersFlags.Usage = mailingListListGroupsioMembersUsage
+	mailingListAddGroupsioMemberFlags.Usage = mailingListAddGroupsioMemberUsage
+	mailingListGetGroupsioMemberFlags.Usage = mailingListGetGroupsioMemberUsage
+	mailingListUpdateGroupsioMemberFlags.Usage = mailingListUpdateGroupsioMemberUsage
+	mailingListDeleteGroupsioMemberFlags.Usage = mailingListDeleteGroupsioMemberUsage
+	mailingListInviteGroupsioMembersFlags.Usage = mailingListInviteGroupsioMembersUsage
+	mailingListCheckGroupsioSubscriberFlags.Usage = mailingListCheckGroupsioSubscriberUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -211,56 +206,68 @@ func ParseEndpoint(
 			case "readyz":
 				epf = mailingListReadyzFlags
 
-			case "create-grpsio-service":
-				epf = mailingListCreateGrpsioServiceFlags
+			case "list-groupsio-services":
+				epf = mailingListListGroupsioServicesFlags
 
-			case "get-grpsio-service":
-				epf = mailingListGetGrpsioServiceFlags
+			case "create-groupsio-service":
+				epf = mailingListCreateGroupsioServiceFlags
 
-			case "update-grpsio-service":
-				epf = mailingListUpdateGrpsioServiceFlags
+			case "get-groupsio-service":
+				epf = mailingListGetGroupsioServiceFlags
 
-			case "delete-grpsio-service":
-				epf = mailingListDeleteGrpsioServiceFlags
+			case "update-groupsio-service":
+				epf = mailingListUpdateGroupsioServiceFlags
 
-			case "get-grpsio-service-settings":
-				epf = mailingListGetGrpsioServiceSettingsFlags
+			case "delete-groupsio-service":
+				epf = mailingListDeleteGroupsioServiceFlags
 
-			case "update-grpsio-service-settings":
-				epf = mailingListUpdateGrpsioServiceSettingsFlags
+			case "get-groupsio-service-projects":
+				epf = mailingListGetGroupsioServiceProjectsFlags
 
-			case "create-grpsio-mailing-list":
-				epf = mailingListCreateGrpsioMailingListFlags
+			case "find-parent-groupsio-service":
+				epf = mailingListFindParentGroupsioServiceFlags
 
-			case "get-grpsio-mailing-list":
-				epf = mailingListGetGrpsioMailingListFlags
+			case "list-groupsio-mailing-lists":
+				epf = mailingListListGroupsioMailingListsFlags
 
-			case "update-grpsio-mailing-list":
-				epf = mailingListUpdateGrpsioMailingListFlags
+			case "create-groupsio-mailing-list":
+				epf = mailingListCreateGroupsioMailingListFlags
 
-			case "delete-grpsio-mailing-list":
-				epf = mailingListDeleteGrpsioMailingListFlags
+			case "get-groupsio-mailing-list":
+				epf = mailingListGetGroupsioMailingListFlags
 
-			case "get-grpsio-mailing-list-settings":
-				epf = mailingListGetGrpsioMailingListSettingsFlags
+			case "update-groupsio-mailing-list":
+				epf = mailingListUpdateGroupsioMailingListFlags
 
-			case "update-grpsio-mailing-list-settings":
-				epf = mailingListUpdateGrpsioMailingListSettingsFlags
+			case "delete-groupsio-mailing-list":
+				epf = mailingListDeleteGroupsioMailingListFlags
 
-			case "create-grpsio-mailing-list-member":
-				epf = mailingListCreateGrpsioMailingListMemberFlags
+			case "get-groupsio-mailing-list-count":
+				epf = mailingListGetGroupsioMailingListCountFlags
 
-			case "get-grpsio-mailing-list-member":
-				epf = mailingListGetGrpsioMailingListMemberFlags
+			case "get-groupsio-mailing-list-member-count":
+				epf = mailingListGetGroupsioMailingListMemberCountFlags
 
-			case "update-grpsio-mailing-list-member":
-				epf = mailingListUpdateGrpsioMailingListMemberFlags
+			case "list-groupsio-members":
+				epf = mailingListListGroupsioMembersFlags
 
-			case "delete-grpsio-mailing-list-member":
-				epf = mailingListDeleteGrpsioMailingListMemberFlags
+			case "add-groupsio-member":
+				epf = mailingListAddGroupsioMemberFlags
 
-			case "groupsio-webhook":
-				epf = mailingListGroupsioWebhookFlags
+			case "get-groupsio-member":
+				epf = mailingListGetGroupsioMemberFlags
+
+			case "update-groupsio-member":
+				epf = mailingListUpdateGroupsioMemberFlags
+
+			case "delete-groupsio-member":
+				epf = mailingListDeleteGroupsioMemberFlags
+
+			case "invite-groupsio-members":
+				epf = mailingListInviteGroupsioMembersFlags
+
+			case "check-groupsio-subscriber":
+				epf = mailingListCheckGroupsioSubscriberFlags
 
 			}
 
@@ -291,57 +298,69 @@ func ParseEndpoint(
 				endpoint = c.Livez()
 			case "readyz":
 				endpoint = c.Readyz()
-			case "create-grpsio-service":
-				endpoint = c.CreateGrpsioService()
-				data, err = mailinglistc.BuildCreateGrpsioServicePayload(*mailingListCreateGrpsioServiceBodyFlag, *mailingListCreateGrpsioServiceVersionFlag, *mailingListCreateGrpsioServiceBearerTokenFlag)
-			case "get-grpsio-service":
-				endpoint = c.GetGrpsioService()
-				data, err = mailinglistc.BuildGetGrpsioServicePayload(*mailingListGetGrpsioServiceUIDFlag, *mailingListGetGrpsioServiceVersionFlag, *mailingListGetGrpsioServiceBearerTokenFlag)
-			case "update-grpsio-service":
-				endpoint = c.UpdateGrpsioService()
-				data, err = mailinglistc.BuildUpdateGrpsioServicePayload(*mailingListUpdateGrpsioServiceBodyFlag, *mailingListUpdateGrpsioServiceUIDFlag, *mailingListUpdateGrpsioServiceVersionFlag, *mailingListUpdateGrpsioServiceBearerTokenFlag, *mailingListUpdateGrpsioServiceIfMatchFlag)
-			case "delete-grpsio-service":
-				endpoint = c.DeleteGrpsioService()
-				data, err = mailinglistc.BuildDeleteGrpsioServicePayload(*mailingListDeleteGrpsioServiceUIDFlag, *mailingListDeleteGrpsioServiceVersionFlag, *mailingListDeleteGrpsioServiceBearerTokenFlag, *mailingListDeleteGrpsioServiceIfMatchFlag)
-			case "get-grpsio-service-settings":
-				endpoint = c.GetGrpsioServiceSettings()
-				data, err = mailinglistc.BuildGetGrpsioServiceSettingsPayload(*mailingListGetGrpsioServiceSettingsUIDFlag, *mailingListGetGrpsioServiceSettingsVersionFlag, *mailingListGetGrpsioServiceSettingsBearerTokenFlag)
-			case "update-grpsio-service-settings":
-				endpoint = c.UpdateGrpsioServiceSettings()
-				data, err = mailinglistc.BuildUpdateGrpsioServiceSettingsPayload(*mailingListUpdateGrpsioServiceSettingsBodyFlag, *mailingListUpdateGrpsioServiceSettingsUIDFlag, *mailingListUpdateGrpsioServiceSettingsVersionFlag, *mailingListUpdateGrpsioServiceSettingsBearerTokenFlag, *mailingListUpdateGrpsioServiceSettingsIfMatchFlag)
-			case "create-grpsio-mailing-list":
-				endpoint = c.CreateGrpsioMailingList()
-				data, err = mailinglistc.BuildCreateGrpsioMailingListPayload(*mailingListCreateGrpsioMailingListBodyFlag, *mailingListCreateGrpsioMailingListVersionFlag, *mailingListCreateGrpsioMailingListBearerTokenFlag)
-			case "get-grpsio-mailing-list":
-				endpoint = c.GetGrpsioMailingList()
-				data, err = mailinglistc.BuildGetGrpsioMailingListPayload(*mailingListGetGrpsioMailingListUIDFlag, *mailingListGetGrpsioMailingListVersionFlag, *mailingListGetGrpsioMailingListBearerTokenFlag)
-			case "update-grpsio-mailing-list":
-				endpoint = c.UpdateGrpsioMailingList()
-				data, err = mailinglistc.BuildUpdateGrpsioMailingListPayload(*mailingListUpdateGrpsioMailingListBodyFlag, *mailingListUpdateGrpsioMailingListUIDFlag, *mailingListUpdateGrpsioMailingListVersionFlag, *mailingListUpdateGrpsioMailingListBearerTokenFlag, *mailingListUpdateGrpsioMailingListIfMatchFlag)
-			case "delete-grpsio-mailing-list":
-				endpoint = c.DeleteGrpsioMailingList()
-				data, err = mailinglistc.BuildDeleteGrpsioMailingListPayload(*mailingListDeleteGrpsioMailingListUIDFlag, *mailingListDeleteGrpsioMailingListVersionFlag, *mailingListDeleteGrpsioMailingListBearerTokenFlag, *mailingListDeleteGrpsioMailingListIfMatchFlag)
-			case "get-grpsio-mailing-list-settings":
-				endpoint = c.GetGrpsioMailingListSettings()
-				data, err = mailinglistc.BuildGetGrpsioMailingListSettingsPayload(*mailingListGetGrpsioMailingListSettingsUIDFlag, *mailingListGetGrpsioMailingListSettingsVersionFlag, *mailingListGetGrpsioMailingListSettingsBearerTokenFlag)
-			case "update-grpsio-mailing-list-settings":
-				endpoint = c.UpdateGrpsioMailingListSettings()
-				data, err = mailinglistc.BuildUpdateGrpsioMailingListSettingsPayload(*mailingListUpdateGrpsioMailingListSettingsBodyFlag, *mailingListUpdateGrpsioMailingListSettingsUIDFlag, *mailingListUpdateGrpsioMailingListSettingsVersionFlag, *mailingListUpdateGrpsioMailingListSettingsBearerTokenFlag, *mailingListUpdateGrpsioMailingListSettingsIfMatchFlag)
-			case "create-grpsio-mailing-list-member":
-				endpoint = c.CreateGrpsioMailingListMember()
-				data, err = mailinglistc.BuildCreateGrpsioMailingListMemberPayload(*mailingListCreateGrpsioMailingListMemberBodyFlag, *mailingListCreateGrpsioMailingListMemberUIDFlag, *mailingListCreateGrpsioMailingListMemberVersionFlag, *mailingListCreateGrpsioMailingListMemberBearerTokenFlag)
-			case "get-grpsio-mailing-list-member":
-				endpoint = c.GetGrpsioMailingListMember()
-				data, err = mailinglistc.BuildGetGrpsioMailingListMemberPayload(*mailingListGetGrpsioMailingListMemberUIDFlag, *mailingListGetGrpsioMailingListMemberMemberUIDFlag, *mailingListGetGrpsioMailingListMemberVersionFlag, *mailingListGetGrpsioMailingListMemberBearerTokenFlag)
-			case "update-grpsio-mailing-list-member":
-				endpoint = c.UpdateGrpsioMailingListMember()
-				data, err = mailinglistc.BuildUpdateGrpsioMailingListMemberPayload(*mailingListUpdateGrpsioMailingListMemberBodyFlag, *mailingListUpdateGrpsioMailingListMemberUIDFlag, *mailingListUpdateGrpsioMailingListMemberMemberUIDFlag, *mailingListUpdateGrpsioMailingListMemberVersionFlag, *mailingListUpdateGrpsioMailingListMemberBearerTokenFlag, *mailingListUpdateGrpsioMailingListMemberIfMatchFlag)
-			case "delete-grpsio-mailing-list-member":
-				endpoint = c.DeleteGrpsioMailingListMember()
-				data, err = mailinglistc.BuildDeleteGrpsioMailingListMemberPayload(*mailingListDeleteGrpsioMailingListMemberUIDFlag, *mailingListDeleteGrpsioMailingListMemberMemberUIDFlag, *mailingListDeleteGrpsioMailingListMemberVersionFlag, *mailingListDeleteGrpsioMailingListMemberBearerTokenFlag, *mailingListDeleteGrpsioMailingListMemberIfMatchFlag)
-			case "groupsio-webhook":
-				endpoint = c.GroupsioWebhook()
-				data, err = mailinglistc.BuildGroupsioWebhookPayload(*mailingListGroupsioWebhookBodyFlag, *mailingListGroupsioWebhookSignatureFlag)
+			case "list-groupsio-services":
+				endpoint = c.ListGroupsioServices()
+				data, err = mailinglistc.BuildListGroupsioServicesPayload(*mailingListListGroupsioServicesProjectUIDFlag, *mailingListListGroupsioServicesBearerTokenFlag)
+			case "create-groupsio-service":
+				endpoint = c.CreateGroupsioService()
+				data, err = mailinglistc.BuildCreateGroupsioServicePayload(*mailingListCreateGroupsioServiceBodyFlag, *mailingListCreateGroupsioServiceBearerTokenFlag)
+			case "get-groupsio-service":
+				endpoint = c.GetGroupsioService()
+				data, err = mailinglistc.BuildGetGroupsioServicePayload(*mailingListGetGroupsioServiceServiceIDFlag, *mailingListGetGroupsioServiceBearerTokenFlag)
+			case "update-groupsio-service":
+				endpoint = c.UpdateGroupsioService()
+				data, err = mailinglistc.BuildUpdateGroupsioServicePayload(*mailingListUpdateGroupsioServiceBodyFlag, *mailingListUpdateGroupsioServiceServiceIDFlag, *mailingListUpdateGroupsioServiceBearerTokenFlag)
+			case "delete-groupsio-service":
+				endpoint = c.DeleteGroupsioService()
+				data, err = mailinglistc.BuildDeleteGroupsioServicePayload(*mailingListDeleteGroupsioServiceServiceIDFlag, *mailingListDeleteGroupsioServiceBearerTokenFlag)
+			case "get-groupsio-service-projects":
+				endpoint = c.GetGroupsioServiceProjects()
+				data, err = mailinglistc.BuildGetGroupsioServiceProjectsPayload(*mailingListGetGroupsioServiceProjectsBearerTokenFlag)
+			case "find-parent-groupsio-service":
+				endpoint = c.FindParentGroupsioService()
+				data, err = mailinglistc.BuildFindParentGroupsioServicePayload(*mailingListFindParentGroupsioServiceProjectUIDFlag, *mailingListFindParentGroupsioServiceBearerTokenFlag)
+			case "list-groupsio-mailing-lists":
+				endpoint = c.ListGroupsioMailingLists()
+				data, err = mailinglistc.BuildListGroupsioMailingListsPayload(*mailingListListGroupsioMailingListsProjectUIDFlag, *mailingListListGroupsioMailingListsCommitteeUIDFlag, *mailingListListGroupsioMailingListsBearerTokenFlag)
+			case "create-groupsio-mailing-list":
+				endpoint = c.CreateGroupsioMailingList()
+				data, err = mailinglistc.BuildCreateGroupsioMailingListPayload(*mailingListCreateGroupsioMailingListBodyFlag, *mailingListCreateGroupsioMailingListBearerTokenFlag)
+			case "get-groupsio-mailing-list":
+				endpoint = c.GetGroupsioMailingList()
+				data, err = mailinglistc.BuildGetGroupsioMailingListPayload(*mailingListGetGroupsioMailingListSubgroupIDFlag, *mailingListGetGroupsioMailingListBearerTokenFlag)
+			case "update-groupsio-mailing-list":
+				endpoint = c.UpdateGroupsioMailingList()
+				data, err = mailinglistc.BuildUpdateGroupsioMailingListPayload(*mailingListUpdateGroupsioMailingListBodyFlag, *mailingListUpdateGroupsioMailingListSubgroupIDFlag, *mailingListUpdateGroupsioMailingListBearerTokenFlag)
+			case "delete-groupsio-mailing-list":
+				endpoint = c.DeleteGroupsioMailingList()
+				data, err = mailinglistc.BuildDeleteGroupsioMailingListPayload(*mailingListDeleteGroupsioMailingListSubgroupIDFlag, *mailingListDeleteGroupsioMailingListBearerTokenFlag)
+			case "get-groupsio-mailing-list-count":
+				endpoint = c.GetGroupsioMailingListCount()
+				data, err = mailinglistc.BuildGetGroupsioMailingListCountPayload(*mailingListGetGroupsioMailingListCountProjectUIDFlag, *mailingListGetGroupsioMailingListCountBearerTokenFlag)
+			case "get-groupsio-mailing-list-member-count":
+				endpoint = c.GetGroupsioMailingListMemberCount()
+				data, err = mailinglistc.BuildGetGroupsioMailingListMemberCountPayload(*mailingListGetGroupsioMailingListMemberCountSubgroupIDFlag, *mailingListGetGroupsioMailingListMemberCountBearerTokenFlag)
+			case "list-groupsio-members":
+				endpoint = c.ListGroupsioMembers()
+				data, err = mailinglistc.BuildListGroupsioMembersPayload(*mailingListListGroupsioMembersSubgroupIDFlag, *mailingListListGroupsioMembersBearerTokenFlag)
+			case "add-groupsio-member":
+				endpoint = c.AddGroupsioMember()
+				data, err = mailinglistc.BuildAddGroupsioMemberPayload(*mailingListAddGroupsioMemberBodyFlag, *mailingListAddGroupsioMemberSubgroupIDFlag, *mailingListAddGroupsioMemberBearerTokenFlag)
+			case "get-groupsio-member":
+				endpoint = c.GetGroupsioMember()
+				data, err = mailinglistc.BuildGetGroupsioMemberPayload(*mailingListGetGroupsioMemberSubgroupIDFlag, *mailingListGetGroupsioMemberMemberIDFlag, *mailingListGetGroupsioMemberBearerTokenFlag)
+			case "update-groupsio-member":
+				endpoint = c.UpdateGroupsioMember()
+				data, err = mailinglistc.BuildUpdateGroupsioMemberPayload(*mailingListUpdateGroupsioMemberBodyFlag, *mailingListUpdateGroupsioMemberSubgroupIDFlag, *mailingListUpdateGroupsioMemberMemberIDFlag, *mailingListUpdateGroupsioMemberBearerTokenFlag)
+			case "delete-groupsio-member":
+				endpoint = c.DeleteGroupsioMember()
+				data, err = mailinglistc.BuildDeleteGroupsioMemberPayload(*mailingListDeleteGroupsioMemberSubgroupIDFlag, *mailingListDeleteGroupsioMemberMemberIDFlag, *mailingListDeleteGroupsioMemberBearerTokenFlag)
+			case "invite-groupsio-members":
+				endpoint = c.InviteGroupsioMembers()
+				data, err = mailinglistc.BuildInviteGroupsioMembersPayload(*mailingListInviteGroupsioMembersBodyFlag, *mailingListInviteGroupsioMembersSubgroupIDFlag, *mailingListInviteGroupsioMembersBearerTokenFlag)
+			case "check-groupsio-subscriber":
+				endpoint = c.CheckGroupsioSubscriber()
+				data, err = mailinglistc.BuildCheckGroupsioSubscriberPayload(*mailingListCheckGroupsioSubscriberBodyFlag, *mailingListCheckGroupsioSubscriberBearerTokenFlag)
 			}
 		}
 	}
@@ -355,30 +374,34 @@ func ParseEndpoint(
 // mailingListUsage displays the usage of the mailing-list command and its
 // subcommands.
 func mailingListUsage() {
-	fmt.Fprintf(os.Stderr, `The mailing list service manages mailing lists and services
+	fmt.Fprintf(os.Stderr, `The mailing list service proxies GroupsIO operations to the ITX API
 Usage:
     %[1]s [globalflags] mailing-list COMMAND [flags]
 
 COMMAND:
     livez: Check if the service is alive.
     readyz: Check if the service is able to take inbound requests.
-    create-grpsio-service: Create GroupsIO service with type-specific validation rules
-    get-grpsio-service: Get groupsIO service details by ID
-    update-grpsio-service: Update GroupsIO service
-    delete-grpsio-service: Delete GroupsIO service
-    get-grpsio-service-settings: Get GroupsIO service settings (writers and auditors)
-    update-grpsio-service-settings: Update GroupsIO service settings (writers and auditors)
-    create-grpsio-mailing-list: Create GroupsIO mailing list/subgroup with comprehensive validation
-    get-grpsio-mailing-list: Get GroupsIO mailing list details by UID
-    update-grpsio-mailing-list: Update GroupsIO mailing list
-    delete-grpsio-mailing-list: Delete GroupsIO mailing list
-    get-grpsio-mailing-list-settings: Get GroupsIO mailing list settings (writers and auditors)
-    update-grpsio-mailing-list-settings: Update GroupsIO mailing list settings (writers and auditors)
-    create-grpsio-mailing-list-member: Create a new member for a GroupsIO mailing list
-    get-grpsio-mailing-list-member: Get a member of a GroupsIO mailing list by UID
-    update-grpsio-mailing-list-member: Update a member of a GroupsIO mailing list
-    delete-grpsio-mailing-list-member: Delete a member from a GroupsIO mailing list
-    groupsio-webhook: Handle GroupsIO webhook events for subgroup and member changes
+    list-groupsio-services: List GroupsIO services, optionally filtered by project UID
+    create-groupsio-service: Create a GroupsIO service
+    get-groupsio-service: Get a GroupsIO service by ID
+    update-groupsio-service: Update a GroupsIO service
+    delete-groupsio-service: Delete a GroupsIO service
+    get-groupsio-service-projects: Get projects that have GroupsIO services
+    find-parent-groupsio-service: Find the parent GroupsIO service for a project
+    list-groupsio-mailing-lists: List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
+    create-groupsio-mailing-list: Create a GroupsIO subgroup
+    get-groupsio-mailing-list: Get a GroupsIO subgroup by ID
+    update-groupsio-mailing-list: Update a GroupsIO subgroup
+    delete-groupsio-mailing-list: Delete a GroupsIO subgroup
+    get-groupsio-mailing-list-count: Get count of GroupsIO subgroups for a project
+    get-groupsio-mailing-list-member-count: Get count of members in a GroupsIO subgroup
+    list-groupsio-members: List members of a GroupsIO subgroup
+    add-groupsio-member: Add a member to a GroupsIO subgroup
+    get-groupsio-member: Get a member of a GroupsIO subgroup by ID
+    update-groupsio-member: Update a member of a GroupsIO subgroup
+    delete-groupsio-member: Delete a member from a GroupsIO subgroup
+    invite-groupsio-members: Invite members to a GroupsIO subgroup by email
+    check-groupsio-subscriber: Check if an email address is subscribed to a GroupsIO subgroup
 
 Additional help:
     %[1]s mailing-list COMMAND --help
@@ -404,547 +427,321 @@ Example:
 `, os.Args[0])
 }
 
-func mailingListCreateGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-service -body JSON -version STRING -bearer-token STRING
+func mailingListListGroupsioServicesUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list list-groupsio-services -project-uid STRING -bearer-token STRING
 
-Create GroupsIO service with type-specific validation rules
-    -body JSON: 
-    -version STRING: 
+List GroupsIO services, optionally filtered by project UID
+    -project-uid STRING: 
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list create-grpsio-service --body '{
-      "auditors": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ],
-      "domain": "lists.project.org",
-      "global_owners": [
-         "admin@example.com"
-      ],
-      "group_id": 12345,
-      "group_name": "project-name",
-      "parent_service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "prefix": "formation",
-      "project_slug": "cncf",
+    %[1]s mailing-list list-groupsio-services --project-uid "3c007744-9efd-46c3-9885-da1856ec6d80" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListCreateGroupsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-groupsio-service -body JSON -bearer-token STRING
+
+Create a GroupsIO service
+    -body JSON: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list create-groupsio-service --body '{
+      "domain": "Perferendis eum ut blanditiis.",
+      "group_id": 8652374089567614400,
+      "prefix": "Rerum quasi molestias.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "public": true,
-      "status": "created",
-      "type": "primary",
-      "url": "https://lists.project.org",
-      "writers": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ]
-   }' --version "1" --bearer-token "eyJhbGci..."
+      "status": "Voluptatem itaque deleniti possimus distinctio magnam.",
+      "type": "v2_primary"
+   }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListGetGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-service -uid STRING -version STRING -bearer-token STRING
+func mailingListGetGroupsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-service -service-id STRING -bearer-token STRING
 
-Get groupsIO service details by ID
-    -uid STRING: Service UID -- unique identifier for the service
-    -version STRING: 
+Get a GroupsIO service by ID
+    -service-id STRING: Service ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-service --service-id "Quia voluptas dolorem inventore ducimus expedita." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListUpdateGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListUpdateGroupsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-groupsio-service -body JSON -service-id STRING -bearer-token STRING
 
-Update GroupsIO service
+Update a GroupsIO service
     -body JSON: 
-    -uid STRING: Service UID -- unique identifier for the service
-    -version STRING: 
+    -service-id STRING: Service ID
     -bearer-token STRING: 
-    -if-match STRING: 
 
 Example:
-    %[1]s mailing-list update-grpsio-service --body '{
-      "domain": "lists.project.org",
-      "global_owners": [
-         "admin@example.com"
-      ],
-      "group_id": 12345,
-      "group_name": "project-name",
-      "parent_service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "prefix": "formation",
-      "project_slug": "cncf",
+    %[1]s mailing-list update-groupsio-service --body '{
+      "domain": "Aliquid distinctio mollitia.",
+      "group_id": 7267254203065811520,
+      "prefix": "Et aut iste quaerat sit porro molestias.",
       "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "public": true,
-      "status": "created",
-      "type": "primary",
-      "url": "https://lists.project.org"
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+      "status": "Quibusdam odit omnis.",
+      "type": "v2_primary"
+   }' --service-id "Similique consectetur." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListDeleteGrpsioServiceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-service -uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListDeleteGroupsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-groupsio-service -service-id STRING -bearer-token STRING
 
-Delete GroupsIO service
-    -uid STRING: Service UID -- unique identifier for the service
-    -version STRING: 
-    -bearer-token STRING: 
-    -if-match STRING: 
-
-Example:
-    %[1]s mailing-list delete-grpsio-service --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
-`, os.Args[0])
-}
-
-func mailingListGetGrpsioServiceSettingsUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-service-settings -uid STRING -version STRING -bearer-token STRING
-
-Get GroupsIO service settings (writers and auditors)
-    -uid STRING: Service UID -- unique identifier for the service
-    -version STRING: 
+Delete a GroupsIO service
+    -service-id STRING: Service ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-service-settings --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list delete-groupsio-service --service-id "Occaecati eum labore et et adipisci quia." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListUpdateGrpsioServiceSettingsUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-service-settings -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListGetGroupsioServiceProjectsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-service-projects -bearer-token STRING
 
-Update GroupsIO service settings (writers and auditors)
+Get projects that have GroupsIO services
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-groupsio-service-projects --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListFindParentGroupsioServiceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list find-parent-groupsio-service -project-uid STRING -bearer-token STRING
+
+Find the parent GroupsIO service for a project
+    -project-uid STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list find-parent-groupsio-service --project-uid "406091c3-9777-4ffc-aef4-3e8410e4b396" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListListGroupsioMailingListsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list list-groupsio-mailing-lists -project-uid STRING -committee-uid STRING -bearer-token STRING
+
+List GroupsIO subgroups, optionally filtered by project UID and/or committee UID
+    -project-uid STRING: 
+    -committee-uid STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list list-groupsio-mailing-lists --project-uid "92bb1617-869d-4116-9621-9dfbe201b83c" --committee-uid "0c1d24c2-7641-430a-8d1f-acb054dd0bc1" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListCreateGroupsioMailingListUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-groupsio-mailing-list -body JSON -bearer-token STRING
+
+Create a GroupsIO subgroup
     -body JSON: 
-    -uid STRING: Service UID -- unique identifier for the service
-    -version STRING: 
     -bearer-token STRING: 
-    -if-match STRING: 
 
 Example:
-    %[1]s mailing-list update-grpsio-service-settings --body '{
-      "auditors": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ],
-      "writers": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ]
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+    %[1]s mailing-list create-groupsio-mailing-list --body '{
+      "audience_access": "Similique doloribus est.",
+      "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "description": "Quasi natus totam in sunt exercitationem.",
+      "group_id": 6153133482692657833,
+      "name": "Reprehenderit pariatur quam.",
+      "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "service_id": "Non sed velit.",
+      "type": "Animi dolore facilis ad nostrum ea."
+   }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListCreateGrpsioMailingListUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-mailing-list -body JSON -version STRING -bearer-token STRING
+func mailingListGetGroupsioMailingListUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-mailing-list -subgroup-id STRING -bearer-token STRING
 
-Create GroupsIO mailing list/subgroup with comprehensive validation
+Get a GroupsIO subgroup by ID
+    -subgroup-id STRING: Subgroup ID
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-groupsio-mailing-list --subgroup-id "Totam blanditiis consequatur molestiae odio." --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListUpdateGroupsioMailingListUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-groupsio-mailing-list -body JSON -subgroup-id STRING -bearer-token STRING
+
+Update a GroupsIO subgroup
     -body JSON: 
-    -version STRING: 
+    -subgroup-id STRING: Subgroup ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list create-grpsio-mailing-list --body '{
-      "audience_access": "public",
-      "auditors": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ],
-      "committees": [
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         }
-      ],
-      "description": "Technical steering committee discussions",
-      "group_id": 12345,
-      "group_name": "technical-steering-committee",
-      "public": false,
-      "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "subject_tag": "[TSC]",
-      "subscriber_count": 42,
-      "title": "Technical Steering Committee",
-      "type": "discussion_moderated",
-      "writers": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ]
-   }' --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list update-groupsio-mailing-list --body '{
+      "audience_access": "At quae distinctio dolore voluptas occaecati culpa.",
+      "committee_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "description": "Adipisci expedita et ducimus repellendus eveniet.",
+      "group_id": 5572662436592214257,
+      "name": "Aut et enim ut laudantium rerum at.",
+      "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+      "service_id": "Praesentium molestiae consequatur impedit esse mollitia voluptatem.",
+      "type": "Quia nobis est ut labore fuga in."
+   }' --subgroup-id "Pariatur quos sunt sint qui delectus eius." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListGetGrpsioMailingListUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-mailing-list -uid STRING -version STRING -bearer-token STRING
+func mailingListDeleteGroupsioMailingListUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-groupsio-mailing-list -subgroup-id STRING -bearer-token STRING
 
-Get GroupsIO mailing list details by UID
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -version STRING: 
+Delete a GroupsIO subgroup
+    -subgroup-id STRING: Subgroup ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-mailing-list --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list delete-groupsio-mailing-list --subgroup-id "Non magni." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListUpdateGrpsioMailingListUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-mailing-list -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListGetGroupsioMailingListCountUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-mailing-list-count -project-uid STRING -bearer-token STRING
 
-Update GroupsIO mailing list
+Get count of GroupsIO subgroups for a project
+    -project-uid STRING: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-groupsio-mailing-list-count --project-uid "4ca7a3d4-ecd1-47f6-ad40-0fbfbd7293e9" --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListGetGroupsioMailingListMemberCountUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-mailing-list-member-count -subgroup-id STRING -bearer-token STRING
+
+Get count of members in a GroupsIO subgroup
+    -subgroup-id STRING: Subgroup ID
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list get-groupsio-mailing-list-member-count --subgroup-id "Nihil officiis dignissimos nulla reiciendis voluptatibus." --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListListGroupsioMembersUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list list-groupsio-members -subgroup-id STRING -bearer-token STRING
+
+List members of a GroupsIO subgroup
+    -subgroup-id STRING: Subgroup ID
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list list-groupsio-members --subgroup-id "Vel adipisci a quam." --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListAddGroupsioMemberUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list add-groupsio-member -body JSON -subgroup-id STRING -bearer-token STRING
+
+Add a member to a GroupsIO subgroup
     -body JSON: 
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -version STRING: 
-    -bearer-token STRING: 
-    -if-match STRING: 
-
-Example:
-    %[1]s mailing-list update-grpsio-mailing-list --body '{
-      "audience_access": "public",
-      "committees": [
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         },
-         {
-            "allowed_voting_statuses": [
-               "Voting Rep",
-               "Alternate Voting Rep"
-            ],
-            "name": "Aliquid aliquid.",
-            "uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee"
-         }
-      ],
-      "description": "Technical steering committee discussions",
-      "group_id": 12345,
-      "group_name": "technical-steering-committee",
-      "public": false,
-      "service_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
-      "subject_tag": "[TSC]",
-      "subscriber_count": 42,
-      "title": "Technical Steering Committee",
-      "type": "discussion_moderated"
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
-`, os.Args[0])
-}
-
-func mailingListDeleteGrpsioMailingListUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-mailing-list -uid STRING -version STRING -bearer-token STRING -if-match STRING
-
-Delete GroupsIO mailing list
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -version STRING: 
-    -bearer-token STRING: 
-    -if-match STRING: 
-
-Example:
-    %[1]s mailing-list delete-grpsio-mailing-list --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
-`, os.Args[0])
-}
-
-func mailingListGetGrpsioMailingListSettingsUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-mailing-list-settings -uid STRING -version STRING -bearer-token STRING
-
-Get GroupsIO mailing list settings (writers and auditors)
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -version STRING: 
+    -subgroup-id STRING: Subgroup ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-mailing-list-settings --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..."
-`, os.Args[0])
-}
-
-func mailingListUpdateGrpsioMailingListSettingsUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-mailing-list-settings -body JSON -uid STRING -version STRING -bearer-token STRING -if-match STRING
-
-Update GroupsIO mailing list settings (writers and auditors)
-    -body JSON: 
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -version STRING: 
-    -bearer-token STRING: 
-    -if-match STRING: 
-
-Example:
-    %[1]s mailing-list update-grpsio-mailing-list-settings --body '{
-      "auditors": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ],
-      "writers": [
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         },
-         {
-            "avatar": "http://goldner.info/perry",
-            "email": "ernie.lueilwitz@altenwerth.info",
-            "name": "Eos non id at perspiciatis.",
-            "username": "Eaque quis possimus velit quasi quis occaecati."
-         }
-      ]
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
-`, os.Args[0])
-}
-
-func mailingListCreateGrpsioMailingListMemberUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list create-grpsio-mailing-list-member -body JSON -uid STRING -version STRING -bearer-token STRING
-
-Create a new member for a GroupsIO mailing list
-    -body JSON: 
-    -uid STRING: Mailing list UID
-    -version STRING: 
-    -bearer-token STRING: 
-
-Example:
-    %[1]s mailing-list create-grpsio-mailing-list-member --body '{
-      "delivery_mode": "none",
-      "email": "john.doe@example.com",
-      "first_name": "John",
-      "job_title": "Software Engineer",
-      "last_name": "Doe",
-      "last_reviewed_at": "2023-01-15T14:30:00Z",
-      "last_reviewed_by": "admin@example.com",
+    %[1]s mailing-list add-groupsio-member --body '{
+      "delivery_mode": "email_delivery_single",
+      "email": "neoma@collier.info",
+      "job_title": "Fugit aut non eos.",
       "member_type": "direct",
-      "mod_status": "moderator",
-      "organization": "Example Corp",
-      "username": "jdoe"
-   }' --uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
+      "mod_status": "owner",
+      "name": "Quia in alias voluptas illum ipsum cupiditate.",
+      "organization": "Inventore soluta aut suscipit non.",
+      "user_id": "Sed voluptate."
+   }' --subgroup-id "Id quis et quibusdam et." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListGetGrpsioMailingListMemberUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-grpsio-mailing-list-member -uid STRING -member-uid STRING -version STRING -bearer-token STRING
+func mailingListGetGroupsioMemberUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list get-groupsio-member -subgroup-id STRING -member-id STRING -bearer-token STRING
 
-Get a member of a GroupsIO mailing list by UID
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -member-uid STRING: Member UID -- unique identifier for the member
-    -version STRING: 
+Get a member of a GroupsIO subgroup by ID
+    -subgroup-id STRING: Subgroup ID
+    -member-id STRING: Member ID
     -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list get-grpsio-mailing-list-member --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..."
+    %[1]s mailing-list get-groupsio-member --subgroup-id "Voluptas ipsum eum quia." --member-id "Voluptatem omnis similique." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListUpdateGrpsioMailingListMemberUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-grpsio-mailing-list-member -body JSON -uid STRING -member-uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListUpdateGroupsioMemberUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list update-groupsio-member -body JSON -subgroup-id STRING -member-id STRING -bearer-token STRING
 
-Update a member of a GroupsIO mailing list
+Update a member of a GroupsIO subgroup
     -body JSON: 
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -member-uid STRING: Member UID -- unique identifier for the member
-    -version STRING: 
+    -subgroup-id STRING: Subgroup ID
+    -member-id STRING: Member ID
     -bearer-token STRING: 
-    -if-match STRING: 
 
 Example:
-    %[1]s mailing-list update-grpsio-mailing-list-member --body '{
-      "delivery_mode": "none",
-      "first_name": "John",
-      "job_title": "Software Engineer",
-      "last_name": "Doe",
-      "mod_status": "none",
-      "organization": "Example Corp",
-      "username": "jdoe"
-   }' --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+    %[1]s mailing-list update-groupsio-member --body '{
+      "delivery_mode": "email_delivery_single",
+      "email": "jamie_beatty@strosinratke.com",
+      "job_title": "Quisquam voluptas velit nihil.",
+      "member_type": "direct",
+      "mod_status": "owner",
+      "name": "Accusantium in veniam.",
+      "organization": "Quis voluptatem excepturi nam.",
+      "user_id": "Quia blanditiis unde porro qui commodi."
+   }' --subgroup-id "Voluptatum soluta." --member-id "Error ut in esse." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListDeleteGrpsioMailingListMemberUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-grpsio-mailing-list-member -uid STRING -member-uid STRING -version STRING -bearer-token STRING -if-match STRING
+func mailingListDeleteGroupsioMemberUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list delete-groupsio-member -subgroup-id STRING -member-id STRING -bearer-token STRING
 
-Delete a member from a GroupsIO mailing list
-    -uid STRING: Mailing list UID -- unique identifier for the mailing list
-    -member-uid STRING: Member UID -- unique identifier for the member
-    -version STRING: 
+Delete a member from a GroupsIO subgroup
+    -subgroup-id STRING: Subgroup ID
+    -member-id STRING: Member ID
     -bearer-token STRING: 
-    -if-match STRING: 
 
 Example:
-    %[1]s mailing-list delete-grpsio-mailing-list-member --uid "7cad5a8d-19d0-41a4-81a6-043453daf9ee" --member-uid "f47ac10b-58cc-4372-a567-0e02b2c3d479" --version "1" --bearer-token "eyJhbGci..." --if-match "123"
+    %[1]s mailing-list delete-groupsio-member --subgroup-id "Sequi autem ut dolorem nihil nesciunt." --member-id "Corporis doloribus omnis adipisci qui deleniti dolores." --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }
 
-func mailingListGroupsioWebhookUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list groupsio-webhook -body JSON -signature STRING
+func mailingListInviteGroupsioMembersUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list invite-groupsio-members -body JSON -subgroup-id STRING -bearer-token STRING
 
-Handle GroupsIO webhook events for subgroup and member changes
+Invite members to a GroupsIO subgroup by email
     -body JSON: 
-    -signature STRING: 
+    -subgroup-id STRING: Subgroup ID
+    -bearer-token STRING: 
 
 Example:
-    %[1]s mailing-list groupsio-webhook --body '{
-      "action": "created_subgroup",
-      "extra": "Sint rerum laboriosam consequatur ut explicabo saepe.",
-      "extra_id": 500672409584855543,
-      "group": "Aut consequatur nihil repellat velit qui.",
-      "member_info": "Totam cumque totam alias."
-   }' --signature "Nostrum sed quo."
+    %[1]s mailing-list invite-groupsio-members --body '{
+      "emails": [
+         "Tempora odit possimus libero temporibus distinctio et.",
+         "Earum explicabo non quibusdam ut facilis voluptate.",
+         "Quisquam quia voluptatem molestiae."
+      ]
+   }' --subgroup-id "Qui eius minus est." --bearer-token "eyJhbGci..."
+`, os.Args[0])
+}
+
+func mailingListCheckGroupsioSubscriberUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] mailing-list check-groupsio-subscriber -body JSON -bearer-token STRING
+
+Check if an email address is subscribed to a GroupsIO subgroup
+    -body JSON: 
+    -bearer-token STRING: 
+
+Example:
+    %[1]s mailing-list check-groupsio-subscriber --body '{
+      "email": "rhiannon_hackett@feestsimonis.com",
+      "subgroup_id": "Ut a blanditiis."
+   }' --bearer-token "eyJhbGci..."
 `, os.Args[0])
 }

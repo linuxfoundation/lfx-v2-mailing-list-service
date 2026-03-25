@@ -10,27 +10,19 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// GrpsIOServiceReader defines the interface for service read operations
-type GrpsIOServiceReader interface {
-	// GetGrpsIOService retrieves a single service by ID and returns ETag revision
-	GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error)
-	// GetRevision retrieves only the revision for a given UID
-	GetRevision(ctx context.Context, uid string) (uint64, error)
+// GroupsIOServiceReader defines the interface for service read operations
+type GroupsIOServiceReader interface {
 
-	// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
-	// A single parent group can have multiple services (1 primary + N formation/shared services)
-	// Returns empty slice if no services found (not an error)
-	// Used by webhook processor to determine which service should adopt a subgroup
-	GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error)
+	// ListServices lists GroupsIO services, optionally filtered by project_uid.
+	// Returns the matched services and total count.
+	ListServices(ctx context.Context, projectUID string) ([]*model.GroupsIOService, int, error)
 
-	// GetServicesByProjectUID retrieves all services for a given project UID
-	// A single project can have multiple services (1 primary + N formation/shared services)
-	// Returns empty slice if no services found (not an error)
-	// Used to find parent primary services and list all services for a project
-	GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error)
+	// GetService retrieves a GroupsIO service by ID.
+	GetService(ctx context.Context, serviceID string) (*model.GroupsIOService, error)
 
-	// GetGrpsIOServiceSettings retrieves service settings by service UID and returns ETag revision
-	GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error)
-	// GetSettingsRevision retrieves only the revision for service settings
-	GetSettingsRevision(ctx context.Context, uid string) (uint64, error)
+	// GetProjects returns project UIDs that have GroupsIO services.
+	GetProjects(ctx context.Context) ([]string, error)
+
+	// FindParentService finds the parent service for a project by project UID.
+	FindParentService(ctx context.Context, projectUID string) (*model.GroupsIOService, error)
 }

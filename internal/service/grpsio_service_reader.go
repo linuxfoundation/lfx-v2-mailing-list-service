@@ -5,151 +5,116 @@ package service
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
-// GetGrpsIOService retrieves a single service by ID
-func (sr *grpsIOReaderOrchestrator) GetGrpsIOService(ctx context.Context, uid string) (*model.GrpsIOService, uint64, error) {
-	slog.DebugContext(ctx, "executing get service use case",
-		"service_uid", uid,
-	)
+// GroupsIOServiceReaderOrchestrator implements port.GroupsIOServiceReader by wrapping an inner
+// GroupsIOServiceReader and translating v1 SFIDs to v2 UUIDs in responses.
+type GroupsIOServiceReaderOrchestrator struct {
+	reader     port.GroupsIOServiceReader
+	translator port.Translator
+}
 
-	// Get service from storage
-	service, revision, err := sr.grpsIOReader.GetGrpsIOService(ctx, uid)
+// ServiceReaderOrchestratorOption configures a GroupsIOServiceReaderOrchestrator.
+type ServiceReaderOrchestratorOption func(*GroupsIOServiceReaderOrchestrator)
+
+// WithServiceReader sets the underlying reader (e.g. the ITX proxy client).
+func WithServiceReader(r port.GroupsIOServiceReader) ServiceReaderOrchestratorOption {
+	return func(o *GroupsIOServiceReaderOrchestrator) {
+		o.reader = r
+	}
+}
+
+// WithServiceReaderTranslator sets the ID translator.
+func WithServiceReaderTranslator(t port.Translator) ServiceReaderOrchestratorOption {
+	return func(o *GroupsIOServiceReaderOrchestrator) {
+		o.translator = t
+	}
+}
+
+// ListServices lists GroupsIO services, mapping project_uid (v2) -> project_id (v1) in the
+// request and project_id (v1) -> project_uid (v2) in each response.
+func (o *GroupsIOServiceReaderOrchestrator) ListServices(ctx context.Context, projectUID string) ([]*model.GroupsIOService, int, error) {
+	v1ProjectID := projectUID
+	if projectUID != "" {
+		v1ID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, projectUID)
+		if err != nil {
+			return nil, 0, err
+		}
+		v1ProjectID = v1ID
+	}
+
+	svcs, total, err := o.reader.ListServices(ctx, v1ProjectID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get service",
-			"error", err,
-			"service_uid", uid,
-		)
 		return nil, 0, err
 	}
 
-	slog.DebugContext(ctx, "service retrieved successfully",
-		"service_uid", uid,
-		"revision", revision,
-	)
-
-	return service, revision, nil
-}
-
-// GetRevision retrieves only the revision for a given UID
-func (sr *grpsIOReaderOrchestrator) GetRevision(ctx context.Context, uid string) (uint64, error) {
-	slog.DebugContext(ctx, "executing get revision use case",
-		"service_uid", uid,
-	)
-
-	// Get revision from storage
-	revision, err := sr.grpsIOReader.GetRevision(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get service revision",
-			"error", err,
-			"service_uid", uid,
-		)
-		return 0, err
+	for i, svc := range svcs {
+		mapped, err := mapServiceResponse(ctx, o.translator, svc)
+		if err != nil {
+			return nil, 0, err
+		}
+		svcs[i] = mapped
 	}
 
-	slog.DebugContext(ctx, "service revision retrieved successfully",
-		"service_uid", uid,
-		"revision", revision,
-	)
-
-	return revision, nil
+	return svcs, total, nil
 }
 
-// GetServicesByGroupID retrieves all services for a given GroupsIO parent group ID
-func (sr *grpsIOReaderOrchestrator) GetServicesByGroupID(ctx context.Context, groupID uint64) ([]*model.GrpsIOService, error) {
-	slog.DebugContext(ctx, "executing get services by group_id use case",
-		"group_id", groupID,
-	)
-
-	// Get services from storage
-	services, err := sr.grpsIOReader.GetServicesByGroupID(ctx, groupID)
+// GetService retrieves a GroupsIO service by ID, mapping project_id (v1) -> project_uid (v2)
+// in the response.
+func (o *GroupsIOServiceReaderOrchestrator) GetService(ctx context.Context, serviceID string) (*model.GroupsIOService, error) {
+	svc, err := o.reader.GetService(ctx, serviceID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get services by group_id",
-			"error", err,
-			"group_id", groupID,
-		)
+		return nil, err
+	}
+	return mapServiceResponse(ctx, o.translator, svc)
+}
+
+// GetProjects returns v2 project UIDs that have GroupsIO services, translating
+// v1 project IDs -> v2 UUIDs.
+func (o *GroupsIOServiceReaderOrchestrator) GetProjects(ctx context.Context) ([]string, error) {
+	v1ProjectIDs, err := o.reader.GetProjects(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	slog.DebugContext(ctx, "services retrieved successfully by group_id",
-		"group_id", groupID,
-		"count", len(services),
-	)
+	v2UIDs := make([]string, len(v1ProjectIDs))
+	for i, v1ID := range v1ProjectIDs {
+		v2UID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV1ToV2, v1ID)
+		if err != nil {
+			return nil, err
+		}
+		v2UIDs[i] = v2UID
+	}
 
-	return services, nil
+	return v2UIDs, nil
 }
 
-// GetServicesByProjectUID retrieves all services for a given project UID
-func (sr *grpsIOReaderOrchestrator) GetServicesByProjectUID(ctx context.Context, projectUID string) ([]*model.GrpsIOService, error) {
-	slog.DebugContext(ctx, "executing get services by project_uid use case",
-		"project_uid", projectUID,
-	)
-
-	// Get services from storage
-	services, err := sr.grpsIOReader.GetServicesByProjectUID(ctx, projectUID)
+// FindParentService finds the parent service for a project, mapping project_uid (v2) -> project_id (v1)
+// in the request and project_id (v1) -> project_uid (v2) in the response.
+func (o *GroupsIOServiceReaderOrchestrator) FindParentService(ctx context.Context, projectUID string) (*model.GroupsIOService, error) {
+	v1ID, err := o.translator.MapID(ctx, constants.TranslationSubjectProject, constants.TranslationDirectionV2ToV1, projectUID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get services by project_uid",
-			"error", err,
-			"project_uid", projectUID,
-		)
 		return nil, err
 	}
 
-	slog.DebugContext(ctx, "services retrieved successfully by project_uid",
-		"project_uid", projectUID,
-		"count", len(services),
-	)
-
-	return services, nil
-}
-
-// GetGrpsIOServiceSettings retrieves service settings by service UID
-func (sr *grpsIOReaderOrchestrator) GetGrpsIOServiceSettings(ctx context.Context, uid string) (*model.GrpsIOServiceSettings, uint64, error) {
-	slog.DebugContext(ctx, "executing get service settings use case",
-		"service_uid", uid,
-	)
-
-	// Get settings from storage
-	settings, revision, err := sr.grpsIOReader.GetGrpsIOServiceSettings(ctx, uid)
+	svc, err := o.reader.FindParentService(ctx, v1ID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get service settings",
-			"error", err,
-			"service_uid", uid,
-		)
-		return nil, 0, err
+		return nil, err
 	}
 
-	slog.DebugContext(ctx, "service settings retrieved successfully",
-		"service_uid", uid,
-		"revision", revision,
-	)
-
-	return settings, revision, nil
+	return mapServiceResponse(ctx, o.translator, svc)
 }
 
-// GetSettingsRevision retrieves only the revision for service settings
-func (sr *grpsIOReaderOrchestrator) GetSettingsRevision(ctx context.Context, uid string) (uint64, error) {
-	slog.DebugContext(ctx, "executing get settings revision use case",
-		"service_uid", uid,
-	)
 
-	// Get revision from storage
-	revision, err := sr.grpsIOReader.GetSettingsRevision(ctx, uid)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get service settings revision",
-			"error", err,
-			"service_uid", uid,
-		)
-		return 0, err
+// NewGroupsIOServiceReaderOrchestrator creates a new reader orchestrator with the given options.
+func NewGroupsIOServiceReaderOrchestrator(opts ...ServiceReaderOrchestratorOption) *GroupsIOServiceReaderOrchestrator {
+	o := &GroupsIOServiceReaderOrchestrator{}
+	for _, opt := range opts {
+		opt(o)
 	}
-
-	slog.DebugContext(ctx, "service settings revision retrieved successfully",
-		"service_uid", uid,
-		"revision", revision,
-	)
-
-	return revision, nil
+	return o
 }

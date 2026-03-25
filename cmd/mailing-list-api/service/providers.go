@@ -1,6 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package service provides provider functions for initializing service dependencies.
 package service
 
 import (
@@ -14,77 +15,92 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/groupsio"
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
 var (
-	natsStorageClient      port.GrpsIOReaderWriter
-	natsMessagingClient    port.EntityAttributeReader
-	natsPublisherClient    port.MessagePublisher
-	groupsIOClient         groupsio.ClientInterface
-	grpsioWebhookValidator port.GrpsIOWebhookValidator
-	mockRepositoryClient   *infrastructure.MockRepository
+	natsPublisherClient port.MessagePublisher
 
-	natsDoOnce                 sync.Once
-	groupsIOClientOnce         sync.Once
-	grpsioWebhookValidatorOnce sync.Once
-	mockRepositoryOnce         sync.Once
+	natsDoOnce sync.Once
+	natsClient *nats.NATSClient
 )
 
-// ValidateProviderConfiguration checks for configuration mismatches that could cause issues
-// Call this during application startup to fail fast on misconfiguration
-func ValidateProviderConfiguration(ctx context.Context) {
-	groupsioSource := os.Getenv("GROUPSIO_SOURCE")
-	if groupsioSource == "" {
-		groupsioSource = "groupsio"
-	}
-
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
+// AuthService initializes the authentication service implementation
+func AuthService(ctx context.Context) port.Authenticator {
+	var authService port.Authenticator
 
 	authSource := os.Getenv("AUTH_SOURCE")
 	if authSource == "" {
 		authSource = "jwt"
 	}
 
-	slog.InfoContext(ctx, "provider configuration validation",
-		"auth_source", authSource,
-		"repository_source", repoSource,
-		"groupsio_source", groupsioSource,
-	)
-
-	// Warn about potentially dangerous mismatches
-	if groupsioSource == "mock" && repoSource != "mock" {
-		slog.WarnContext(ctx,
-			"CONFIGURATION MISMATCH: mock GroupsIO with real repository - mock validator will accept all webhooks into production storage!",
-			"groupsio_source", groupsioSource,
-			"repository_source", repoSource,
-		)
-	}
-
-	if authSource == "mock" && repoSource != "mock" {
-		slog.WarnContext(ctx,
-			"CONFIGURATION MISMATCH: mock auth with real repository - authentication is bypassed but data is stored in production!",
-			"auth_source", authSource,
-			"repository_source", repoSource,
-		)
-	}
-
-	// Validate webhook secret in production mode
-	if groupsioSource != "mock" {
-		webhookSecret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
-		if webhookSecret == "" {
-			slog.WarnContext(ctx, "GROUPSIO_WEBHOOK_SECRET not set - webhook validation will fail in production!")
+	switch authSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock authentication service")
+		authService = infrastructure.NewMockAuthService()
+	case "jwt":
+		slog.InfoContext(ctx, "initializing JWT authentication service")
+		jwtConfig := auth.JWTAuthConfig{
+			JWKSURL:            os.Getenv("JWKS_URL"),
+			Audience:           os.Getenv("JWT_AUDIENCE"),
+			MockLocalPrincipal: os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL"),
 		}
+		jwtAuth, err := auth.NewJWTAuth(jwtConfig)
+		if err != nil {
+			log.Fatalf("failed to initialize JWT authentication service: %v", err)
+		}
+		authService = jwtAuth
+	default:
+		log.Fatalf("unsupported authentication service implementation: %s", authSource)
 	}
 
-	slog.InfoContext(ctx, "provider configuration validation completed")
+	return authService
+}
+
+// Translator initializes the ID translator implementation.
+// TRANSLATOR_SOURCE controls which backend is used (default: "nats").
+// In mock mode, TRANSLATOR_MAPPINGS_FILE points to the YAML mappings file.
+func Translator(ctx context.Context) port.Translator {
+	source := os.Getenv("TRANSLATOR_SOURCE")
+	if source == "" {
+		source = "nats"
+	}
+
+	switch source {
+	case "mock":
+		filePath := os.Getenv("TRANSLATOR_MAPPINGS_FILE")
+		if filePath == "" {
+			filePath = "translator_mappings.yaml"
+		}
+		slog.InfoContext(ctx, "initializing mock translator", "file", filePath)
+		t, err := infrastructure.NewMockTranslator(filePath)
+		if err != nil {
+			log.Fatalf("failed to initialize mock translator: %v", err)
+		}
+		return t
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS translator")
+		return nats.NewNATSTranslatorFromClient(GetNATSClient(ctx), 5*time.Second)
+	default:
+		log.Fatalf("unsupported translator implementation: %s", source)
+	}
+
+	return nil
+}
+
+// ITXProxyConfig reads ITX proxy configuration from environment variables.
+func ITXProxyConfig() proxy.Config {
+	return proxy.Config{
+		BaseURL:     os.Getenv("ITX_BASE_URL"),
+		ClientID:    os.Getenv("ITX_CLIENT_ID"),
+		PrivateKey:  os.Getenv("ITX_CLIENT_PRIVATE_KEY"),
+		Auth0Domain: os.Getenv("ITX_AUTH0_DOMAIN"),
+		Audience:    os.Getenv("ITX_AUDIENCE"),
+		Timeout:     30 * time.Second,
+	}
 }
 
 func natsInit(ctx context.Context) {
@@ -132,20 +148,26 @@ func natsInit(ctx context.Context) {
 		if errNewClient != nil {
 			log.Fatalf("failed to create NATS client: %v", errNewClient)
 		}
-		natsStorageClient = nats.NewStorage(client)
-		natsMessagingClient = nats.NewEntityAttributeReader(client)
+		natsClient = client
 		natsPublisherClient = nats.NewMessagePublisher(client)
 	})
 }
 
-func natsStorage(ctx context.Context) port.GrpsIOReaderWriter {
+// GetNATSClient returns the initialized NATS client for subscriptions
+func GetNATSClient(ctx context.Context) *nats.NATSClient {
 	natsInit(ctx)
-	return natsStorageClient
+	return natsClient
 }
 
-func natsMessaging(ctx context.Context) port.EntityAttributeReader {
-	natsInit(ctx)
-	return natsMessagingClient
+// MappingReaderWriter initializes the v1-mappings KV abstraction used by the
+// data stream event handler for idempotency tracking.
+func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
+	client := GetNATSClient(ctx)
+	kv, err := client.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	if err != nil {
+		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
+	}
+	return nats.NewMappingReaderWriter(kv)
 }
 
 func natsPublisher(ctx context.Context) port.MessagePublisher {
@@ -153,204 +175,10 @@ func natsPublisher(ctx context.Context) port.MessagePublisher {
 	return natsPublisherClient
 }
 
-func mockRepositoryInit(ctx context.Context) {
-	mockRepositoryOnce.Do(func() {
-		slog.InfoContext(ctx, "initializing shared mock repository")
-		mockRepositoryClient = infrastructure.NewMockRepository()
-	})
-}
-
-func mockRepository(ctx context.Context) *infrastructure.MockRepository {
-	mockRepositoryInit(ctx)
-	return mockRepositoryClient
-}
-
-// AuthService initializes the authentication service implementation
-func AuthService(ctx context.Context) port.Authenticator {
-	var authService port.Authenticator
-
-	// Repository implementation configuration
-	authSource := os.Getenv("AUTH_SOURCE")
-	if authSource == "" {
-		authSource = "jwt"
-	}
-
-	switch authSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock authentication service")
-		authService = infrastructure.NewMockAuthService()
-	case "jwt":
-		slog.InfoContext(ctx, "initializing JWT authentication service")
-		jwtConfig := auth.JWTAuthConfig{
-			JWKSURL:  os.Getenv("JWKS_URL"),
-			Audience: os.Getenv("JWT_AUDIENCE"),
-		}
-		jwtAuth, err := auth.NewJWTAuth(jwtConfig)
-		if err != nil {
-			log.Fatalf("failed to initialize JWT authentication service: %v", err)
-		}
-		authService = jwtAuth
-	default:
-		log.Fatalf("unsupported authentication service implementation: %s", authSource)
-	}
-
-	return authService
-}
-
-// EntityAttributeRetriever initializes the entity attribute retriever implementation based on the repository source
-func EntityAttributeRetriever(ctx context.Context) port.EntityAttributeReader {
-	var entityReader port.EntityAttributeReader
-
-	// Repository implementation configuration
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock entity attribute retriever")
-		entityReader = infrastructure.NewMockEntityAttributeReader(mockRepository(ctx))
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS entity attribute retriever")
-		natsClient := natsMessaging(ctx)
-		if natsClient == nil {
-			log.Fatalf("failed to initialize NATS client")
-		}
-		entityReader = natsClient
-
-	default:
-		log.Fatalf("unsupported entity attribute reader implementation: %s", repoSource)
-	}
-
-	return entityReader
-}
-
-// GrpsIOReader initializes the service reader implementation
-func GrpsIOReader(ctx context.Context) port.GrpsIOReader {
-	var grpsIOReader port.GrpsIOReader
-
-	// Repository implementation configuration
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock grpsio service reader")
-		grpsIOReader = infrastructure.NewMockGrpsIOReader(mockRepository(ctx))
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS service")
-		natsClient := natsStorage(ctx)
-		if natsClient == nil {
-			log.Fatalf("failed to initialize NATS client")
-		}
-		grpsIOReader = natsClient
-
-	default:
-		log.Fatalf("unsupported service reader implementation: %s", repoSource)
-	}
-
-	return grpsIOReader
-}
-
-// GrpsIOReaderWriter initializes the service reader writer implementation
-func GrpsIOReaderWriter(ctx context.Context) port.GrpsIOReaderWriter {
-	var storage port.GrpsIOReaderWriter
-	// Repository implementation configuration
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock grpsio storage reader writer")
-		storage = infrastructure.NewMockGrpsIOReaderWriter(mockRepository(ctx))
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS service")
-		natsClient := natsStorage(ctx)
-		if natsClient == nil {
-			log.Fatalf("failed to initialize NATS client")
-		}
-		storage = natsClient
-
-	default:
-		log.Fatalf("unsupported service reader implementation: %s", repoSource)
-	}
-
-	return storage
-}
-
-// GrpsIOWriter initializes the service writer implementation
-func GrpsIOWriter(ctx context.Context) port.GrpsIOWriter {
-	var grpsIOWriter port.GrpsIOWriter
-
-	// Repository implementation configuration
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock grpsio service writer")
-		grpsIOWriter = infrastructure.NewMockGrpsIOWriter(mockRepository(ctx))
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS service writer")
-		natsClient := natsStorage(ctx)
-		if natsClient == nil {
-			log.Fatalf("failed to initialize NATS client")
-		}
-		grpsIOWriter = natsClient
-
-	default:
-		log.Fatalf("unsupported service writer implementation: %s", repoSource)
-	}
-
-	return grpsIOWriter
-}
-
-// GrpsIOMemberRepository initializes the member repository implementation
-func GrpsIOMemberRepository(ctx context.Context) port.GrpsIOMemberRepository {
-	var memberRepository port.GrpsIOMemberRepository
-
-	// Repository implementation configuration
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock grpsio member repository")
-		memberRepository = infrastructure.NewMockGrpsIOMemberRepository(mockRepository(ctx))
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS member repository")
-		natsClient := natsStorage(ctx)
-		if natsClient == nil {
-			log.Fatalf("failed to initialize NATS client")
-		}
-		memberRepository = natsClient
-
-	default:
-		log.Fatalf("unsupported member repository implementation: %s", repoSource)
-	}
-
-	return memberRepository
-}
-
 // MessagePublisher initializes the service publisher implementation
 func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	var publisher port.MessagePublisher
 
-	// Repository implementation configuration
 	repoSource := os.Getenv("REPOSITORY_SOURCE")
 	if repoSource == "" {
 		repoSource = "nats"
@@ -374,139 +202,4 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	}
 
 	return publisher
-}
-
-// GroupsIOClient initializes the GroupsIO client with singleton pattern
-func GroupsIOClient(ctx context.Context) groupsio.ClientInterface {
-	groupsIOClientOnce.Do(func() {
-		var client groupsio.ClientInterface
-
-		// Repository implementation configuration
-		source := os.Getenv("GROUPSIO_SOURCE")
-		if source == "" {
-			source = "groupsio" // Default to production GroupsIO client
-		}
-
-		switch source {
-		case "mock":
-			slog.InfoContext(ctx, "initializing mock groupsio client")
-			client = infrastructure.NewMockGroupsIOClient()
-
-		case "groupsio":
-			slog.InfoContext(ctx, "initializing groupsio client")
-			config := groupsio.NewConfigFromEnv()
-
-			var err error
-			client, err = groupsio.NewClient(config)
-			if err != nil {
-				log.Fatalf("failed to initialize GroupsIO client - missing required configuration: %v", err)
-			}
-			slog.InfoContext(ctx, "groupsio client initialized successfully")
-
-		default:
-			log.Fatalf("unsupported groupsio client implementation: %s", source)
-		}
-
-		groupsIOClient = client
-	})
-
-	return groupsIOClient
-}
-
-// GrpsIOReaderOrchestrator initializes the service reader orchestrator
-func GrpsIOReaderOrchestrator(ctx context.Context) service.GrpsIOReader {
-	grpsIOReader := GrpsIOReader(ctx)
-
-	return service.NewGrpsIOReaderOrchestrator(
-		service.WithGrpsIOReader(grpsIOReader),
-	)
-}
-
-// GrpsIOWriterOrchestrator initializes the service writer orchestrator
-func GrpsIOWriterOrchestrator(ctx context.Context) service.GrpsIOWriter {
-	grpsIOWriter := GrpsIOWriter(ctx)
-	memberRepository := GrpsIOMemberRepository(ctx)
-	grpsIOReader := GrpsIOReader(ctx)
-	entityReader := EntityAttributeRetriever(ctx)
-	publisher := MessagePublisher(ctx)
-	groupsClient := GroupsIOClient(ctx) // May be nil for mock/disabled
-
-	return service.NewGrpsIOWriterOrchestrator(
-		service.WithGrpsIOWriter(grpsIOWriter),
-		service.WithMemberRepository(memberRepository),
-		service.WithGrpsIOWriterReader(grpsIOReader),
-		service.WithEntityAttributeReader(entityReader),
-		service.WithPublisher(publisher),
-		service.WithGroupsIOClient(groupsClient),
-	)
-}
-
-// GrpsIOWebhookValidator initializes the GroupsIO webhook validator with mock support and singleton pattern
-func GrpsIOWebhookValidator(ctx context.Context) port.GrpsIOWebhookValidator {
-	grpsioWebhookValidatorOnce.Do(func() {
-		var validator port.GrpsIOWebhookValidator
-
-		// Repository implementation configuration
-		source := os.Getenv("GROUPSIO_SOURCE")
-		if source == "" {
-			source = "groupsio" // Default to production GroupsIO webhook validation
-		}
-
-		switch source {
-		case "mock":
-			slog.InfoContext(ctx, "initializing mock groupsio webhook validator")
-			validator = infrastructure.NewMockGrpsIOWebhookValidator()
-
-		case "groupsio":
-			slog.InfoContext(ctx, "initializing groupsio webhook validator")
-			secret := os.Getenv("GROUPSIO_WEBHOOK_SECRET")
-			if secret == "" {
-				log.Fatalf("GROUPSIO_WEBHOOK_SECRET is required for groupsio webhook validation")
-			}
-			validator = groupsio.NewGrpsIOWebhookValidator(secret)
-
-		default:
-			log.Fatalf("unsupported groupsio webhook validator implementation: %s", source)
-		}
-
-		grpsioWebhookValidator = validator
-	})
-
-	return grpsioWebhookValidator
-}
-
-// GrpsIOWebhookProcessor creates GroupsIO webhook processor with explicit dependency injection
-func GrpsIOWebhookProcessor(ctx context.Context) port.GrpsIOWebhookProcessor {
-	slog.InfoContext(ctx, "initializing groupsio webhook processor with dependency injection")
-
-	return service.NewGrpsIOWebhookProcessor(
-		service.WithServiceReader(GrpsIOReader(ctx)),
-		service.WithMailingListReader(GrpsIOReader(ctx)),
-		service.WithMailingListWriter(GrpsIOWriter(ctx)),
-		service.WithMemberReader(GrpsIOReader(ctx)),
-		service.WithMemberWriter(GrpsIOWriter(ctx)),
-	)
-}
-
-// GetNATSClient returns the initialized NATS client for subscriptions
-func GetNATSClient(ctx context.Context) *nats.NATSClient {
-	natsInit(ctx)
-	// Access the client through storage adapter
-	storageImpl, ok := natsStorageClient.(interface{ Client() *nats.NATSClient })
-	if !ok {
-		slog.ErrorContext(ctx, "NATS storage does not implement Client() method")
-		panic("NATS storage implementation error")
-	}
-	return storageImpl.Client()
-}
-
-// MappingReaderWriter initializes the v1-mappings KV abstraction used by the
-// data stream event handler for idempotency tracking.
-func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
-	client := GetNATSClient(ctx)
-	kv, err := client.KeyValue(ctx, constants.KVBucketNameV1Mappings)
-	if err != nil {
-		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
-	}
-	return nats.NewMappingReaderWriter(kv)
 }

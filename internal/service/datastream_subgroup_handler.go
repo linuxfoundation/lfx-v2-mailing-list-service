@@ -16,6 +16,16 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
+// groupsioMailingListMemberStub represents the minimal data needed for member access control
+type groupsioMailingListMemberStub struct {
+	// UID is the mailing list member ID.
+	UID string `json:"uid"`
+	// Username is the username (i.e. LFID) of the member. This is the identity of the user object in FGA.
+	Username string `json:"username"`
+	// MailingListUID is the mailing list ID for the mailing list the member belongs to.
+	MailingListUID string `json:"mailing_list_uid"`
+}
+
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
 // is absent (ordering guarantee) or on transient errors.
@@ -183,13 +193,13 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 
 // buildMailingListSettings constructs a GrpsIOMailingListSettings from v1 writers/auditors.
 // Returns nil when both slices are empty (no settings message needed).
-func buildMailingListSettings(uid string, data map[string]any) *model.GrpsIOMailingListSettings {
+func buildMailingListSettings(uid string, data map[string]any) *model.GroupsIOMailingListSettings {
 	writers := toUserInfoSlice(mapconv.StringSliceVal(data, "writers"))
 	auditors := toUserInfoSlice(mapconv.StringSliceVal(data, "auditors"))
 	if len(writers) == 0 && len(auditors) == 0 {
 		return nil
 	}
-	return &model.GrpsIOMailingListSettings{
+	return &model.GroupsIOMailingListSettings{
 		UID:      uid,
 		Writers:  writers,
 		Auditors: auditors,
@@ -221,8 +231,8 @@ func userInfoUsernames(users []model.UserInfo) []string {
 }
 
 // transformV1ToGrpsIOMailingList maps v1 DynamoDB fields to the GrpsIOMailingList domain model.
-func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.GrpsIOMailingList {
-	list := &model.GrpsIOMailingList{
+func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.GroupsIOMailingList {
+	list := &model.GroupsIOMailingList{
 		UID:         uid,
 		GroupID:     mapconv.Int64Ptr(data, "group_id"),
 		GroupName:   mapconv.StringVal(data, "group_name"),
