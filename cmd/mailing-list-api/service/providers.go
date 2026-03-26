@@ -6,10 +6,12 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"log"
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -96,11 +98,25 @@ func ITXProxyConfig() proxy.Config {
 	return proxy.Config{
 		BaseURL:     os.Getenv("ITX_BASE_URL"),
 		ClientID:    os.Getenv("ITX_CLIENT_ID"),
-		PrivateKey:  os.Getenv("ITX_CLIENT_PRIVATE_KEY"),
+		PrivateKey:  decodePrivateKey(os.Getenv("ITX_CLIENT_PRIVATE_KEY")),
 		Auth0Domain: os.Getenv("ITX_AUTH0_DOMAIN"),
 		Audience:    os.Getenv("ITX_AUDIENCE"),
 		Timeout:     30 * time.Second,
 	}
+}
+
+// decodePrivateKey returns the raw PEM key, base64-decoding it first if needed.
+// Secrets stored in AWS Secrets Manager (and injected via External Secrets Operator)
+// are sometimes base64-encoded before storage; this handles both cases transparently.
+func decodePrivateKey(key string) string {
+	if strings.HasPrefix(key, "-----") {
+		return key
+	}
+	decoded, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return key
+	}
+	return string(decoded)
 }
 
 func natsInit(ctx context.Context) {
