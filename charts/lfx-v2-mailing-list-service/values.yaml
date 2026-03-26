@@ -319,7 +319,6 @@ externalSecretsOperator:
 
     # Secret data mappings
     # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
-    # NOTE: client_private_key should be stored as raw PEM format (not base64-encoded)
     data:
       - secretKey: ITX_CLIENT_ID
         remoteRef:
