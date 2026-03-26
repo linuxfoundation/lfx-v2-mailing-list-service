@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/auth0/go-auth0/authentication"
@@ -39,6 +40,12 @@ type Config struct {
 type itx struct {
 	httpClient *httpclient.Client
 	config     Config
+}
+
+// buildURL constructs an ITX endpoint URL from path segments using url.JoinPath,
+// making it safe regardless of whether BaseURL has a trailing slash.
+func (c *itx) buildURL(paths ...string) (string, error) {
+	return url.JoinPath(c.config.BaseURL, paths...)
 }
 
 // mapHTTPError converts HTTP status codes to domain errors.
@@ -76,8 +83,11 @@ func (c *itx) CreateService(ctx context.Context, svc *model.GroupsIOService) (*m
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_service", c.config.BaseURL)
-	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_service")
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -96,8 +106,11 @@ func (c *itx) UpdateService(ctx context.Context, serviceID string, svc *model.Gr
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_service/%s", c.config.BaseURL, serviceID)
-	resp, err := c.httpClient.Request(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_service", serviceID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPut, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -116,8 +129,11 @@ func (c *itx) UpdateService(ctx context.Context, serviceID string, svc *model.Gr
 
 // DeleteService deletes a GroupsIO service.
 func (c *itx) DeleteService(ctx context.Context, serviceID string) error {
-	url := fmt.Sprintf("%sv2/groupsio_service/%s", c.config.BaseURL, serviceID)
-	_, err := c.httpClient.Request(ctx, http.MethodDelete, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_service", serviceID)
+	if err != nil {
+		return errs.NewUnexpected("failed to build URL", err)
+	}
+	_, err = c.httpClient.Request(ctx, http.MethodDelete, u, nil, nil)
 	if err != nil {
 		return c.handleRequestError(err)
 	}
@@ -126,8 +142,11 @@ func (c *itx) DeleteService(ctx context.Context, serviceID string) error {
 
 // getService retrieves a GroupsIO service by ID (used internally by UpdateService on 204 responses).
 func (c *itx) getService(ctx context.Context, serviceID string) (*model.GroupsIOService, error) {
-	url := fmt.Sprintf("%sv2/groupsio_service/%s", c.config.BaseURL, serviceID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_service", serviceID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -142,8 +161,11 @@ func (c *itx) getService(ctx context.Context, serviceID string) (*model.GroupsIO
 // ---- GroupsIOMailingListWriter implementation ----
 
 func (c *itx) getSubgroup(ctx context.Context, mailingListID string) (*model.GroupsIOMailingList, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -161,8 +183,11 @@ func (c *itx) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingLi
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_subgroup", c.config.BaseURL)
-	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_subgroup")
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -181,8 +206,11 @@ func (c *itx) UpdateMailingList(ctx context.Context, mailingListID string, ml *m
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
-	resp, err := c.httpClient.Request(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPut, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -201,8 +229,11 @@ func (c *itx) UpdateMailingList(ctx context.Context, mailingListID string, ml *m
 
 // DeleteMailingList deletes a GroupsIO mailing list (subgroup).
 func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s", c.config.BaseURL, mailingListID)
-	_, err := c.httpClient.Request(ctx, http.MethodDelete, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID)
+	if err != nil {
+		return errs.NewUnexpected("failed to build URL", err)
+	}
+	_, err = c.httpClient.Request(ctx, http.MethodDelete, u, nil, nil)
 	if err != nil {
 		return c.handleRequestError(err)
 	}
@@ -213,8 +244,11 @@ func (c *itx) DeleteMailingList(ctx context.Context, mailingListID string) error
 
 // ListMembers lists all members of a GroupsIO mailing list.
 func (c *itx) ListMembers(ctx context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/members", c.config.BaseURL, mailingListID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "members")
+	if err != nil {
+		return nil, 0, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, 0, c.handleRequestError(err)
 	}
@@ -243,8 +277,11 @@ func (c *itx) CheckSubscriber(ctx context.Context, mailingListID string, email s
 		return false, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_checksubscriber", c.config.BaseURL)
-	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_checksubscriber")
+	if err != nil {
+		return false, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return false, c.handleRequestError(err)
 	}
@@ -260,8 +297,11 @@ func (c *itx) CheckSubscriber(ctx context.Context, mailingListID string, email s
 
 // getMember retrieves a GroupsIO member by ID (used internally by UpdateMember on 204 responses).
 func (c *itx) getMember(ctx context.Context, mailingListID string, memberID string) (*model.GrpsIOMember, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "members", memberID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -279,8 +319,11 @@ func (c *itx) AddMember(ctx context.Context, mailingListID string, member *model
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/members", c.config.BaseURL, mailingListID)
-	resp, err := c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "members")
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -299,8 +342,11 @@ func (c *itx) UpdateMember(ctx context.Context, mailingListID string, memberID s
 		return nil, errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
-	resp, err := c.httpClient.Request(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "members", memberID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodPut, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
@@ -319,8 +365,11 @@ func (c *itx) UpdateMember(ctx context.Context, mailingListID string, memberID s
 
 // DeleteMember removes a member from a GroupsIO mailing list.
 func (c *itx) DeleteMember(ctx context.Context, mailingListID string, memberID string) error {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/members/%s", c.config.BaseURL, mailingListID, memberID)
-	_, err := c.httpClient.Request(ctx, http.MethodDelete, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "members", memberID)
+	if err != nil {
+		return errs.NewUnexpected("failed to build URL", err)
+	}
+	_, err = c.httpClient.Request(ctx, http.MethodDelete, u, nil, nil)
 	if err != nil {
 		return c.handleRequestError(err)
 	}
@@ -334,8 +383,11 @@ func (c *itx) InviteMembers(ctx context.Context, mailingListID string, emails []
 		return errs.NewUnexpected("failed to marshal request", err)
 	}
 
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/invite_members", c.config.BaseURL, mailingListID)
-	_, err = c.httpClient.Request(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "invite_members")
+	if err != nil {
+		return errs.NewUnexpected("failed to build URL", err)
+	}
+	_, err = c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(bodyBytes), map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		return c.handleRequestError(err)
 	}
@@ -346,17 +398,22 @@ func (c *itx) InviteMembers(ctx context.Context, mailingListID string, emails []
 
 // ListMailingLists lists GroupsIO mailing lists, optionally filtered by project and/or committee v1 IDs.
 func (c *itx) ListMailingLists(ctx context.Context, projectID string, committeeID string) ([]*model.GroupsIOMailingList, int, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup", c.config.BaseURL)
-	sep := "?"
+	u, err := c.buildURL("v2", "groupsio_subgroup")
+	if err != nil {
+		return nil, 0, errs.NewUnexpected("failed to build URL", err)
+	}
+	q := url.Values{}
 	if projectID != "" {
-		url = fmt.Sprintf("%s%sproject_id=%s", url, sep, projectID)
-		sep = "&"
+		q.Set("project_id", projectID)
 	}
 	if committeeID != "" {
-		url = fmt.Sprintf("%s%scommittee=%s", url, sep, committeeID)
+		q.Set("committee", committeeID)
+	}
+	if len(q) > 0 {
+		u += "?" + q.Encode()
 	}
 
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, 0, c.handleRequestError(err)
 	}
@@ -380,8 +437,13 @@ func (c *itx) GetMailingList(ctx context.Context, mailingListID string) (*model.
 
 // GetMailingListCount returns the count of mailing lists for a given v1 project ID.
 func (c *itx) GetMailingListCount(ctx context.Context, projectID string) (int, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/count?project_id=%s", c.config.BaseURL, projectID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", "count")
+	if err != nil {
+		return 0, errs.NewUnexpected("failed to build URL", err)
+	}
+	u += "?" + url.Values{"project_id": {projectID}}.Encode()
+
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return 0, c.handleRequestError(err)
 	}
@@ -395,8 +457,11 @@ func (c *itx) GetMailingListCount(ctx context.Context, projectID string) (int, e
 
 // GetMailingListMemberCount returns the count of members in a given mailing list.
 func (c *itx) GetMailingListMemberCount(ctx context.Context, mailingListID string) (int, error) {
-	url := fmt.Sprintf("%sv2/groupsio_subgroup/%s/member_count", c.config.BaseURL, mailingListID)
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	u, err := c.buildURL("v2", "groupsio_subgroup", mailingListID, "member_count")
+	if err != nil {
+		return 0, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return 0, c.handleRequestError(err)
 	}
@@ -412,11 +477,15 @@ func (c *itx) GetMailingListMemberCount(ctx context.Context, mailingListID strin
 
 // listServices retrieves a list of GroupsIO services, optionally filtered by project_id.
 func (c *itx) listServices(ctx context.Context, projectID string) (*serviceListResponseWire, error) {
-	url := fmt.Sprintf("%sv2/groupsio_service", c.config.BaseURL)
-	if projectID != "" {
-		url = fmt.Sprintf("%s?project_id=%s", url, projectID)
+	u, err := c.buildURL("v2", "groupsio_service")
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
 	}
-	resp, err := c.httpClient.Request(ctx, http.MethodGet, url, nil, nil)
+	if projectID != "" {
+		u += "?" + url.Values{"project_id": {projectID}}.Encode()
+	}
+
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
 		return nil, c.handleRequestError(err)
 	}
