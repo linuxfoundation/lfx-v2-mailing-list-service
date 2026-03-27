@@ -201,6 +201,14 @@ if o.groupsClient != nil {
 3. **Testable**: Domain logic fully tested without external API dependencies
 4. **Configurable**: Easy switching between mock and real modes
 
+### Committee Member Sync (handled by the proxied system)
+
+This service does **not** implement committee-to-mailing-list member synchronization. That sync is fully handled by the `committee-association` Lambda (`cmd/committee-association`) in `itx-service-groupsio`.
+
+The flow is event-driven: `project-management` publishes SNS events (`CommitteeMemberV2Created`, `CommitteeMemberV2Deleted`, `CommitteeV2Deleted`), and `itx-service-groupsio` publishes `CommitteeChanged` when a subgroup's committee association or filters are updated. Those events flow through SQS into the Lambda, which calls this service's ITX proxy endpoints to subscribe or remove members in Groups.io.
+
+No additional implementation is needed here — this service only needs to correctly proxy the member subscribe/remove calls the Lambda makes.
+
 ### Testing the Data Stream Processor
 To test the v1 DynamoDB KV event processor locally:
 
