@@ -166,15 +166,6 @@ func main() {
 
 	// ** IMPORTANT **
 	// TODO - sync should use wrapper service
-	// https://linuxfoundation.atlassian.net/browse/LFXV2-1315
-	// Start committee sync - critical for data consistency
-	// if err := handleCommitteeSync(ctx, &wg); err != nil {
-	// 	slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
-	// 	os.Exit(1)
-	// }
-
-	// ** IMPORTANT **
-	// TODO - sync should use wrapper service
 	// https://linuxfoundation.atlassian.net/browse/LFXV2-1316
 	// Start mailing list sync - critical for data consistency
 	// if err := handleMailingListSync(ctx, &wg); err != nil {

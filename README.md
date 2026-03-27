@@ -190,6 +190,21 @@ lfx-v2-mailing-list-service/
 └── go.mod                          # Go module definition
 ```
 
+## Committee Member Sync
+
+This service does not implement committee-to-mailing-list member synchronization. That sync is fully handled by the system this service proxies to (the ITX/v1 backend).
+
+The sync logic works as follows:
+
+- **When a committee member is added**, the member is subscribed to all linked mailing lists they are eligible for based on the list's voting status filters.
+- **When a committee member is removed**, the member is unsubscribed from all private mailing lists linked to that committee. Public lists are not affected.
+- **When a committee is deleted**, its association with linked mailing lists is cleared. Existing members are left as-is — no one is removed.
+- **When a committee association or its filters are updated** on a mailing list, the membership is reconciled: members who now match are added, and members who no longer match are removed (private lists only).
+
+Because this service reuses the same database and infrastructure as the proxied backend, this sync loop is already closed and no additional implementation is needed here.
+
+---
+
 ## 📚 Additional Documentation
 
 | Document | Description |
