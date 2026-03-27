@@ -164,6 +164,15 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
+	// ** IMPORTANT **
+	// TODO - sync should use wrapper service
+	// https://linuxfoundation.atlassian.net/browse/LFXV2-1316
+	// Start mailing list sync - critical for data consistency
+	// if err := handleMailingListSync(ctx, &wg); err != nil {
+	// 	slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
+	// 	os.Exit(1)
+	// }
+
 	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var)
 	if err := handleDataStream(ctx, &wg); err != nil {
 		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
