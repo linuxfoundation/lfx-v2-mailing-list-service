@@ -201,6 +201,25 @@ if o.groupsClient != nil {
 3. **Testable**: Domain logic fully tested without external API dependencies
 4. **Configurable**: Easy switching between mock and real modes
 
+### Committee–Mailing List Sync (handled by the proxied system)
+
+This service does **not** implement committee-to-mailing-list member synchronization. The sync is fully handled within the ITX/v1 backend that this service proxies to. No NATS-based flow or additional service needs to be built here.
+
+**How the sync works in the proxied system:**
+- `groups_subgroups.go` (API) — publishes `CommitteeAssociated`, `CommitteeChanged`, and `CommitteeUnassociated` SNS events on subgroup committee config changes.
+- `cmd/committee-association` (Lambda) — consumes those events via SQS:
+  - `CommitteeAssociated`: full member sync into the mailing list.
+  - `CommitteeUnassociated`: removes all committee-type members from the list.
+  - `CommitteeChanged`: diffs old vs. new `AllowedVotingStatuses` filters — removes members who no longer match, adds members who now do.
+  - `CommitteeMemberV2Created` / `CommitteeMemberV2Deleted`: individual member add/remove.
+
+**Intentional gap in the proxied system:** when a committee is associated with a subgroup that previously had none (via `PUT`), the `CommitteeAssociated` event is deliberately not fired (commented out in `groups_subgroups.go`). Pre-existing product decision, out of scope.
+
+**If this sync ever needs to be implemented here** (e.g., if the service is decoupled from the ITX backend and gets its own database), the logic to implement is:
+- `handleCreated`: on mailing list creation with committees configured, call a `SyncCommitteeMembersToMailingList` for each committee. Skip committees with errors (log and continue).
+- `handleUpdated`: compare old and new committee configurations using committee UID as the stable key. Classify changes into added/removed/modified (modified = same UID but different `AllowedVotingStatuses`). Act on each category.
+- `detectCommitteeChanges`: diff helper that returns three slices — added, removed, modified committees.
+
 ### Committee Member Sync (handled by the proxied system)
 
 This service does **not** implement committee-to-mailing-list member synchronization. That sync is fully handled by the `committee-association` Lambda (`cmd/committee-association`) in `itx-service-groupsio`.
