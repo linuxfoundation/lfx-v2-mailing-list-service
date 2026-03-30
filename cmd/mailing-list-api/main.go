@@ -1,6 +1,8 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package main is the ITX mailing list proxy service that provides a lightweight proxy
+// layer to the ITX GroupsIO API.
 package main
 
 import (
@@ -16,6 +18,8 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
+	orchestrator "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/utils"
 
@@ -30,21 +34,15 @@ var (
 )
 
 const (
-	defaultPort = "8080"
-	// gracefulShutdownSeconds should be higher than NATS client
-	// request timeout, and lower than the pod or liveness probe's
-	// terminationGracePeriodSeconds.
+	defaultPort             = "8080"
 	gracefulShutdownSeconds = 25
 )
 
 func init() {
-	// slog is the standard library logger, we use it to log errors and
 	logging.InitStructureLogConfig()
 }
 
 func main() {
-	// Define command line flags, add any other flag required to configure the
-	// service.
 	var (
 		dbgF = flag.Bool("d", false, "enable debug logging")
 		port = flag.String("p", defaultPort, "listen port")
@@ -70,7 +68,6 @@ func main() {
 		slog.ErrorContext(ctx, "error setting up OpenTelemetry SDK", "error", err)
 		os.Exit(1)
 	}
-	// Handle shutdown properly so nothing leaks.
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 		defer cancel()
@@ -79,7 +76,7 @@ func main() {
 		}
 	}()
 
-	slog.InfoContext(ctx, "Starting mailing list service",
+	slog.InfoContext(ctx, "Starting ITX mailing list proxy service",
 		"bind", *bind,
 		"http-port", *port,
 		"graceful-shutdown-seconds", gracefulShutdownSeconds,
@@ -88,42 +85,69 @@ func main() {
 		"git-commit", GitCommit,
 	)
 
-	// Validate provider configuration before initializing dependencies
-	service.ValidateProviderConfiguration(ctx)
-
-	// Initialize dependencies using provider pattern
-	storage := service.GrpsIOReaderWriter(ctx)
+	// Initialize authentication service
 	authService := service.AuthService(ctx)
 
-	// Create orchestrators using provider functions
-	readGrpsIOService := service.GrpsIOReaderOrchestrator(ctx)
-	writeGrpsIOService := service.GrpsIOWriterOrchestrator(ctx)
+	// Initialize ID translator
+	translator := service.Translator(ctx)
 
-	// Initialize GroupsIO webhook dependencies
-	grpsioWebhookValidator := service.GrpsIOWebhookValidator(ctx)
-	grpsioWebhookProcessor := service.GrpsIOWebhookProcessor(ctx)
+	// Initialize GroupsIO service proxy (ITX proxy + orchestrators)
+	slog.InfoContext(ctx, "initializing GroupsIO service proxy")
+	proxyClient, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to initialize ITX proxy client", "error", err)
+		os.Exit(1)
+	}
 
-	// Initialize the mailing list service with service management endpoints
-	mailingListServiceSvc := service.NewMailingList(
-		authService,
-		readGrpsIOService,
-		writeGrpsIOService,
-		storage,
-		grpsioWebhookValidator,
-		grpsioWebhookProcessor,
+	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
+		orchestrator.WithServiceReader(proxyClient),
+		orchestrator.WithServiceReaderTranslator(translator),
 	)
 
-	// Wrap the services in endpoints that can be invoked from other services
-	// potentially running in different processes.
-	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListServiceSvc)
-	mailingListServiceEndpoints.Use(debug.LogPayloads())
+	serviceOrchestrator := orchestrator.NewGroupsIOServiceWriterOrchestrator(
+		orchestrator.WithServiceWriter(proxyClient),
+		orchestrator.WithServiceTranslator(translator),
+	)
 
-	// Create channel used by both the signal handler and server goroutines
-	// to notify the main goroutine when to stop the server.
+	mailingListReaderOrchestrator := orchestrator.NewGroupsIOMailingListReaderOrchestrator(
+		orchestrator.WithMailingListReader(proxyClient),
+		orchestrator.WithMailingListReaderTranslator(translator),
+	)
+
+	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
+		orchestrator.WithMailingListWriter(proxyClient),
+		orchestrator.WithMailingListTranslator(translator),
+	)
+
+	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
+		orchestrator.WithMemberReader(proxyClient),
+	)
+
+	memberWriterOrchestrator := orchestrator.NewGroupsIOMailingListMemberWriterOrchestrator(
+		orchestrator.WithMemberWriter(proxyClient),
+	)
+
+	slog.InfoContext(ctx, "ITX proxy client initialized")
+
+	// Create the mailing list API service
+	mailingListSvc := service.NewMailingListAPI(
+		authService,
+		serviceReaderOrchestrator,
+		serviceOrchestrator,
+		mailingListReaderOrchestrator,
+		mailingListOrchestrator,
+		memberReaderOrchestrator,
+		memberWriterOrchestrator,
+	)
+
+	// Wrap the services in endpoints
+	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListSvc)
+	if *dbgF {
+		mailingListServiceEndpoints.Use(debug.LogPayloads())
+	}
+
 	errc := make(chan error)
 
-	// Setup interrupt handler. This optional step configures the process so
-	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
@@ -133,7 +157,6 @@ func main() {
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(ctx)
 
-	// Start the servers and send errors (if any) to the error channel.
 	addr := ":" + *port
 	if *bind != "*" {
 		addr = *bind + ":" + *port
@@ -141,17 +164,14 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
-	// Start committee sync - critical for data consistency
-	if err := handleCommitteeSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start committee sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
-
+	// ** IMPORTANT **
+	// TODO - sync should use wrapper service
+	// https://linuxfoundation.atlassian.net/browse/LFXV2-1316
 	// Start mailing list sync - critical for data consistency
-	if err := handleMailingListSync(ctx, &wg); err != nil {
-		slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
-		os.Exit(1)
-	}
+	// if err := handleMailingListSync(ctx, &wg); err != nil {
+	// 	slog.ErrorContext(ctx, "FATAL: failed to start mailing list sync - service cannot maintain data consistency", "error", err)
+	// 	os.Exit(1)
+	// }
 
 	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var)
 	if err := handleDataStream(ctx, &wg); err != nil {
@@ -164,14 +184,11 @@ func main() {
 		"signal", <-errc,
 	)
 
-	// Send cancellation signal to the goroutines.
 	cancel()
 
-	// Create a timeout context for graceful shutdown
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
 
-	// Wait for all goroutines to finish with timeout
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()

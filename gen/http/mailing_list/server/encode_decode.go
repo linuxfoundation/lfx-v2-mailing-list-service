@@ -75,24 +75,127 @@ func EncodeReadyzError(encoder func(context.Context, http.ResponseWriter) goahtt
 	}
 }
 
-// EncodeCreateGrpsioServiceResponse returns an encoder for responses returned
-// by the mailing-list create-grpsio-service endpoint.
-func EncodeCreateGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeListGroupsioServicesResponse returns an encoder for responses returned
+// by the mailing-list list-groupsio-services endpoint.
+func EncodeListGroupsioServicesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoServiceFull)
+		res, _ := v.(*mailinglist.GroupsioServiceList)
 		enc := encoder(ctx, w)
-		body := NewCreateGrpsioServiceResponseBody(res)
+		body := NewListGroupsioServicesResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListGroupsioServicesRequest returns a decoder for requests sent to the
+// mailing-list list-groupsio-services endpoint.
+func DecodeListGroupsioServicesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			projectUID  *string
+			bearerToken *string
+			err         error
+		)
+		projectUIDRaw := r.URL.Query().Get("project_uid")
+		if projectUIDRaw != "" {
+			projectUID = &projectUIDRaw
+		}
+		if projectUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", *projectUID, goa.FormatUUID))
+		}
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListGroupsioServicesPayload(projectUID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeListGroupsioServicesError returns an encoder for errors returned by
+// the list-groupsio-services mailing-list endpoint.
+func EncodeListGroupsioServicesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioServicesBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioServicesInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioServicesServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeCreateGroupsioServiceResponse returns an encoder for responses
+// returned by the mailing-list create-groupsio-service endpoint.
+func EncodeCreateGroupsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioService)
+		enc := encoder(ctx, w)
+		body := NewCreateGroupsioServiceResponseBody(res)
 		w.WriteHeader(http.StatusCreated)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeCreateGrpsioServiceRequest returns a decoder for requests sent to the
-// mailing-list create-grpsio-service endpoint.
-func DecodeCreateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeCreateGroupsioServiceRequest returns a decoder for requests sent to
+// the mailing-list create-groupsio-service endpoint.
+func DecodeCreateGroupsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body CreateGrpsioServiceRequestBody
+			body CreateGroupsioServiceRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -106,30 +209,19 @@ func DecodeCreateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateGrpsioServiceRequestBody(&body)
+		err = ValidateCreateGroupsioServiceRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			version     string
 			bearerToken *string
 		)
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewCreateGrpsioServicePayload(&body, version, bearerToken)
+		payload := NewCreateGroupsioServicePayload(&body, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -142,9 +234,9 @@ func DecodeCreateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 	}
 }
 
-// EncodeCreateGrpsioServiceError returns an encoder for errors returned by the
-// create-grpsio-service mailing-list endpoint.
-func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeCreateGroupsioServiceError returns an encoder for errors returned by
+// the create-groupsio-service mailing-list endpoint.
+func EncodeCreateGroupsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -160,7 +252,7 @@ func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioServiceBadRequestResponseBody(res)
+				body = NewCreateGroupsioServiceBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -173,7 +265,7 @@ func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioServiceConflictResponseBody(res)
+				body = NewCreateGroupsioServiceConflictResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -186,23 +278,10 @@ func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioServiceInternalServerErrorResponseBody(res)
+				body = NewCreateGroupsioServiceInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
-			return enc.Encode(body)
-		case "NotFound":
-			var res *mailinglist.NotFoundError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewCreateGrpsioServiceNotFoundResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
 		case "ServiceUnavailable":
 			var res *mailinglist.ServiceUnavailableError
@@ -212,7 +291,7 @@ func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioServiceServiceUnavailableResponseBody(res)
+				body = NewCreateGroupsioServiceServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -223,52 +302,34 @@ func EncodeCreateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 	}
 }
 
-// EncodeGetGrpsioServiceResponse returns an encoder for responses returned by
-// the mailing-list get-grpsio-service endpoint.
-func EncodeGetGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioServiceResponse returns an encoder for responses returned
+// by the mailing-list get-groupsio-service endpoint.
+func EncodeGetGroupsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GetGrpsioServiceResult)
+		res, _ := v.(*mailinglist.GroupsioService)
 		enc := encoder(ctx, w)
-		body := NewGetGrpsioServiceResponseBody(res)
-		if res.Etag != nil {
-			w.Header().Set("Etag", *res.Etag)
-		}
+		body := NewGetGroupsioServiceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGrpsioServiceRequest returns a decoder for requests sent to the
-// mailing-list get-grpsio-service endpoint.
-func DecodeGetGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioServiceRequest returns a decoder for requests sent to the
+// mailing-list get-groupsio-service endpoint.
+func DecodeGetGroupsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     *string
+			serviceID   string
 			bearerToken *string
-			err         error
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
-		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-		}
+		serviceID = params["service_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewGetGrpsioServicePayload(uid, version, bearerToken)
+		payload := NewGetGroupsioServicePayload(serviceID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -281,9 +342,9 @@ func DecodeGetGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request
 	}
 }
 
-// EncodeGetGrpsioServiceError returns an encoder for errors returned by the
-// get-grpsio-service mailing-list endpoint.
-func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioServiceError returns an encoder for errors returned by the
+// get-groupsio-service mailing-list endpoint.
+func EncodeGetGroupsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -291,19 +352,6 @@ func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWrit
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioServiceBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -312,7 +360,7 @@ func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWrit
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioServiceInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioServiceInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -325,7 +373,7 @@ func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWrit
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioServiceNotFoundResponseBody(res)
+				body = NewGetGroupsioServiceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -338,7 +386,7 @@ func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWrit
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioServiceServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioServiceServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -349,24 +397,24 @@ func EncodeGetGrpsioServiceError(encoder func(context.Context, http.ResponseWrit
 	}
 }
 
-// EncodeUpdateGrpsioServiceResponse returns an encoder for responses returned
-// by the mailing-list update-grpsio-service endpoint.
-func EncodeUpdateGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeUpdateGroupsioServiceResponse returns an encoder for responses
+// returned by the mailing-list update-groupsio-service endpoint.
+func EncodeUpdateGroupsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoServiceWithReadonlyAttributes)
+		res, _ := v.(*mailinglist.GroupsioService)
 		enc := encoder(ctx, w)
-		body := NewUpdateGrpsioServiceResponseBody(res)
+		body := NewUpdateGroupsioServiceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeUpdateGrpsioServiceRequest returns a decoder for requests sent to the
-// mailing-list update-grpsio-service endpoint.
-func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeUpdateGroupsioServiceRequest returns a decoder for requests sent to
+// the mailing-list update-groupsio-service endpoint.
+func DecodeUpdateGroupsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGrpsioServiceRequestBody
+			body UpdateGroupsioServiceRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -380,40 +428,23 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateGrpsioServiceRequestBody(&body)
+		err = ValidateUpdateGroupsioServiceRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			uid         string
-			version     string
+			serviceID   string
 			bearerToken *string
-			ifMatch     *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
+		serviceID = params["service_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewUpdateGrpsioServicePayload(&body, uid, version, bearerToken, ifMatch)
+		payload := NewUpdateGroupsioServicePayload(&body, serviceID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -426,9 +457,9 @@ func DecodeUpdateGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 	}
 }
 
-// EncodeUpdateGrpsioServiceError returns an encoder for errors returned by the
-// update-grpsio-service mailing-list endpoint.
-func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeUpdateGroupsioServiceError returns an encoder for errors returned by
+// the update-groupsio-service mailing-list endpoint.
+func EncodeUpdateGroupsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -444,23 +475,10 @@ func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceBadRequestResponseBody(res)
+				body = NewUpdateGroupsioServiceBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioServiceConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
@@ -470,7 +488,7 @@ func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceInternalServerErrorResponseBody(res)
+				body = NewUpdateGroupsioServiceInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -483,7 +501,7 @@ func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceNotFoundResponseBody(res)
+				body = NewUpdateGroupsioServiceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -496,7 +514,7 @@ func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceServiceUnavailableResponseBody(res)
+				body = NewUpdateGroupsioServiceServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -507,51 +525,31 @@ func EncodeUpdateGrpsioServiceError(encoder func(context.Context, http.ResponseW
 	}
 }
 
-// EncodeDeleteGrpsioServiceResponse returns an encoder for responses returned
-// by the mailing-list delete-grpsio-service endpoint.
-func EncodeDeleteGrpsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeDeleteGroupsioServiceResponse returns an encoder for responses
+// returned by the mailing-list delete-groupsio-service endpoint.
+func EncodeDeleteGroupsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
 
-// DecodeDeleteGrpsioServiceRequest returns a decoder for requests sent to the
-// mailing-list delete-grpsio-service endpoint.
-func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeDeleteGroupsioServiceRequest returns a decoder for requests sent to
+// the mailing-list delete-groupsio-service endpoint.
+func DecodeDeleteGroupsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     *string
+			serviceID   string
 			bearerToken *string
-			ifMatch     *string
-			err         error
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
-		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-		}
+		serviceID = params["service_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewDeleteGrpsioServicePayload(uid, version, bearerToken, ifMatch)
+		payload := NewDeleteGroupsioServicePayload(serviceID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -564,9 +562,9 @@ func DecodeDeleteGrpsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Requ
 	}
 }
 
-// EncodeDeleteGrpsioServiceError returns an encoder for errors returned by the
-// delete-grpsio-service mailing-list endpoint.
-func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeDeleteGroupsioServiceError returns an encoder for errors returned by
+// the delete-groupsio-service mailing-list endpoint.
+func EncodeDeleteGroupsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -574,32 +572,6 @@ func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioServiceBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioServiceConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -608,7 +580,7 @@ func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioServiceInternalServerErrorResponseBody(res)
+				body = NewDeleteGroupsioServiceInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -621,7 +593,7 @@ func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioServiceNotFoundResponseBody(res)
+				body = NewDeleteGroupsioServiceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -634,7 +606,7 @@ func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioServiceServiceUnavailableResponseBody(res)
+				body = NewDeleteGroupsioServiceServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -645,52 +617,30 @@ func EncodeDeleteGrpsioServiceError(encoder func(context.Context, http.ResponseW
 	}
 }
 
-// EncodeGetGrpsioServiceSettingsResponse returns an encoder for responses
-// returned by the mailing-list get-grpsio-service-settings endpoint.
-func EncodeGetGrpsioServiceSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioServiceProjectsResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-service-projects endpoint.
+func EncodeGetGroupsioServiceProjectsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GetGrpsioServiceSettingsResult)
+		res, _ := v.(*mailinglist.GroupsioProjectsResponse)
 		enc := encoder(ctx, w)
-		body := NewGetGrpsioServiceSettingsResponseBody(res)
-		if res.Etag != nil {
-			w.Header().Set("Etag", *res.Etag)
-		}
+		body := NewGetGroupsioServiceProjectsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGrpsioServiceSettingsRequest returns a decoder for requests sent to
-// the mailing-list get-grpsio-service-settings endpoint.
-func DecodeGetGrpsioServiceSettingsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioServiceProjectsRequest returns a decoder for requests sent
+// to the mailing-list get-groupsio-service-projects endpoint.
+func DecodeGetGroupsioServiceProjectsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     *string
 			bearerToken *string
-			err         error
-
-			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
-		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewGetGrpsioServiceSettingsPayload(uid, version, bearerToken)
+		payload := NewGetGroupsioServiceProjectsPayload(bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -703,9 +653,9 @@ func DecodeGetGrpsioServiceSettingsRequest(mux goahttp.Muxer, decoder func(*http
 	}
 }
 
-// EncodeGetGrpsioServiceSettingsError returns an encoder for errors returned
-// by the get-grpsio-service-settings mailing-list endpoint.
-func EncodeGetGrpsioServiceSettingsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioServiceProjectsError returns an encoder for errors returned
+// by the get-groupsio-service-projects mailing-list endpoint.
+func EncodeGetGroupsioServiceProjectsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -713,19 +663,6 @@ func EncodeGetGrpsioServiceSettingsError(encoder func(context.Context, http.Resp
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioServiceSettingsBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -734,23 +671,10 @@ func EncodeGetGrpsioServiceSettingsError(encoder func(context.Context, http.Resp
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioServiceSettingsInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioServiceProjectsInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
-			return enc.Encode(body)
-		case "NotFound":
-			var res *mailinglist.NotFoundError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioServiceSettingsNotFoundResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
 		case "ServiceUnavailable":
 			var res *mailinglist.ServiceUnavailableError
@@ -760,7 +684,7 @@ func EncodeGetGrpsioServiceSettingsError(encoder func(context.Context, http.Resp
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioServiceSettingsServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioServiceProjectsServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -771,71 +695,40 @@ func EncodeGetGrpsioServiceSettingsError(encoder func(context.Context, http.Resp
 	}
 }
 
-// EncodeUpdateGrpsioServiceSettingsResponse returns an encoder for responses
-// returned by the mailing-list update-grpsio-service-settings endpoint.
-func EncodeUpdateGrpsioServiceSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeFindParentGroupsioServiceResponse returns an encoder for responses
+// returned by the mailing-list find-parent-groupsio-service endpoint.
+func EncodeFindParentGroupsioServiceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoServiceSettings)
+		res, _ := v.(*mailinglist.GroupsioService)
 		enc := encoder(ctx, w)
-		body := NewUpdateGrpsioServiceSettingsResponseBody(res)
+		body := NewFindParentGroupsioServiceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeUpdateGrpsioServiceSettingsRequest returns a decoder for requests sent
-// to the mailing-list update-grpsio-service-settings endpoint.
-func DecodeUpdateGrpsioServiceSettingsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeFindParentGroupsioServiceRequest returns a decoder for requests sent
+// to the mailing-list find-parent-groupsio-service endpoint.
+func DecodeFindParentGroupsioServiceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGrpsioServiceSettingsRequestBody
-			err  error
-		)
-		err = decoder(r).Decode(&body)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil, goa.MissingPayloadError()
-			}
-			var gerr *goa.ServiceError
-			if errors.As(err, &gerr) {
-				return nil, gerr
-			}
-			return nil, goa.DecodePayloadError(err.Error())
-		}
-		err = ValidateUpdateGrpsioServiceSettingsRequestBody(&body)
-		if err != nil {
-			return nil, err
-		}
-
-		var (
-			uid         string
-			version     string
+			projectUID  string
 			bearerToken *string
-			ifMatch     *string
-
-			params = mux.Vars(r)
+			err         error
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		projectUID = r.URL.Query().Get("project_uid")
+		if projectUID == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "query string"))
 		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", projectUID, goa.FormatUUID))
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateGrpsioServiceSettingsPayload(&body, uid, version, bearerToken, ifMatch)
+		payload := NewFindParentGroupsioServicePayload(projectUID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -848,9 +741,9 @@ func DecodeUpdateGrpsioServiceSettingsRequest(mux goahttp.Muxer, decoder func(*h
 	}
 }
 
-// EncodeUpdateGrpsioServiceSettingsError returns an encoder for errors
-// returned by the update-grpsio-service-settings mailing-list endpoint.
-func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeFindParentGroupsioServiceError returns an encoder for errors returned
+// by the find-parent-groupsio-service mailing-list endpoint.
+func EncodeFindParentGroupsioServiceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -866,23 +759,10 @@ func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.R
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceSettingsBadRequestResponseBody(res)
+				body = NewFindParentGroupsioServiceBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioServiceSettingsConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
@@ -892,7 +772,7 @@ func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.R
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceSettingsInternalServerErrorResponseBody(res)
+				body = NewFindParentGroupsioServiceInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -905,7 +785,7 @@ func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.R
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceSettingsNotFoundResponseBody(res)
+				body = NewFindParentGroupsioServiceNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -918,7 +798,7 @@ func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.R
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioServiceSettingsServiceUnavailableResponseBody(res)
+				body = NewFindParentGroupsioServiceServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -929,24 +809,136 @@ func EncodeUpdateGrpsioServiceSettingsError(encoder func(context.Context, http.R
 	}
 }
 
-// EncodeCreateGrpsioMailingListResponse returns an encoder for responses
-// returned by the mailing-list create-grpsio-mailing-list endpoint.
-func EncodeCreateGrpsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeListGroupsioMailingListsResponse returns an encoder for responses
+// returned by the mailing-list list-groupsio-mailing-lists endpoint.
+func EncodeListGroupsioMailingListsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoMailingListFull)
+		res, _ := v.(*mailinglist.GroupsioSubgroupList)
 		enc := encoder(ctx, w)
-		body := NewCreateGrpsioMailingListResponseBody(res)
+		body := NewListGroupsioMailingListsResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListGroupsioMailingListsRequest returns a decoder for requests sent to
+// the mailing-list list-groupsio-mailing-lists endpoint.
+func DecodeListGroupsioMailingListsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			projectUID   *string
+			committeeUID *string
+			bearerToken  *string
+			err          error
+		)
+		qp := r.URL.Query()
+		projectUIDRaw := qp.Get("project_uid")
+		if projectUIDRaw != "" {
+			projectUID = &projectUIDRaw
+		}
+		if projectUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", *projectUID, goa.FormatUUID))
+		}
+		committeeUIDRaw := qp.Get("committee_uid")
+		if committeeUIDRaw != "" {
+			committeeUID = &committeeUIDRaw
+		}
+		if committeeUID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("committee_uid", *committeeUID, goa.FormatUUID))
+		}
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListGroupsioMailingListsPayload(projectUID, committeeUID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeListGroupsioMailingListsError returns an encoder for errors returned
+// by the list-groupsio-mailing-lists mailing-list endpoint.
+func EncodeListGroupsioMailingListsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMailingListsBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMailingListsInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMailingListsServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeCreateGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list create-groupsio-mailing-list endpoint.
+func EncodeCreateGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioSubgroup)
+		enc := encoder(ctx, w)
+		body := NewCreateGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusCreated)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeCreateGrpsioMailingListRequest returns a decoder for requests sent to
-// the mailing-list create-grpsio-mailing-list endpoint.
-func DecodeCreateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeCreateGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list create-groupsio-mailing-list endpoint.
+func DecodeCreateGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body CreateGrpsioMailingListRequestBody
+			body CreateGroupsioMailingListRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -960,30 +952,19 @@ func DecodeCreateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateGrpsioMailingListRequestBody(&body)
+		err = ValidateCreateGroupsioMailingListRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			version     string
 			bearerToken *string
 		)
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewCreateGrpsioMailingListPayload(&body, version, bearerToken)
+		payload := NewCreateGroupsioMailingListPayload(&body, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -996,9 +977,9 @@ func DecodeCreateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 	}
 }
 
-// EncodeCreateGrpsioMailingListError returns an encoder for errors returned by
-// the create-grpsio-mailing-list mailing-list endpoint.
-func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeCreateGroupsioMailingListError returns an encoder for errors returned
+// by the create-groupsio-mailing-list mailing-list endpoint.
+func EncodeCreateGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1014,7 +995,7 @@ func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListBadRequestResponseBody(res)
+				body = NewCreateGroupsioMailingListBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1027,7 +1008,7 @@ func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListConflictResponseBody(res)
+				body = NewCreateGroupsioMailingListConflictResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -1040,23 +1021,10 @@ func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListInternalServerErrorResponseBody(res)
+				body = NewCreateGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
-			return enc.Encode(body)
-		case "NotFound":
-			var res *mailinglist.NotFoundError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewCreateGrpsioMailingListNotFoundResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
 		case "ServiceUnavailable":
 			var res *mailinglist.ServiceUnavailableError
@@ -1066,7 +1034,7 @@ func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListServiceUnavailableResponseBody(res)
+				body = NewCreateGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1077,63 +1045,49 @@ func EncodeCreateGrpsioMailingListError(encoder func(context.Context, http.Respo
 	}
 }
 
-// EncodeGetGrpsioMailingListResponse returns an encoder for responses returned
-// by the mailing-list get-grpsio-mailing-list endpoint.
-func EncodeGetGrpsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-mailing-list endpoint.
+func EncodeGetGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GetGrpsioMailingListResult)
+		res, _ := v.(*mailinglist.GroupsioSubgroup)
 		enc := encoder(ctx, w)
-		body := NewGetGrpsioMailingListResponseBody(res)
-		if res.Etag != nil {
-			w.Header().Set("Etag", *res.Etag)
-		}
+		body := NewGetGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGrpsioMailingListRequest returns a decoder for requests sent to the
-// mailing-list get-grpsio-mailing-list endpoint.
-func DecodeGetGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMailingListRequest returns a decoder for requests sent to
+// the mailing-list get-groupsio-mailing-list endpoint.
+func DecodeGetGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     string
-			bearerToken string
-			err         error
+			subgroupID  string
+			bearerToken *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		subgroupID = params["subgroup_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
 		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
-		bearerToken = r.Header.Get("Authorization")
-		if bearerToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("bearer_token", "header"))
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewGetGrpsioMailingListPayload(uid, version, bearerToken)
-		if strings.Contains(payload.BearerToken, " ") {
-			// Remove authorization scheme prefix (e.g. "Bearer")
-			cred := strings.SplitN(payload.BearerToken, " ", 2)[1]
-			payload.BearerToken = cred
+		payload := NewGetGroupsioMailingListPayload(subgroupID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
 		}
 
 		return payload, nil
 	}
 }
 
-// EncodeGetGrpsioMailingListError returns an encoder for errors returned by
-// the get-grpsio-mailing-list mailing-list endpoint.
-func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListError returns an encoder for errors returned by
+// the get-groupsio-mailing-list mailing-list endpoint.
+func EncodeGetGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1141,19 +1095,6 @@ func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.Response
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioMailingListBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -1162,7 +1103,7 @@ func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.Response
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1175,7 +1116,7 @@ func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.Response
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListNotFoundResponseBody(res)
+				body = NewGetGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1188,7 +1129,7 @@ func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.Response
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1199,24 +1140,24 @@ func EncodeGetGrpsioMailingListError(encoder func(context.Context, http.Response
 	}
 }
 
-// EncodeUpdateGrpsioMailingListResponse returns an encoder for responses
-// returned by the mailing-list update-grpsio-mailing-list endpoint.
-func EncodeUpdateGrpsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeUpdateGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list update-groupsio-mailing-list endpoint.
+func EncodeUpdateGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoMailingListWithReadonlyAttributes)
+		res, _ := v.(*mailinglist.GroupsioSubgroup)
 		enc := encoder(ctx, w)
-		body := NewUpdateGrpsioMailingListResponseBody(res)
+		body := NewUpdateGroupsioMailingListResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeUpdateGrpsioMailingListRequest returns a decoder for requests sent to
-// the mailing-list update-grpsio-mailing-list endpoint.
-func DecodeUpdateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeUpdateGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list update-groupsio-mailing-list endpoint.
+func DecodeUpdateGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGrpsioMailingListRequestBody
+			body UpdateGroupsioMailingListRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -1230,40 +1171,23 @@ func DecodeUpdateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateGrpsioMailingListRequestBody(&body)
+		err = ValidateUpdateGroupsioMailingListRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			uid         string
-			version     string
+			subgroupID  string
 			bearerToken *string
-			ifMatch     *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
+		subgroupID = params["subgroup_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewUpdateGrpsioMailingListPayload(&body, uid, version, bearerToken, ifMatch)
+		payload := NewUpdateGroupsioMailingListPayload(&body, subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1276,9 +1200,9 @@ func DecodeUpdateGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 	}
 }
 
-// EncodeUpdateGrpsioMailingListError returns an encoder for errors returned by
-// the update-grpsio-mailing-list mailing-list endpoint.
-func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeUpdateGroupsioMailingListError returns an encoder for errors returned
+// by the update-groupsio-mailing-list mailing-list endpoint.
+func EncodeUpdateGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1294,23 +1218,10 @@ func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListBadRequestResponseBody(res)
+				body = NewUpdateGroupsioMailingListBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioMailingListConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
@@ -1320,7 +1231,7 @@ func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListInternalServerErrorResponseBody(res)
+				body = NewUpdateGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1333,7 +1244,7 @@ func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListNotFoundResponseBody(res)
+				body = NewUpdateGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1346,7 +1257,7 @@ func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListServiceUnavailableResponseBody(res)
+				body = NewUpdateGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1357,51 +1268,31 @@ func EncodeUpdateGrpsioMailingListError(encoder func(context.Context, http.Respo
 	}
 }
 
-// EncodeDeleteGrpsioMailingListResponse returns an encoder for responses
-// returned by the mailing-list delete-grpsio-mailing-list endpoint.
-func EncodeDeleteGrpsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeDeleteGroupsioMailingListResponse returns an encoder for responses
+// returned by the mailing-list delete-groupsio-mailing-list endpoint.
+func EncodeDeleteGroupsioMailingListResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
 
-// DecodeDeleteGrpsioMailingListRequest returns a decoder for requests sent to
-// the mailing-list delete-grpsio-mailing-list endpoint.
-func DecodeDeleteGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeDeleteGroupsioMailingListRequest returns a decoder for requests sent
+// to the mailing-list delete-groupsio-mailing-list endpoint.
+func DecodeDeleteGroupsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     *string
+			subgroupID  string
 			bearerToken *string
-			ifMatch     *string
-			err         error
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
-		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-		}
+		subgroupID = params["subgroup_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewDeleteGrpsioMailingListPayload(uid, version, bearerToken, ifMatch)
+		payload := NewDeleteGroupsioMailingListPayload(subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1414,9 +1305,9 @@ func DecodeDeleteGrpsioMailingListRequest(mux goahttp.Muxer, decoder func(*http.
 	}
 }
 
-// EncodeDeleteGrpsioMailingListError returns an encoder for errors returned by
-// the delete-grpsio-mailing-list mailing-list endpoint.
-func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeDeleteGroupsioMailingListError returns an encoder for errors returned
+// by the delete-groupsio-mailing-list mailing-list endpoint.
+func EncodeDeleteGroupsioMailingListError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1424,32 +1315,6 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioMailingListBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioMailingListConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -1458,7 +1323,7 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListInternalServerErrorResponseBody(res)
+				body = NewDeleteGroupsioMailingListInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1471,7 +1336,7 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListNotFoundResponseBody(res)
+				body = NewDeleteGroupsioMailingListNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1484,7 +1349,7 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListServiceUnavailableResponseBody(res)
+				body = NewDeleteGroupsioMailingListServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1495,44 +1360,32 @@ func EncodeDeleteGrpsioMailingListError(encoder func(context.Context, http.Respo
 	}
 }
 
-// EncodeGetGrpsioMailingListSettingsResponse returns an encoder for responses
-// returned by the mailing-list get-grpsio-mailing-list-settings endpoint.
-func EncodeGetGrpsioMailingListSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMailingListCountResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-mailing-list-count endpoint.
+func EncodeGetGroupsioMailingListCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GetGrpsioMailingListSettingsResult)
+		res, _ := v.(*mailinglist.GroupsioCount)
 		enc := encoder(ctx, w)
-		body := NewGetGrpsioMailingListSettingsResponseBody(res)
-		if res.Etag != nil {
-			w.Header().Set("Etag", *res.Etag)
-		}
+		body := NewGetGroupsioMailingListCountResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGrpsioMailingListSettingsRequest returns a decoder for requests
-// sent to the mailing-list get-grpsio-mailing-list-settings endpoint.
-func DecodeGetGrpsioMailingListSettingsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMailingListCountRequest returns a decoder for requests sent
+// to the mailing-list get-groupsio-mailing-list-count endpoint.
+func DecodeGetGroupsioMailingListCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			version     *string
+			projectUID  string
 			bearerToken *string
 			err         error
-
-			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		versionRaw := r.URL.Query().Get("v")
-		if versionRaw != "" {
-			version = &versionRaw
+		projectUID = r.URL.Query().Get("project_uid")
+		if projectUID == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "query string"))
 		}
-		if version != nil {
-			if !(*version == "1") {
-				err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", *version, []any{"1"}))
-			}
-		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("project_uid", projectUID, goa.FormatUUID))
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
@@ -1540,7 +1393,7 @@ func DecodeGetGrpsioMailingListSettingsRequest(mux goahttp.Muxer, decoder func(*
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetGrpsioMailingListSettingsPayload(uid, version, bearerToken)
+		payload := NewGetGroupsioMailingListCountPayload(projectUID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1553,9 +1406,9 @@ func DecodeGetGrpsioMailingListSettingsRequest(mux goahttp.Muxer, decoder func(*
 	}
 }
 
-// EncodeGetGrpsioMailingListSettingsError returns an encoder for errors
-// returned by the get-grpsio-mailing-list-settings mailing-list endpoint.
-func EncodeGetGrpsioMailingListSettingsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListCountError returns an encoder for errors
+// returned by the get-groupsio-mailing-list-count mailing-list endpoint.
+func EncodeGetGroupsioMailingListCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1571,7 +1424,7 @@ func EncodeGetGrpsioMailingListSettingsError(encoder func(context.Context, http.
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListSettingsBadRequestResponseBody(res)
+				body = NewGetGroupsioMailingListCountBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1584,23 +1437,10 @@ func EncodeGetGrpsioMailingListSettingsError(encoder func(context.Context, http.
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListSettingsInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListCountInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
-			return enc.Encode(body)
-		case "NotFound":
-			var res *mailinglist.NotFoundError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioMailingListSettingsNotFoundResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
 		case "ServiceUnavailable":
 			var res *mailinglist.ServiceUnavailableError
@@ -1610,7 +1450,7 @@ func EncodeGetGrpsioMailingListSettingsError(encoder func(context.Context, http.
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListSettingsServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListCountServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1621,72 +1461,36 @@ func EncodeGetGrpsioMailingListSettingsError(encoder func(context.Context, http.
 	}
 }
 
-// EncodeUpdateGrpsioMailingListSettingsResponse returns an encoder for
-// responses returned by the mailing-list update-grpsio-mailing-list-settings
+// EncodeGetGroupsioMailingListMemberCountResponse returns an encoder for
+// responses returned by the mailing-list
+// get-groupsio-mailing-list-member-count endpoint.
+func EncodeGetGroupsioMailingListMemberCountResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioCount)
+		enc := encoder(ctx, w)
+		body := NewGetGroupsioMailingListMemberCountResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetGroupsioMailingListMemberCountRequest returns a decoder for
+// requests sent to the mailing-list get-groupsio-mailing-list-member-count
 // endpoint.
-func EncodeUpdateGrpsioMailingListSettingsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
-	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoMailingListSettings)
-		enc := encoder(ctx, w)
-		body := NewUpdateGrpsioMailingListSettingsResponseBody(res)
-		w.WriteHeader(http.StatusOK)
-		return enc.Encode(body)
-	}
-}
-
-// DecodeUpdateGrpsioMailingListSettingsRequest returns a decoder for requests
-// sent to the mailing-list update-grpsio-mailing-list-settings endpoint.
-func DecodeUpdateGrpsioMailingListSettingsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+func DecodeGetGroupsioMailingListMemberCountRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGrpsioMailingListSettingsRequestBody
-			err  error
-		)
-		err = decoder(r).Decode(&body)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil, goa.MissingPayloadError()
-			}
-			var gerr *goa.ServiceError
-			if errors.As(err, &gerr) {
-				return nil, gerr
-			}
-			return nil, goa.DecodePayloadError(err.Error())
-		}
-		err = ValidateUpdateGrpsioMailingListSettingsRequestBody(&body)
-		if err != nil {
-			return nil, err
-		}
-
-		var (
-			uid         string
-			version     string
+			subgroupID  string
 			bearerToken *string
-			ifMatch     *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
+		subgroupID = params["subgroup_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		ifMatchRaw := r.Header.Get("If-Match")
-		if ifMatchRaw != "" {
-			ifMatch = &ifMatchRaw
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewUpdateGrpsioMailingListSettingsPayload(&body, uid, version, bearerToken, ifMatch)
+		payload := NewGetGroupsioMailingListMemberCountPayload(subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1699,9 +1503,9 @@ func DecodeUpdateGrpsioMailingListSettingsRequest(mux goahttp.Muxer, decoder fun
 	}
 }
 
-// EncodeUpdateGrpsioMailingListSettingsError returns an encoder for errors
-// returned by the update-grpsio-mailing-list-settings mailing-list endpoint.
-func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMailingListMemberCountError returns an encoder for errors
+// returned by the get-groupsio-mailing-list-member-count mailing-list endpoint.
+func EncodeGetGroupsioMailingListMemberCountError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1709,32 +1513,6 @@ func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, ht
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioMailingListSettingsBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioMailingListSettingsConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -1743,7 +1521,7 @@ func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, ht
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListSettingsInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1756,7 +1534,7 @@ func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, ht
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListSettingsNotFoundResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1769,7 +1547,7 @@ func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, ht
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListSettingsServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMailingListMemberCountServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1780,24 +1558,119 @@ func EncodeUpdateGrpsioMailingListSettingsError(encoder func(context.Context, ht
 	}
 }
 
-// EncodeCreateGrpsioMailingListMemberResponse returns an encoder for responses
-// returned by the mailing-list create-grpsio-mailing-list-member endpoint.
-func EncodeCreateGrpsioMailingListMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeListGroupsioMembersResponse returns an encoder for responses returned
+// by the mailing-list list-groupsio-members endpoint.
+func EncodeListGroupsioMembersResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoMemberFull)
+		res, _ := v.(*mailinglist.GroupsioMemberList)
 		enc := encoder(ctx, w)
-		body := NewCreateGrpsioMailingListMemberResponseBody(res)
+		body := NewListGroupsioMembersResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListGroupsioMembersRequest returns a decoder for requests sent to the
+// mailing-list list-groupsio-members endpoint.
+func DecodeListGroupsioMembersRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			subgroupID  string
+			bearerToken *string
+
+			params = mux.Vars(r)
+		)
+		subgroupID = params["subgroup_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		payload := NewListGroupsioMembersPayload(subgroupID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeListGroupsioMembersError returns an encoder for errors returned by the
+// list-groupsio-members mailing-list endpoint.
+func EncodeListGroupsioMembersError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMembersInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMembersNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListGroupsioMembersServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeAddGroupsioMemberResponse returns an encoder for responses returned by
+// the mailing-list add-groupsio-member endpoint.
+func EncodeAddGroupsioMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioMember)
+		enc := encoder(ctx, w)
+		body := NewAddGroupsioMemberResponseBody(res)
 		w.WriteHeader(http.StatusCreated)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeCreateGrpsioMailingListMemberRequest returns a decoder for requests
-// sent to the mailing-list create-grpsio-mailing-list-member endpoint.
-func DecodeCreateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeAddGroupsioMemberRequest returns a decoder for requests sent to the
+// mailing-list add-groupsio-member endpoint.
+func DecodeAddGroupsioMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body CreateGrpsioMailingListMemberRequestBody
+			body AddGroupsioMemberRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -1811,34 +1684,23 @@ func DecodeCreateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateGrpsioMailingListMemberRequestBody(&body)
+		err = ValidateAddGroupsioMemberRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			uid         string
-			version     string
+			subgroupID  string
 			bearerToken *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
-		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
+		subgroupID = params["subgroup_id"]
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewCreateGrpsioMailingListMemberPayload(&body, uid, version, bearerToken)
+		payload := NewAddGroupsioMemberPayload(&body, subgroupID, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1851,9 +1713,9 @@ func DecodeCreateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(
 	}
 }
 
-// EncodeCreateGrpsioMailingListMemberError returns an encoder for errors
-// returned by the create-grpsio-mailing-list-member mailing-list endpoint.
-func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeAddGroupsioMemberError returns an encoder for errors returned by the
+// add-groupsio-member mailing-list endpoint.
+func EncodeAddGroupsioMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1869,7 +1731,7 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListMemberBadRequestResponseBody(res)
+				body = NewAddGroupsioMemberBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
@@ -1882,7 +1744,7 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListMemberConflictResponseBody(res)
+				body = NewAddGroupsioMemberConflictResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -1895,7 +1757,7 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListMemberInternalServerErrorResponseBody(res)
+				body = NewAddGroupsioMemberInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1908,7 +1770,7 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListMemberNotFoundResponseBody(res)
+				body = NewAddGroupsioMemberNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1921,7 +1783,7 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewCreateGrpsioMailingListMemberServiceUnavailableResponseBody(res)
+				body = NewAddGroupsioMemberServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -1932,66 +1794,51 @@ func EncodeCreateGrpsioMailingListMemberError(encoder func(context.Context, http
 	}
 }
 
-// EncodeGetGrpsioMailingListMemberResponse returns an encoder for responses
-// returned by the mailing-list get-grpsio-mailing-list-member endpoint.
-func EncodeGetGrpsioMailingListMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetGroupsioMemberResponse returns an encoder for responses returned by
+// the mailing-list get-groupsio-member endpoint.
+func EncodeGetGroupsioMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GetGrpsioMailingListMemberResult)
+		res, _ := v.(*mailinglist.GroupsioMember)
 		enc := encoder(ctx, w)
-		body := NewGetGrpsioMailingListMemberResponseBody(res)
-		if res.Etag != nil {
-			w.Header().Set("Etag", *res.Etag)
-		}
+		body := NewGetGroupsioMemberResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeGetGrpsioMailingListMemberRequest returns a decoder for requests sent
-// to the mailing-list get-grpsio-mailing-list-member endpoint.
-func DecodeGetGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetGroupsioMemberRequest returns a decoder for requests sent to the
+// mailing-list get-groupsio-member endpoint.
+func DecodeGetGroupsioMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			memberUID   string
-			version     string
-			bearerToken string
-			err         error
+			subgroupID  string
+			memberID    string
+			bearerToken *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		memberUID = params["member_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("member_uid", memberUID, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		subgroupID = params["subgroup_id"]
+		memberID = params["member_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
 		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
-		bearerToken = r.Header.Get("Authorization")
-		if bearerToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("bearer_token", "header"))
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewGetGrpsioMailingListMemberPayload(uid, memberUID, version, bearerToken)
-		if strings.Contains(payload.BearerToken, " ") {
-			// Remove authorization scheme prefix (e.g. "Bearer")
-			cred := strings.SplitN(payload.BearerToken, " ", 2)[1]
-			payload.BearerToken = cred
+		payload := NewGetGroupsioMemberPayload(subgroupID, memberID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
 		}
 
 		return payload, nil
 	}
 }
 
-// EncodeGetGrpsioMailingListMemberError returns an encoder for errors returned
-// by the get-grpsio-mailing-list-member mailing-list endpoint.
-func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetGroupsioMemberError returns an encoder for errors returned by the
+// get-groupsio-member mailing-list endpoint.
+func EncodeGetGroupsioMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1999,19 +1846,6 @@ func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.Re
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewGetGrpsioMailingListMemberBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -2020,7 +1854,7 @@ func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.Re
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListMemberInternalServerErrorResponseBody(res)
+				body = NewGetGroupsioMemberInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -2033,7 +1867,7 @@ func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.Re
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListMemberNotFoundResponseBody(res)
+				body = NewGetGroupsioMemberNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -2046,7 +1880,7 @@ func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.Re
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetGrpsioMailingListMemberServiceUnavailableResponseBody(res)
+				body = NewGetGroupsioMemberServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -2057,24 +1891,24 @@ func EncodeGetGrpsioMailingListMemberError(encoder func(context.Context, http.Re
 	}
 }
 
-// EncodeUpdateGrpsioMailingListMemberResponse returns an encoder for responses
-// returned by the mailing-list update-grpsio-mailing-list-member endpoint.
-func EncodeUpdateGrpsioMailingListMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeUpdateGroupsioMemberResponse returns an encoder for responses returned
+// by the mailing-list update-groupsio-member endpoint.
+func EncodeUpdateGroupsioMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*mailinglist.GrpsIoMemberWithReadonlyAttributes)
+		res, _ := v.(*mailinglist.GroupsioMember)
 		enc := encoder(ctx, w)
-		body := NewUpdateGrpsioMailingListMemberResponseBody(res)
+		body := NewUpdateGroupsioMemberResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeUpdateGrpsioMailingListMemberRequest returns a decoder for requests
-// sent to the mailing-list update-grpsio-mailing-list-member endpoint.
-func DecodeUpdateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeUpdateGroupsioMemberRequest returns a decoder for requests sent to the
+// mailing-list update-groupsio-member endpoint.
+func DecodeUpdateGroupsioMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body UpdateGrpsioMailingListMemberRequestBody
+			body UpdateGroupsioMemberRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -2088,56 +1922,40 @@ func DecodeUpdateGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateGrpsioMailingListMemberRequestBody(&body)
+		err = ValidateUpdateGroupsioMemberRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			uid         string
-			memberUID   string
-			version     string
-			bearerToken string
-			ifMatch     string
+			subgroupID  string
+			memberID    string
+			bearerToken *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		memberUID = params["member_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("member_uid", memberUID, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		subgroupID = params["subgroup_id"]
+		memberID = params["member_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
 		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
-		bearerToken = r.Header.Get("Authorization")
-		if bearerToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("bearer_token", "header"))
-		}
-		ifMatch = r.Header.Get("If-Match")
-		if ifMatch == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("if_match", "header"))
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewUpdateGrpsioMailingListMemberPayload(&body, uid, memberUID, version, bearerToken, ifMatch)
-		if strings.Contains(payload.BearerToken, " ") {
-			// Remove authorization scheme prefix (e.g. "Bearer")
-			cred := strings.SplitN(payload.BearerToken, " ", 2)[1]
-			payload.BearerToken = cred
+		payload := NewUpdateGroupsioMemberPayload(&body, subgroupID, memberID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
 		}
 
 		return payload, nil
 	}
 }
 
-// EncodeUpdateGrpsioMailingListMemberError returns an encoder for errors
-// returned by the update-grpsio-mailing-list-member mailing-list endpoint.
-func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeUpdateGroupsioMemberError returns an encoder for errors returned by
+// the update-groupsio-member mailing-list endpoint.
+func EncodeUpdateGroupsioMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -2153,23 +1971,10 @@ func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListMemberBadRequestResponseBody(res)
+				body = NewUpdateGroupsioMemberBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewUpdateGrpsioMailingListMemberConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
@@ -2179,7 +1984,7 @@ func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListMemberInternalServerErrorResponseBody(res)
+				body = NewUpdateGroupsioMemberInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -2192,7 +1997,7 @@ func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListMemberNotFoundResponseBody(res)
+				body = NewUpdateGroupsioMemberNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -2205,7 +2010,7 @@ func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewUpdateGrpsioMailingListMemberServiceUnavailableResponseBody(res)
+				body = NewUpdateGroupsioMemberServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -2216,65 +2021,48 @@ func EncodeUpdateGrpsioMailingListMemberError(encoder func(context.Context, http
 	}
 }
 
-// EncodeDeleteGrpsioMailingListMemberResponse returns an encoder for responses
-// returned by the mailing-list delete-grpsio-mailing-list-member endpoint.
-func EncodeDeleteGrpsioMailingListMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeDeleteGroupsioMemberResponse returns an encoder for responses returned
+// by the mailing-list delete-groupsio-member endpoint.
+func EncodeDeleteGroupsioMemberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
 
-// DecodeDeleteGrpsioMailingListMemberRequest returns a decoder for requests
-// sent to the mailing-list delete-grpsio-mailing-list-member endpoint.
-func DecodeDeleteGrpsioMailingListMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeDeleteGroupsioMemberRequest returns a decoder for requests sent to the
+// mailing-list delete-groupsio-member endpoint.
+func DecodeDeleteGroupsioMemberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			uid         string
-			memberUID   string
-			version     string
-			bearerToken string
-			ifMatch     string
-			err         error
+			subgroupID  string
+			memberID    string
+			bearerToken *string
 
 			params = mux.Vars(r)
 		)
-		uid = params["uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
-		memberUID = params["member_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("member_uid", memberUID, goa.FormatUUID))
-		version = r.URL.Query().Get("v")
-		if version == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("version", "query string"))
+		subgroupID = params["subgroup_id"]
+		memberID = params["member_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
 		}
-		if !(version == "1") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("version", version, []any{"1"}))
-		}
-		bearerToken = r.Header.Get("Authorization")
-		if bearerToken == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("bearer_token", "header"))
-		}
-		ifMatch = r.Header.Get("If-Match")
-		if ifMatch == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("if_match", "header"))
-		}
-		if err != nil {
-			return nil, err
-		}
-		payload := NewDeleteGrpsioMailingListMemberPayload(uid, memberUID, version, bearerToken, ifMatch)
-		if strings.Contains(payload.BearerToken, " ") {
-			// Remove authorization scheme prefix (e.g. "Bearer")
-			cred := strings.SplitN(payload.BearerToken, " ", 2)[1]
-			payload.BearerToken = cred
+		payload := NewDeleteGroupsioMemberPayload(subgroupID, memberID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
 		}
 
 		return payload, nil
 	}
 }
 
-// EncodeDeleteGrpsioMailingListMemberError returns an encoder for errors
-// returned by the delete-grpsio-mailing-list-member mailing-list endpoint.
-func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeDeleteGroupsioMemberError returns an encoder for errors returned by
+// the delete-groupsio-member mailing-list endpoint.
+func EncodeDeleteGroupsioMemberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -2282,32 +2070,6 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "BadRequest":
-			var res *mailinglist.BadRequestError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioMailingListMemberBadRequestResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
-			return enc.Encode(body)
-		case "Conflict":
-			var res *mailinglist.ConflictError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewDeleteGrpsioMailingListMemberConflictResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
 		case "InternalServerError":
 			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
@@ -2316,7 +2078,7 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListMemberInternalServerErrorResponseBody(res)
+				body = NewDeleteGroupsioMemberInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -2329,7 +2091,7 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListMemberNotFoundResponseBody(res)
+				body = NewDeleteGroupsioMemberNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -2342,7 +2104,7 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewDeleteGrpsioMailingListMemberServiceUnavailableResponseBody(res)
+				body = NewDeleteGroupsioMemberServiceUnavailableResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -2353,21 +2115,21 @@ func EncodeDeleteGrpsioMailingListMemberError(encoder func(context.Context, http
 	}
 }
 
-// EncodeGroupsioWebhookResponse returns an encoder for responses returned by
-// the mailing-list groupsio-webhook endpoint.
-func EncodeGroupsioWebhookResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeInviteGroupsioMembersResponse returns an encoder for responses
+// returned by the mailing-list invite-groupsio-members endpoint.
+func EncodeInviteGroupsioMembersResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
 
-// DecodeGroupsioWebhookRequest returns a decoder for requests sent to the
-// mailing-list groupsio-webhook endpoint.
-func DecodeGroupsioWebhookRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeInviteGroupsioMembersRequest returns a decoder for requests sent to
+// the mailing-list invite-groupsio-members endpoint.
+func DecodeInviteGroupsioMembersRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body GroupsioWebhookRequestBody
+			body InviteGroupsioMembersRequestBody
 			err  error
 		)
 		err = decoder(r).Decode(&body)
@@ -2381,30 +2143,38 @@ func DecodeGroupsioWebhookRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateGroupsioWebhookRequestBody(&body)
+		err = ValidateInviteGroupsioMembersRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
 
 		var (
-			signature string
+			subgroupID  string
+			bearerToken *string
+
+			params = mux.Vars(r)
 		)
-		signature = r.Header.Get("x-groupsio-signature")
-		if signature == "" {
-			err = goa.MergeErrors(err, goa.MissingFieldError("signature", "header"))
+		subgroupID = params["subgroup_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
 		}
-		if err != nil {
-			return nil, err
+		payload := NewInviteGroupsioMembersPayload(&body, subgroupID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
 		}
-		payload := NewGroupsioWebhookPayload(&body, signature)
 
 		return payload, nil
 	}
 }
 
-// EncodeGroupsioWebhookError returns an encoder for errors returned by the
-// groupsio-webhook mailing-list endpoint.
-func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeInviteGroupsioMembersError returns an encoder for errors returned by
+// the invite-groupsio-members mailing-list endpoint.
+func EncodeInviteGroupsioMembersError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -2420,23 +2190,49 @@ func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWrite
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGroupsioWebhookBadRequestResponseBody(res)
+				body = NewInviteGroupsioMembersBadRequestResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
 			return enc.Encode(body)
-		case "Unauthorized":
-			var res *mailinglist.UnauthorizedError
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGroupsioWebhookUnauthorizedResponseBody(res)
+				body = NewInviteGroupsioMembersInternalServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInviteGroupsioMembersNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInviteGroupsioMembersServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -2444,73 +2240,186 @@ func EncodeGroupsioWebhookError(encoder func(context.Context, http.ResponseWrite
 	}
 }
 
-// unmarshalUserInfoRequestBodyToMailinglistUserInfo builds a value of type
-// *mailinglist.UserInfo from a value of type *UserInfoRequestBody.
-func unmarshalUserInfoRequestBodyToMailinglistUserInfo(v *UserInfoRequestBody) *mailinglist.UserInfo {
-	if v == nil {
-		return nil
+// EncodeCheckGroupsioSubscriberResponse returns an encoder for responses
+// returned by the mailing-list check-groupsio-subscriber endpoint.
+func EncodeCheckGroupsioSubscriberResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioCheckSubscriberResponse)
+		enc := encoder(ctx, w)
+		body := NewCheckGroupsioSubscriberResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
 	}
-	res := &mailinglist.UserInfo{
-		Name:     v.Name,
-		Email:    v.Email,
-		Username: v.Username,
-		Avatar:   v.Avatar,
-	}
-
-	return res
 }
 
-// marshalMailinglistUserInfoToUserInfoResponseBody builds a value of type
-// *UserInfoResponseBody from a value of type *mailinglist.UserInfo.
-func marshalMailinglistUserInfoToUserInfoResponseBody(v *mailinglist.UserInfo) *UserInfoResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &UserInfoResponseBody{
-		Name:     v.Name,
-		Email:    v.Email,
-		Username: v.Username,
-		Avatar:   v.Avatar,
-	}
+// DecodeCheckGroupsioSubscriberRequest returns a decoder for requests sent to
+// the mailing-list check-groupsio-subscriber endpoint.
+func DecodeCheckGroupsioSubscriberRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body CheckGroupsioSubscriberRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateCheckGroupsioSubscriberRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
 
-	return res
+		var (
+			bearerToken *string
+		)
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		payload := NewCheckGroupsioSubscriberPayload(&body, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
 }
 
-// unmarshalCommitteeRequestBodyToMailinglistCommittee builds a value of type
-// *mailinglist.Committee from a value of type *CommitteeRequestBody.
-func unmarshalCommitteeRequestBodyToMailinglistCommittee(v *CommitteeRequestBody) *mailinglist.Committee {
-	if v == nil {
-		return nil
-	}
-	res := &mailinglist.Committee{
-		UID:  *v.UID,
-		Name: v.Name,
-	}
-	if v.AllowedVotingStatuses != nil {
-		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
-		for i, val := range v.AllowedVotingStatuses {
-			res.AllowedVotingStatuses[i] = val
+// EncodeCheckGroupsioSubscriberError returns an encoder for errors returned by
+// the check-groupsio-subscriber mailing-list endpoint.
+func EncodeCheckGroupsioSubscriberError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCheckGroupsioSubscriberBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCheckGroupsioSubscriberInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCheckGroupsioSubscriberServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
 		}
 	}
+}
+
+// marshalMailinglistGroupsioServiceToGroupsioServiceResponseBody builds a
+// value of type *GroupsioServiceResponseBody from a value of type
+// *mailinglist.GroupsioService.
+func marshalMailinglistGroupsioServiceToGroupsioServiceResponseBody(v *mailinglist.GroupsioService) *GroupsioServiceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &GroupsioServiceResponseBody{
+		ID:         v.ID,
+		ProjectUID: v.ProjectUID,
+		Type:       v.Type,
+		GroupID:    v.GroupID,
+		Domain:     v.Domain,
+		Prefix:     v.Prefix,
+		Status:     v.Status,
+		CreatedAt:  v.CreatedAt,
+		UpdatedAt:  v.UpdatedAt,
+	}
 
 	return res
 }
 
-// marshalMailinglistCommitteeToCommitteeResponseBody builds a value of type
-// *CommitteeResponseBody from a value of type *mailinglist.Committee.
-func marshalMailinglistCommitteeToCommitteeResponseBody(v *mailinglist.Committee) *CommitteeResponseBody {
+// marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody builds a
+// value of type *GroupsioSubgroupResponseBody from a value of type
+// *mailinglist.GroupsioSubgroup.
+func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailinglist.GroupsioSubgroup) *GroupsioSubgroupResponseBody {
 	if v == nil {
 		return nil
 	}
-	res := &CommitteeResponseBody{
-		UID:  v.UID,
-		Name: v.Name,
+	res := &GroupsioSubgroupResponseBody{
+		ID:             v.ID,
+		ProjectUID:     v.ProjectUID,
+		CommitteeUID:   v.CommitteeUID,
+		ServiceID:      v.ServiceID,
+		GroupID:        v.GroupID,
+		Name:           v.Name,
+		Description:    v.Description,
+		Type:           v.Type,
+		AudienceAccess: v.AudienceAccess,
+		CreatedAt:      v.CreatedAt,
+		UpdatedAt:      v.UpdatedAt,
 	}
-	if v.AllowedVotingStatuses != nil {
-		res.AllowedVotingStatuses = make([]string, len(v.AllowedVotingStatuses))
-		for i, val := range v.AllowedVotingStatuses {
-			res.AllowedVotingStatuses[i] = val
-		}
+
+	return res
+}
+
+// marshalMailinglistGroupsioMemberToGroupsioMemberResponseBody builds a value
+// of type *GroupsioMemberResponseBody from a value of type
+// *mailinglist.GroupsioMember.
+func marshalMailinglistGroupsioMemberToGroupsioMemberResponseBody(v *mailinglist.GroupsioMember) *GroupsioMemberResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &GroupsioMemberResponseBody{
+		ID:           v.ID,
+		Email:        v.Email,
+		Name:         v.Name,
+		MemberType:   v.MemberType,
+		DeliveryMode: v.DeliveryMode,
+		ModStatus:    v.ModStatus,
+		Status:       v.Status,
+		UserID:       v.UserID,
+		Organization: v.Organization,
+		JobTitle:     v.JobTitle,
+		Username:     v.Username,
+		Role:         v.Role,
+		VotingStatus: v.VotingStatus,
+		CreatedAt:    v.CreatedAt,
+		UpdatedAt:    v.UpdatedAt,
 	}
 
 	return res

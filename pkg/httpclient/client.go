@@ -217,3 +217,17 @@ func NewClient(config Config) *Client {
 		},
 	}
 }
+
+// NewClientWithHTTPClient creates a new HTTP client using an existing *http.Client.
+// Useful for injecting custom transports such as oauth2-wrapped clients.
+func NewClientWithHTTPClient(config Config, httpClient *http.Client) *Client {
+	if config.MaxDelay == 0 {
+		config.MaxDelay = 30 * time.Second
+	}
+
+	return &Client{
+		config:        config,
+		roundTrippers: make([]RoundTripper, 0),
+		httpClient:    httpClient,
+	}
+}

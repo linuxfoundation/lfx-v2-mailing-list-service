@@ -1,17 +1,15 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Package port defines the interfaces for external dependencies and adapters.
 package port
 
-import (
-	"context"
-)
-
-// GrpsIOReaderWriter combines all reader and writer operations for services and mailing lists
-type GrpsIOReaderWriter interface {
-	GrpsIOReader
-	GrpsIOWriter
-
-	// IsReady checks if the storage is ready by verifying the connection
-	IsReady(ctx context.Context) error
+// GroupsIOReaderWriter combines all ITX proxy operations into a single interface.
+type GroupsIOReaderWriter interface {
+	GroupsIOServiceReader
+	GroupsIOServiceWriter
+	GroupsIOMailingListReader
+	GroupsIOMailingListWriter
+	GroupsIOMailingListMemberReader
+	GroupsIOMailingListMemberWriter
 }

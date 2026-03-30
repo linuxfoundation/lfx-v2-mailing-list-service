@@ -5,11 +5,7 @@
 package model
 
 import (
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -28,7 +24,7 @@ type UserInfo struct {
 }
 
 type GrpsIOServiceFull struct {
-	Base     *GrpsIOService         `json:"base"`
+	Base     *GroupsIOService       `json:"base"`
 	Settings *GrpsIOServiceSettings `json:"settings"`
 }
 
@@ -45,7 +41,7 @@ type GrpsIOServiceSettings struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// Tags generates a consistent set of tags for the GrpsIO service settings
+// Tags generates a consistent set of tags for the GroupsIOService settings
 func (s *GrpsIOServiceSettings) Tags() []string {
 	var tags []string
 
@@ -74,8 +70,8 @@ func (s *GrpsIOServiceSettings) GetLastReviewedAtTime() (*time.Time, error) {
 	return utils.ParseTimestampPtr(s.LastReviewedAt)
 }
 
-// GrpsIOService represents a GroupsIO service entity
-type GrpsIOService struct {
+// GroupsIOService represents a GroupsIO service entity
+type GroupsIOService struct {
 	Type             string    `json:"type"`
 	UID              string    `json:"uid"`
 	Domain           string    `json:"domain"`
@@ -96,44 +92,8 @@ type GrpsIOService struct {
 	SystemUpdatedAt  time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
-// BuildIndexKey generates a SHA-256 hash for use as a NATS KV key
-// This is necessary because the original input may contain special characters,
-// exceed length limits, or have inconsistent formatting, and we do not control its content.
-// Using a hash ensures a safe, fixed-length, and deterministic key.
-func (s *GrpsIOService) BuildIndexKey(ctx context.Context) string {
-	// Combine project_uid and service type/identifier with a delimiter
-	var data string
-	switch s.Type {
-	case constants.ServiceTypePrimary:
-		// Primary service: unique by project only
-		data = fmt.Sprintf("%s|%s", s.ProjectUID, s.Type)
-	case constants.ServiceTypeFormation:
-		// Formation service: unique by project + prefix
-		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.Prefix)
-	case constants.ServiceTypeShared:
-		// Shared service: unique by project + group_name (decoupled from GroupID)
-		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.GroupName)
-	default:
-		// Fallback for unknown types
-		data = fmt.Sprintf("%s|%s|%s", s.ProjectUID, s.Type, s.UID)
-	}
-
-	hash := sha256.Sum256([]byte(data))
-	key := hex.EncodeToString(hash[:])
-
-	slog.DebugContext(ctx, "index key built",
-		"project_uid", s.ProjectUID,
-		"service_type", s.Type,
-		"service_prefix", s.Prefix,
-		"service_group_name", s.GroupName,
-		"key", key,
-	)
-
-	return key
-}
-
-// Tags generates a consistent set of tags for the GrpsIO service
-func (s *GrpsIOService) Tags() []string {
+// Tags generates a consistent set of tags for the GroupsIOService
+func (s *GroupsIOService) Tags() []string {
 	var tags []string
 
 	if s == nil {
@@ -165,7 +125,7 @@ func (s *GrpsIOService) Tags() []string {
 }
 
 // GetDomain returns the appropriate domain for Groups.io API calls
-func (s *GrpsIOService) GetDomain() string {
+func (s *GroupsIOService) GetDomain() string {
 	if s.Domain != "" {
 		return s.Domain // Use custom domain if set
 	}
@@ -173,7 +133,7 @@ func (s *GrpsIOService) GetDomain() string {
 }
 
 // GetGroupName returns the appropriate group name for Groups.io API calls with comprehensive fallback logic
-func (s *GrpsIOService) GetGroupName() string {
+func (s *GroupsIOService) GetGroupName() string {
 	if s.GroupName != "" {
 		return s.GroupName // Use explicit group name if set
 	}
