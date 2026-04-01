@@ -1783,9 +1783,8 @@ definitions:
                 example: Qui unde.
             committee_uid:
                 type: string
-                description: LFX v2 committee UID
+                description: LFX v2 committee UID (empty string to clear)
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
             description:
                 type: string
                 description: Subgroup description
@@ -1894,9 +1893,8 @@ definitions:
                 example: Molestiae dolore sapiente sit.
             committee_uid:
                 type: string
-                description: LFX v2 committee UID
+                description: LFX v2 committee UID (empty string to clear)
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
-                format: uuid
             description:
                 type: string
                 description: Subgroup description

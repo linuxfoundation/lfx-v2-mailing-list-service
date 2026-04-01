@@ -52,7 +52,7 @@ type UpdateGroupsioServiceRequestBody struct {
 type CreateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Parent GroupsIO service ID
 	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
@@ -73,7 +73,7 @@ type CreateGroupsioMailingListRequestBody struct {
 type UpdateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Parent GroupsIO service ID
 	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`

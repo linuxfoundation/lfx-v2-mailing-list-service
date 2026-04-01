@@ -194,8 +194,12 @@ func (s *mailingListAPI) UpdateGroupsioMailingList(ctx context.Context, p *maili
 		Type:           converter.StringVal(p.Type),
 		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
-	if committeeUID := converter.StringVal(p.CommitteeUID); committeeUID != "" {
-		ml.Committees = []model.Committee{{UID: committeeUID}}
+	if p.CommitteeUID != nil {
+		if uid := *p.CommitteeUID; uid != "" {
+			ml.Committees = []model.Committee{{UID: uid}}
+		} else {
+			ml.Committees = []model.Committee{}
+		}
 	}
 	resp, err := s.mailingListWriter.UpdateMailingList(ctx, p.SubgroupID, ml)
 	if err != nil {

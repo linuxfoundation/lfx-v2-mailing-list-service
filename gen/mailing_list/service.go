@@ -130,7 +130,7 @@ type CreateGroupsioMailingListPayload struct {
 	BearerToken *string
 	// LFX v2 project UID
 	ProjectUID *string
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string
 	// Parent GroupsIO service ID
 	ServiceID *string
@@ -439,7 +439,7 @@ type UpdateGroupsioMailingListPayload struct {
 	SubgroupID string
 	// LFX v2 project UID
 	ProjectUID *string
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string
 	// Parent GroupsIO service ID
 	ServiceID *string
