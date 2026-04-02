@@ -594,6 +594,8 @@ The service can be configured via environment variables:
 | `ITX_AUTH0_DOMAIN` | Auth0 tenant domain | Required |
 | `ITX_AUDIENCE` | Auth0 audience for the ITX API | Required |
 
+> **Where to find `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`**: Look in 1Password under the **LFX V2** vault, in the secure note **LFX Platform Chart Values Secrets - Local Development**.
+
 ### ID Translator Configuration
 
 | Variable | Description | Default |
