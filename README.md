@@ -73,11 +73,13 @@ make helm-install-local
    export LOG_LEVEL=debug
 
    # ITX proxy credentials (required even locally unless you stub the proxy)
-   export ITX_BASE_URL="https://itx-api.example.com"
+   # Get ITX_CLIENT_ID and ITX_CLIENT_PRIVATE_KEY from 1Password → LFX V2 vault →
+   # LFX Platform Chart Values Secrets - Local Development
+   export ITX_BASE_URL="https://api.dev.itx.linuxfoundation.org"
    export ITX_CLIENT_ID="your-client-id"
-   export ITX_CLIENT_PRIVATE_KEY="$(cat private.key)"
-   export ITX_AUTH0_DOMAIN="your-tenant.auth0.com"
-   export ITX_AUDIENCE="https://itx-api.example.com"
+   export ITX_CLIENT_PRIVATE_KEY="$(cat tmp/local.private.key)"
+   export ITX_AUTH0_DOMAIN="linuxfoundation-dev.auth0.com"
+   export ITX_AUDIENCE="https://api.dev.itx.linuxfoundation.org/"
    ```
 
 4. **Run the Service**
@@ -218,7 +220,8 @@ Because this service reuses the same database and infrastructure as the proxied 
 ## 📚 Additional Documentation
 
 | Document | Description |
-|---|---|
+| --- | --- |
+| [docs/api-endpoints.md](docs/api-endpoints.md) | Full list of API endpoints with method, path, and curl examples |
 | [docs/event-processing.md](docs/event-processing.md) | v1→v2 data stream: how DynamoDB change events are consumed, transformed, and published to the indexer and FGA-sync services |
 
 ## 🛠️ Development
@@ -517,6 +520,7 @@ The service uses NATS request/reply to translate v2 UUIDs to v1 SFIDs (and vice 
 | `lfx.lookup_v1_mapping` | Translate project/committee UIDs ↔ SFIDs |
 
 Key format sent to the v1-sync-helper:
+
 - `project.uid.<uuid>` — v2 UUID → v1 SFID
 - `project.sfid.<sfid>` — v1 SFID → v2 UUID
 - `committee.uid.<uuid>` — v2 UUID → v1 SFID (response: `projectSFID:committeeSFID`)
@@ -622,11 +626,11 @@ export NATS_URL="nats://localhost:4222"
 export AUTH_SOURCE="mock"
 export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL="test-admin"
 export TRANSLATOR_SOURCE="nats"
-export ITX_BASE_URL="https://itx-api.example.com"
+export ITX_BASE_URL="https://api.dev.itx.linuxfoundation.org"
 export ITX_CLIENT_ID="your-client-id"
-export ITX_CLIENT_PRIVATE_KEY="$(cat private.key)"
-export ITX_AUTH0_DOMAIN="your-tenant.auth0.com"
-export ITX_AUDIENCE="https://itx-api.example.com"
+export ITX_CLIENT_PRIVATE_KEY="$(cat tmp/local.private.key)"
+export ITX_AUTH0_DOMAIN="linuxfoundation-dev.auth0.com"
+export ITX_AUDIENCE="https://api.dev.itx.linuxfoundation.org/"
 export LOG_LEVEL="debug"
 ```
 
