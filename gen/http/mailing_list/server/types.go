@@ -52,7 +52,7 @@ type UpdateGroupsioServiceRequestBody struct {
 type CreateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Parent GroupsIO service ID
 	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
@@ -73,7 +73,7 @@ type CreateGroupsioMailingListRequestBody struct {
 type UpdateGroupsioMailingListRequestBody struct {
 	// LFX v2 project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
-	// LFX v2 committee UID
+	// LFX v2 committee UID (empty string to clear)
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Parent GroupsIO service ID
 	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
@@ -2455,7 +2455,7 @@ func ValidateCreateGroupsioMailingListRequestBody(body *CreateGroupsioMailingLis
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
 	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.committee_uid", *body.CommitteeUID, "^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"))
 	}
 	return
 }
@@ -2467,7 +2467,7 @@ func ValidateUpdateGroupsioMailingListRequestBody(body *UpdateGroupsioMailingLis
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
 	if body.CommitteeUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.committee_uid", *body.CommitteeUID, "^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"))
 	}
 	return
 }

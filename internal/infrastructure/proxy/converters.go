@@ -77,8 +77,14 @@ func toWireSubgroupRequest(ml *model.GroupsIOMailingList) *subgroupRequestWire {
 		Type:           ml.Type,
 		AudienceAccess: ml.AudienceAccess,
 	}
-	if len(ml.Committees) > 0 {
-		req.CommitteeID = ml.Committees[0].UID
+	if ml.Committees != nil {
+		if len(ml.Committees) > 0 {
+			uid := ml.Committees[0].UID
+			req.CommitteeID = &uid
+		} else {
+			empty := ""
+			req.CommitteeID = &empty
+		}
 	}
 	return req
 }

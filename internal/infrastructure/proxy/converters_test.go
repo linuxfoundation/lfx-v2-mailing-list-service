@@ -266,10 +266,12 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 }
 
 func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
+	strPtr := func(v string) *string { return &v }
+
 	tests := []struct {
 		name              string
 		input             *model.GroupsIOMailingList
-		expectCommitteeID string
+		expectCommitteeID *string
 		expectProjectID   string
 		expectParentID    string
 		expectName        string
@@ -278,21 +280,21 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 		expectAccess      string
 	}{
 		{
-			name:              "nil committees produces empty CommitteeID",
+			name:              "nil committees produces nil CommitteeID",
 			input:             &model.GroupsIOMailingList{Committees: nil},
-			expectCommitteeID: "",
+			expectCommitteeID: nil,
 		},
 		{
-			name:              "empty committees slice produces empty CommitteeID",
+			name:              "empty committees slice produces pointer to empty string (clear)",
 			input:             &model.GroupsIOMailingList{Committees: []model.Committee{}},
-			expectCommitteeID: "",
+			expectCommitteeID: strPtr(""),
 		},
 		{
 			name: "only first committee UID is serialized",
 			input: &model.GroupsIOMailingList{
 				Committees: []model.Committee{{UID: "first"}, {UID: "second"}},
 			},
-			expectCommitteeID: "first",
+			expectCommitteeID: strPtr("first"),
 		},
 		{
 			name: "fields map correctly",
@@ -305,7 +307,7 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 				AudienceAccess: "public",
 				Committees:     []model.Committee{{UID: "c-1"}},
 			},
-			expectCommitteeID: "c-1",
+			expectCommitteeID: strPtr("c-1"),
 			expectProjectID:   "proj-sfid",
 			expectParentID:    "svc-sfid",
 			expectName:        "My List",
