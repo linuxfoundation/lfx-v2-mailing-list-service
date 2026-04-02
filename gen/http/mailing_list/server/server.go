@@ -44,6 +44,8 @@ type Server struct {
 	DeleteGroupsioMember              http.Handler
 	InviteGroupsioMembers             http.Handler
 	CheckGroupsioSubscriber           http.Handler
+	GetGroupsioArtifact               http.Handler
+	GetGroupsioArtifactDownload       http.Handler
 	GenHTTPOpenapiJSON                http.Handler
 	GenHTTPOpenapi3JSON               http.Handler
 	GenHTTPOpenapiYaml                http.Handler
@@ -120,6 +122,8 @@ func New(
 			{"DeleteGroupsioMember", "DELETE", "/groupsio/mailing-lists/{subgroup_id}/members/{member_id}"},
 			{"InviteGroupsioMembers", "POST", "/groupsio/mailing-lists/{subgroup_id}/invitemembers"},
 			{"CheckGroupsioSubscriber", "POST", "/groupsio/checksubscriber"},
+			{"GetGroupsioArtifact", "GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}"},
+			{"GetGroupsioArtifactDownload", "GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}/download"},
 			{"Serve gen/http/openapi.json", "GET", "/openapi.json"},
 			{"Serve gen/http/openapi3.json", "GET", "/openapi3.json"},
 			{"Serve gen/http/openapi.yaml", "GET", "/openapi.yaml"},
@@ -148,6 +152,8 @@ func New(
 		DeleteGroupsioMember:              NewDeleteGroupsioMemberHandler(e.DeleteGroupsioMember, mux, decoder, encoder, errhandler, formatter),
 		InviteGroupsioMembers:             NewInviteGroupsioMembersHandler(e.InviteGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
 		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberHandler(e.CheckGroupsioSubscriber, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioArtifact:               NewGetGroupsioArtifactHandler(e.GetGroupsioArtifact, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadHandler(e.GetGroupsioArtifactDownload, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapiJSON:                http.FileServer(fileSystemGenHTTPOpenapiJSON),
 		GenHTTPOpenapi3JSON:               http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 		GenHTTPOpenapiYaml:                http.FileServer(fileSystemGenHTTPOpenapiYaml),
@@ -183,6 +189,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DeleteGroupsioMember = m(s.DeleteGroupsioMember)
 	s.InviteGroupsioMembers = m(s.InviteGroupsioMembers)
 	s.CheckGroupsioSubscriber = m(s.CheckGroupsioSubscriber)
+	s.GetGroupsioArtifact = m(s.GetGroupsioArtifact)
+	s.GetGroupsioArtifactDownload = m(s.GetGroupsioArtifactDownload)
 }
 
 // MethodNames returns the methods served.
@@ -213,6 +221,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDeleteGroupsioMemberHandler(mux, h.DeleteGroupsioMember)
 	MountInviteGroupsioMembersHandler(mux, h.InviteGroupsioMembers)
 	MountCheckGroupsioSubscriberHandler(mux, h.CheckGroupsioSubscriber)
+	MountGetGroupsioArtifactHandler(mux, h.GetGroupsioArtifact)
+	MountGetGroupsioArtifactDownloadHandler(mux, h.GetGroupsioArtifactDownload)
 	MountGenHTTPOpenapiJSON(mux, h.GenHTTPOpenapiJSON)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 	MountGenHTTPOpenapiYaml(mux, h.GenHTTPOpenapiYaml)
@@ -1424,6 +1434,114 @@ func NewCheckGroupsioSubscriberHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "check-groupsio-subscriber")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioArtifactHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-artifact" endpoint.
+func MountGetGroupsioArtifactHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}", f)
+}
+
+// NewGetGroupsioArtifactHandler creates a HTTP handler which loads the HTTP
+// request and calls the "mailing-list" service "get-groupsio-artifact"
+// endpoint.
+func NewGetGroupsioArtifactHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioArtifactRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioArtifactResponse(encoder)
+		encodeError    = EncodeGetGroupsioArtifactError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-artifact")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioArtifactDownloadHandler configures the mux to serve the
+// "mailing-list" service "get-groupsio-artifact-download" endpoint.
+func MountGetGroupsioArtifactDownloadHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}/download", f)
+}
+
+// NewGetGroupsioArtifactDownloadHandler creates a HTTP handler which loads the
+// HTTP request and calls the "mailing-list" service
+// "get-groupsio-artifact-download" endpoint.
+func NewGetGroupsioArtifactDownloadHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioArtifactDownloadRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioArtifactDownloadResponse(encoder)
+		encodeError    = EncodeGetGroupsioArtifactDownloadError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-artifact-download")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {

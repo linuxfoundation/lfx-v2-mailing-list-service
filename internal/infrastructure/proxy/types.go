@@ -123,3 +123,42 @@ type checkSubscriberRequestWire struct {
 type inviteMembersRequestWire struct {
 	Emails []string `json:"emails"`
 }
+
+// artifactUserWire represents a user reference on an artifact (creator or last modifier).
+type artifactUserWire struct {
+	ID             string `json:"id,omitempty"`
+	Username       string `json:"username,omitempty"`
+	Name           string `json:"name,omitempty"`
+	Email          string `json:"email,omitempty"`
+	ProfilePicture string `json:"profile_picture,omitempty"`
+}
+
+// artifactWire represents a GroupsIO subgroup artifact as returned by the ITX API.
+type artifactWire struct {
+	ArtifactID          string            `json:"artifact_id"`
+	GroupID             uint64            `json:"group_id"`
+	ProjectID           string            `json:"project_id,omitempty"`
+	CommitteeID         string            `json:"committee_id,omitempty"`
+	Type                string            `json:"type,omitempty"`
+	MediaType           string            `json:"media_type,omitempty"`
+	Filename            string            `json:"filename,omitempty"`
+	LinkURL             string            `json:"link_url,omitempty"`
+	DownloadURL         string            `json:"download_url,omitempty"`
+	S3Key               string            `json:"s3_key,omitempty"`
+	FileUploaded        *bool             `json:"file_uploaded,omitempty"`
+	FileUploadStatus    string            `json:"file_upload_status,omitempty"`
+	FileUploadedAt      string            `json:"file_uploaded_at,omitempty"`
+	MessageIDs          []uint64          `json:"message_ids,omitempty"`
+	LastPostedAt        string            `json:"last_posted_at,omitempty"`
+	LastPostedMessageID uint64            `json:"last_posted_message_id,omitempty"`
+	Description         string            `json:"description,omitempty"`
+	CreatedBy           *artifactUserWire `json:"created_by,omitempty"`
+	LastModifiedBy      *artifactUserWire `json:"last_modified_by,omitempty"`
+	CreatedAt           string            `json:"created_at,omitempty"`
+	UpdatedAt           string            `json:"last_modified_at,omitempty"`
+}
+
+// artifactDownloadResponseWire represents the presigned download URL response from the ITX API.
+type artifactDownloadResponseWire struct {
+	URL string `json:"url"`
+}

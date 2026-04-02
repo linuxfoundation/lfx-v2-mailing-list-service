@@ -73,6 +73,72 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 	}
 }
 
+func convertArtifactUser(u *model.ArtifactUser) *mailinglist.GroupsioArtifactUser {
+	if u == nil {
+		return nil
+	}
+	return &mailinglist.GroupsioArtifactUser{
+		ID:             converter.NonEmptyString(u.ID),
+		Username:       converter.NonEmptyString(u.Username),
+		Name:           converter.NonEmptyString(u.Name),
+		Email:          converter.NonEmptyString(u.Email),
+		ProfilePicture: converter.NonEmptyString(u.ProfilePicture),
+	}
+}
+
+func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
+	if a == nil {
+		return nil
+	}
+	createdAt := ""
+	if !a.CreatedAt.IsZero() {
+		createdAt = a.CreatedAt.Format(time.RFC3339)
+	}
+	updatedAt := ""
+	if !a.UpdatedAt.IsZero() {
+		updatedAt = a.UpdatedAt.Format(time.RFC3339)
+	}
+	var fileUploadedAt *string
+	if a.FileUploadedAt != nil && !a.FileUploadedAt.IsZero() {
+		s := a.FileUploadedAt.Format(time.RFC3339)
+		fileUploadedAt = &s
+	}
+	var lastPostedAt *string
+	if a.LastPostedAt != nil && !a.LastPostedAt.IsZero() {
+		s := a.LastPostedAt.Format(time.RFC3339)
+		lastPostedAt = &s
+	}
+	groupID := a.GroupID
+	lastPostedMessageID := a.LastPostedMessageID
+	var fileUploaded *bool
+	if a.Type == "file" {
+		fileUploaded = a.FileUploaded
+	}
+	return &mailinglist.GroupsioArtifact{
+		ArtifactID:          converter.NonEmptyString(a.ArtifactID),
+		GroupID:             &groupID,
+		ProjectID:           converter.NonEmptyString(a.ProjectID),
+		CommitteeID:         converter.NonEmptyString(a.CommitteeID),
+		Type:                converter.NonEmptyString(a.Type),
+		MediaType:           converter.NonEmptyString(a.MediaType),
+		Filename:            converter.NonEmptyString(a.Filename),
+		LinkURL:             converter.NonEmptyString(a.LinkURL),
+		DownloadURL:         converter.NonEmptyString(a.DownloadURL),
+		S3Key:               converter.NonEmptyString(a.S3Key),
+		FileUploaded:        fileUploaded,
+		FileUploadStatus:    converter.NonEmptyString(a.FileUploadStatus),
+		FileUploadedAt:      fileUploadedAt,
+		MessageIds:          a.MessageIDs,
+		LastPostedAt:        lastPostedAt,
+		LastPostedMessageID: &lastPostedMessageID,
+		Description:         converter.NonEmptyString(a.Description),
+		CreatedBy:           convertArtifactUser(a.CreatedBy),
+		LastModifiedBy:      convertArtifactUser(a.LastModifiedBy),
+		CreatedAt:           converter.NonEmptyString(createdAt),
+		UpdatedAt:           converter.NonEmptyString(updatedAt),
+	}
+}
+
 func convertService(svc *model.GroupsIOService) *mailinglist.GroupsioService {
 	if svc == nil {
 		return nil

@@ -1,6 +1,7 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
 bin/
+tmp/
 .env
 coverage.out
 
@@ -14,3 +15,11 @@ coverage.html
 
 # Helm local override files
 charts/*/values.local.yaml
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx

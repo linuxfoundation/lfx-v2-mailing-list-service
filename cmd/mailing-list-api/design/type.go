@@ -240,3 +240,46 @@ var GroupsioProjectsResponseType = dsl.Type("groupsio-projects-response", func()
 	dsl.Description("Projects that have GroupsIO services")
 	dsl.Attribute("projects", dsl.ArrayOf(dsl.String), "List of project identifiers")
 })
+
+// GroupsioArtifactUserType represents a user reference on an artifact.
+var GroupsioArtifactUserType = dsl.Type("groupsio-artifact-user", func() {
+	dsl.Description("User reference on a GroupsIO artifact")
+	dsl.Attribute("id", dsl.String, "User ID")
+	dsl.Attribute("username", dsl.String, "Username")
+	dsl.Attribute("name", dsl.String, "Display name")
+	dsl.Attribute("email", dsl.String, "Email address")
+	dsl.Attribute("profile_picture", dsl.String, "Profile picture URL")
+})
+
+// GroupsioArtifactType represents a GroupsIO subgroup artifact.
+var GroupsioArtifactType = dsl.Type("groupsio-artifact", func() {
+	dsl.Description("A GroupsIO subgroup artifact")
+	dsl.Attribute("artifact_id", dsl.String, "Artifact UUID")
+	dsl.Attribute("group_id", dsl.UInt64, "GroupsIO group ID")
+	dsl.Attribute("project_id", dsl.String, "LFX project ID")
+	dsl.Attribute("committee_id", dsl.String, "Committee ID")
+	dsl.Attribute("type", dsl.String, "Artifact type (file or link)")
+	dsl.Attribute("media_type", dsl.String, "MIME media type")
+	dsl.Attribute("filename", dsl.String, "Filename")
+	dsl.Attribute("link_url", dsl.String, "URL for link-type artifacts")
+	dsl.Attribute("download_url", dsl.String, "Groups.io download URL")
+	dsl.Attribute("s3_key", dsl.String, "S3 object key")
+	dsl.Attribute("file_uploaded", dsl.Boolean, "Whether the file has been uploaded to S3")
+	dsl.Attribute("file_upload_status", dsl.String, "S3 upload status")
+	dsl.Attribute("file_uploaded_at", dsl.String, "Timestamp when the file was uploaded")
+	dsl.Attribute("message_ids", dsl.ArrayOf(dsl.UInt64), "Groups.io message IDs referencing this artifact")
+	dsl.Attribute("last_posted_at", dsl.String, "Timestamp of most recent referencing message")
+	dsl.Attribute("last_posted_message_id", dsl.UInt64, "Most recent referencing message ID")
+	dsl.Attribute("description", dsl.String, "Artifact description")
+	dsl.Attribute("created_by", GroupsioArtifactUserType, "User who created the artifact")
+	dsl.Attribute("last_modified_by", GroupsioArtifactUserType, "User who last modified the artifact")
+	dsl.Attribute("created_at", dsl.String, "Creation timestamp")
+	dsl.Attribute("updated_at", dsl.String, "Last update timestamp")
+})
+
+// GroupsioArtifactDownloadType represents an artifact presigned download URL response.
+var GroupsioArtifactDownloadType = dsl.Type("groupsio-artifact-download", func() {
+	dsl.Description("Presigned S3 download URL for a GroupsIO artifact")
+	dsl.Attribute("url", dsl.String, "Presigned S3 download URL (expires in 15 minutes)")
+	dsl.Required("url")
+})

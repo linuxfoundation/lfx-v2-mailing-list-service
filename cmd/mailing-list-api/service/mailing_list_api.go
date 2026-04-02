@@ -28,6 +28,7 @@ type mailingListAPI struct {
 	mailingListWriter port.GroupsIOMailingListWriter
 	memberReader      port.GroupsIOMailingListMemberReader
 	memberWriter      port.GroupsIOMailingListMemberWriter
+	artifactReader    port.GroupsIOArtifactReader
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -39,6 +40,7 @@ func NewMailingListAPI(
 	mailingListWriter port.GroupsIOMailingListWriter,
 	memberReader port.GroupsIOMailingListMemberReader,
 	memberWriter port.GroupsIOMailingListMemberWriter,
+	artifactReader port.GroupsIOArtifactReader,
 ) mailinglist.Service {
 	return &mailingListAPI{
 		auth:              auth,
@@ -48,6 +50,7 @@ func NewMailingListAPI(
 		mailingListWriter: mailingListWriter,
 		memberReader:      memberReader,
 		memberWriter:      memberWriter,
+		artifactReader:    artifactReader,
 	}
 }
 
@@ -296,6 +299,24 @@ func (s *mailingListAPI) CheckGroupsioSubscriber(ctx context.Context, p *mailing
 		return nil, mapDomainError(err)
 	}
 	return &mailinglist.GroupsioCheckSubscriberResponse{Subscribed: subscribed}, nil
+}
+
+// ---- GroupsIO Artifact endpoints ----
+
+func (s *mailingListAPI) GetGroupsioArtifact(ctx context.Context, p *mailinglist.GetGroupsioArtifactPayload) (*mailinglist.GroupsioArtifact, error) {
+	artifact, err := s.artifactReader.GetArtifact(ctx, p.SubgroupID, p.ArtifactID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertArtifact(artifact), nil
+}
+
+func (s *mailingListAPI) GetGroupsioArtifactDownload(ctx context.Context, p *mailinglist.GetGroupsioArtifactDownloadPayload) (*mailinglist.GroupsioArtifactDownload, error) {
+	url, err := s.artifactReader.GetArtifactDownloadURL(ctx, p.SubgroupID, p.ArtifactID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return &mailinglist.GroupsioArtifactDownload{URL: url}, nil
 }
 
 // ---- Helpers ----

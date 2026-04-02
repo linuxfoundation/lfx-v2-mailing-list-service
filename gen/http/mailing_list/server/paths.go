@@ -126,3 +126,13 @@ func InviteGroupsioMembersMailingListPath(subgroupID string) string {
 func CheckGroupsioSubscriberMailingListPath() string {
 	return "/groupsio/checksubscriber"
 }
+
+// GetGroupsioArtifactMailingListPath returns the URL path to the mailing-list service get-groupsio-artifact HTTP endpoint.
+func GetGroupsioArtifactMailingListPath(subgroupID string, artifactID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/artifacts/%v", subgroupID, artifactID)
+}
+
+// GetGroupsioArtifactDownloadMailingListPath returns the URL path to the mailing-list service get-groupsio-artifact-download HTTP endpoint.
+func GetGroupsioArtifactDownloadMailingListPath(subgroupID string, artifactID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/artifacts/%v/download", subgroupID, artifactID)
+}

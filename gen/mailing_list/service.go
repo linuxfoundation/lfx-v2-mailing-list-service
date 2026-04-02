@@ -63,6 +63,10 @@ type Service interface {
 	InviteGroupsioMembers(context.Context, *InviteGroupsioMembersPayload) (err error)
 	// Check if an email address is subscribed to a GroupsIO subgroup
 	CheckGroupsioSubscriber(context.Context, *CheckGroupsioSubscriberPayload) (res *GroupsioCheckSubscriberResponse, err error)
+	// Get a GroupsIO subgroup artifact by ID
+	GetGroupsioArtifact(context.Context, *GetGroupsioArtifactPayload) (res *GroupsioArtifact, err error)
+	// Get a presigned S3 download URL for a GroupsIO subgroup artifact
+	GetGroupsioArtifactDownload(context.Context, *GetGroupsioArtifactDownloadPayload) (res *GroupsioArtifactDownload, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -85,7 +89,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [23]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber"}
+var MethodNames = [25]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -203,6 +207,28 @@ type FindParentGroupsioServicePayload struct {
 	ProjectUID string
 }
 
+// GetGroupsioArtifactDownloadPayload is the payload type of the mailing-list
+// service get-groupsio-artifact-download method.
+type GetGroupsioArtifactDownloadPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID (GroupsIO group ID)
+	SubgroupID string
+	// Artifact UUID
+	ArtifactID string
+}
+
+// GetGroupsioArtifactPayload is the payload type of the mailing-list service
+// get-groupsio-artifact method.
+type GetGroupsioArtifactPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID (GroupsIO group ID)
+	SubgroupID string
+	// Artifact UUID
+	ArtifactID string
+}
+
 // GetGroupsioMailingListCountPayload is the payload type of the mailing-list
 // service get-groupsio-mailing-list-count method.
 type GetGroupsioMailingListCountPayload struct {
@@ -255,6 +281,74 @@ type GetGroupsioServicePayload struct {
 type GetGroupsioServiceProjectsPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
+}
+
+// GroupsioArtifact is the result type of the mailing-list service
+// get-groupsio-artifact method.
+type GroupsioArtifact struct {
+	// Artifact UUID
+	ArtifactID *string
+	// GroupsIO group ID
+	GroupID *uint64
+	// LFX project ID
+	ProjectID *string
+	// Committee ID
+	CommitteeID *string
+	// Artifact type (file or link)
+	Type *string
+	// MIME media type
+	MediaType *string
+	// Filename
+	Filename *string
+	// URL for link-type artifacts
+	LinkURL *string
+	// Groups.io download URL
+	DownloadURL *string
+	// S3 object key
+	S3Key *string
+	// Whether the file has been uploaded to S3
+	FileUploaded *bool
+	// S3 upload status
+	FileUploadStatus *string
+	// Timestamp when the file was uploaded
+	FileUploadedAt *string
+	// Groups.io message IDs referencing this artifact
+	MessageIds []uint64
+	// Timestamp of most recent referencing message
+	LastPostedAt *string
+	// Most recent referencing message ID
+	LastPostedMessageID *uint64
+	// Artifact description
+	Description *string
+	// User who created the artifact
+	CreatedBy *GroupsioArtifactUser
+	// User who last modified the artifact
+	LastModifiedBy *GroupsioArtifactUser
+	// Creation timestamp
+	CreatedAt *string
+	// Last update timestamp
+	UpdatedAt *string
+}
+
+// GroupsioArtifactDownload is the result type of the mailing-list service
+// get-groupsio-artifact-download method.
+type GroupsioArtifactDownload struct {
+	// Presigned S3 download URL (expires in 15 minutes)
+	URL string
+}
+
+// User reference on a GroupsIO artifact
+type GroupsioArtifactUser struct {
+	// User ID
+	ID *string
+	// Username
+	Username *string
+	// Display name
+	Name *string
+	// Email address
+	Email *string
+	// Profile picture URL
+	ProfilePicture *string
 }
 
 // GroupsioCheckSubscriberResponse is the result type of the mailing-list

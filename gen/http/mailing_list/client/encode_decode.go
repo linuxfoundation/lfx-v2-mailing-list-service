@@ -2981,6 +2981,273 @@ func DecodeCheckGroupsioSubscriberResponse(decoder func(*http.Response) goahttp.
 	}
 }
 
+// BuildGetGroupsioArtifactRequest instantiates a HTTP request object with
+// method and path set to call the "mailing-list" service
+// "get-groupsio-artifact" endpoint
+func (c *Client) BuildGetGroupsioArtifactRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		subgroupID string
+		artifactID string
+	)
+	{
+		p, ok := v.(*mailinglist.GetGroupsioArtifactPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-artifact", "*mailinglist.GetGroupsioArtifactPayload", v)
+		}
+		subgroupID = p.SubgroupID
+		artifactID = p.ArtifactID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioArtifactMailingListPath(subgroupID, artifactID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-artifact", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetGroupsioArtifactRequest returns an encoder for requests sent to the
+// mailing-list get-groupsio-artifact server.
+func EncodeGetGroupsioArtifactRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*mailinglist.GetGroupsioArtifactPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-artifact", "*mailinglist.GetGroupsioArtifactPayload", v)
+		}
+		if p.BearerToken != nil {
+			head := *p.BearerToken
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
+}
+
+// DecodeGetGroupsioArtifactResponse returns a decoder for responses returned
+// by the mailing-list get-groupsio-artifact endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeGetGroupsioArtifactResponse may return the following errors:
+//   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - error: internal error
+func DecodeGetGroupsioArtifactResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetGroupsioArtifactResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact", err)
+			}
+			res := NewGetGroupsioArtifactGroupsioArtifactOK(&body)
+			return res, nil
+		case http.StatusInternalServerError:
+			var (
+				body GetGroupsioArtifactInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact", err)
+			}
+			err = ValidateGetGroupsioArtifactInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact", err)
+			}
+			return nil, NewGetGroupsioArtifactInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body GetGroupsioArtifactNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact", err)
+			}
+			err = ValidateGetGroupsioArtifactNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact", err)
+			}
+			return nil, NewGetGroupsioArtifactNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body GetGroupsioArtifactServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact", err)
+			}
+			err = ValidateGetGroupsioArtifactServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact", err)
+			}
+			return nil, NewGetGroupsioArtifactServiceUnavailable(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-artifact", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildGetGroupsioArtifactDownloadRequest instantiates a HTTP request object
+// with method and path set to call the "mailing-list" service
+// "get-groupsio-artifact-download" endpoint
+func (c *Client) BuildGetGroupsioArtifactDownloadRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		subgroupID string
+		artifactID string
+	)
+	{
+		p, ok := v.(*mailinglist.GetGroupsioArtifactDownloadPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-artifact-download", "*mailinglist.GetGroupsioArtifactDownloadPayload", v)
+		}
+		subgroupID = p.SubgroupID
+		artifactID = p.ArtifactID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioArtifactDownloadMailingListPath(subgroupID, artifactID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-artifact-download", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetGroupsioArtifactDownloadRequest returns an encoder for requests
+// sent to the mailing-list get-groupsio-artifact-download server.
+func EncodeGetGroupsioArtifactDownloadRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*mailinglist.GetGroupsioArtifactDownloadPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-artifact-download", "*mailinglist.GetGroupsioArtifactDownloadPayload", v)
+		}
+		if p.BearerToken != nil {
+			head := *p.BearerToken
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
+}
+
+// DecodeGetGroupsioArtifactDownloadResponse returns a decoder for responses
+// returned by the mailing-list get-groupsio-artifact-download endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeGetGroupsioArtifactDownloadResponse may return the following errors:
+//   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - error: internal error
+func DecodeGetGroupsioArtifactDownloadResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetGroupsioArtifactDownloadResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			err = ValidateGetGroupsioArtifactDownloadResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			res := NewGetGroupsioArtifactDownloadGroupsioArtifactDownloadOK(&body)
+			return res, nil
+		case http.StatusInternalServerError:
+			var (
+				body GetGroupsioArtifactDownloadInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			err = ValidateGetGroupsioArtifactDownloadInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			return nil, NewGetGroupsioArtifactDownloadInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body GetGroupsioArtifactDownloadNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			err = ValidateGetGroupsioArtifactDownloadNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			return nil, NewGetGroupsioArtifactDownloadNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body GetGroupsioArtifactDownloadServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			err = ValidateGetGroupsioArtifactDownloadServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-artifact-download", err)
+			}
+			return nil, NewGetGroupsioArtifactDownloadServiceUnavailable(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-artifact-download", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalGroupsioServiceResponseBodyToMailinglistGroupsioService builds a
 // value of type *mailinglist.GroupsioService from a value of type
 // *GroupsioServiceResponseBody.
@@ -3050,6 +3317,24 @@ func unmarshalGroupsioMemberResponseBodyToMailinglistGroupsioMember(v *GroupsioM
 		VotingStatus: v.VotingStatus,
 		CreatedAt:    v.CreatedAt,
 		UpdatedAt:    v.UpdatedAt,
+	}
+
+	return res
+}
+
+// unmarshalGroupsioArtifactUserResponseBodyToMailinglistGroupsioArtifactUser
+// builds a value of type *mailinglist.GroupsioArtifactUser from a value of
+// type *GroupsioArtifactUserResponseBody.
+func unmarshalGroupsioArtifactUserResponseBodyToMailinglistGroupsioArtifactUser(v *GroupsioArtifactUserResponseBody) *mailinglist.GroupsioArtifactUser {
+	if v == nil {
+		return nil
+	}
+	res := &mailinglist.GroupsioArtifactUser{
+		ID:             v.ID,
+		Username:       v.Username,
+		Name:           v.Name,
+		Email:          v.Email,
+		ProfilePicture: v.ProfilePicture,
 	}
 
 	return res

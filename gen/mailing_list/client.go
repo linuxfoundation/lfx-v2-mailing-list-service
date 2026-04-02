@@ -39,10 +39,12 @@ type Client struct {
 	DeleteGroupsioMemberEndpoint              goa.Endpoint
 	InviteGroupsioMembersEndpoint             goa.Endpoint
 	CheckGroupsioSubscriberEndpoint           goa.Endpoint
+	GetGroupsioArtifactEndpoint               goa.Endpoint
+	GetGroupsioArtifactDownloadEndpoint       goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                             livez,
 		ReadyzEndpoint:                            readyz,
@@ -67,6 +69,8 @@ func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGr
 		DeleteGroupsioMemberEndpoint:              deleteGroupsioMember,
 		InviteGroupsioMembersEndpoint:             inviteGroupsioMembers,
 		CheckGroupsioSubscriberEndpoint:           checkGroupsioSubscriber,
+		GetGroupsioArtifactEndpoint:               getGroupsioArtifact,
+		GetGroupsioArtifactDownloadEndpoint:       getGroupsioArtifactDownload,
 	}
 }
 
@@ -420,4 +424,36 @@ func (c *Client) CheckGroupsioSubscriber(ctx context.Context, p *CheckGroupsioSu
 		return
 	}
 	return ires.(*GroupsioCheckSubscriberResponse), nil
+}
+
+// GetGroupsioArtifact calls the "get-groupsio-artifact" endpoint of the
+// "mailing-list" service.
+// GetGroupsioArtifact may return the following errors:
+//   - "NotFound" (type *NotFoundError): Artifact not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioArtifact(ctx context.Context, p *GetGroupsioArtifactPayload) (res *GroupsioArtifact, err error) {
+	var ires any
+	ires, err = c.GetGroupsioArtifactEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioArtifact), nil
+}
+
+// GetGroupsioArtifactDownload calls the "get-groupsio-artifact-download"
+// endpoint of the "mailing-list" service.
+// GetGroupsioArtifactDownload may return the following errors:
+//   - "NotFound" (type *NotFoundError): Artifact not found or no file available
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioArtifactDownload(ctx context.Context, p *GetGroupsioArtifactDownloadPayload) (res *GroupsioArtifactDownload, err error) {
+	var ires any
+	ires, err = c.GetGroupsioArtifactDownloadEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioArtifactDownload), nil
 }

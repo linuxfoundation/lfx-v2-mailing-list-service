@@ -589,6 +589,60 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	// ---- GroupsIO Artifact endpoints ----
+
+	dsl.Method("get-groupsio-artifact", func() {
+		dsl.Description("Get a GroupsIO subgroup artifact by ID")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID (GroupsIO group ID)")
+			dsl.Attribute("artifact_id", dsl.String, "Artifact UUID")
+			dsl.Required("subgroup_id", "artifact_id")
+			dsl.Token("bearer_token", dsl.String)
+		})
+		dsl.Result(GroupsioArtifactType)
+		dsl.Error("NotFound", NotFoundError, "Artifact not found")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}")
+			dsl.Param("subgroup_id")
+			dsl.Param("artifact_id")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusOK)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
+	dsl.Method("get-groupsio-artifact-download", func() {
+		dsl.Description("Get a presigned S3 download URL for a GroupsIO subgroup artifact")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID (GroupsIO group ID)")
+			dsl.Attribute("artifact_id", dsl.String, "Artifact UUID")
+			dsl.Required("subgroup_id", "artifact_id")
+			dsl.Token("bearer_token", dsl.String)
+		})
+		dsl.Result(GroupsioArtifactDownloadType)
+		dsl.Error("NotFound", NotFoundError, "Artifact not found or no file available")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}/download")
+			dsl.Param("subgroup_id")
+			dsl.Param("artifact_id")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusOK)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
 	// Serve the file gen/http/openapi3.json for requests sent to /openapi.json.
 	dsl.Files("/openapi.json", "gen/http/openapi.json")
 	dsl.Files("/openapi3.json", "gen/http/openapi3.json")
