@@ -109,7 +109,6 @@ func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
 		lastPostedAt = &s
 	}
 	groupID := a.GroupID
-	lastPostedMessageID := a.LastPostedMessageID
 	var fileUploaded *bool
 	if a.Type == "file" {
 		fileUploaded = a.FileUploaded
@@ -130,7 +129,7 @@ func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
 		FileUploadedAt:      fileUploadedAt,
 		MessageIds:          a.MessageIDs,
 		LastPostedAt:        lastPostedAt,
-		LastPostedMessageID: &lastPostedMessageID,
+		LastPostedMessageID: a.LastPostedMessageID,
 		Description:         converter.NonEmptyString(a.Description),
 		CreatedBy:           convertArtifactUser(a.CreatedBy),
 		LastModifiedBy:      convertArtifactUser(a.LastModifiedBy),

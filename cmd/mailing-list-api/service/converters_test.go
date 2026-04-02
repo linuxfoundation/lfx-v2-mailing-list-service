@@ -273,6 +273,235 @@ func (s *ServiceConvertersSuite) TestConvertService() {
 	}
 }
 
+func (s *ServiceConvertersSuite) TestConvertArtifactUser() {
+	tests := []struct {
+		name      string
+		input     *model.ArtifactUser
+		expectNil bool
+		expectID  string
+		expectAll bool
+	}{
+		{
+			name:      "nil input returns nil",
+			input:     nil,
+			expectNil: true,
+		},
+		{
+			name: "fields map correctly",
+			input: &model.ArtifactUser{
+				ID:             "u-1",
+				Username:       "alice",
+				Name:           "Alice Smith",
+				Email:          "alice@example.com",
+				ProfilePicture: "https://example.com/pic.png",
+			},
+			expectAll: true,
+		},
+		{
+			name:     "empty fields produce nil pointers via NonEmptyString",
+			input:    &model.ArtifactUser{},
+			expectID: "",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			got := convertArtifactUser(tt.input)
+			if tt.expectNil {
+				s.Nil(got)
+				return
+			}
+			s.Require().NotNil(got)
+			if tt.expectAll {
+				s.Equal("u-1", ptrVal(got.ID))
+				s.Equal("alice", ptrVal(got.Username))
+				s.Equal("Alice Smith", ptrVal(got.Name))
+				s.Equal("alice@example.com", ptrVal(got.Email))
+				s.Equal("https://example.com/pic.png", ptrVal(got.ProfilePicture))
+			} else {
+				s.Nil(got.ID)
+			}
+		})
+	}
+}
+
+func (s *ServiceConvertersSuite) TestConvertArtifact() {
+	nonZeroTime := time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
+	fileUploadedTrue := true
+	lastMsgID := uint64(42)
+	groupID := uint64(99)
+
+	tests := []struct {
+		name                    string
+		input                   *model.GroupsIOArtifact
+		expectNil               bool
+		expectCreatedAt         *string
+		expectUpdatedAt         *string
+		expectFileUploadedAt    *string
+		expectLastPostedAt      *string
+		expectFileUploaded      *bool
+		expectLastPostedMsgID   *uint64
+		expectArtifactID        string
+		expectGroupID           *uint64
+		expectCreatedBy         bool
+		expectLastModifiedBy    bool
+	}{
+		{
+			name:      "nil input returns nil",
+			input:     nil,
+			expectNil: true,
+		},
+		{
+			name: "zero created_at and updated_at produce nil pointers",
+			input: &model.GroupsIOArtifact{
+				CreatedAt: time.Time{},
+				UpdatedAt: time.Time{},
+			},
+			expectCreatedAt: nil,
+			expectUpdatedAt: nil,
+		},
+		{
+			name: "non-zero created_at and updated_at are formatted as RFC3339",
+			input: &model.GroupsIOArtifact{
+				CreatedAt: nonZeroTime,
+				UpdatedAt: nonZeroTime,
+			},
+			expectCreatedAt: ptr("2024-03-15T10:00:00Z"),
+			expectUpdatedAt: ptr("2024-03-15T10:00:00Z"),
+		},
+		{
+			name: "nil file_uploaded_at produces nil",
+			input: &model.GroupsIOArtifact{
+				FileUploadedAt: nil,
+			},
+			expectFileUploadedAt: nil,
+		},
+		{
+			name: "non-zero file_uploaded_at is formatted as RFC3339",
+			input: &model.GroupsIOArtifact{
+				FileUploadedAt: &nonZeroTime,
+			},
+			expectFileUploadedAt: ptr("2024-03-15T10:00:00Z"),
+		},
+		{
+			name: "nil last_posted_at produces nil",
+			input: &model.GroupsIOArtifact{
+				LastPostedAt: nil,
+			},
+			expectLastPostedAt: nil,
+		},
+		{
+			name: "non-zero last_posted_at is formatted as RFC3339",
+			input: &model.GroupsIOArtifact{
+				LastPostedAt: &nonZeroTime,
+			},
+			expectLastPostedAt: ptr("2024-03-15T10:00:00Z"),
+		},
+		{
+			name: "file_uploaded is nil when type is link",
+			input: &model.GroupsIOArtifact{
+				Type:         "link",
+				FileUploaded: &fileUploadedTrue,
+			},
+			expectFileUploaded: nil,
+		},
+		{
+			name: "file_uploaded is passed through when type is file",
+			input: &model.GroupsIOArtifact{
+				Type:         "file",
+				FileUploaded: &fileUploadedTrue,
+			},
+			expectFileUploaded: &fileUploadedTrue,
+		},
+		{
+			name: "file_uploaded is nil when type is file but FileUploaded is nil",
+			input: &model.GroupsIOArtifact{
+				Type:         "file",
+				FileUploaded: nil,
+			},
+			expectFileUploaded: nil,
+		},
+		{
+			name: "nil last_posted_message_id produces nil",
+			input: &model.GroupsIOArtifact{
+				LastPostedMessageID: nil,
+			},
+			expectLastPostedMsgID: nil,
+		},
+		{
+			name: "non-nil last_posted_message_id is passed through",
+			input: &model.GroupsIOArtifact{
+				LastPostedMessageID: &lastMsgID,
+			},
+			expectLastPostedMsgID: &lastMsgID,
+		},
+		{
+			name: "scalar fields map correctly",
+			input: &model.GroupsIOArtifact{
+				ArtifactID: "art-1",
+				GroupID:    groupID,
+				CreatedAt:  nonZeroTime,
+				UpdatedAt:  nonZeroTime,
+			},
+			expectArtifactID: "art-1",
+			expectGroupID:    &groupID,
+			expectCreatedAt:  ptr("2024-03-15T10:00:00Z"),
+			expectUpdatedAt:  ptr("2024-03-15T10:00:00Z"),
+		},
+		{
+			name: "created_by and last_modified_by are converted",
+			input: &model.GroupsIOArtifact{
+				CreatedBy:      &model.ArtifactUser{ID: "u-1"},
+				LastModifiedBy: &model.ArtifactUser{ID: "u-2"},
+			},
+			expectCreatedBy:      true,
+			expectLastModifiedBy: true,
+		},
+		{
+			name: "nil created_by and last_modified_by produce nil",
+			input: &model.GroupsIOArtifact{
+				CreatedBy:      nil,
+				LastModifiedBy: nil,
+			},
+			expectCreatedBy:      false,
+			expectLastModifiedBy: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			got := convertArtifact(tt.input)
+			if tt.expectNil {
+				s.Nil(got)
+				return
+			}
+			s.Require().NotNil(got)
+			s.Equal(tt.expectCreatedAt, got.CreatedAt)
+			s.Equal(tt.expectUpdatedAt, got.UpdatedAt)
+			s.Equal(tt.expectFileUploadedAt, got.FileUploadedAt)
+			s.Equal(tt.expectLastPostedAt, got.LastPostedAt)
+			s.Equal(tt.expectFileUploaded, got.FileUploaded)
+			s.Equal(tt.expectLastPostedMsgID, got.LastPostedMessageID)
+			if tt.expectArtifactID != "" {
+				s.Equal(tt.expectArtifactID, ptrVal(got.ArtifactID))
+			}
+			if tt.expectGroupID != nil {
+				s.Equal(*tt.expectGroupID, *got.GroupID)
+			}
+			if tt.expectCreatedBy {
+				s.NotNil(got.CreatedBy)
+			} else if !tt.expectCreatedBy && tt.input != nil && tt.input.CreatedBy == nil {
+				s.Nil(got.CreatedBy)
+			}
+			if tt.expectLastModifiedBy {
+				s.NotNil(got.LastModifiedBy)
+			} else if !tt.expectLastModifiedBy && tt.input != nil && tt.input.LastModifiedBy == nil {
+				s.Nil(got.LastModifiedBy)
+			}
+		})
+	}
+}
+
 // ptr is a helper to get a pointer to a string literal.
 func ptr(s string) *string { return &s }
 
