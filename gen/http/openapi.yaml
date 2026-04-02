@@ -1785,6 +1785,7 @@ definitions:
                 type: string
                 description: LFX v2 committee UID (empty string to clear)
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                pattern: ^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
             description:
                 type: string
                 description: Subgroup description
@@ -1895,6 +1896,7 @@ definitions:
                 type: string
                 description: LFX v2 committee UID (empty string to clear)
                 example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                pattern: ^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
             description:
                 type: string
                 description: Subgroup description

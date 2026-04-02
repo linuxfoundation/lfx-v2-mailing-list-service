@@ -136,6 +136,7 @@ var GroupsioSubgroupRequestType = dsl.Type("groupsio-subgroup-request", func() {
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("committee_uid", dsl.String, "LFX v2 committee UID (empty string to clear)", func() {
+		dsl.Pattern(`^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 		dsl.Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
 	})
 	dsl.Attribute("service_id", dsl.String, "Parent GroupsIO service ID")

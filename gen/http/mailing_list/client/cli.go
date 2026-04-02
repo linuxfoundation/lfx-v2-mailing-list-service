@@ -302,6 +302,9 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 		}
+		if body.CommitteeUID != nil {
+			err = goa.MergeErrors(err, goa.ValidatePattern("body.committee_uid", *body.CommitteeUID, "^$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"))
+		}
 		if err != nil {
 			return nil, err
 		}

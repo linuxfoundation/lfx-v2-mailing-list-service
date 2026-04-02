@@ -50,9 +50,9 @@ type subgroupWire struct {
 
 // subgroupRequestWire represents a create/update request for a GroupsIO subgroup.
 type subgroupRequestWire struct {
-	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
-	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
-	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
+	ProjectID      string  `json:"project_id,omitempty"` // v1 SFID
+	CommitteeID    *string `json:"committee,omitempty"`  // v1 UUID; nil = no change, non-nil empty = clear
+	ParentID       string  `json:"parent_id,omitempty"`  // v1 Service ID
 	Name           string `json:"group_name,omitempty"`
 	Description    string `json:"description,omitempty"`
 	Type           string `json:"type,omitempty"`
