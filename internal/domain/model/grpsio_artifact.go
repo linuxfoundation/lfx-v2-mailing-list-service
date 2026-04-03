@@ -21,8 +21,8 @@ type ArtifactUser struct {
 type GroupsIOArtifact struct {
 	ArtifactID          string        `json:"artifact_id"`
 	GroupID             uint64        `json:"group_id"`
-	ProjectID           string        `json:"project_id,omitempty"`
-	CommitteeID         string        `json:"committee_id,omitempty"`
+	ProjectUID          string        `json:"project_uid,omitempty"`
+	CommitteeUID        string        `json:"committee_uid,omitempty"`
 	Type                string        `json:"type,omitempty"`
 	MediaType           string        `json:"media_type,omitempty"`
 	Filename            string        `json:"filename,omitempty"`
@@ -48,11 +48,11 @@ func (a *GroupsIOArtifact) ParentRefs() []string {
 		return nil
 	}
 	var refs []string
-	if a.ProjectID != "" {
-		refs = append(refs, fmt.Sprintf("project:%s", a.ProjectID))
+	if a.ProjectUID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", a.ProjectUID))
 	}
-	if a.CommitteeID != "" {
-		refs = append(refs, fmt.Sprintf("committee:%s", a.CommitteeID))
+	if a.CommitteeUID != "" {
+		refs = append(refs, fmt.Sprintf("committee:%s", a.CommitteeUID))
 	}
 	if a.GroupID != 0 {
 		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%d", a.GroupID))
@@ -114,11 +114,11 @@ func (a *GroupsIOArtifact) Tags() []string {
 	if a.GroupID != 0 {
 		tags = append(tags, fmt.Sprintf("group_id:%d", a.GroupID))
 	}
-	if a.ProjectID != "" {
-		tags = append(tags, fmt.Sprintf("project_id:%s", a.ProjectID))
+	if a.ProjectUID != "" {
+		tags = append(tags, fmt.Sprintf("project_uid:%s", a.ProjectUID))
 	}
-	if a.CommitteeID != "" {
-		tags = append(tags, fmt.Sprintf("committee_id:%s", a.CommitteeID))
+	if a.CommitteeUID != "" {
+		tags = append(tags, fmt.Sprintf("committee_uid:%s", a.CommitteeUID))
 	}
 	return tags
 }

@@ -22,20 +22,42 @@ import (
 // Returns true to NAK when the parent subgroup mapping is absent (ordering guarantee)
 // or on transient errors.
 func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
-	// Artifacts carry subgroup_id (Groups.io numeric group ID). Resolve the parent
+	// Artifacts carry group_id (Groups.io numeric group ID). Resolve the parent
 	// subgroup UID via the reverse index written by the subgroup handler.
-	subgroupID := mapconv.Int64Ptr(data, "subgroup_id")
-	if subgroupID == nil {
-		slog.ErrorContext(ctx, "artifact has no subgroup_id, cannot determine parent mailing list — ACKing", "uid", uid)
+	groupID := mapconv.Int64Ptr(data, "group_id")
+	if groupID == nil {
+		slog.ErrorContext(ctx, "artifact has no group_id, cannot determine parent mailing list — ACKing", "uid", uid)
 		return false // ACK — malformed data, retrying won't help
 	}
 
-	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *subgroupID)
+	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
 	_, ok := mappings.GetMappingValue(ctx, gidKey)
 	if !ok {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing artifact for retry",
-			"uid", uid, "subgroup_id", *subgroupID)
+			"uid", uid, "group_id", *groupID)
 		return true // NAK — retry with backoff
+	}
+
+	// Resolve v1 project SFID → v2 project UID. NAK if not yet available.
+	if projectSFID := mapconv.StringVal(data, "project_id"); projectSFID != "" {
+		projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
+		if !ok {
+			slog.WarnContext(ctx, "project mapping not yet available, NAKing artifact for retry",
+				"uid", uid, "project_sfid", projectSFID)
+			return true // NAK — retry with backoff
+		}
+		data["project_id"] = projectUID
+	}
+
+	// Resolve optional v1 committee SFID → v2 committee UID. NAK if specified but not yet synced.
+	if committeeSFID := mapconv.StringVal(data, "committee_id"); committeeSFID != "" {
+		committeeUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID))
+		if !ok {
+			slog.WarnContext(ctx, "committee mapping not yet available, NAKing artifact for retry",
+				"uid", uid, "committee_sfid", committeeSFID)
+			return true // NAK — retry with backoff
+		}
+		data["committee_id"] = committeeUID
 	}
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixArtifact, uid)
@@ -124,8 +146,8 @@ func HandleDataStreamArtifactDelete(ctx context.Context, uid string, publisher p
 func transformV1ToGroupsIOArtifact(uid string, data map[string]any) *model.GroupsIOArtifact {
 	artifact := &model.GroupsIOArtifact{
 		ArtifactID:       uid,
-		ProjectID:        mapconv.StringVal(data, "project_id"),
-		CommitteeID:      mapconv.StringVal(data, "committee_id"),
+		ProjectUID:  mapconv.StringVal(data, "project_id"),
+		CommitteeUID: mapconv.StringVal(data, "committee_id"),
 		Type:             mapconv.StringVal(data, "type"),
 		MediaType:        mapconv.StringVal(data, "media_type"),
 		Filename:         mapconv.StringVal(data, "filename"),
@@ -136,7 +158,7 @@ func transformV1ToGroupsIOArtifact(uid string, data map[string]any) *model.Group
 		Description:      mapconv.StringVal(data, "description"),
 	}
 
-	if gid := mapconv.Int64Ptr(data, "subgroup_id"); gid != nil {
+	if gid := mapconv.Int64Ptr(data, "group_id"); gid != nil {
 		artifact.GroupID = uint64(*gid)
 	}
 

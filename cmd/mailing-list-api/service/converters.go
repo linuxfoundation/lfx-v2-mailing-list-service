@@ -116,8 +116,8 @@ func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
 	return &mailinglist.GroupsioArtifact{
 		ArtifactID:          converter.NonEmptyString(a.ArtifactID),
 		GroupID:             &groupID,
-		ProjectID:           converter.NonEmptyString(a.ProjectID),
-		CommitteeID:         converter.NonEmptyString(a.CommitteeID),
+		ProjectID:           converter.NonEmptyString(a.ProjectUID),
+		CommitteeID:         converter.NonEmptyString(a.CommitteeUID),
 		Type:                converter.NonEmptyString(a.Type),
 		MediaType:           converter.NonEmptyString(a.MediaType),
 		Filename:            converter.NonEmptyString(a.Filename),

@@ -69,6 +69,7 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 			"$KV.v1-objects.itx-groupsio-v2-service.>",
 			"$KV.v1-objects.itx-groupsio-v2-subgroup.>",
 			"$KV.v1-objects.itx-groupsio-v2-member.>",
+			"$KV.v1-objects.itx-groupsio-v2-artifact.>",
 		},
 		MaxDeliver:    ep.config.MaxDeliver,
 		AckWait:       ep.config.AckWait,

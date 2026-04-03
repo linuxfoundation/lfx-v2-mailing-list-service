@@ -145,8 +145,8 @@ func fromWireArtifact(w *artifactWire) *model.GroupsIOArtifact {
 	a := &model.GroupsIOArtifact{
 		ArtifactID:          w.ArtifactID,
 		GroupID:             w.GroupID,
-		ProjectID:           w.ProjectID,
-		CommitteeID:         w.CommitteeID,
+		ProjectUID:          w.ProjectID,
+		CommitteeUID:        w.CommitteeID,
 		Type:                w.Type,
 		MediaType:           w.MediaType,
 		Filename:            w.Filename,
