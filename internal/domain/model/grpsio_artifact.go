@@ -3,7 +3,10 @@
 
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // ArtifactUser represents a user reference on an artifact (creator or last modifier).
 type ArtifactUser struct {
@@ -37,4 +40,85 @@ type GroupsIOArtifact struct {
 	LastModifiedBy      *ArtifactUser `json:"last_modified_by,omitempty"`
 	CreatedAt           time.Time     `json:"created_at"`
 	UpdatedAt           time.Time     `json:"updated_at"`
+}
+
+// ParentRefs returns the parent resource references for indexing (project, committee, group).
+func (a *GroupsIOArtifact) ParentRefs() []string {
+	if a == nil {
+		return nil
+	}
+	var refs []string
+	if a.ProjectID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", a.ProjectID))
+	}
+	if a.CommitteeID != "" {
+		refs = append(refs, fmt.Sprintf("committee:%s", a.CommitteeID))
+	}
+	if a.GroupID != 0 {
+		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%d", a.GroupID))
+	}
+	return refs
+}
+
+// NameAndAliases returns display names for search (filename or link URL depending on type).
+func (a *GroupsIOArtifact) NameAndAliases() []string {
+	if a == nil {
+		return nil
+	}
+	var names []string
+	if a.Filename != "" {
+		names = append(names, a.Filename)
+	}
+	if a.LinkURL != "" {
+		names = append(names, a.LinkURL)
+	}
+	return names
+}
+
+// SortName returns the primary sort name for the artifact (filename, falling back to link URL).
+func (a *GroupsIOArtifact) SortName() string {
+	if a == nil {
+		return ""
+	}
+	if a.Filename != "" {
+		return a.Filename
+	}
+	return a.LinkURL
+}
+
+// Fulltext returns a concatenated string for full-text search.
+func (a *GroupsIOArtifact) Fulltext() string {
+	if a == nil {
+		return ""
+	}
+	name := a.SortName()
+	if a.Description == "" {
+		return name
+	}
+	if name == "" {
+		return a.Description
+	}
+	return name + " " + a.Description
+}
+
+// Tags generates a consistent set of tags for the artifact.
+func (a *GroupsIOArtifact) Tags() []string {
+	if a == nil {
+		return nil
+	}
+	var tags []string
+	if a.ArtifactID != "" {
+		tags = append(tags, a.ArtifactID)
+		tags = append(tags, fmt.Sprintf("group_artifact_id:%s", a.ArtifactID))
+	}
+	if a.GroupID != 0 {
+		tags = append(tags, fmt.Sprintf("group_id:%d", a.GroupID))
+	}
+	if a.ProjectID != "" {
+		tags = append(tags, fmt.Sprintf("project_id:%s", a.ProjectID))
+	}
+	if a.CommitteeID != "" {
+		tags = append(tags, fmt.Sprintf("committee_id:%s", a.CommitteeID))
+	}
+	return tags
 }

@@ -71,6 +71,8 @@ const (
 	// KVMappingPrefixSubgroupByGroupID is the v1-mappings reverse index: Groups.io group_id → subgroup UID.
 	// Written by the subgroup handler so the member handler can resolve MailingListUID from group_id.
 	KVMappingPrefixSubgroupByGroupID = "groupsio-subgroup-gid"
+	// KVMappingPrefixArtifact is the v1-mappings key prefix for GroupsIO artifacts.
+	KVMappingPrefixArtifact = "groupsio-artifact"
 
 	// KVMappingPrefixProjectBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
 	// project.sfid.{sfid} → v2 project UID. Used to resolve the v1 project_id (SFID) to a v2 UID.

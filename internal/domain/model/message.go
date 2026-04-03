@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
@@ -32,6 +33,9 @@ type IndexerMessage struct {
 	Data    any               `json:"data"`
 	// Tags is a list of tags to be set on the indexed resource for search
 	Tags []string `json:"tags"`
+	// IndexingConfig carries optional indexer-specific configuration.
+	// When non-nil it bypasses server-side enrichers and uses the supplied values directly.
+	IndexingConfig *indexertypes.IndexingConfig `json:"indexing_config,omitempty"`
 }
 
 // Build constructs an indexer message with proper context extraction and data marshaling
@@ -75,6 +79,17 @@ func (g *IndexerMessage) Build(ctx context.Context, input any) (*IndexerMessage,
 
 	g.Data = payload
 	return g, nil
+}
+
+// BuildWithIndexingConfig is like Build but also sets IndexingConfig on the message.
+// Use this when the indexer requires additional routing or configuration beyond the default.
+func (g *IndexerMessage) BuildWithIndexingConfig(ctx context.Context, input any, indexingConfig *indexertypes.IndexingConfig) (*IndexerMessage, error) {
+	msg, err := g.Build(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+	msg.IndexingConfig = indexingConfig
+	return msg, nil
 }
 
 // AccessMessage is the schema for the data in the message sent to the fga-sync service
