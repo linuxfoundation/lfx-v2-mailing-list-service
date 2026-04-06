@@ -33,17 +33,22 @@ This document is the authoritative reference for all data the mailing list servi
 | `type` | string | Service type (`primary`, `formation`, `shared`) |
 | `domain` | string | Groups.io domain (e.g. `groups.io`) |
 | `group_id` | int64 (optional) | Groups.io numeric group ID |
-| `status` | string (optional) | Service status |
-| `prefix` | string (optional) | Groups.io group name prefix |
+| `status` | string | Service status; emitted as empty string when not populated |
+| `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
+| `prefix` | string | Groups.io group name prefix; emitted as empty string when not populated |
+| `global_owners` | []string | Global owner list; always emitted as `null`/empty array by v1-sync (not populated by transform) |
+| `parent_service_uid` | string | UID of the parent service for shared type; emitted as empty string by v1-sync |
 | `project_uid` | string | v2 UID of the owning project (resolved from v1 SFID) |
-| `project_slug` | string (optional) | Slug of the owning project |
-| `project_name` | string (optional) | Name of the owning project |
-| `url` | string (optional) | Groups.io URL for the service group |
-| `group_name` | string (optional) | Groups.io group name |
-| `public` | bool | Whether the service is publicly accessible |
+| `project_slug` | string | Slug of the owning project; emitted as empty string when not populated |
+| `project_name` | string | Name of the owning project; emitted as empty string when not populated |
+| `url` | string | Groups.io URL for the service group; emitted as empty string when not populated |
+| `group_name` | string | Groups.io group name; emitted as empty string when not populated |
+| `public` | bool | Whether the service is publicly accessible; emitted as `false` when not populated |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
+
+> **v1-sync transform note:** `transformV1ToGrpsIOService` populates `uid`, `type`, `domain`, `group_id`, `prefix`, `project_uid`, `project_slug`, `source` ("v1-sync"), and timestamps. All other fields (`status`, `global_owners`, `parent_service_uid`, `project_name`, `url`, `group_name`, `public`) are at their Go zero values and will be serialized as empty strings / `false` / `null`.
 
 ### Tags
 
@@ -101,6 +106,8 @@ _(handled by the indexer enricher via the `project_uid` tag)_
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 
+> **v1-sync build note:** `buildServiceSettings` only populates `uid`, `writers`, and `auditors`. The optional review/audit fields and `created_at`/`updated_at` will be at Go zero values (`0001-01-01T00:00:00Z` for timestamps, `null` for optional strings).
+
 ### Tags
 
 | Tag Format | Example | Purpose |
@@ -128,24 +135,27 @@ No `IndexingConfig` is set for this resource type — the indexer uses server-si
 |---|---|---|
 | `uid` | string | Mailing list unique identifier |
 | `group_id` | int64 (optional) | Groups.io numeric group ID |
-| `group_name` | string (optional) | Groups.io group name |
+| `group_name` | string | Groups.io group name; emitted as empty string when not populated |
 | `public` | bool | Whether the mailing list is publicly accessible |
-| `audience_access` | string | Access model: `public`, `approval_required`, or `invite_only` |
+| `audience_access` | string | Access model: `public`, `approval_required`, or `invite_only`; not populated by v1-sync transform — emitted as empty string |
+| `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
 | `type` | string | List type: `announcement`, `discussion_moderated`, or `discussion_open` |
 | `subscriber_count` | int | Current number of subscribers |
 | `committees` | []object (optional) | Associated committees. Each has `uid` (string) and `allowed_voting_statuses` ([]string) |
 | `description` | string | Mailing list description |
 | `title` | string | Mailing list title |
-| `subject_tag` | string (optional) | Email subject tag |
+| `subject_tag` | string | Email subject tag; emitted as empty string when not populated |
 | `service_uid` | string | UID of the parent GroupsIO service |
 | `project_uid` | string | v2 UID of the owning project (resolved from v1 SFID) |
-| `project_name` | string (optional) | Name of the owning project |
-| `project_slug` | string (optional) | Slug of the owning project |
+| `project_name` | string | Name of the owning project; emitted as empty string when not populated |
+| `project_slug` | string | Slug of the owning project; emitted as empty string when not populated |
 | `url` | string (optional) | Groups.io URL for the subgroup |
 | `flags` | []string (optional) | Warning messages about unusual settings |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
+
+> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` (from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. `audience_access`, `project_name`, and `project_slug` are not set by the transform and will be emitted as empty strings.
 
 ### Tags
 
@@ -209,6 +219,8 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 
+> **v1-sync build note:** `buildMailingListSettings` only populates `uid`, `writers`, and `auditors`. The optional review/audit fields and `created_at`/`updated_at` will be at Go zero values (`0001-01-01T00:00:00Z` for timestamps, `null` for optional strings).
+
 ### Tags
 
 | Tag Format | Example | Purpose |
@@ -238,27 +250,28 @@ No `IndexingConfig` is set for this resource type — the indexer uses server-si
 | `mailing_list_uid` | string | UID of the parent mailing list (resolved from `group_id` reverse index) |
 | `member_id` | int64 (optional) | Groups.io numeric member ID |
 | `group_id` | int64 (optional) | Groups.io numeric group ID |
-| `user_id` | string (optional) | User-service ID |
-| `username` | string | Groups.io username (LFID) |
-| `first_name` | string | First name (split from `full_name`) |
-| `last_name` | string | Last name (split from `full_name`) |
-| `email` | string | Member email address (RFC 5322) |
-| `organization` | string (optional) | Member's organization |
-| `job_title` | string (optional) | Member's job title |
-| `groups_email` | string (optional) | Lowercase email as recorded by Groups.io |
-| `groups_full_name` | string (optional) | Lowercase full name as recorded by Groups.io |
-| `committee_email` | string (optional) | Lowercase email from committee service |
-| `committee_full_name` | string (optional) | Lowercase full name from committee service |
-| `committee_id` | string (optional) | Committee UID if member belongs to a committee |
-| `role` | string (optional) | Role within the committee |
-| `voting_status` | string (optional) | Voting status (e.g. `Voting Rep`, `Non-Voting`) |
-| `member_type` | string | `committee` or `direct` |
-| `delivery_mode` | string | Email delivery preference |
-| `delivery_mode_list` | string (optional) | Delivery mode as reported by Groups.io |
-| `mod_status` | string | Moderation status: `none`, `moderator`, or `owner` |
-| `status` | string | Groups.io membership status (e.g. `normal`, `pending`) |
-| `last_reviewed_at` | string (optional) | RFC3339 timestamp of the last review |
-| `last_reviewed_by` | string (optional) | UID of who performed the last review |
+| `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
+| `user_id` | string (optional) | User-service ID; omitted when empty |
+| `username` | string | Groups.io username (LFID); emitted as empty string when not populated |
+| `first_name` | string | First name (split from `full_name`); emitted as empty string when not populated |
+| `last_name` | string | Last name (split from `full_name`); emitted as empty string when not populated |
+| `email` | string | Member email address (RFC 5322); emitted as empty string when not populated |
+| `organization` | string | Member's organization; emitted as empty string when not populated |
+| `job_title` | string | Member's job title; emitted as empty string when not populated |
+| `groups_email` | string (optional) | Lowercase email as recorded by Groups.io; omitted when empty |
+| `groups_full_name` | string (optional) | Lowercase full name as recorded by Groups.io; omitted when empty |
+| `committee_email` | string (optional) | Lowercase email from committee service; omitted when empty |
+| `committee_full_name` | string (optional) | Lowercase full name from committee service; omitted when empty |
+| `committee_id` | string (optional) | Committee UID if member belongs to a committee; omitted when empty |
+| `role` | string (optional) | Role within the committee; omitted when empty |
+| `voting_status` | string (optional) | Voting status (e.g. `Voting Rep`, `Non-Voting`); omitted when empty |
+| `member_type` | string | `committee` or `direct`; emitted as empty string when not populated |
+| `delivery_mode` | string | Email delivery preference; emitted as empty string when not populated |
+| `delivery_mode_list` | string (optional) | Delivery mode as reported by Groups.io; omitted when empty |
+| `mod_status` | string | Moderation status: `none`, `moderator`, or `owner`; emitted as empty string when not populated |
+| `status` | string | Groups.io membership status (e.g. `normal`, `pending`); emitted as empty string when not populated |
+| `last_reviewed_at` | string or null | RFC3339 timestamp of the last review; emitted as `null` when not set (not omitted) |
+| `last_reviewed_by` | string or null | UID of who performed the last review; emitted as `null` when not set (not omitted) |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
@@ -283,6 +296,8 @@ When a member has a non-empty `username`, the handler also publishes an FGA memb
 - **Remove member:** `lfx.remove_member.groupsio_mailing_list` on delete
 
 The message payload is `{ uid, username, mailing_list_uid }`.
+
+> **Username transform:** The `username` field in this FGA payload is **not** the raw Groups.io/LFID username. It is the principal value derived via `principal.FromUsername(member.Username)`, which produces an Auth0-style subject (e.g. `auth0|...`). Downstream FGA consumers should expect this format.
 
 ### Search Behavior
 
@@ -315,12 +330,12 @@ No `IndexingConfig` is set for this resource type — the indexer uses server-si
 | `file_uploaded` | bool (optional) | Whether the file has been uploaded; omitted for link-type artifacts |
 | `file_upload_status` | string (optional) | Upload status (e.g. `completed`) |
 | `file_uploaded_at` | timestamp (optional) | When the file was uploaded |
-| `message_ids` | []uint64 (optional) | IDs of associated Groups.io messages |
+| `message_ids` | []uint64 (optional) | IDs of associated Groups.io messages; **not populated by `transformV1ToGroupsIOArtifact`** — omitted from v1-sync payloads |
 | `last_posted_at` | timestamp (optional) | When the artifact was last posted |
-| `last_posted_message_id` | uint64 (optional) | ID of the last posted message |
+| `last_posted_message_id` | uint64 (optional) | ID of the last posted message; **not populated by `transformV1ToGroupsIOArtifact`** — omitted from v1-sync payloads |
 | `description` | string (optional) | Artifact description |
-| `created_by` | object (optional) | User who created the artifact (`id`, `username`, `name`, `email`, `profile_picture`) |
-| `last_modified_by` | object (optional) | User who last modified the artifact |
+| `created_by` | object (optional) | User who created the artifact (`id`, `username`, `name`, `email`, `profile_picture`); **not populated by `transformV1ToGroupsIOArtifact`** — omitted from v1-sync payloads |
+| `last_modified_by` | object (optional) | User who last modified the artifact; **not populated by `transformV1ToGroupsIOArtifact`** — omitted from v1-sync payloads |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 
