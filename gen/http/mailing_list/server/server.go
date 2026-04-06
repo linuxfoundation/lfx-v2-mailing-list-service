@@ -124,10 +124,10 @@ func New(
 			{"CheckGroupsioSubscriber", "POST", "/groupsio/checksubscriber"},
 			{"GetGroupsioArtifact", "GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}"},
 			{"GetGroupsioArtifactDownload", "GET", "/groupsio/mailing-lists/{subgroup_id}/artifacts/{artifact_id}/download"},
-			{"Serve gen/http/openapi.json", "GET", "/openapi.json"},
-			{"Serve gen/http/openapi3.json", "GET", "/openapi3.json"},
-			{"Serve gen/http/openapi.yaml", "GET", "/openapi.yaml"},
-			{"Serve gen/http/openapi3.yaml", "GET", "/openapi3.yaml"},
+			{"Serve gen/http/openapi.json", "GET", "/_groupsio/openapi.json"},
+			{"Serve gen/http/openapi3.json", "GET", "/_groupsio/openapi3.json"},
+			{"Serve gen/http/openapi.yaml", "GET", "/_groupsio/openapi.yaml"},
+			{"Serve gen/http/openapi3.yaml", "GET", "/_groupsio/openapi3.yaml"},
 		},
 		Livez:                             NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
 		Readyz:                            NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
@@ -223,10 +223,10 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountCheckGroupsioSubscriberHandler(mux, h.CheckGroupsioSubscriber)
 	MountGetGroupsioArtifactHandler(mux, h.GetGroupsioArtifact)
 	MountGetGroupsioArtifactDownloadHandler(mux, h.GetGroupsioArtifactDownload)
-	MountGenHTTPOpenapiJSON(mux, h.GenHTTPOpenapiJSON)
-	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
-	MountGenHTTPOpenapiYaml(mux, h.GenHTTPOpenapiYaml)
-	MountGenHTTPOpenapi3Yaml(mux, h.GenHTTPOpenapi3Yaml)
+	MountGenHTTPOpenapiJSON(mux, http.StripPrefix("/_groupsio", h.GenHTTPOpenapiJSON))
+	MountGenHTTPOpenapi3JSON(mux, http.StripPrefix("/_groupsio", h.GenHTTPOpenapi3JSON))
+	MountGenHTTPOpenapiYaml(mux, http.StripPrefix("/_groupsio", h.GenHTTPOpenapiYaml))
+	MountGenHTTPOpenapi3Yaml(mux, http.StripPrefix("/_groupsio", h.GenHTTPOpenapi3Yaml))
 }
 
 // Mount configures the mux to serve the mailing-list endpoints.
@@ -1587,25 +1587,25 @@ func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
 }
 
 // MountGenHTTPOpenapiJSON configures the mux to serve GET request made to
-// "/openapi.json".
+// "/_groupsio/openapi.json".
 func MountGenHTTPOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
+	mux.Handle("GET", "/_groupsio/openapi.json", h.ServeHTTP)
 }
 
 // MountGenHTTPOpenapi3JSON configures the mux to serve GET request made to
-// "/openapi3.json".
+// "/_groupsio/openapi3.json".
 func MountGenHTTPOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi3.json", h.ServeHTTP)
+	mux.Handle("GET", "/_groupsio/openapi3.json", h.ServeHTTP)
 }
 
 // MountGenHTTPOpenapiYaml configures the mux to serve GET request made to
-// "/openapi.yaml".
+// "/_groupsio/openapi.yaml".
 func MountGenHTTPOpenapiYaml(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi.yaml", h.ServeHTTP)
+	mux.Handle("GET", "/_groupsio/openapi.yaml", h.ServeHTTP)
 }
 
 // MountGenHTTPOpenapi3Yaml configures the mux to serve GET request made to
-// "/openapi3.yaml".
+// "/_groupsio/openapi3.yaml".
 func MountGenHTTPOpenapi3Yaml(mux goahttp.Muxer, h http.Handler) {
-	mux.Handle("GET", "/openapi3.yaml", h.ServeHTTP)
+	mux.Handle("GET", "/_groupsio/openapi3.yaml", h.ServeHTTP)
 }

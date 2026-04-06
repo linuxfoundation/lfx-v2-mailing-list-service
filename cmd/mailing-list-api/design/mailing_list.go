@@ -643,9 +643,17 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	// Serve the file gen/http/openapi3.json for requests sent to /openapi.json.
-	dsl.Files("/openapi.json", "gen/http/openapi.json")
-	dsl.Files("/openapi3.json", "gen/http/openapi3.json")
-	dsl.Files("/openapi.yaml", "gen/http/openapi.yaml")
-	dsl.Files("/openapi3.yaml", "gen/http/openapi3.yaml")
+	// Serve OpenAPI spec files under the /_groupsio/ prefix to match the httproute and ruleset.
+	dsl.Files("/_groupsio/openapi.json", "gen/http/openapi.json", func() {
+		dsl.Meta("swagger:generate", "false")
+	})
+	dsl.Files("/_groupsio/openapi3.json", "gen/http/openapi3.json", func() {
+		dsl.Meta("swagger:generate", "false")
+	})
+	dsl.Files("/_groupsio/openapi.yaml", "gen/http/openapi.yaml", func() {
+		dsl.Meta("swagger:generate", "false")
+	})
+	dsl.Files("/_groupsio/openapi3.yaml", "gen/http/openapi3.yaml", func() {
+		dsl.Meta("swagger:generate", "false")
+	})
 })
