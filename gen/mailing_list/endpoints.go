@@ -40,6 +40,8 @@ type Endpoints struct {
 	DeleteGroupsioMember              goa.Endpoint
 	InviteGroupsioMembers             goa.Endpoint
 	CheckGroupsioSubscriber           goa.Endpoint
+	GetGroupsioArtifact               goa.Endpoint
+	GetGroupsioArtifactDownload       goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -70,6 +72,8 @@ func NewEndpoints(s Service) *Endpoints {
 		DeleteGroupsioMember:              NewDeleteGroupsioMemberEndpoint(s, a.JWTAuth),
 		InviteGroupsioMembers:             NewInviteGroupsioMembersEndpoint(s, a.JWTAuth),
 		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
+		GetGroupsioArtifact:               NewGetGroupsioArtifactEndpoint(s, a.JWTAuth),
+		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -98,6 +102,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DeleteGroupsioMember = m(e.DeleteGroupsioMember)
 	e.InviteGroupsioMembers = m(e.InviteGroupsioMembers)
 	e.CheckGroupsioSubscriber = m(e.CheckGroupsioSubscriber)
+	e.GetGroupsioArtifact = m(e.GetGroupsioArtifact)
+	e.GetGroupsioArtifactDownload = m(e.GetGroupsioArtifactDownload)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -597,5 +603,51 @@ func NewCheckGroupsioSubscriberEndpoint(s Service, authJWTFn security.AuthJWTFun
 			return nil, err
 		}
 		return s.CheckGroupsioSubscriber(ctx, p)
+	}
+}
+
+// NewGetGroupsioArtifactEndpoint returns an endpoint function that calls the
+// method "get-groupsio-artifact" of service "mailing-list".
+func NewGetGroupsioArtifactEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGroupsioArtifactPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGroupsioArtifact(ctx, p)
+	}
+}
+
+// NewGetGroupsioArtifactDownloadEndpoint returns an endpoint function that
+// calls the method "get-groupsio-artifact-download" of service "mailing-list".
+func NewGetGroupsioArtifactDownloadEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGroupsioArtifactDownloadPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGroupsioArtifactDownload(ctx, p)
 	}
 }

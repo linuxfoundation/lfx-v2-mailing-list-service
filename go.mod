@@ -10,7 +10,8 @@ require (
 	github.com/auth0/go-auth0 v1.33.0
 	github.com/auth0/go-jwt-middleware/v2 v2.3.0
 	github.com/google/uuid v1.6.0
-	github.com/nats-io/nats.go v1.31.0
+	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14
+	github.com/nats-io/nats.go v1.43.0
 	github.com/remychantenay/slog-otel v1.3.4
 	github.com/stretchr/testify v1.11.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -50,7 +51,7 @@ require (
 	github.com/gohugoio/hashstructure v0.5.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.3 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.6 // indirect

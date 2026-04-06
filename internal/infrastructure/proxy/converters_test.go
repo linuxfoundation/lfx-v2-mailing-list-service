@@ -330,6 +330,264 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 	}
 }
 
+func (s *ProxyConvertersSuite) TestFromWireArtifactUser() {
+	tests := []struct {
+		name               string
+		input              *artifactUserWire
+		expectNil          bool
+		expectID           string
+		expectUsername     string
+		expectName         string
+		expectEmail        string
+		expectProfilePic   string
+	}{
+		{
+			name:      "nil input returns nil",
+			input:     nil,
+			expectNil: true,
+		},
+		{
+			name: "fields map correctly",
+			input: &artifactUserWire{
+				ID:             "user-1",
+				Username:       "alice",
+				Name:           "Alice Smith",
+				Email:          "alice@example.com",
+				ProfilePicture: "https://example.com/pic.jpg",
+			},
+			expectID:         "user-1",
+			expectUsername:   "alice",
+			expectName:       "Alice Smith",
+			expectEmail:      "alice@example.com",
+			expectProfilePic: "https://example.com/pic.jpg",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			got := fromWireArtifactUser(tt.input)
+			if tt.expectNil {
+				s.Nil(got)
+				return
+			}
+			s.Require().NotNil(got)
+			s.Equal(tt.expectID, got.ID)
+			s.Equal(tt.expectUsername, got.Username)
+			s.Equal(tt.expectName, got.Name)
+			s.Equal(tt.expectEmail, got.Email)
+			s.Equal(tt.expectProfilePic, got.ProfilePicture)
+		})
+	}
+}
+
+func (s *ProxyConvertersSuite) TestFromWireArtifact() {
+	trueVal := true
+	msgID1 := uint64(264364315)
+	ts := time.Date(2026, 4, 2, 2, 9, 1, 0, time.UTC)
+
+	tests := []struct {
+		name                    string
+		input                   *artifactWire
+		expectNil               bool
+		expectArtifactID        string
+		expectGroupID           uint64
+		expectProjectID         string
+		expectCommitteeID       string
+		expectType              string
+		expectMediaType         string
+		expectFilename          string
+		expectLinkURL           string
+		expectDownloadURL       string
+		expectS3Key             string
+		expectFileUploaded      *bool
+		expectFileUploadStatus  string
+		expectFileUploadedAt    *time.Time
+		expectMessageIDs        []uint64
+		expectLastPostedAt      *time.Time
+		expectLastPostedMsgID   *uint64
+		expectDescription       string
+		expectCreatedByID       string
+		expectLastModByID       string
+		expectCreatedAt         time.Time
+		expectUpdatedAt         time.Time
+	}{
+		{
+			name:      "nil input returns nil",
+			input:     nil,
+			expectNil: true,
+		},
+		{
+			name:  "valid RFC3339 created_at and last_modified_at are parsed",
+			input: &artifactWire{CreatedAt: "2026-04-02T02:09:01Z", UpdatedAt: "2026-04-02T02:09:01Z"},
+			expectCreatedAt: ts,
+			expectUpdatedAt: ts,
+		},
+		{
+			name:            "empty timestamps produce zero time",
+			input:           &artifactWire{},
+			expectCreatedAt: time.Time{},
+			expectUpdatedAt: time.Time{},
+		},
+		{
+			name:                 "valid file_uploaded_at is parsed into pointer",
+			input:                &artifactWire{FileUploadedAt: "2026-04-02T02:09:01Z"},
+			expectFileUploadedAt: &ts,
+		},
+		{
+			name:                 "empty file_uploaded_at produces nil pointer",
+			input:                &artifactWire{},
+			expectFileUploadedAt: nil,
+		},
+		{
+			name:               "valid last_posted_at is parsed into pointer",
+			input:              &artifactWire{LastPostedAt: "2026-04-02T02:09:01Z"},
+			expectLastPostedAt: &ts,
+		},
+		{
+			name:               "empty last_posted_at produces nil pointer",
+			input:              &artifactWire{},
+			expectLastPostedAt: nil,
+		},
+		{
+			name:               "file_uploaded pointer is passed through when set",
+			input:              &artifactWire{FileUploaded: &trueVal},
+			expectFileUploaded: &trueVal,
+		},
+		{
+			name:               "nil file_uploaded pointer remains nil",
+			input:              &artifactWire{FileUploaded: nil},
+			expectFileUploaded: nil,
+		},
+		{
+			name:                  "last_posted_message_id pointer is passed through when set",
+			input:                 &artifactWire{LastPostedMessageID: &msgID1},
+			expectLastPostedMsgID: &msgID1,
+		},
+		{
+			name:                  "nil last_posted_message_id pointer remains nil",
+			input:                 &artifactWire{LastPostedMessageID: nil},
+			expectLastPostedMsgID: nil,
+		},
+		{
+			name: "created_by and last_modified_by are mapped",
+			input: &artifactWire{
+				CreatedBy:      &artifactUserWire{ID: "user-1"},
+				LastModifiedBy: &artifactUserWire{ID: "user-2"},
+			},
+			expectCreatedByID: "user-1",
+			expectLastModByID: "user-2",
+		},
+		{
+			name:  "nil created_by and last_modified_by produce nil",
+			input: &artifactWire{},
+		},
+		{
+			name: "all fields map correctly",
+			input: &artifactWire{
+				ArtifactID:          "a323373e-8553-578f-9aba-0235940641e3",
+				GroupID:             118856,
+				ProjectID:           "a09P000000DsQSFIA3",
+				CommitteeID:         "committee-uuid",
+				Type:                "file",
+				MediaType:           "text/plain",
+				Filename:            "test.txt",
+				LinkURL:             "",
+				DownloadURL:         "https://example.com/download",
+				S3Key:               "group-artifacts/118856/test.txt",
+				FileUploaded:        &trueVal,
+				FileUploadStatus:    "completed",
+				FileUploadedAt:      "2026-04-02T02:09:01Z",
+				MessageIDs:          []uint64{264364315},
+				LastPostedAt:        "2026-04-02T02:09:01Z",
+				LastPostedMessageID: &msgID1,
+				Description:         "a test file",
+				CreatedBy:           &artifactUserWire{ID: "user-1"},
+				LastModifiedBy:      &artifactUserWire{ID: "user-2"},
+				CreatedAt:           "2026-04-02T02:09:01Z",
+				UpdatedAt:           "2026-04-02T02:09:01Z",
+			},
+			expectArtifactID:       "a323373e-8553-578f-9aba-0235940641e3",
+			expectGroupID:          118856,
+			expectProjectID:        "a09P000000DsQSFIA3",
+			expectCommitteeID:      "committee-uuid",
+			expectType:             "file",
+			expectMediaType:        "text/plain",
+			expectFilename:         "test.txt",
+			expectDownloadURL:      "https://example.com/download",
+			expectS3Key:            "group-artifacts/118856/test.txt",
+			expectFileUploaded:     &trueVal,
+			expectFileUploadStatus: "completed",
+			expectFileUploadedAt:   &ts,
+			expectMessageIDs:       []uint64{264364315},
+			expectLastPostedAt:     &ts,
+			expectLastPostedMsgID:  &msgID1,
+			expectDescription:      "a test file",
+			expectCreatedByID:      "user-1",
+			expectLastModByID:      "user-2",
+			expectCreatedAt:        ts,
+			expectUpdatedAt:        ts,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			got := fromWireArtifact(tt.input)
+			if tt.expectNil {
+				s.Nil(got)
+				return
+			}
+			s.Require().NotNil(got)
+			s.Equal(tt.expectArtifactID, got.ArtifactID)
+			s.Equal(tt.expectGroupID, got.GroupID)
+			s.Equal(tt.expectProjectID, got.ProjectUID)
+			s.Equal(tt.expectCommitteeID, got.CommitteeUID)
+			s.Equal(tt.expectType, got.Type)
+			s.Equal(tt.expectMediaType, got.MediaType)
+			s.Equal(tt.expectFilename, got.Filename)
+			s.Equal(tt.expectLinkURL, got.LinkURL)
+			s.Equal(tt.expectDownloadURL, got.DownloadURL)
+			s.Equal(tt.expectS3Key, got.S3Key)
+			s.Equal(tt.expectFileUploaded, got.FileUploaded)
+			s.Equal(tt.expectFileUploadStatus, got.FileUploadStatus)
+			s.Equal(tt.expectMessageIDs, got.MessageIDs)
+			s.Equal(tt.expectDescription, got.Description)
+			s.Equal(tt.expectCreatedAt, got.CreatedAt)
+			s.Equal(tt.expectUpdatedAt, got.UpdatedAt)
+
+			if tt.expectFileUploadedAt == nil {
+				s.Nil(got.FileUploadedAt)
+			} else {
+				s.Require().NotNil(got.FileUploadedAt)
+				s.Equal(*tt.expectFileUploadedAt, *got.FileUploadedAt)
+			}
+			if tt.expectLastPostedAt == nil {
+				s.Nil(got.LastPostedAt)
+			} else {
+				s.Require().NotNil(got.LastPostedAt)
+				s.Equal(*tt.expectLastPostedAt, *got.LastPostedAt)
+			}
+			if tt.expectLastPostedMsgID == nil {
+				s.Nil(got.LastPostedMessageID)
+			} else {
+				s.Require().NotNil(got.LastPostedMessageID)
+				s.Equal(*tt.expectLastPostedMsgID, *got.LastPostedMessageID)
+			}
+			if tt.expectCreatedByID == "" {
+				s.Nil(got.CreatedBy)
+			} else {
+				s.Require().NotNil(got.CreatedBy)
+				s.Equal(tt.expectCreatedByID, got.CreatedBy.ID)
+			}
+			if tt.expectLastModByID == "" {
+				s.Nil(got.LastModifiedBy)
+			} else {
+				s.Require().NotNil(got.LastModifiedBy)
+				s.Equal(tt.expectLastModByID, got.LastModifiedBy.ID)
+			}
+		})
+	}
+}
+
 func (s *ProxyConvertersSuite) TestFromWireMember() {
 	memberID42 := int64(42)
 	memberID99 := int64(99)

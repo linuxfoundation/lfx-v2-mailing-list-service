@@ -123,6 +123,55 @@ func fromWireMember(w *memberWire) *model.GrpsIOMember {
 	return m
 }
 
+func fromWireArtifactUser(w *artifactUserWire) *model.ArtifactUser {
+	if w == nil {
+		return nil
+	}
+	return &model.ArtifactUser{
+		ID:             w.ID,
+		Username:       w.Username,
+		Name:           w.Name,
+		Email:          w.Email,
+		ProfilePicture: w.ProfilePicture,
+	}
+}
+
+func fromWireArtifact(w *artifactWire) *model.GroupsIOArtifact {
+	if w == nil {
+		return nil
+	}
+	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
+	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
+	a := &model.GroupsIOArtifact{
+		ArtifactID:          w.ArtifactID,
+		GroupID:             w.GroupID,
+		ProjectUID:          w.ProjectID,
+		CommitteeUID:        w.CommitteeID,
+		Type:                w.Type,
+		MediaType:           w.MediaType,
+		Filename:            w.Filename,
+		LinkURL:             w.LinkURL,
+		DownloadURL:         w.DownloadURL,
+		S3Key:               w.S3Key,
+		FileUploaded:        w.FileUploaded,
+		FileUploadStatus:    w.FileUploadStatus,
+		MessageIDs:          w.MessageIDs,
+		LastPostedMessageID: w.LastPostedMessageID,
+		Description:         w.Description,
+		CreatedBy:           fromWireArtifactUser(w.CreatedBy),
+		LastModifiedBy:      fromWireArtifactUser(w.LastModifiedBy),
+		CreatedAt:           createdAt,
+		UpdatedAt:           updatedAt,
+	}
+	if t, err := converter.ParseRFC3339(w.FileUploadedAt); err == nil && !t.IsZero() {
+		a.FileUploadedAt = &t
+	}
+	if t, err := converter.ParseRFC3339(w.LastPostedAt); err == nil && !t.IsZero() {
+		a.LastPostedAt = &t
+	}
+	return a
+}
+
 func toWireMemberRequest(m *model.GrpsIOMember) *memberRequestWire {
 	return &memberRequestWire{
 		Email:        m.Email,

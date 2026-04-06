@@ -108,6 +108,14 @@ type Client struct {
 	// check-groupsio-subscriber endpoint.
 	CheckGroupsioSubscriberDoer goahttp.Doer
 
+	// GetGroupsioArtifact Doer is the HTTP client used to make requests to the
+	// get-groupsio-artifact endpoint.
+	GetGroupsioArtifactDoer goahttp.Doer
+
+	// GetGroupsioArtifactDownload Doer is the HTTP client used to make requests to
+	// the get-groupsio-artifact-download endpoint.
+	GetGroupsioArtifactDownloadDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -151,6 +159,8 @@ func NewClient(
 		DeleteGroupsioMemberDoer:              doer,
 		InviteGroupsioMembersDoer:             doer,
 		CheckGroupsioSubscriberDoer:           doer,
+		GetGroupsioArtifactDoer:               doer,
+		GetGroupsioArtifactDownloadDoer:       doer,
 		RestoreResponseBody:                   restoreBody,
 		scheme:                                scheme,
 		host:                                  host,
@@ -697,6 +707,54 @@ func (c *Client) CheckGroupsioSubscriber() goa.Endpoint {
 		resp, err := c.CheckGroupsioSubscriberDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "check-groupsio-subscriber", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGroupsioArtifact returns an endpoint that makes HTTP requests to the
+// mailing-list service get-groupsio-artifact server.
+func (c *Client) GetGroupsioArtifact() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGroupsioArtifactRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioArtifactResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGroupsioArtifactRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGroupsioArtifactDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-artifact", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGroupsioArtifactDownload returns an endpoint that makes HTTP requests to
+// the mailing-list service get-groupsio-artifact-download server.
+func (c *Client) GetGroupsioArtifactDownload() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGroupsioArtifactDownloadRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioArtifactDownloadResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGroupsioArtifactDownloadRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGroupsioArtifactDownloadDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-artifact-download", err)
 		}
 		return decodeResponse(resp)
 	}

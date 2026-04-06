@@ -28,6 +28,15 @@ This service uses GOA v3 for API design and code generation:
 - Run `make apigen` after modifying design files
 - Service implementations are in `cmd/mailing-list-api/service/`
 
+### API Endpoint Documentation
+
+**Whenever you add, remove, or change an endpoint in `cmd/mailing-list-api/design/mailing_list.go`, you MUST update `docs/api-endpoints.md`:**
+
+- Add/remove the row in the relevant summary table
+- Add/remove/update the corresponding curl example in the Examples section
+
+This applies to method changes, path changes, new endpoints, and deleted endpoints.
+
 ### Clean Architecture Structure
 The codebase follows hexagonal/clean architecture principles:
 

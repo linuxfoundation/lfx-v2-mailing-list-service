@@ -11,6 +11,7 @@ const (
 	IndexGroupsIOMailingListSubject          = "lfx.index.groupsio_mailing_list"
 	IndexGroupsIOMailingListSettingsSubject  = "lfx.index.groupsio_mailing_list_settings"
 	IndexGroupsIOMemberSubject               = "lfx.index.groupsio_member"
+	IndexGroupsIOArtifactSubject             = "lfx.index.groupsio_artifact"
 
 	// Access control subjects for OpenFGA integration
 	UpdateAccessGroupsIOServiceSubject    = "lfx.update_access.groupsio_service"

@@ -2351,6 +2351,200 @@ func EncodeCheckGroupsioSubscriberError(encoder func(context.Context, http.Respo
 	}
 }
 
+// EncodeGetGroupsioArtifactResponse returns an encoder for responses returned
+// by the mailing-list get-groupsio-artifact endpoint.
+func EncodeGetGroupsioArtifactResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioArtifact)
+		enc := encoder(ctx, w)
+		body := NewGetGroupsioArtifactResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetGroupsioArtifactRequest returns a decoder for requests sent to the
+// mailing-list get-groupsio-artifact endpoint.
+func DecodeGetGroupsioArtifactRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			subgroupID  string
+			artifactID  string
+			bearerToken *string
+
+			params = mux.Vars(r)
+		)
+		subgroupID = params["subgroup_id"]
+		artifactID = params["artifact_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		payload := NewGetGroupsioArtifactPayload(subgroupID, artifactID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetGroupsioArtifactError returns an encoder for errors returned by the
+// get-groupsio-artifact mailing-list endpoint.
+func EncodeGetGroupsioArtifactError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetGroupsioArtifactDownloadResponse returns an encoder for responses
+// returned by the mailing-list get-groupsio-artifact-download endpoint.
+func EncodeGetGroupsioArtifactDownloadResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioArtifactDownload)
+		enc := encoder(ctx, w)
+		body := NewGetGroupsioArtifactDownloadResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetGroupsioArtifactDownloadRequest returns a decoder for requests sent
+// to the mailing-list get-groupsio-artifact-download endpoint.
+func DecodeGetGroupsioArtifactDownloadRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			subgroupID  string
+			artifactID  string
+			bearerToken *string
+
+			params = mux.Vars(r)
+		)
+		subgroupID = params["subgroup_id"]
+		artifactID = params["artifact_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		payload := NewGetGroupsioArtifactDownloadPayload(subgroupID, artifactID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetGroupsioArtifactDownloadError returns an encoder for errors
+// returned by the get-groupsio-artifact-download mailing-list endpoint.
+func EncodeGetGroupsioArtifactDownloadError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactDownloadInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactDownloadNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalMailinglistGroupsioServiceToGroupsioServiceResponseBody builds a
 // value of type *GroupsioServiceResponseBody from a value of type
 // *mailinglist.GroupsioService.
@@ -2420,6 +2614,24 @@ func marshalMailinglistGroupsioMemberToGroupsioMemberResponseBody(v *mailinglist
 		VotingStatus: v.VotingStatus,
 		CreatedAt:    v.CreatedAt,
 		UpdatedAt:    v.UpdatedAt,
+	}
+
+	return res
+}
+
+// marshalMailinglistGroupsioArtifactUserToGroupsioArtifactUserResponseBody
+// builds a value of type *GroupsioArtifactUserResponseBody from a value of
+// type *mailinglist.GroupsioArtifactUser.
+func marshalMailinglistGroupsioArtifactUserToGroupsioArtifactUserResponseBody(v *mailinglist.GroupsioArtifactUser) *GroupsioArtifactUserResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &GroupsioArtifactUserResponseBody{
+		ID:             v.ID,
+		Username:       v.Username,
+		Name:           v.Name,
+		Email:          v.Email,
+		ProfilePicture: v.ProfilePicture,
 	}
 
 	return res

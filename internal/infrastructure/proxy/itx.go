@@ -552,6 +552,42 @@ func (c *itx) FindParentService(ctx context.Context, projectID string) (*model.G
 	return nil, errs.NewNotFound("no parent service found for project")
 }
 
+// ---- GroupsIOArtifactReader implementation ----
+
+// GetArtifact retrieves a single artifact by subgroup ID and artifact ID.
+func (c *itx) GetArtifact(ctx context.Context, subgroupID string, artifactID string) (*model.GroupsIOArtifact, error) {
+	u, err := c.buildURL("v2", "groupsio_subgroup", subgroupID, "artifacts", artifactID)
+	if err != nil {
+		return nil, errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
+	if err != nil {
+		return nil, c.handleRequestError(err)
+	}
+	var wire artifactWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return nil, errs.NewUnexpected("failed to parse response", err)
+	}
+	return fromWireArtifact(&wire), nil
+}
+
+// GetArtifactDownloadURL returns a presigned S3 download URL for a file artifact.
+func (c *itx) GetArtifactDownloadURL(ctx context.Context, subgroupID string, artifactID string) (string, error) {
+	u, err := c.buildURL("v2", "groupsio_subgroup", subgroupID, "artifacts", artifactID, "download")
+	if err != nil {
+		return "", errs.NewUnexpected("failed to build URL", err)
+	}
+	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
+	if err != nil {
+		return "", c.handleRequestError(err)
+	}
+	var wire artifactDownloadResponseWire
+	if err := json.Unmarshal(resp.Body, &wire); err != nil {
+		return "", errs.NewUnexpected("failed to parse response", err)
+	}
+	return wire.URL, nil
+}
+
 // NewProxy creates a new ITX proxy client with OAuth2 M2M authentication using private key.
 func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, error) {
 

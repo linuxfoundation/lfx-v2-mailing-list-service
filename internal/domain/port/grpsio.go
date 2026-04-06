@@ -12,4 +12,5 @@ type GroupsIOReaderWriter interface {
 	GroupsIOMailingListWriter
 	GroupsIOMailingListMemberReader
 	GroupsIOMailingListMemberWriter
+	GroupsIOArtifactReader
 }

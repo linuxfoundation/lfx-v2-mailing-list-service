@@ -481,6 +481,60 @@ type CheckGroupsioSubscriberResponseBody struct {
 	Subscribed bool `form:"subscribed" json:"subscribed" xml:"subscribed"`
 }
 
+// GetGroupsioArtifactResponseBody is the type of the "mailing-list" service
+// "get-groupsio-artifact" endpoint HTTP response body.
+type GetGroupsioArtifactResponseBody struct {
+	// Artifact UUID
+	ArtifactID *string `form:"artifact_id,omitempty" json:"artifact_id,omitempty" xml:"artifact_id,omitempty"`
+	// GroupsIO group ID
+	GroupID *uint64 `form:"group_id,omitempty" json:"group_id,omitempty" xml:"group_id,omitempty"`
+	// LFX project ID
+	ProjectID *string `form:"project_id,omitempty" json:"project_id,omitempty" xml:"project_id,omitempty"`
+	// Committee ID
+	CommitteeID *string `form:"committee_id,omitempty" json:"committee_id,omitempty" xml:"committee_id,omitempty"`
+	// Artifact type (file or link)
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// MIME media type
+	MediaType *string `form:"media_type,omitempty" json:"media_type,omitempty" xml:"media_type,omitempty"`
+	// Filename
+	Filename *string `form:"filename,omitempty" json:"filename,omitempty" xml:"filename,omitempty"`
+	// URL for link-type artifacts
+	LinkURL *string `form:"link_url,omitempty" json:"link_url,omitempty" xml:"link_url,omitempty"`
+	// Groups.io download URL
+	DownloadURL *string `form:"download_url,omitempty" json:"download_url,omitempty" xml:"download_url,omitempty"`
+	// S3 object key
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// Whether the file has been uploaded to S3
+	FileUploaded *bool `form:"file_uploaded,omitempty" json:"file_uploaded,omitempty" xml:"file_uploaded,omitempty"`
+	// S3 upload status
+	FileUploadStatus *string `form:"file_upload_status,omitempty" json:"file_upload_status,omitempty" xml:"file_upload_status,omitempty"`
+	// Timestamp when the file was uploaded
+	FileUploadedAt *string `form:"file_uploaded_at,omitempty" json:"file_uploaded_at,omitempty" xml:"file_uploaded_at,omitempty"`
+	// Groups.io message IDs referencing this artifact
+	MessageIds []uint64 `form:"message_ids,omitempty" json:"message_ids,omitempty" xml:"message_ids,omitempty"`
+	// Timestamp of most recent referencing message
+	LastPostedAt *string `form:"last_posted_at,omitempty" json:"last_posted_at,omitempty" xml:"last_posted_at,omitempty"`
+	// Most recent referencing message ID
+	LastPostedMessageID *uint64 `form:"last_posted_message_id,omitempty" json:"last_posted_message_id,omitempty" xml:"last_posted_message_id,omitempty"`
+	// Artifact description
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// User who created the artifact
+	CreatedBy *GroupsioArtifactUserResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
+	// User who last modified the artifact
+	LastModifiedBy *GroupsioArtifactUserResponseBody `form:"last_modified_by,omitempty" json:"last_modified_by,omitempty" xml:"last_modified_by,omitempty"`
+	// Creation timestamp
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// Last update timestamp
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+}
+
+// GetGroupsioArtifactDownloadResponseBody is the type of the "mailing-list"
+// service "get-groupsio-artifact-download" endpoint HTTP response body.
+type GetGroupsioArtifactDownloadResponseBody struct {
+	// Presigned S3 download URL (expires in 15 minutes)
+	URL string `form:"url" json:"url" xml:"url"`
+}
+
 // ReadyzServiceUnavailableResponseBody is the type of the "mailing-list"
 // service "readyz" endpoint HTTP response body for the "ServiceUnavailable"
 // error.
@@ -1057,6 +1111,54 @@ type CheckGroupsioSubscriberServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetGroupsioArtifactInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "get-groupsio-artifact" endpoint HTTP response body
+// for the "InternalServerError" error.
+type GetGroupsioArtifactInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioArtifactNotFoundResponseBody is the type of the "mailing-list"
+// service "get-groupsio-artifact" endpoint HTTP response body for the
+// "NotFound" error.
+type GetGroupsioArtifactNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioArtifactServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-groupsio-artifact" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type GetGroupsioArtifactServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioArtifactDownloadInternalServerErrorResponseBody is the type of
+// the "mailing-list" service "get-groupsio-artifact-download" endpoint HTTP
+// response body for the "InternalServerError" error.
+type GetGroupsioArtifactDownloadInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioArtifactDownloadNotFoundResponseBody is the type of the
+// "mailing-list" service "get-groupsio-artifact-download" endpoint HTTP
+// response body for the "NotFound" error.
+type GetGroupsioArtifactDownloadNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioArtifactDownloadServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "get-groupsio-artifact-download" endpoint HTTP
+// response body for the "ServiceUnavailable" error.
+type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GroupsioServiceResponseBody is used to define fields on response body types.
 type GroupsioServiceResponseBody struct {
 	// Service ID
@@ -1137,6 +1239,21 @@ type GroupsioMemberResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+}
+
+// GroupsioArtifactUserResponseBody is used to define fields on response body
+// types.
+type GroupsioArtifactUserResponseBody struct {
+	// User ID
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Username
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Display name
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Email address
+	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	// Profile picture URL
+	ProfilePicture *string `form:"profile_picture,omitempty" json:"profile_picture,omitempty" xml:"profile_picture,omitempty"`
 }
 
 // NewListGroupsioServicesResponseBody builds the HTTP response body from the
@@ -1427,6 +1544,54 @@ func NewUpdateGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *Updat
 func NewCheckGroupsioSubscriberResponseBody(res *mailinglist.GroupsioCheckSubscriberResponse) *CheckGroupsioSubscriberResponseBody {
 	body := &CheckGroupsioSubscriberResponseBody{
 		Subscribed: res.Subscribed,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactResponseBody builds the HTTP response body from the
+// result of the "get-groupsio-artifact" endpoint of the "mailing-list" service.
+func NewGetGroupsioArtifactResponseBody(res *mailinglist.GroupsioArtifact) *GetGroupsioArtifactResponseBody {
+	body := &GetGroupsioArtifactResponseBody{
+		ArtifactID:          res.ArtifactID,
+		GroupID:             res.GroupID,
+		ProjectID:           res.ProjectID,
+		CommitteeID:         res.CommitteeID,
+		Type:                res.Type,
+		MediaType:           res.MediaType,
+		Filename:            res.Filename,
+		LinkURL:             res.LinkURL,
+		DownloadURL:         res.DownloadURL,
+		S3Key:               res.S3Key,
+		FileUploaded:        res.FileUploaded,
+		FileUploadStatus:    res.FileUploadStatus,
+		FileUploadedAt:      res.FileUploadedAt,
+		LastPostedAt:        res.LastPostedAt,
+		LastPostedMessageID: res.LastPostedMessageID,
+		Description:         res.Description,
+		CreatedAt:           res.CreatedAt,
+		UpdatedAt:           res.UpdatedAt,
+	}
+	if res.MessageIds != nil {
+		body.MessageIds = make([]uint64, len(res.MessageIds))
+		for i, val := range res.MessageIds {
+			body.MessageIds[i] = val
+		}
+	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalMailinglistGroupsioArtifactUserToGroupsioArtifactUserResponseBody(res.CreatedBy)
+	}
+	if res.LastModifiedBy != nil {
+		body.LastModifiedBy = marshalMailinglistGroupsioArtifactUserToGroupsioArtifactUserResponseBody(res.LastModifiedBy)
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactDownloadResponseBody builds the HTTP response body
+// from the result of the "get-groupsio-artifact-download" endpoint of the
+// "mailing-list" service.
+func NewGetGroupsioArtifactDownloadResponseBody(res *mailinglist.GroupsioArtifactDownload) *GetGroupsioArtifactDownloadResponseBody {
+	body := &GetGroupsioArtifactDownloadResponseBody{
+		URL: res.URL,
 	}
 	return body
 }
@@ -2153,6 +2318,66 @@ func NewCheckGroupsioSubscriberServiceUnavailableResponseBody(res *mailinglist.S
 	return body
 }
 
+// NewGetGroupsioArtifactInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "get-groupsio-artifact" endpoint of the
+// "mailing-list" service.
+func NewGetGroupsioArtifactInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGroupsioArtifactInternalServerErrorResponseBody {
+	body := &GetGroupsioArtifactInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactNotFoundResponseBody builds the HTTP response body
+// from the result of the "get-groupsio-artifact" endpoint of the
+// "mailing-list" service.
+func NewGetGroupsioArtifactNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGroupsioArtifactNotFoundResponseBody {
+	body := &GetGroupsioArtifactNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "get-groupsio-artifact" endpoint of the
+// "mailing-list" service.
+func NewGetGroupsioArtifactServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGroupsioArtifactServiceUnavailableResponseBody {
+	body := &GetGroupsioArtifactServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactDownloadInternalServerErrorResponseBody builds the
+// HTTP response body from the result of the "get-groupsio-artifact-download"
+// endpoint of the "mailing-list" service.
+func NewGetGroupsioArtifactDownloadInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGroupsioArtifactDownloadInternalServerErrorResponseBody {
+	body := &GetGroupsioArtifactDownloadInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactDownloadNotFoundResponseBody builds the HTTP response
+// body from the result of the "get-groupsio-artifact-download" endpoint of the
+// "mailing-list" service.
+func NewGetGroupsioArtifactDownloadNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGroupsioArtifactDownloadNotFoundResponseBody {
+	body := &GetGroupsioArtifactDownloadNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "get-groupsio-artifact-download"
+// endpoint of the "mailing-list" service.
+func NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGroupsioArtifactDownloadServiceUnavailableResponseBody {
+	body := &GetGroupsioArtifactDownloadServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewListGroupsioServicesPayload builds a mailing-list service
 // list-groupsio-services endpoint payload.
 func NewListGroupsioServicesPayload(projectUID *string, bearerToken *string) *mailinglist.ListGroupsioServicesPayload {
@@ -2415,6 +2640,28 @@ func NewCheckGroupsioSubscriberPayload(body *CheckGroupsioSubscriberRequestBody,
 		Email:      *body.Email,
 		SubgroupID: *body.SubgroupID,
 	}
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewGetGroupsioArtifactPayload builds a mailing-list service
+// get-groupsio-artifact endpoint payload.
+func NewGetGroupsioArtifactPayload(subgroupID string, artifactID string, bearerToken *string) *mailinglist.GetGroupsioArtifactPayload {
+	v := &mailinglist.GetGroupsioArtifactPayload{}
+	v.SubgroupID = subgroupID
+	v.ArtifactID = artifactID
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewGetGroupsioArtifactDownloadPayload builds a mailing-list service
+// get-groupsio-artifact-download endpoint payload.
+func NewGetGroupsioArtifactDownloadPayload(subgroupID string, artifactID string, bearerToken *string) *mailinglist.GetGroupsioArtifactDownloadPayload {
+	v := &mailinglist.GetGroupsioArtifactDownloadPayload{}
+	v.SubgroupID = subgroupID
+	v.ArtifactID = artifactID
 	v.BearerToken = bearerToken
 
 	return v
