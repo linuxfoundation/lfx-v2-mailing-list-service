@@ -223,6 +223,7 @@ Because this service reuses the same database and infrastructure as the proxied 
 | --- | --- |
 | [docs/api-endpoints.md](docs/api-endpoints.md) | Full list of API endpoints with method, path, and curl examples |
 | [docs/event-processing.md](docs/event-processing.md) | v1→v2 data stream: how DynamoDB change events are consumed, transformed, and published to the indexer and FGA-sync services |
+| [docs/fga-contract.md](docs/fga-contract.md) | Authoritative reference for all FGA sync messages (NATS subjects, payloads, and trigger conditions) |
 
 ## 🛠️ Development
 

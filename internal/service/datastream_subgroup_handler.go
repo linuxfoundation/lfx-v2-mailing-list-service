@@ -16,16 +16,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
-// groupsioMailingListMemberStub represents the minimal data needed for member access control
-type groupsioMailingListMemberStub struct {
-	// UID is the mailing list member ID.
-	UID string `json:"uid"`
-	// Username is the username (i.e. LFID) of the member. This is the identity of the user object in FGA.
-	Username string `json:"username"`
-	// MailingListUID is the mailing list ID for the mailing list the member belongs to.
-	MailingListUID string `json:"mailing_list_uid"`
-}
-
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
 // is absent (ordering guarantee) or on transient errors.
@@ -118,21 +108,31 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 			references[constants.RelationCommittee] = append(references[constants.RelationCommittee], committee.UID)
 		}
 	}
+	relations := map[string][]string{}
 	if settings != nil {
 		if writers := userInfoUsernames(settings.Writers); len(writers) > 0 {
-			references[constants.RelationWriter] = writers
+			relations[constants.RelationWriter] = writers
 		}
 		if auditors := userInfoUsernames(settings.Auditors); len(auditors) > 0 {
-			references[constants.RelationAuditor] = auditors
+			relations[constants.RelationAuditor] = auditors
 		}
 	}
-	accessMsg := &model.AccessMessage{
+	accessData := model.FGAUpdateAccessData{
 		UID:        uid,
-		ObjectType: constants.ObjectTypeGroupsIOMailingList,
 		Public:     list.Public,
 		References: references,
+		// member relations are managed separately via member_put and must not be overwritten here
+		ExcludeRelations: []string{constants.RelationMember},
 	}
-	if err := publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMsg); err != nil {
+	if len(relations) > 0 {
+		accessData.Relations = relations
+	}
+	accessMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOMailingList,
+		Operation:  "update_access",
+		Data:       accessData,
+	}
+	if err := publisher.Access(ctx, constants.FGASyncUpdateAccessSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup access message", "uid", uid, "error", err)
 	}
 
@@ -181,7 +181,12 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		return pkgerrors.IsTransient(err)
 	}
 
-	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
+	deleteMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOMailingList,
+		Operation:  "delete_access",
+		Data:       model.FGADeleteAccessData{UID: uid},
+	}
+	if err := publisher.Access(ctx, constants.FGASyncDeleteAccessSubject, deleteMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
 	}
 

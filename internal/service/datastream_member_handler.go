@@ -63,12 +63,16 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	}
 
 	if member.Username != "" {
-		accessMsg := &groupsioMailingListMemberStub{
-			UID:            uid,
-			Username:       principal.FromUsername(member.Username),
-			MailingListUID: mailingListUID,
+		accessMsg := model.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_put",
+			Data: model.FGAMemberPutData{
+				UID:       mailingListUID,
+				Username:  principal.FromUsername(member.Username),
+				Relations: []string{constants.RelationMember},
+			},
 		}
-		if err := publisher.Access(ctx, constants.PutMemberGroupsIOMailingListSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, constants.FGASyncMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
 		}
 	}
@@ -114,12 +118,16 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 	_, username, mailingListUID := parseMemberMappingValue(storedValue)
 	if username != "" {
-		accessMsg := &groupsioMailingListMemberStub{
-			UID:            uid,
-			Username:       principal.FromUsername(username),
-			MailingListUID: mailingListUID,
+		accessMsg := model.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_remove",
+			Data: model.FGAMemberPutData{
+				UID:       mailingListUID,
+				Username:  principal.FromUsername(username),
+				Relations: []string{},
+			},
 		}
-		if err := publisher.Access(ctx, constants.RemoveMemberGroupsIOMailingListSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, constants.FGASyncMemberRemoveSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA remove message", "uid", uid, "error", err)
 		}
 	}

@@ -75,7 +75,7 @@ func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappin
 	assert.Len(t, pub.IndexerCalls, 1)
 	assert.Equal(t, constants.IndexGroupsIOMailingListSubject, pub.IndexerCalls[0].Subject)
 	assert.Len(t, pub.AccessCalls, 1)
-	assert.Equal(t, constants.UpdateAccessGroupsIOMailingListSubject, pub.AccessCalls[0].Subject)
+	assert.Equal(t, constants.FGASyncUpdateAccessSubject, pub.AccessCalls[0].Subject)
 
 	_, present := m.GetMappingValue(context.Background(),
 		fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup))
@@ -142,7 +142,7 @@ func TestHandleDataStreamSubgroupDelete_HappyPath_ACKAndTombstones(t *testing.T)
 	assert.Len(t, pub.IndexerCalls, 1)
 	assert.Equal(t, constants.IndexGroupsIOMailingListSubject, pub.IndexerCalls[0].Subject)
 	assert.Len(t, pub.AccessCalls, 1)
-	assert.Equal(t, constants.DeleteAllAccessGroupsIOMailingListSubject, pub.AccessCalls[0].Subject)
+	assert.Equal(t, constants.FGASyncDeleteAccessSubject, pub.AccessCalls[0].Subject)
 
 	assert.True(t, m.IsTombstoned(context.Background(),
 		fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup)))

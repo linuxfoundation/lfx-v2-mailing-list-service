@@ -65,24 +65,31 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 		}
 	}
 
-	references := map[string][]string{
-		constants.RelationProject: {svc.ProjectUID},
-	}
+	relations := map[string][]string{}
 	if settings != nil {
 		if writers := userInfoUsernames(settings.Writers); len(writers) > 0 {
-			references[constants.RelationWriter] = writers
+			relations[constants.RelationWriter] = writers
 		}
 		if auditors := userInfoUsernames(settings.Auditors); len(auditors) > 0 {
-			references[constants.RelationAuditor] = auditors
+			relations[constants.RelationAuditor] = auditors
 		}
 	}
-	accessMsg := &model.AccessMessage{
-		UID:        uid,
-		ObjectType: constants.ObjectTypeGroupsIOService,
-		Public:     svc.Public,
-		References: references,
+	accessData := model.FGAUpdateAccessData{
+		UID:    uid,
+		Public: svc.Public,
+		References: map[string][]string{
+			constants.RelationProject: {svc.ProjectUID},
+		},
 	}
-	if err := publisher.Access(ctx, constants.UpdateAccessGroupsIOServiceSubject, accessMsg); err != nil {
+	if len(relations) > 0 {
+		accessData.Relations = relations
+	}
+	accessMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOService,
+		Operation:  "update_access",
+		Data:       accessData,
+	}
+	if err := publisher.Access(ctx, constants.FGASyncUpdateAccessSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service access message", "uid", uid, "error", err)
 	}
 
@@ -114,7 +121,12 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 		return pkgerrors.IsTransient(err)
 	}
 
-	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOServiceSubject, uid); err != nil {
+	deleteMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOService,
+		Operation:  "delete_access",
+		Data:       model.FGADeleteAccessData{UID: uid},
+	}
+	if err := publisher.Access(ctx, constants.FGASyncDeleteAccessSubject, deleteMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service delete access message", "uid", uid, "error", err)
 	}
 
