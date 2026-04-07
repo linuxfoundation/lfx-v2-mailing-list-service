@@ -51,6 +51,10 @@ type GrpsIOMember struct {
 	LastReviewedAt *string `json:"last_reviewed_at"` // Nullable timestamp
 	LastReviewedBy *string `json:"last_reviewed_by"` // Nullable user ID
 
+	// Project association (inherited from the parent mailing list)
+	ProjectUID  string `json:"project_uid,omitempty"`
+	ProjectSlug string `json:"project_slug,omitempty"`
+
 	// Timestamps
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -88,6 +92,11 @@ func (m *GrpsIOMember) Tags() []string {
 
 	if m.Status != "" {
 		tag := fmt.Sprintf("status:%s", m.Status)
+		tags = append(tags, tag)
+	}
+
+	if m.ProjectUID != "" {
+		tag := fmt.Sprintf("project_uid:%s", m.ProjectUID)
 		tags = append(tags, tag)
 	}
 

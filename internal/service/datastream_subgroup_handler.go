@@ -18,8 +18,8 @@ import (
 
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
-// is absent (ordering guarantee) or on transient errors.
-func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+// is absent (ordering guarantee), the project slug lookup fails (transient), or on transient errors.
+func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) bool {
 	// Resolve v1 project SFID → v2 project UID via the shared project.sfid.{sfid} mapping
 	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
 	projectSFID := mapconv.StringVal(data, "project_id")
@@ -34,6 +34,15 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return true // NAK — retry with backoff
 	}
 	data["project_id"] = projectUID
+
+	// Look up project slug from the project service. NAK on transient errors so the
+	// subgroup is retried once the project service is available.
+	projectSlug, err := projectLookup.GetProjectSlug(ctx, projectUID)
+	if err != nil {
+		slog.WarnContext(ctx, "project slug lookup failed, NAKing subgroup for retry",
+			"uid", uid, "project_uid", projectUID, "error", err)
+		return true // NAK — retry with backoff
+	}
 
 	// Resolve optional v1 committee SFID → v2 committee UID. NAK if the committee
 	// has been specified but hasn't been synced yet (ordering guarantee).
@@ -146,6 +155,13 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		if err := mappings.PutMapping(ctx, gidKey, uid); err != nil {
 			slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", gidKey, "error", err)
 		}
+	}
+
+	// Store project mapping: project_uid and project_slug for the member handler.
+	// Value format: "{project_uid}|{project_slug}"
+	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, uid)
+	if err := mappings.PutMapping(ctx, projectKey, projectUID+"|"+projectSlug); err != nil {
+		slog.ErrorContext(ctx, "failed to put project mapping key", "mapping_key", projectKey, "error", err)
 	}
 
 	return false

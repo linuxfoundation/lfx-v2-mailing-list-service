@@ -31,7 +31,7 @@ func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
 
 	natsClient := service.GetNATSClient(ctx)
 
-	handler := eventing.NewEventHandler(service.MessagePublisher(ctx), service.MappingReaderWriter(ctx))
+	handler := eventing.NewEventHandler(service.MessagePublisher(ctx), service.MappingReaderWriter(ctx), infraNATS.NewNATSProjectLookup(natsClient))
 	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
 
 	cfg := dataStreamConfig()

@@ -16,15 +16,29 @@ import (
 func TestHandleDataStreamSubgroupUpdate_MissingProjectID_ACK(t *testing.T) {
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{},
-		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore())
+		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore(), mock.NewFakeProjectLookup())
 	assert.False(t, nak, "missing project_id should ACK")
 }
 
 func TestHandleDataStreamSubgroupUpdate_ProjectMappingAbsent_NAK(t *testing.T) {
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{"project_id": "sfid-proj"},
-		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore())
+		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore(), mock.NewFakeProjectLookup())
 	assert.True(t, nak, "unknown project mapping should NAK")
+}
+
+func TestHandleDataStreamSubgroupUpdate_ProjectSlugLookupFails_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Err = fmt.Errorf("project service unavailable")
+
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+		map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"},
+		&mock.SpyMessagePublisher{}, m, pl)
+	assert.True(t, nak, "project slug lookup failure should NAK")
 }
 
 func TestHandleDataStreamSubgroupUpdate_CommitteeMappingAbsent_NAK(t *testing.T) {
@@ -32,13 +46,16 @@ func TestHandleDataStreamSubgroupUpdate_CommitteeMappingAbsent_NAK(t *testing.T)
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
 
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{
 			"project_id": "sfid-proj",
 			"parent_id":  "svc-1",
 			"committee":  "sfid-committee", // mapping absent
 		},
-		&mock.SpyMessagePublisher{}, m)
+		&mock.SpyMessagePublisher{}, m, pl)
 	assert.True(t, nak, "unknown committee mapping should NAK")
 }
 
@@ -47,12 +64,15 @@ func TestHandleDataStreamSubgroupUpdate_ParentServiceAbsent_NAK(t *testing.T) {
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	// service mapping deliberately absent
 
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{
 			"project_id": "sfid-proj",
 			"parent_id":  "svc-1",
 		},
-		&mock.SpyMessagePublisher{}, m)
+		&mock.SpyMessagePublisher{}, m, pl)
 	assert.True(t, nak, "absent parent service should NAK")
 }
 
@@ -60,6 +80,9 @@ func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappin
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
@@ -69,7 +92,7 @@ func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappin
 			"group_id":   float64(42),
 			"group_name": "dev",
 		},
-		pub, m)
+		pub, m, pl)
 
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
@@ -85,6 +108,11 @@ func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappin
 		fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID))
 	assert.True(t, ok, "reverse group_id index should be written")
 	assert.Equal(t, "sg-1", rev)
+
+	projMapping, ok := m.GetMappingValue(context.Background(),
+		fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroupProject))
+	assert.True(t, ok, "project mapping should be written")
+	assert.Equal(t, "proj-uid|my-project", projMapping)
 }
 
 func TestHandleDataStreamSubgroupUpdate_WithCommittee_ResolvesAndPublishes(t *testing.T) {
@@ -93,6 +121,9 @@ func TestHandleDataStreamSubgroupUpdate_WithCommittee_ResolvesAndPublishes(t *te
 	m.Set(fmt.Sprintf("%s.sfid-committee", constants.KVMappingPrefixCommitteeBySFID), "committee-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
 
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{
@@ -100,7 +131,7 @@ func TestHandleDataStreamSubgroupUpdate_WithCommittee_ResolvesAndPublishes(t *te
 			"parent_id":  "svc-1",
 			"committee":  "sfid-committee",
 		},
-		pub, m)
+		pub, m, pl)
 
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
@@ -111,9 +142,12 @@ func TestHandleDataStreamSubgroupUpdate_NoGroupID_NoReverseIndex(t *testing.T) {
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
 
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
 	HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
 		map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"},
-		&mock.SpyMessagePublisher{}, m)
+		&mock.SpyMessagePublisher{}, m, pl)
 
 	_, ok := m.GetMappingValue(context.Background(),
 		fmt.Sprintf("%s.0", constants.KVMappingPrefixSubgroupByGroupID))
