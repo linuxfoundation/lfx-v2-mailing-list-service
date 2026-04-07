@@ -65,10 +65,10 @@ Base URL (local): `http://localhost:8080`
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/openapi.json` | None | OpenAPI 2.0 (JSON) |
-| `GET` | `/openapi3.json` | None | OpenAPI 3.0 (JSON) |
-| `GET` | `/openapi.yaml` | None | OpenAPI 2.0 (YAML) |
-| `GET` | `/openapi3.yaml` | None | OpenAPI 3.0 (YAML) |
+| `GET` | `/_groupsio/openapi.json` | None | OpenAPI 2.0 (JSON) |
+| `GET` | `/_groupsio/openapi3.json` | None | OpenAPI 3.0 (JSON) |
+| `GET` | `/_groupsio/openapi.yaml` | None | OpenAPI 2.0 (YAML) |
+| `GET` | `/_groupsio/openapi3.yaml` | None | OpenAPI 3.0 (YAML) |
 
 ---
 
