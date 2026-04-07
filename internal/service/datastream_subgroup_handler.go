@@ -36,15 +36,6 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	}
 	data["project_id"] = projectUID
 
-	// Look up project slug from the project service. NAK on transient errors so the
-	// subgroup is retried once the project service is available.
-	projectSlug, err := projectLookup.GetProjectSlug(ctx, projectUID)
-	if err != nil {
-		slog.WarnContext(ctx, "project slug lookup failed, NAKing subgroup for retry",
-			"uid", uid, "project_uid", projectUID, "error", err)
-		return true // NAK — retry with backoff
-	}
-
 	// Resolve optional v1 committee SFID → v2 committee UID. NAK if the committee
 	// has been specified but hasn't been synced yet (ordering guarantee).
 	if committeeSFID := mapconv.StringVal(data, "committee"); committeeSFID != "" {
@@ -70,6 +61,16 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	if !mappings.IsMappingPresent(ctx, serviceKey) {
 		slog.WarnContext(ctx, "parent service not yet processed, NAKing subgroup for retry",
 			"uid", uid, "service_uid", list.ServiceUID)
+		return true // NAK — retry with backoff
+	}
+
+	// Look up project slug from the project service. NAK on transient errors so the
+	// subgroup is retried once the project service is available. This is done after
+	// dependency checks to avoid unnecessary RPCs when the record will NAK anyway.
+	projectSlug, err := projectLookup.GetProjectSlug(ctx, projectUID)
+	if err != nil {
+		slog.WarnContext(ctx, "project slug lookup failed, NAKing subgroup for retry",
+			"uid", uid, "project_uid", projectUID, "error", err)
 		return true // NAK — retry with backoff
 	}
 
@@ -186,9 +187,11 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 
 	// Store project mapping: project_uid and project_slug for the member handler.
 	// Value format: "{project_uid}|{project_slug}"
+	// NAK on failure — member events depend on this mapping to resolve project fields.
 	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, uid)
 	if err := mappings.PutMapping(ctx, projectKey, projectUID+"|"+projectSlug); err != nil {
-		slog.ErrorContext(ctx, "failed to put project mapping key", "mapping_key", projectKey, "error", err)
+		slog.ErrorContext(ctx, "failed to put project mapping key, NAKing for retry", "mapping_key", projectKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	return false

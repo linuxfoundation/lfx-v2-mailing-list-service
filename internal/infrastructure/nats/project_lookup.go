@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/nats-io/nats.go"
 )
 
 const (
-	projectGetSlugSubject    = "lfx.projects-api.get_slug"
-	projectLookupTimeout     = 5 * time.Second
+	projectLookupTimeout = 5 * time.Second
 )
 
 // natsProjectLookup implements port.ProjectLookup using NATS request/reply
@@ -33,7 +33,7 @@ func (p *natsProjectLookup) GetProjectSlug(ctx context.Context, projectUID strin
 	reqCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
-	msg, err := p.conn.RequestWithContext(reqCtx, projectGetSlugSubject, []byte(projectUID))
+	msg, err := p.conn.RequestWithContext(reqCtx, constants.ProjectGetSlugSubject, []byte(projectUID))
 	if err != nil {
 		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
 			return "", errs.NewServiceUnavailable("project slug lookup timed out", err)

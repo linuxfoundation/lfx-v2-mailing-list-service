@@ -64,7 +64,7 @@ This document is the authoritative reference for all data the mailing list servi
 
 ### Access Control (AccessMessage)
 
-Published to `lfx.update_access.groupsio_service` on create/update. Deleted via `lfx.delete_all_access.groupsio_service` on delete.
+Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga-sync.delete_access` on delete.
 
 | Field | Value |
 |---|---|
@@ -197,7 +197,7 @@ Published to `lfx.update_access.groupsio_service` on create/update. Deleted via 
 
 ### Access Control (AccessMessage)
 
-Published to `lfx.update_access.groupsio_mailing_list` on create/update. Deleted via `lfx.delete_all_access.groupsio_mailing_list` on delete.
+Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga-sync.delete_access` on delete.
 
 | Field | Value |
 |---|---|
@@ -351,10 +351,10 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 ### Access Control (AccessMessage)
 
 When a member has a non-empty `username`, the handler also publishes an FGA membership message:
-- **Put member:** `lfx.put_member.groupsio_mailing_list` on create/update
-- **Remove member:** `lfx.remove_member.groupsio_mailing_list` on delete
+- **Put member:** `lfx.fga-sync.member_put` on create/update
+- **Remove member:** `lfx.fga-sync.member_remove` on delete
 
-The message payload is `{ uid, username, mailing_list_uid }`.
+The message is a `GenericFGAMessage` with `object_type: groupsio_mailing_list`, `operation: member_put` / `member_remove`, and a `FGAMemberPutData` payload containing `uid` (the mailing list UID), `username` (principal), and `relations: ["member"]`.
 
 > **Username transform:** The `username` field in this FGA payload is **not** the raw Groups.io/LFID username. It is the principal value derived via `principal.FromUsername(member.Username)`, which produces an Auth0-style subject (e.g. `auth0|...`). Downstream FGA consumers should expect this format.
 
@@ -454,4 +454,4 @@ Artifacts use a typed `IndexingConfig` (no server-side enrichers). No FGA `Acces
 |---|---|
 | `project:{project_uid}` | Only when `project_uid` is set |
 | `committee:{committee_uid}` | Only when `committee_uid` is set |
-| `groupsio_mailing_list:{group_id}` | Always set (group_id is required) |
+| `groupsio_mailing_list:{group_id}` | Always set (numeric Groups.io group ID — the artifact model does not carry a mailing list UID) |
