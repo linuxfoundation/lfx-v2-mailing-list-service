@@ -376,6 +376,7 @@ The message payload is `{ uid, username, mailing_list_uid }`.
 | Ref | Condition |
 |---|---|
 | `groupsio_mailing_list:{mailing_list_uid}` | Always set |
+| `project:{project_uid}` | Only when `project_uid` is set |
 
 ---
 

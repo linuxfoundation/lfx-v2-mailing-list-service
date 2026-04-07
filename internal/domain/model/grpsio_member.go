@@ -113,6 +113,9 @@ func (m *GrpsIOMember) ParentRefs() []string {
 	if m.MailingListUID != "" {
 		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%s", m.MailingListUID))
 	}
+	if m.ProjectUID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", m.ProjectUID))
+	}
 	return refs
 }
 
