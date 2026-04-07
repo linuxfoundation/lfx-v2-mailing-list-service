@@ -535,10 +535,10 @@ The service publishes messages to the following NATS subjects (primarily via the
 | `lfx.index.groupsio_service` | GroupsIO service indexing events | Indexer message with tags |
 | `lfx.index.groupsio_mailing_list` | Mailing list indexing events | Indexer message with tags |
 | `lfx.index.groupsio_member` | Member indexing events | Indexer message with tags |
-| `lfx.update_access.groupsio_service` | Service access control updates | Access control message |
-| `lfx.delete_all_access.groupsio_service` | Service access control deletion | Access control message |
-| `lfx.update_access.groupsio_mailing_list` | Mailing list access control updates | Access control message |
-| `lfx.delete_all_access.groupsio_mailing_list` | Mailing list access control deletion | Access control message |
+| `lfx.fga-sync.update_access` | Service and mailing list access control create/update | Generic FGA message (`update_access`) |
+| `lfx.fga-sync.delete_access` | Service and mailing list access control delete | Generic FGA message (`delete_access`) |
+| `lfx.fga-sync.member_put` | Add member to mailing list in FGA | Generic FGA message (`member_put`) |
+| `lfx.fga-sync.member_remove` | Remove member from mailing list in FGA | Generic FGA message (`member_remove`) |
 
 ### Message Publisher Interface
 

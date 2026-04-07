@@ -58,8 +58,8 @@ These fields are carried inside the message `data` object.
 
 | Relation | Value | Condition |
 |---|---|---|
-| `writer` | Usernames from `GrpsIOServiceSettings.Writers` | Only when `Writers` is non-empty |
-| `auditor` | Usernames from `GrpsIOServiceSettings.Auditors` | Only when `Auditors` is non-empty |
+| `writer` | Usernames from `GroupsIOServiceSettings.Writers` | Only when `Writers` is non-empty |
+| `auditor` | Usernames from `GroupsIOServiceSettings.Auditors` | Only when `Auditors` is non-empty |
 
 > Usernames are extracted from the `Username` pointer of each `UserInfo` entry. Users with a nil or empty `Username` are skipped.
 
@@ -105,8 +105,8 @@ These fields are carried inside the message `data` object.
 
 | Relation | Value | Condition |
 |---|---|---|
-| `writer` | Usernames from `GrpsIOMailingListSettings.Writers` | Only when `Writers` is non-empty |
-| `auditor` | Usernames from `GrpsIOMailingListSettings.Auditors` | Only when `Auditors` is non-empty |
+| `writer` | Usernames from `GroupsIOMailingListSettings.Writers` | Only when `Writers` is non-empty |
+| `auditor` | Usernames from `GroupsIOMailingListSettings.Auditors` | Only when `Auditors` is non-empty |
 
 > Usernames are extracted from the `Username` pointer of each `UserInfo` entry. Users with a nil or empty `Username` are skipped.
 
@@ -127,11 +127,17 @@ Published to `lfx.fga-sync.member_put` when a member event is processed and the 
 
 The object UID is the **parent mailing list UID**, not the member UID. The parent is resolved from the `group_id` → mailing list reverse index.
 
-#### Member Data
+#### Message Envelope
+
+| Field | Value |
+|---|---|
+| `object_type` | `groupsio_mailing_list` |
+| `operation` | `member_put` |
+
+#### Data Fields
 
 | Field | Value | Condition |
 |---|---|---|
-| `object_type` | `groupsio_mailing_list` | Always |
 | `uid` | `MailingListUID` (parent mailing list) | Always |
 | `username` | Auth0 `sub` of the member | Always (skipped if `Username` is empty) |
 | `relations` | `["member"]` | Always |

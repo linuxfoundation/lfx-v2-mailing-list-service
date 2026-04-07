@@ -121,7 +121,64 @@ func TestHandleDataStreamMemberDelete_HappyPath_ACKAndTombstones(t *testing.T) {
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
 	assert.Equal(t, constants.IndexGroupsIOMemberSubject, pub.IndexerCalls[0].Subject)
-	assert.Empty(t, pub.AccessCalls, "member delete should not publish access message")
+	assert.Empty(t, pub.AccessCalls, "member delete should not publish access message when no username in mapping")
+
+	assert.True(t, m.IsTombstoned(ctx, mKey))
+}
+
+func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+		map[string]any{
+			"group_id":  float64(42),
+			"username":  "alice@example.com",
+			"full_name": "Alice Smith",
+		},
+		pub, m)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	assert.Len(t, pub.AccessCalls, 1)
+	assert.Equal(t, constants.FGASyncMemberPutSubject, pub.AccessCalls[0].Subject)
+
+	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
+	assert.Equal(t, "member_put", msg.Operation)
+
+	data, ok := msg.Data.(model.FGAMemberPutData)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, []string{constants.RelationMember}, data.Relations)
+}
+
+func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	// Store mapping in uid|username|mailingListUID format
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberDelete(ctx, "mem-1", pub, m)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	assert.Len(t, pub.AccessCalls, 1)
+	assert.Equal(t, constants.FGASyncMemberRemoveSubject, pub.AccessCalls[0].Subject)
+
+	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
+	assert.Equal(t, "member_remove", msg.Operation)
+
+	data, ok := msg.Data.(model.FGAMemberPutData)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-1", data.UID)
+	assert.Empty(t, data.Relations)
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
 }

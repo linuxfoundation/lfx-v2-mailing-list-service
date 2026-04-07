@@ -282,6 +282,20 @@ func TestGenericFGAMessage_Struct(t *testing.T) {
 
 	assert.Equal(t, msg.ObjectType, unmarshaled.ObjectType)
 	assert.Equal(t, msg.Operation, unmarshaled.Operation)
+
+	// Data is decoded as map[string]any when unmarshaling into GenericFGAMessage
+	dataMap, ok := unmarshaled.Data.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "access-123", dataMap["uid"])
+	assert.Equal(t, true, dataMap["public"])
+
+	relationsMap, ok := dataMap["relations"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{"user123"}, relationsMap["writer"])
+
+	referencesMap, ok := dataMap["references"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{"project-456"}, referencesMap["project"])
 }
 
 // Benchmark for Build method with realistic data
