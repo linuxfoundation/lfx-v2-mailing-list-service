@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"time"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -82,8 +83,24 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 
 	action := mappings.ResolveAction(ctx, mKey)
 
+	isPublic := list.Public
+	listRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
+	indexingConfig := &indexertypes.IndexingConfig{
+		ObjectID:             uid,
+		Public:               &isPublic,
+		AccessCheckObject:    listRef,
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   listRef,
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           list.ParentRefs(),
+		NameAndAliases:       list.NameAndAliases(),
+		SortName:             list.SortName(),
+		Fulltext:             list.Fulltext(),
+		Tags:                 list.Tags(),
+	}
+
 	msg := &model.IndexerMessage{Action: action, Tags: list.Tags()}
-	built, err := msg.Build(ctx, list)
+	built, err := msg.BuildWithIndexingConfig(ctx, list, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build subgroup indexer message", "uid", uid, "error", err)
 		return false
@@ -97,8 +114,18 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	// Publish settings indexer message when writers or auditors are present.
 	settings := buildMailingListSettings(uid, data)
 	if settings != nil {
+		settingsRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
+		settingsConfig := &indexertypes.IndexingConfig{
+			ObjectID:             uid,
+			AccessCheckObject:    settingsRef,
+			AccessCheckRelation:  "auditor",
+			HistoryCheckObject:   settingsRef,
+			HistoryCheckRelation: "auditor",
+			ParentRefs:           settings.ParentRefs(),
+			Tags:                 settings.Tags(),
+		}
 		settingsMsg := &model.IndexerMessage{Action: action, Tags: settings.Tags()}
-		builtSettings, errSettings := settingsMsg.Build(ctx, settings)
+		builtSettings, errSettings := settingsMsg.BuildWithIndexingConfig(ctx, settings, settingsConfig)
 		if errSettings != nil {
 			slog.ErrorContext(ctx, "failed to build subgroup settings indexer message", "uid", uid, "error", errSettings)
 		}

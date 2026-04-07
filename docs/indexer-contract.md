@@ -74,13 +74,25 @@ Published to `lfx.update_access.groupsio_service` on create/update. Deleted via 
 | `references.writer` | usernames from writers (when settings present) |
 | `references.auditor` | usernames from auditors (when settings present) |
 
-### Search Behavior
+### Search Behavior (IndexingConfig)
 
-No `IndexingConfig` is set for this resource type — the indexer uses server-side enrichers.
+| Field | Value |
+|---|---|
+| `object_id` | `{uid}` |
+| `public` | value of `GroupsIOService.Public` |
+| `access_check_object` | `groupsio_service:{uid}` |
+| `access_check_relation` | `viewer` |
+| `history_check_object` | `groupsio_service:{uid}` |
+| `history_check_relation` | `auditor` |
+| `sort_name` | `GetGroupName()` falling back to `domain` |
+| `name_and_aliases` | `GetGroupName()`, `domain` (non-empty values) |
+| `fulltext` | space-joined non-empty values of `GetGroupName()`, `domain`, `prefix`, `type` |
 
 ### Parent References
 
-_(handled by the indexer enricher via the `project_uid` tag)_
+| Ref | Condition |
+|---|---|
+| `project:{project_uid}` | Only when `project_uid` is set |
 
 ---
 
@@ -115,9 +127,21 @@ _(handled by the indexer enricher via the `project_uid` tag)_
 | `{uid}` | `abc123` | Direct lookup by UID |
 | `service_uid:{uid}` | `service_uid:abc123` | Namespaced lookup by UID |
 
-### Search Behavior
+### Search Behavior (IndexingConfig)
 
-No `IndexingConfig` is set for this resource type — the indexer uses server-side enrichers.
+| Field | Value |
+|---|---|
+| `object_id` | `{uid}` |
+| `access_check_object` | `groupsio_service:{uid}` |
+| `access_check_relation` | `auditor` |
+| `history_check_object` | `groupsio_service:{uid}` |
+| `history_check_relation` | `auditor` |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `groupsio_service:{uid}` | Always set (uid is the parent service UID) |
 
 ---
 
@@ -184,9 +208,27 @@ Published to `lfx.update_access.groupsio_mailing_list` on create/update. Deleted
 | `references.writer` | usernames from writers (when settings present) |
 | `references.auditor` | usernames from auditors (when settings present) |
 
-### Search Behavior
+### Search Behavior (IndexingConfig)
 
-No `IndexingConfig` is set for this resource type — the indexer uses server-side enrichers.
+| Field | Value |
+|---|---|
+| `object_id` | `{uid}` |
+| `public` | value of `GroupsIOMailingList.Public` |
+| `access_check_object` | `groupsio_mailing_list:{uid}` |
+| `access_check_relation` | `viewer` |
+| `history_check_object` | `groupsio_mailing_list:{uid}` |
+| `history_check_relation` | `auditor` |
+| `sort_name` | `title` falling back to `group_name` |
+| `name_and_aliases` | `title`, `group_name` (non-empty values) |
+| `fulltext` | space-joined non-empty values of `title`, `group_name`, `description` |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `groupsio_service:{service_uid}` | Always set |
+| `project:{project_uid}` | Only when `project_uid` is set |
+| `committee:{uid}` | One per associated committee (when `committees` is non-empty) |
 
 ### Reverse Index
 
@@ -228,9 +270,21 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `{uid}` | `abc123` | Direct lookup by UID |
 | `mailing_list_uid:{uid}` | `mailing_list_uid:abc123` | Namespaced lookup by UID |
 
-### Search Behavior
+### Search Behavior (IndexingConfig)
 
-No `IndexingConfig` is set for this resource type — the indexer uses server-side enrichers.
+| Field | Value |
+|---|---|
+| `object_id` | `{uid}` |
+| `access_check_object` | `groupsio_mailing_list:{uid}` |
+| `access_check_relation` | `auditor` |
+| `history_check_object` | `groupsio_mailing_list:{uid}` |
+| `history_check_relation` | `auditor` |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `groupsio_mailing_list:{uid}` | Always set (uid is the parent mailing list UID) |
 
 ---
 
@@ -299,9 +353,24 @@ The message payload is `{ uid, username, mailing_list_uid }`.
 
 > **Username transform:** The `username` field in this FGA payload is **not** the raw Groups.io/LFID username. It is the principal value derived via `principal.FromUsername(member.Username)`, which produces an Auth0-style subject (e.g. `auth0|...`). Downstream FGA consumers should expect this format.
 
-### Search Behavior
+### Search Behavior (IndexingConfig)
 
-No `IndexingConfig` is set for this resource type — the indexer uses server-side enrichers.
+| Field | Value |
+|---|---|
+| `object_id` | `{uid}` |
+| `access_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
+| `access_check_relation` | `viewer` |
+| `history_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
+| `history_check_relation` | `auditor` |
+| `sort_name` | `last_name + ", " + first_name`, falling back to `last_name`, `first_name`, or `username` |
+| `name_and_aliases` | full name (`first_name + " " + last_name`), `username`, `email` (non-empty values) |
+| `fulltext` | space-joined non-empty values of `first_name`, `last_name`, `email`, `organization`, `job_title` |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `groupsio_mailing_list:{mailing_list_uid}` | Always set |
 
 ---
 
