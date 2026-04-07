@@ -326,9 +326,13 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `status` | string | Groups.io membership status (e.g. `normal`, `pending`); emitted as empty string when not populated |
 | `last_reviewed_at` | string or null | RFC3339 timestamp of the last review; emitted as `null` when not set (not omitted) |
 | `last_reviewed_by` | string or null | UID of who performed the last review; emitted as `null` when not set (not omitted) |
+| `project_uid` | string (optional) | v2 UID of the owning project (inherited from parent mailing list); omitted when empty |
+| `project_slug` | string (optional) | URL slug of the owning project (fetched via `lfx.projects-api.get_slug`); omitted when empty |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
+
+> **v1-sync note:** `project_uid` and `project_slug` are resolved by the subgroup handler (written to `groupsio-subgroup-project.{subgroup_uid}`) and read by the member handler before indexing. The member handler NAKs if the project mapping is absent, ensuring the subgroup is fully processed first.
 
 ### Tags
 
@@ -340,8 +344,9 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `username:{value}` | `username:jdoe` | Find members by username |
 | `email:{value}` | `email:jdoe@example.com` | Find members by email |
 | `status:{value}` | `status:normal` | Find members by Groups.io status |
+| `project_uid:{value}` | `project_uid:bb4ed8c8-...` | Find members belonging to a project |
 
-> Tags for `username`, `email`, and `status` are only emitted when the value is non-empty.
+> Tags for `username`, `email`, `status`, and `project_uid` are only emitted when the value is non-empty.
 
 ### Access Control (AccessMessage)
 
