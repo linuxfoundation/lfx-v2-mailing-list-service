@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -66,8 +67,22 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
 
+	mailingListRef := fmt.Sprintf("groupsio_mailing_list:%s", mailingListUID)
+	memberConfig := &indexertypes.IndexingConfig{
+		ObjectID:             uid,
+		AccessCheckObject:    mailingListRef,
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   mailingListRef,
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           member.ParentRefs(),
+		NameAndAliases:       member.NameAndAliases(),
+		SortName:             member.SortName(),
+		Fulltext:             member.Fulltext(),
+		Tags:                 member.Tags(),
+	}
+
 	msg := &model.IndexerMessage{Action: action, Tags: member.Tags()}
-	built, err := msg.Build(ctx, member)
+	built, err := msg.BuildWithIndexingConfig(ctx, member, memberConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build member indexer message", "uid", uid, "error", err)
 		return false

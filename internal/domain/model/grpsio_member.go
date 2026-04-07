@@ -6,6 +6,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -101,4 +102,75 @@ func (m *GrpsIOMember) Tags() []string {
 	}
 
 	return tags
+}
+
+// ParentRefs returns the parent resource references for indexing.
+func (m *GrpsIOMember) ParentRefs() []string {
+	if m == nil {
+		return nil
+	}
+	var refs []string
+	if m.MailingListUID != "" {
+		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%s", m.MailingListUID))
+	}
+	return refs
+}
+
+// NameAndAliases returns searchable names for the member.
+func (m *GrpsIOMember) NameAndAliases() []string {
+	if m == nil {
+		return nil
+	}
+	var names []string
+	if fullName := strings.TrimSpace(m.FirstName + " " + m.LastName); fullName != "" {
+		names = append(names, fullName)
+	}
+	if m.Username != "" {
+		names = append(names, m.Username)
+	}
+	if m.Email != "" {
+		names = append(names, m.Email)
+	}
+	return names
+}
+
+// SortName returns the primary sort name for the member.
+func (m *GrpsIOMember) SortName() string {
+	if m == nil {
+		return ""
+	}
+	if m.LastName != "" && m.FirstName != "" {
+		return m.LastName + ", " + m.FirstName
+	}
+	if m.LastName != "" {
+		return m.LastName
+	}
+	if m.FirstName != "" {
+		return m.FirstName
+	}
+	return m.Username
+}
+
+// Fulltext returns a concatenated string for full-text search.
+func (m *GrpsIOMember) Fulltext() string {
+	if m == nil {
+		return ""
+	}
+	var parts []string
+	if m.FirstName != "" {
+		parts = append(parts, m.FirstName)
+	}
+	if m.LastName != "" {
+		parts = append(parts, m.LastName)
+	}
+	if m.Email != "" {
+		parts = append(parts, m.Email)
+	}
+	if m.Organization != "" {
+		parts = append(parts, m.Organization)
+	}
+	if m.JobTitle != "" {
+		parts = append(parts, m.JobTitle)
+	}
+	return strings.Join(parts, " ")
 }

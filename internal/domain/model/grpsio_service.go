@@ -6,6 +6,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -130,6 +131,76 @@ func (s *GroupsIOService) GetDomain() string {
 		return s.Domain // Use custom domain if set
 	}
 	return DefaultGroupsIODomain // Default to groups.io
+}
+
+// ParentRefs returns the parent resource references for indexing.
+func (s *GroupsIOService) ParentRefs() []string {
+	if s == nil {
+		return nil
+	}
+	var refs []string
+	if s.ProjectUID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", s.ProjectUID))
+	}
+	return refs
+}
+
+// NameAndAliases returns searchable names for the service.
+func (s *GroupsIOService) NameAndAliases() []string {
+	if s == nil {
+		return nil
+	}
+	var names []string
+	if n := s.GetGroupName(); n != "" {
+		names = append(names, n)
+	}
+	if s.Domain != "" {
+		names = append(names, s.Domain)
+	}
+	return names
+}
+
+// SortName returns the primary sort name for the service.
+func (s *GroupsIOService) SortName() string {
+	if s == nil {
+		return ""
+	}
+	if n := s.GetGroupName(); n != "" {
+		return n
+	}
+	return s.Domain
+}
+
+// Fulltext returns a concatenated string for full-text search.
+func (s *GroupsIOService) Fulltext() string {
+	if s == nil {
+		return ""
+	}
+	var parts []string
+	if n := s.GetGroupName(); n != "" {
+		parts = append(parts, n)
+	}
+	if s.Domain != "" {
+		parts = append(parts, s.Domain)
+	}
+	if s.Prefix != "" {
+		parts = append(parts, s.Prefix)
+	}
+	if s.Type != "" {
+		parts = append(parts, s.Type)
+	}
+	return strings.Join(parts, " ")
+}
+
+// ParentRefs returns the parent service reference for settings indexing.
+func (s *GrpsIOServiceSettings) ParentRefs() []string {
+	if s == nil {
+		return nil
+	}
+	if s.UID != "" {
+		return []string{fmt.Sprintf("groupsio_service:%s", s.UID)}
+	}
+	return nil
 }
 
 // GetGroupName returns the appropriate group name for Groups.io API calls with comprehensive fallback logic
