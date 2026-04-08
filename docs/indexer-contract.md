@@ -66,7 +66,7 @@ This document is the authoritative reference for all data the mailing list servi
 
 ### Access Control (AccessMessage)
 
-Published to `lfx.update_access.groupsio_service` on create/update. Deleted via `lfx.delete_all_access.groupsio_service` on delete.
+Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga-sync.delete_access` on delete.
 
 | Field | Value |
 |---|---|
@@ -203,7 +203,7 @@ Published to `lfx.update_access.groupsio_service` on create/update. Deleted via 
 
 ### Access Control (AccessMessage)
 
-Published to `lfx.update_access.groupsio_mailing_list` on create/update. Deleted via `lfx.delete_all_access.groupsio_mailing_list` on delete.
+Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga-sync.delete_access` on delete.
 
 | Field | Value |
 |---|---|
@@ -336,9 +336,13 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `status` | string | Groups.io membership status (e.g. `normal`, `pending`); emitted as empty string when not populated |
 | `last_reviewed_at` | string or null | RFC3339 timestamp of the last review; emitted as `null` when not set (not omitted) |
 | `last_reviewed_by` | string or null | UID of who performed the last review; emitted as `null` when not set (not omitted) |
+| `project_uid` | string (optional) | v2 UID of the owning project (inherited from parent mailing list); omitted when empty |
+| `project_slug` | string (optional) | URL slug of the owning project (fetched via `lfx.projects-api.get_slug`); omitted when empty |
 | `created_at` | timestamp | Creation time (RFC3339) |
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
+
+> **v1-sync note:** `project_uid` and `project_slug` are resolved by the subgroup handler (written to `groupsio-subgroup-project.{subgroup_uid}`) and read by the member handler before indexing. The member handler NAKs if the project mapping is absent, ensuring the subgroup is fully processed first.
 
 ### Tags
 
@@ -350,16 +354,17 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 | `username:{value}` | `username:jdoe` | Find members by username |
 | `email:{value}` | `email:jdoe@example.com` | Find members by email |
 | `status:{value}` | `status:normal` | Find members by Groups.io status |
+| `project_uid:{value}` | `project_uid:bb4ed8c8-...` | Find members belonging to a project |
 
-> Tags for `username`, `email`, and `status` are only emitted when the value is non-empty.
+> Tags for `username`, `email`, `status`, and `project_uid` are only emitted when the value is non-empty.
 
 ### Access Control (AccessMessage)
 
 When a member has a non-empty `username`, the handler also publishes an FGA membership message:
-- **Put member:** `lfx.put_member.groupsio_mailing_list` on create/update
-- **Remove member:** `lfx.remove_member.groupsio_mailing_list` on delete
+- **Put member:** `lfx.fga-sync.member_put` on create/update
+- **Remove member:** `lfx.fga-sync.member_remove` on delete
 
-The message payload is `{ uid, username, mailing_list_uid }`.
+The message is a `GenericFGAMessage` with `object_type: groupsio_mailing_list`, `operation: member_put` / `member_remove`, and a `FGAMemberPutData` payload containing `uid` (the mailing list UID), `username` (principal), and `relations: ["member"]`.
 
 > **Username transform:** The `username` field in this FGA payload is **not** the raw Groups.io/LFID username. It is the principal value derived via `principal.FromUsername(member.Username)`, which produces an Auth0-style subject (e.g. `auth0|...`). Downstream FGA consumers should expect this format.
 
@@ -381,6 +386,7 @@ The message payload is `{ uid, username, mailing_list_uid }`.
 | Ref | Condition |
 |---|---|
 | `groupsio_mailing_list:{mailing_list_uid}` | Always set |
+| `project:{project_uid}` | Only when `project_uid` is set |
 
 ---
 
@@ -460,4 +466,4 @@ Artifacts use a typed `IndexingConfig` (no server-side enrichers). No FGA `Acces
 |---|---|
 | `project:{project_uid}` | Only when `project_uid` is set |
 | `committee:{committee_uid}` | Only when `committee_uid` is set |
-| `groupsio_mailing_list:{group_id}` | Always set (group_id is required) |
+| `groupsio_mailing_list:{group_id}` | Always set (numeric Groups.io group ID — the artifact model does not carry a mailing list UID) |

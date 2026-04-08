@@ -71,6 +71,11 @@ const (
 	// KVMappingPrefixSubgroupByGroupID is the v1-mappings reverse index: Groups.io group_id → subgroup UID.
 	// Written by the subgroup handler so the member handler can resolve MailingListUID from group_id.
 	KVMappingPrefixSubgroupByGroupID = "groupsio-subgroup-gid"
+	// KVMappingPrefixSubgroupProject is the v1-mappings key that stores the project UID and slug for a
+	// subgroup (mailing list). Written by the subgroup handler; read by the member handler so that
+	// project_uid and project_slug can be included on indexed groupsio_member records.
+	// Value format: "{project_uid}|{project_slug}"
+	KVMappingPrefixSubgroupProject = "groupsio-subgroup-project"
 	// KVMappingPrefixArtifact is the v1-mappings key prefix for GroupsIO artifacts.
 	KVMappingPrefixArtifact = "groupsio-artifact"
 
