@@ -19,6 +19,8 @@ This document is the authoritative reference for all data the mailing list servi
 
 ## GroupsIO Service
 
+**Object type:** `groupsio_service`
+
 **Source struct:** `internal/domain/model/grpsio_service.go` — `GroupsIOService`
 
 **NATS subject:** `lfx.index.groupsio_service`
@@ -98,6 +100,8 @@ Published to `lfx.update_access.groupsio_service` on create/update. Deleted via 
 
 ## GroupsIO Service Settings
 
+**Object type:** `groupsio_service_settings`
+
 **Source struct:** `internal/domain/model/grpsio_service.go` — `GrpsIOServiceSettings`
 
 **NATS subject:** `lfx.index.groupsio_service_settings`
@@ -146,6 +150,8 @@ Published to `lfx.update_access.groupsio_service` on create/update. Deleted via 
 ---
 
 ## GroupsIO Mailing List
+
+**Object type:** `groupsio_mailing_list`
 
 **Source struct:** `internal/domain/model/grpsio_mailing_list.go` — `GroupsIOMailingList`
 
@@ -241,6 +247,8 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 
 ## GroupsIO Mailing List Settings
 
+**Object type:** `groupsio_mailing_list_settings`
+
 **Source struct:** `internal/domain/model/grpsio_mailing_list.go` — `GroupsIOMailingListSettings`
 
 **NATS subject:** `lfx.index.groupsio_mailing_list_settings`
@@ -289,6 +297,8 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 ---
 
 ## GroupsIO Member
+
+**Object type:** `groupsio_member`
 
 **Source struct:** `internal/domain/model/grpsio_member.go` — `GrpsIOMember`
 
@@ -375,6 +385,8 @@ The message payload is `{ uid, username, mailing_list_uid }`.
 ---
 
 ## GroupsIO Artifact
+
+**Object type:** `groupsio_artifact`
 
 **Source struct:** `internal/domain/model/grpsio_artifact.go` — `GroupsIOArtifact`
 
