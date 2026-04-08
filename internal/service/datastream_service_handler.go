@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"time"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -38,8 +39,24 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, uid)
 	action := mappings.ResolveAction(ctx, mKey)
 
+	isPublic := svc.Public
+	svcRef := fmt.Sprintf("groupsio_service:%s", uid)
+	indexingConfig := &indexertypes.IndexingConfig{
+		ObjectID:             uid,
+		Public:               &isPublic,
+		AccessCheckObject:    svcRef,
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   svcRef,
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           svc.ParentRefs(),
+		NameAndAliases:       svc.NameAndAliases(),
+		SortName:             svc.SortName(),
+		Fulltext:             svc.Fulltext(),
+		Tags:                 svc.Tags(),
+	}
+
 	msg := &model.IndexerMessage{Action: action, Tags: svc.Tags()}
-	built, err := msg.Build(ctx, svc)
+	built, err := msg.BuildWithIndexingConfig(ctx, svc, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build service indexer message", "uid", uid, "error", err)
 		return false
@@ -53,8 +70,18 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	// Publish settings indexer message when writers or auditors are present.
 	settings := buildServiceSettings(uid, data)
 	if settings != nil {
+		settingsRef := fmt.Sprintf("groupsio_service:%s", uid)
+		settingsConfig := &indexertypes.IndexingConfig{
+			ObjectID:             uid,
+			AccessCheckObject:    settingsRef,
+			AccessCheckRelation:  "auditor",
+			HistoryCheckObject:   settingsRef,
+			HistoryCheckRelation: "auditor",
+			ParentRefs:           settings.ParentRefs(),
+			Tags:                 settings.Tags(),
+		}
 		settingsMsg := &model.IndexerMessage{Action: action, Tags: settings.Tags()}
-		builtSettings, errSettings := settingsMsg.Build(ctx, settings)
+		builtSettings, errSettings := settingsMsg.BuildWithIndexingConfig(ctx, settings, settingsConfig)
 		if errSettings != nil {
 			slog.ErrorContext(ctx, "failed to build service settings indexer message", "uid", uid, "error", errSettings)
 		}
