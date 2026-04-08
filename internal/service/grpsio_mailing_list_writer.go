@@ -125,10 +125,10 @@ func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context,
 
 // ---- Event publishing helpers ----
 
-// publishCommitteeMailingListChanged publishes a CommitteeMailingListChangedEvent.
-// Always publishes unconditionally — the committee service's UpdateHasMailingList is
+// publishCommitteeMailingListChanged best-effort publishes a CommitteeMailingListChangedEvent
+// when a committee UID is present and a publisher is configured.
+// It does not perform local deduplication; the committee service's UpdateHasMailingList is
 // the idempotency guard and skips the KV write + re-index if the flag already matches.
-// No-op when cUID is empty or publisher is not configured.
 func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx context.Context, cUID string, hasMailingList bool) {
 	if cUID == "" || o.publisher == nil {
 		return

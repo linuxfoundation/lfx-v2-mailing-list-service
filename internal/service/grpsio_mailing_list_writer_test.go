@@ -288,6 +288,24 @@ func TestUpdateMailingList_CommitteeAddedOnUpdate_PublishesTrueNew(t *testing.T)
 	assert.True(t, evt.HasMailingList)
 }
 
+func TestUpdateMailingList_ReaderError_PublishesOnlyNewCommittee(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	reader := &stubMLReader{err: errors.New("fetch failed")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	o := newTestOrchestrator(writer, reader, spy)
+
+	resp, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	// oldCUID is "" due to reader error, newCUID is "new-committee" → only the "add" event fires.
+	// The "remove" for the unknown old committee is intentionally skipped (best-effort).
+	require.Len(t, spy.calls, 1)
+	evt := spy.calls[0].message.(*model.CommitteeMailingListChangedEvent)
+	assert.Equal(t, "new-committee", evt.CommitteeUID)
+	assert.True(t, evt.HasMailingList)
+}
+
 func TestUpdateMailingList_WriterError_NoPublish(t *testing.T) {
 	spy := &spyInternalPublisher{}
 	reader := &stubMLReader{ml: mlWith("old-committee")}
