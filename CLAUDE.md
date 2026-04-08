@@ -37,6 +37,13 @@ This service uses GOA v3 for API design and code generation:
 
 This applies to method changes, path changes, new endpoints, and deleted endpoints.
 
+### Indexer Contract Documentation
+
+**Whenever you add, remove, or change what this service sends to the indexer (tags, schema fields, IndexingConfig, access messages), you MUST update `docs/indexer-contract.md`:**
+
+- Update the relevant resource type section (schema, tags, access control, search behavior, parent references)
+- Add a new resource type section if a new indexed type is introduced
+
 ### Clean Architecture Structure
 The codebase follows hexagonal/clean architecture principles:
 
