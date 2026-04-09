@@ -253,30 +253,49 @@ func TestMessageAction_Constants(t *testing.T) {
 	assert.Equal(t, MessageAction("deleted"), ActionDeleted)
 }
 
-func TestAccessMessage_Struct(t *testing.T) {
-	// Test that AccessMessage struct can be properly marshaled/unmarshaled
-	accessMsg := AccessMessage{
-		UID:        "access-123",
+func TestGenericFGAMessage_Struct(t *testing.T) {
+	// Test that GenericFGAMessage and FGAUpdateAccessData can be properly marshaled/unmarshaled
+	accessData := FGAUpdateAccessData{
+		UID:    "access-123",
+		Public: true,
+		Relations: map[string][]string{
+			"writer": {"user123"},
+		},
+		References: map[string][]string{
+			"project": {"project-456"},
+		},
+	}
+	msg := GenericFGAMessage{
 		ObjectType: constants.ObjectTypeGroupsIOService,
-		Public:     true,
-		Relations:  map[string][]string{"admin": {"user123"}},
-		References: map[string][]string{"project": {"project-456"}},
+		Operation:  "update_access",
+		Data:       accessData,
 	}
 
 	// Test JSON marshaling
-	data, err := json.Marshal(accessMsg)
+	data, err := json.Marshal(msg)
 	require.NoError(t, err)
 
-	// Test JSON unmarshaling
-	var unmarshaled AccessMessage
+	// Test JSON unmarshaling of the envelope
+	var unmarshaled GenericFGAMessage
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
 
-	assert.Equal(t, accessMsg.UID, unmarshaled.UID)
-	assert.Equal(t, accessMsg.ObjectType, unmarshaled.ObjectType)
-	assert.Equal(t, accessMsg.Public, unmarshaled.Public)
-	assert.Equal(t, accessMsg.Relations, unmarshaled.Relations)
-	assert.Equal(t, accessMsg.References, unmarshaled.References)
+	assert.Equal(t, msg.ObjectType, unmarshaled.ObjectType)
+	assert.Equal(t, msg.Operation, unmarshaled.Operation)
+
+	// Data is decoded as map[string]any when unmarshaling into GenericFGAMessage
+	dataMap, ok := unmarshaled.Data.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "access-123", dataMap["uid"])
+	assert.Equal(t, true, dataMap["public"])
+
+	relationsMap, ok := dataMap["relations"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{"user123"}, relationsMap["writer"])
+
+	referencesMap, ok := dataMap["references"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, []any{"project-456"}, referencesMap["project"])
 }
 
 // Benchmark for Build method with realistic data

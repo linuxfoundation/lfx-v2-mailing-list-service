@@ -6,6 +6,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,10 @@ type GrpsIOMember struct {
 	LastReviewedAt *string `json:"last_reviewed_at"` // Nullable timestamp
 	LastReviewedBy *string `json:"last_reviewed_by"` // Nullable user ID
 
+	// Project association (inherited from the parent mailing list)
+	ProjectUID  string `json:"project_uid,omitempty"`
+	ProjectSlug string `json:"project_slug,omitempty"`
+
 	// Timestamps
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -91,5 +96,84 @@ func (m *GrpsIOMember) Tags() []string {
 		tags = append(tags, tag)
 	}
 
+	if m.ProjectUID != "" {
+		tag := fmt.Sprintf("project_uid:%s", m.ProjectUID)
+		tags = append(tags, tag)
+	}
+
 	return tags
+}
+
+// ParentRefs returns the parent resource references for indexing.
+func (m *GrpsIOMember) ParentRefs() []string {
+	if m == nil {
+		return nil
+	}
+	var refs []string
+	if m.MailingListUID != "" {
+		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%s", m.MailingListUID))
+	}
+	if m.ProjectUID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", m.ProjectUID))
+	}
+	return refs
+}
+
+// NameAndAliases returns searchable names for the member.
+func (m *GrpsIOMember) NameAndAliases() []string {
+	if m == nil {
+		return nil
+	}
+	var names []string
+	if fullName := strings.TrimSpace(m.FirstName + " " + m.LastName); fullName != "" {
+		names = append(names, fullName)
+	}
+	if m.Username != "" {
+		names = append(names, m.Username)
+	}
+	if m.Email != "" {
+		names = append(names, m.Email)
+	}
+	return names
+}
+
+// SortName returns the primary sort name for the member.
+func (m *GrpsIOMember) SortName() string {
+	if m == nil {
+		return ""
+	}
+	if m.LastName != "" && m.FirstName != "" {
+		return m.LastName + ", " + m.FirstName
+	}
+	if m.LastName != "" {
+		return m.LastName
+	}
+	if m.FirstName != "" {
+		return m.FirstName
+	}
+	return m.Username
+}
+
+// Fulltext returns a concatenated string for full-text search.
+func (m *GrpsIOMember) Fulltext() string {
+	if m == nil {
+		return ""
+	}
+	var parts []string
+	if m.FirstName != "" {
+		parts = append(parts, m.FirstName)
+	}
+	if m.LastName != "" {
+		parts = append(parts, m.LastName)
+	}
+	if m.Email != "" {
+		parts = append(parts, m.Email)
+	}
+	if m.Organization != "" {
+		parts = append(parts, m.Organization)
+	}
+	if m.JobTitle != "" {
+		parts = append(parts, m.JobTitle)
+	}
+	return strings.Join(parts, " ")
 }

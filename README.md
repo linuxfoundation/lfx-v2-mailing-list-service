@@ -223,6 +223,7 @@ Because this service reuses the same database and infrastructure as the proxied 
 | --- | --- |
 | [docs/api-endpoints.md](docs/api-endpoints.md) | Full list of API endpoints with method, path, and curl examples |
 | [docs/event-processing.md](docs/event-processing.md) | v1→v2 data stream: how DynamoDB change events are consumed, transformed, and published to the indexer and FGA-sync services |
+| [docs/fga-contract.md](docs/fga-contract.md) | Authoritative reference for all FGA sync messages (NATS subjects, payloads, and trigger conditions) |
 
 ## 🛠️ Development
 
@@ -534,10 +535,10 @@ The service publishes messages to the following NATS subjects (primarily via the
 | `lfx.index.groupsio_service` | GroupsIO service indexing events | Indexer message with tags |
 | `lfx.index.groupsio_mailing_list` | Mailing list indexing events | Indexer message with tags |
 | `lfx.index.groupsio_member` | Member indexing events | Indexer message with tags |
-| `lfx.update_access.groupsio_service` | Service access control updates | Access control message |
-| `lfx.delete_all_access.groupsio_service` | Service access control deletion | Access control message |
-| `lfx.update_access.groupsio_mailing_list` | Mailing list access control updates | Access control message |
-| `lfx.delete_all_access.groupsio_mailing_list` | Mailing list access control deletion | Access control message |
+| `lfx.fga-sync.update_access` | Service and mailing list access control create/update | Generic FGA message (`update_access`) |
+| `lfx.fga-sync.delete_access` | Service and mailing list access control delete | Generic FGA message (`delete_access`) |
+| `lfx.fga-sync.member_put` | Add member to mailing list in FGA | Generic FGA message (`member_put`) |
+| `lfx.fga-sync.member_remove` | Remove member from mailing list in FGA | Generic FGA message (`member_remove`) |
 
 ### Message Publisher Interface
 
