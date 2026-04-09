@@ -65,16 +65,19 @@ func (w *stubMLWriter) DeleteMailingList(_ context.Context, _ string) error { re
 var _ port.GroupsIOMailingListWriter = (*stubMLWriter)(nil)
 
 // stubMLReader always returns the configured ml/err from GetMailingList.
+// listMLs/listErr control ListMailingLists responses for the count check.
 type stubMLReader struct {
-	ml  *model.GroupsIOMailingList
-	err error
+	ml      *model.GroupsIOMailingList
+	err     error
+	listMLs []*model.GroupsIOMailingList
+	listErr error
 }
 
 func (r *stubMLReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
 	return r.ml, r.err
 }
 func (r *stubMLReader) ListMailingLists(_ context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
-	return nil, 0, nil
+	return r.listMLs, len(r.listMLs), r.listErr
 }
 func (r *stubMLReader) GetMailingListCount(_ context.Context, _ string) (int, error) { return 0, nil }
 func (r *stubMLReader) GetMailingListMemberCount(_ context.Context, _ string) (int, error) {
@@ -258,14 +261,14 @@ func TestUpdateMailingList_CommitteeChanged_PublishesFalseOldTrueNew(t *testing.
 
 func TestUpdateMailingList_CommitteeRemovedOnUpdate_PublishesFalseOldNoNew(t *testing.T) {
 	spy := &spyInternalPublisher{}
-	reader := &stubMLReader{ml: mlWith("old-committee")}
+	reader := &stubMLReader{ml: mlWith("old-committee")}              // listMLs empty → no remaining MLs
 	writer := &stubMLWriter{updateResp: &model.GroupsIOMailingList{}} // no committee in response
 	o := newTestOrchestrator(writer, reader, spy)
 
 	_, err := o.UpdateMailingList(context.Background(), "ml-1", &model.GroupsIOMailingList{})
 	require.NoError(t, err)
 
-	// old gets false; new is empty so no second event
+	// old gets false (no remaining MLs); new is empty so no second event
 	require.Len(t, spy.calls, 1)
 	evt := spy.calls[0].message.(*model.CommitteeMailingListChangedEvent)
 	assert.Equal(t, "old-committee", evt.CommitteeUID)
@@ -366,4 +369,108 @@ func TestDeleteMailingList_ReaderFailure_NoPublish(t *testing.T) {
 	err := o.DeleteMailingList(context.Background(), "ml-1")
 	require.NoError(t, err)
 	assert.Empty(t, spy.calls)
+}
+
+// ---- Multi-mailing-list-per-committee guard ----
+
+func TestDeleteMailingList_CommitteeHasOtherMLs_NoFalsePublish(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	reader := &stubMLReader{
+		ml: mlWith("committee-shared"),
+		// Another ML still references this committee (different UID from the one being deleted)
+		listMLs: []*model.GroupsIOMailingList{{UID: "ml-2"}},
+	}
+	writer := &stubMLWriter{}
+	o := newTestOrchestrator(writer, reader, spy)
+
+	err := o.DeleteMailingList(context.Background(), "ml-1")
+	require.NoError(t, err)
+	assert.Empty(t, spy.calls, "should not publish false when committee has other mailing lists")
+}
+
+func TestDeleteMailingList_CommitteeHasOnlySelf_PublishesFalse(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	reader := &stubMLReader{
+		ml: mlWith("committee-sole"),
+		// ITX stale read: returns the ML we just deleted — client-side filter excludes it
+		listMLs: []*model.GroupsIOMailingList{{UID: "ml-1"}},
+	}
+	writer := &stubMLWriter{}
+	o := newTestOrchestrator(writer, reader, spy)
+
+	err := o.DeleteMailingList(context.Background(), "ml-1")
+	require.NoError(t, err)
+
+	require.Len(t, spy.calls, 1)
+	evt := spy.calls[0].message.(*model.CommitteeMailingListChangedEvent)
+	assert.Equal(t, "committee-sole", evt.CommitteeUID)
+	assert.False(t, evt.HasMailingList)
+}
+
+func TestDeleteMailingList_ListMLsError_SkipsFalsePublish(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	reader := &stubMLReader{
+		ml:      mlWith("committee-err"),
+		listErr: errors.New("ITX unavailable"),
+	}
+	writer := &stubMLWriter{}
+	o := newTestOrchestrator(writer, reader, spy)
+
+	err := o.DeleteMailingList(context.Background(), "ml-1")
+	require.NoError(t, err)
+	assert.Empty(t, spy.calls, "should not publish false when count check fails — assume others exist")
+}
+
+func TestUpdateMailingList_OldCommitteeHasOtherMLs_NoFalseForOld(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	reader := &stubMLReader{
+		ml: mlWith("old-committee"),
+		// Another ML still references old-committee
+		listMLs: []*model.GroupsIOMailingList{{UID: "ml-2"}},
+	}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	o := newTestOrchestrator(writer, reader, spy)
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+
+	// Only the "true" event for new committee, no "false" for old since it has ml-2
+	require.Len(t, spy.calls, 1)
+	evt := spy.calls[0].message.(*model.CommitteeMailingListChangedEvent)
+	assert.Equal(t, "new-committee", evt.CommitteeUID)
+	assert.True(t, evt.HasMailingList)
+}
+
+// ---- committeeHasRemainingMailingLists ----
+
+func TestCommitteeHasRemainingMailingLists_NilReader_ReturnsFalse(t *testing.T) {
+	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
+	assert.False(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"))
+}
+
+func TestCommitteeHasRemainingMailingLists_Error_ReturnsTrue(t *testing.T) {
+	reader := &stubMLReader{listErr: errors.New("ITX down")}
+	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
+	assert.True(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"),
+		"should assume others exist when uncertain")
+}
+
+func TestCommitteeHasRemainingMailingLists_OnlySelf_ReturnsFalse(t *testing.T) {
+	reader := &stubMLReader{listMLs: []*model.GroupsIOMailingList{{UID: "ml-1"}}}
+	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
+	assert.False(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"),
+		"excluded ML is the only one — no remaining")
+}
+
+func TestCommitteeHasRemainingMailingLists_OtherExists_ReturnsTrue(t *testing.T) {
+	reader := &stubMLReader{listMLs: []*model.GroupsIOMailingList{{UID: "ml-1"}, {UID: "ml-2"}}}
+	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
+	assert.True(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"),
+		"ml-2 still exists after excluding ml-1")
+}
+
+func TestCommitteeHasRemainingMailingLists_Empty_ReturnsFalse(t *testing.T) {
+	reader := &stubMLReader{listMLs: []*model.GroupsIOMailingList{}}
+	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
+	assert.False(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"))
 }
