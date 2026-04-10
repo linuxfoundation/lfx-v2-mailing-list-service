@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"time"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -16,20 +17,10 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
-// groupsioMailingListMemberStub represents the minimal data needed for member access control
-type groupsioMailingListMemberStub struct {
-	// UID is the mailing list member ID.
-	UID string `json:"uid"`
-	// Username is the username (i.e. LFID) of the member. This is the identity of the user object in FGA.
-	Username string `json:"username"`
-	// MailingListUID is the mailing list ID for the mailing list the member belongs to.
-	MailingListUID string `json:"mailing_list_uid"`
-}
-
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
-// is absent (ordering guarantee) or on transient errors.
-func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+// is absent (ordering guarantee), the project slug lookup fails (transient), or on transient errors.
+func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) bool {
 	// Resolve v1 project SFID → v2 project UID via the shared project.sfid.{sfid} mapping
 	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
 	projectSFID := mapconv.StringVal(data, "project_id")
@@ -73,6 +64,16 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return true // NAK — retry with backoff
 	}
 
+	// Look up project slug from the project service. NAK on transient errors so the
+	// subgroup is retried once the project service is available. This is done after
+	// dependency checks to avoid unnecessary RPCs when the record will NAK anyway.
+	projectSlug, err := projectLookup.GetProjectSlug(ctx, projectUID)
+	if err != nil {
+		slog.WarnContext(ctx, "project slug lookup failed, NAKing subgroup for retry",
+			"uid", uid, "project_uid", projectUID, "error", err)
+		return true // NAK — retry with backoff
+	}
+
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
 
 	if mappings.IsTombstoned(ctx, mKey) {
@@ -82,8 +83,24 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 
 	action := mappings.ResolveAction(ctx, mKey)
 
+	isPublic := list.Public
+	listRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
+	indexingConfig := &indexertypes.IndexingConfig{
+		ObjectID:             uid,
+		Public:               &isPublic,
+		AccessCheckObject:    listRef,
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   listRef,
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           list.ParentRefs(),
+		NameAndAliases:       list.NameAndAliases(),
+		SortName:             list.SortName(),
+		Fulltext:             list.Fulltext(),
+		Tags:                 list.Tags(),
+	}
+
 	msg := &model.IndexerMessage{Action: action, Tags: list.Tags()}
-	built, err := msg.Build(ctx, list)
+	built, err := msg.BuildWithIndexingConfig(ctx, list, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build subgroup indexer message", "uid", uid, "error", err)
 		return false
@@ -97,8 +114,18 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	// Publish settings indexer message when writers or auditors are present.
 	settings := buildMailingListSettings(uid, data)
 	if settings != nil {
+		settingsRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
+		settingsConfig := &indexertypes.IndexingConfig{
+			ObjectID:             uid,
+			AccessCheckObject:    settingsRef,
+			AccessCheckRelation:  "auditor",
+			HistoryCheckObject:   settingsRef,
+			HistoryCheckRelation: "auditor",
+			ParentRefs:           settings.ParentRefs(),
+			Tags:                 settings.Tags(),
+		}
 		settingsMsg := &model.IndexerMessage{Action: action, Tags: settings.Tags()}
-		builtSettings, errSettings := settingsMsg.Build(ctx, settings)
+		builtSettings, errSettings := settingsMsg.BuildWithIndexingConfig(ctx, settings, settingsConfig)
 		if errSettings != nil {
 			slog.ErrorContext(ctx, "failed to build subgroup settings indexer message", "uid", uid, "error", errSettings)
 		}
@@ -118,21 +145,31 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 			references[constants.RelationCommittee] = append(references[constants.RelationCommittee], committee.UID)
 		}
 	}
+	relations := map[string][]string{}
 	if settings != nil {
 		if writers := userInfoUsernames(settings.Writers); len(writers) > 0 {
-			references[constants.RelationWriter] = writers
+			relations[constants.RelationWriter] = writers
 		}
 		if auditors := userInfoUsernames(settings.Auditors); len(auditors) > 0 {
-			references[constants.RelationAuditor] = auditors
+			relations[constants.RelationAuditor] = auditors
 		}
 	}
-	accessMsg := &model.AccessMessage{
+	accessData := model.FGAUpdateAccessData{
 		UID:        uid,
-		ObjectType: constants.ObjectTypeGroupsIOMailingList,
 		Public:     list.Public,
 		References: references,
+		// member relations are managed separately via member_put and must not be overwritten here
+		ExcludeRelations: []string{constants.RelationMember},
 	}
-	if err := publisher.Access(ctx, constants.UpdateAccessGroupsIOMailingListSubject, accessMsg); err != nil {
+	if len(relations) > 0 {
+		accessData.Relations = relations
+	}
+	accessMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOMailingList,
+		Operation:  "update_access",
+		Data:       accessData,
+	}
+	if err := publisher.Access(ctx, constants.FGASyncUpdateAccessSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup access message", "uid", uid, "error", err)
 	}
 
@@ -146,6 +183,15 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		if err := mappings.PutMapping(ctx, gidKey, uid); err != nil {
 			slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", gidKey, "error", err)
 		}
+	}
+
+	// Store project mapping: project_uid and project_slug for the member handler.
+	// Value format: "{project_uid}|{project_slug}"
+	// NAK on failure — member events depend on this mapping to resolve project fields.
+	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, uid)
+	if err := mappings.PutMapping(ctx, projectKey, projectUID+"|"+projectSlug); err != nil {
+		slog.ErrorContext(ctx, "failed to put project mapping key, NAKing for retry", "mapping_key", projectKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	return false
@@ -181,7 +227,12 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		return pkgerrors.IsTransient(err)
 	}
 
-	if err := publisher.Access(ctx, constants.DeleteAllAccessGroupsIOMailingListSubject, uid); err != nil {
+	deleteMsg := model.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOMailingList,
+		Operation:  "delete_access",
+		Data:       model.FGADeleteAccessData{UID: uid},
+	}
+	if err := publisher.Access(ctx, constants.FGASyncDeleteAccessSubject, deleteMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
 	}
 

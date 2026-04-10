@@ -6,6 +6,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -74,6 +75,81 @@ func (s *GroupsIOMailingListSettings) Tags() []string {
 	}
 
 	return tags
+}
+
+// ParentRefs returns the parent resource references for indexing.
+func (ml *GroupsIOMailingList) ParentRefs() []string {
+	if ml == nil {
+		return nil
+	}
+	var refs []string
+	if ml.ServiceUID != "" {
+		refs = append(refs, fmt.Sprintf("groupsio_service:%s", ml.ServiceUID))
+	}
+	if ml.ProjectUID != "" {
+		refs = append(refs, fmt.Sprintf("project:%s", ml.ProjectUID))
+	}
+	for _, c := range ml.Committees {
+		if c.UID != "" {
+			refs = append(refs, fmt.Sprintf("committee:%s", c.UID))
+		}
+	}
+	return refs
+}
+
+// NameAndAliases returns searchable names for the mailing list.
+func (ml *GroupsIOMailingList) NameAndAliases() []string {
+	if ml == nil {
+		return nil
+	}
+	var names []string
+	if ml.Title != "" {
+		names = append(names, ml.Title)
+	}
+	if ml.GroupName != "" {
+		names = append(names, ml.GroupName)
+	}
+	return names
+}
+
+// SortName returns the primary sort name for the mailing list.
+func (ml *GroupsIOMailingList) SortName() string {
+	if ml == nil {
+		return ""
+	}
+	if ml.Title != "" {
+		return ml.Title
+	}
+	return ml.GroupName
+}
+
+// Fulltext returns a concatenated string for full-text search.
+func (ml *GroupsIOMailingList) Fulltext() string {
+	if ml == nil {
+		return ""
+	}
+	var parts []string
+	if ml.Title != "" {
+		parts = append(parts, ml.Title)
+	}
+	if ml.GroupName != "" {
+		parts = append(parts, ml.GroupName)
+	}
+	if ml.Description != "" {
+		parts = append(parts, ml.Description)
+	}
+	return strings.Join(parts, " ")
+}
+
+// ParentRefs returns the parent mailing list reference for settings indexing.
+func (s *GroupsIOMailingListSettings) ParentRefs() []string {
+	if s == nil {
+		return nil
+	}
+	if s.UID != "" {
+		return []string{fmt.Sprintf("groupsio_mailing_list:%s", s.UID)}
+	}
+	return nil
 }
 
 // Tags generates a consistent set of tags for the mailing list

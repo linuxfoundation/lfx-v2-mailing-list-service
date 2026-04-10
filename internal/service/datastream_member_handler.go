@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -39,6 +40,22 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return true // NAK — retry with backoff
 	}
 
+	// Resolve project UID and slug from the subgroup's project mapping written by the subgroup handler.
+	// NAK if absent — the subgroup must be fully processed (including slug lookup) before the member.
+	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, mailingListUID)
+	projectMapping, ok := mappings.GetMappingValue(ctx, projectKey)
+	if !ok {
+		slog.WarnContext(ctx, "project mapping not yet available, NAKing member for retry",
+			"uid", uid, "mailing_list_uid", mailingListUID)
+		return true // NAK — retry with backoff
+	}
+	var projectUID, projectSlug string
+	if parts := strings.SplitN(projectMapping, "|", 2); len(parts) == 2 {
+		projectUID, projectSlug = parts[0], parts[1]
+	} else {
+		projectUID = projectMapping
+	}
+
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
 
 	if mappings.IsTombstoned(ctx, mKey) {
@@ -48,10 +65,24 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	action := mappings.ResolveAction(ctx, mKey)
 
-	member := transformV1ToGrpsIOMember(uid, mailingListUID, data)
+	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
+
+	mailingListRef := fmt.Sprintf("groupsio_mailing_list:%s", mailingListUID)
+	memberConfig := &indexertypes.IndexingConfig{
+		ObjectID:             uid,
+		AccessCheckObject:    mailingListRef,
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   mailingListRef,
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           member.ParentRefs(),
+		NameAndAliases:       member.NameAndAliases(),
+		SortName:             member.SortName(),
+		Fulltext:             member.Fulltext(),
+		Tags:                 member.Tags(),
+	}
 
 	msg := &model.IndexerMessage{Action: action, Tags: member.Tags()}
-	built, err := msg.Build(ctx, member)
+	built, err := msg.BuildWithIndexingConfig(ctx, member, memberConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build member indexer message", "uid", uid, "error", err)
 		return false
@@ -63,12 +94,16 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	}
 
 	if member.Username != "" {
-		accessMsg := &groupsioMailingListMemberStub{
-			UID:            uid,
-			Username:       principal.FromUsername(member.Username),
-			MailingListUID: mailingListUID,
+		accessMsg := model.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_put",
+			Data: model.FGAMemberPutData{
+				UID:       mailingListUID,
+				Username:  principal.FromUsername(member.Username),
+				Relations: []string{constants.RelationMember},
+			},
 		}
-		if err := publisher.Access(ctx, constants.PutMemberGroupsIOMailingListSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, constants.FGASyncMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
 		}
 	}
@@ -114,12 +149,16 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 	_, username, mailingListUID := parseMemberMappingValue(storedValue)
 	if username != "" {
-		accessMsg := &groupsioMailingListMemberStub{
-			UID:            uid,
-			Username:       principal.FromUsername(username),
-			MailingListUID: mailingListUID,
+		accessMsg := model.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_remove",
+			Data: model.FGAMemberPutData{
+				UID:       mailingListUID,
+				Username:  principal.FromUsername(username),
+				Relations: []string{},
+			},
 		}
-		if err := publisher.Access(ctx, constants.RemoveMemberGroupsIOMailingListSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, constants.FGASyncMemberRemoveSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA remove message", "uid", uid, "error", err)
 		}
 	}
@@ -132,12 +171,15 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 // transformV1ToGrpsIOMember maps v1 DynamoDB fields to the GrpsIOMember domain model.
 // mailingListUID is resolved from the reverse group_id index before calling this function.
-func transformV1ToGrpsIOMember(uid, mailingListUID string, data map[string]any) *model.GrpsIOMember {
+// projectUID and projectSlug are resolved from the subgroup's project mapping.
+func transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug string, data map[string]any) *model.GrpsIOMember {
 	firstName, lastName := splitFullName(mapconv.StringVal(data, "full_name"))
 
 	member := &model.GrpsIOMember{
 		UID:               uid,
 		MailingListUID:    mailingListUID,
+		ProjectUID:        projectUID,
+		ProjectSlug:       projectSlug,
 		MemberID:          mapconv.Int64Ptr(data, "member_id"),
 		GroupID:           mapconv.Int64Ptr(data, "group_id"),
 		UserID:            mapconv.StringVal(data, "user_id"),

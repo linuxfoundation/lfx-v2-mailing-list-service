@@ -13,15 +13,11 @@ const (
 	IndexGroupsIOMemberSubject               = "lfx.index.groupsio_member"
 	IndexGroupsIOArtifactSubject             = "lfx.index.groupsio_artifact"
 
-	// Access control subjects for OpenFGA integration
-	UpdateAccessGroupsIOServiceSubject    = "lfx.update_access.groupsio_service"
-	DeleteAllAccessGroupsIOServiceSubject = "lfx.delete_all_access.groupsio_service"
-
-	UpdateAccessGroupsIOMailingListSubject    = "lfx.update_access.groupsio_mailing_list"
-	DeleteAllAccessGroupsIOMailingListSubject = "lfx.delete_all_access.groupsio_mailing_list"
-
-	PutMemberGroupsIOMailingListSubject    = "lfx.put_member.groupsio_mailing_list"
-	RemoveMemberGroupsIOMailingListSubject = "lfx.remove_member.groupsio_mailing_list"
+	// Generic FGA sync subjects for OpenFGA integration
+	FGASyncUpdateAccessSubject = "lfx.fga-sync.update_access"
+	FGASyncDeleteAccessSubject = "lfx.fga-sync.delete_access"
+	FGASyncMemberPutSubject    = "lfx.fga-sync.member_put"
+	FGASyncMemberRemoveSubject = "lfx.fga-sync.member_remove"
 
 	// Committee event subjects from committee-api
 	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"

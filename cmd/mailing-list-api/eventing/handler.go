@@ -26,17 +26,20 @@ const (
 // eventHandler implements port.DataEventHandler and routes KV events to the
 // appropriate per-entity handler based on the key prefix.
 type eventHandler struct {
-	publisher port.MessagePublisher
-	mappings  port.MappingReaderWriter
+	publisher     port.MessagePublisher
+	mappings      port.MappingReaderWriter
+	projectLookup port.ProjectLookup
 }
 
 // NewEventHandler constructs a DataEventHandler for GroupsIO entities.
 // publisher is used to emit indexer and access control messages.
 // mappings is the v1-mappings abstraction used for idempotency tracking.
-func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReaderWriter) port.DataEventHandler {
+// projectLookup is used by the subgroup handler to fetch the project slug.
+func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) port.DataEventHandler {
 	return &eventHandler{
-		publisher: publisher,
-		mappings:  mappings,
+		publisher:     publisher,
+		mappings:      mappings,
+		projectLookup: projectLookup,
 	}
 }
 
@@ -58,7 +61,7 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 		if isSoftDelete {
 			return service.HandleDataStreamSubgroupDelete(ctx, uid, h.publisher, h.mappings)
 		}
-		return service.HandleDataStreamSubgroupUpdate(ctx, uid, data, h.publisher, h.mappings)
+		return service.HandleDataStreamSubgroupUpdate(ctx, uid, data, h.publisher, h.mappings, h.projectLookup)
 
 	case strings.HasPrefix(key, kvPrefixMember):
 		uid := key[len(kvPrefixMember):]

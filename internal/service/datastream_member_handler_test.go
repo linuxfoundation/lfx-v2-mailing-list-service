@@ -14,6 +14,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// setProjectMapping is a helper that writes the groupsio-subgroup-project mapping
+// for the given mailingListUID into the fake mapping store.
+func setProjectMapping(m *mock.FakeMappingStore, mailingListUID, projectUID, projectSlug string) {
+	key := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, mailingListUID)
+	m.Set(key, projectUID+"|"+projectSlug)
+}
+
 // --- HandleDataStreamMemberUpdate ---
 
 func TestHandleDataStreamMemberUpdate_MissingGroupID_ACK(t *testing.T) {
@@ -31,10 +38,22 @@ func TestHandleDataStreamMemberUpdate_ParentSubgroupAbsent_NAK(t *testing.T) {
 	assert.True(t, nak, "absent subgroup mapping should NAK for retry")
 }
 
+func TestHandleDataStreamMemberUpdate_ProjectMappingAbsent_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	// project mapping deliberately absent
+
+	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+		map[string]any{"group_id": float64(42)},
+		&mock.SpyMessagePublisher{}, m)
+	assert.True(t, nak, "absent project mapping should NAK for retry")
+}
+
 func TestHandleDataStreamMemberUpdate_Tombstoned_ACK(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	ctx := context.Background()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
 	_ = m.PutTombstone(ctx, fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember))
 
 	pub := &mock.SpyMessagePublisher{}
@@ -49,6 +68,7 @@ func TestHandleDataStreamMemberUpdate_Tombstoned_ACK(t *testing.T) {
 func TestHandleDataStreamMemberUpdate_HappyPath_ACKAndPublishesAndWritesMapping(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
@@ -70,9 +90,33 @@ func TestHandleDataStreamMemberUpdate_HappyPath_ACKAndPublishesAndWritesMapping(
 	assert.True(t, present, "forward mapping should be written after successful processing")
 }
 
+func TestHandleDataStreamMemberUpdate_ProjectFieldsPopulated(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid-123", "my-project-slug")
+
+	pub := &mock.SpyMessagePublisher{}
+	HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+		map[string]any{
+			"group_id": float64(42),
+			"email":    "alice@example.com",
+		},
+		pub, m)
+
+	assert.Len(t, pub.IndexerCalls, 1)
+	indexerMsg, ok := pub.IndexerCalls[0].Message.(*model.IndexerMessage)
+	assert.True(t, ok, "indexer message should be *model.IndexerMessage")
+	// Build marshals the member to JSON then stores it as map[string]any
+	memberData, ok := indexerMsg.Data.(map[string]any)
+	assert.True(t, ok, "indexer message data should be map[string]any")
+	assert.Equal(t, "proj-uid-123", memberData["project_uid"])
+	assert.Equal(t, "my-project-slug", memberData["project_slug"])
+}
+
 func TestHandleDataStreamMemberUpdate_CreateVsUpdate_Action(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
 
 	data := func() map[string]any { return map[string]any{"group_id": float64(42)} }
 	ctx := context.Background()
@@ -121,7 +165,65 @@ func TestHandleDataStreamMemberDelete_HappyPath_ACKAndTombstones(t *testing.T) {
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
 	assert.Equal(t, constants.IndexGroupsIOMemberSubject, pub.IndexerCalls[0].Subject)
-	assert.Empty(t, pub.AccessCalls, "member delete should not publish access message")
+	assert.Empty(t, pub.AccessCalls, "member delete should not publish access message when no username in mapping")
+
+	assert.True(t, m.IsTombstoned(ctx, mKey))
+}
+
+func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+		map[string]any{
+			"group_id":  float64(42),
+			"username":  "alice@example.com",
+			"full_name": "Alice Smith",
+		},
+		pub, m)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	assert.Len(t, pub.AccessCalls, 1)
+	assert.Equal(t, constants.FGASyncMemberPutSubject, pub.AccessCalls[0].Subject)
+
+	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
+	assert.Equal(t, "member_put", msg.Operation)
+
+	data, ok := msg.Data.(model.FGAMemberPutData)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, []string{constants.RelationMember}, data.Relations)
+}
+
+func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	// Store mapping in uid|username|mailingListUID format
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberDelete(ctx, "mem-1", pub, m)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	assert.Len(t, pub.AccessCalls, 1)
+	assert.Equal(t, constants.FGASyncMemberRemoveSubject, pub.AccessCalls[0].Subject)
+
+	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
+	assert.Equal(t, "member_remove", msg.Operation)
+
+	data, ok := msg.Data.(model.FGAMemberPutData)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-1", data.UID)
+	assert.Empty(t, data.Relations)
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
 }
