@@ -23,13 +23,13 @@ func (s *ServiceConvertersSuite) TestConvertMember() {
 	nonZeroTime := time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name              string
-		input             *model.GrpsIOMember
-		expectNil         bool
-		expectEmail       string
-		expectName        string
-		expectCreatedAt   *string
-		expectUpdatedAt   *string
+		name            string
+		input           *model.GrpsIOMember
+		expectNil       bool
+		expectEmail     string
+		expectName      string
+		expectCreatedAt *string
+		expectUpdatedAt *string
 	}{
 		{
 			name:      "nil input returns nil",
@@ -97,15 +97,15 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 	nonZeroTime := time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name                string
-		input               *model.GroupsIOMailingList
-		expectNil           bool
-		expectCommitteeUID  *string
-		expectCreatedAt     *string
-		expectUpdatedAt     *string
-		expectName          string
-		expectProjectUID    string
-		expectServiceID     string
+		name               string
+		input              *model.GroupsIOMailingList
+		expectNil          bool
+		expectCommitteeUID *string
+		expectCreatedAt    *string
+		expectUpdatedAt    *string
+		expectName         string
+		expectProjectUID   string
+		expectServiceID    string
 	}{
 		{
 			name:      "nil input returns nil",
@@ -331,19 +331,19 @@ func (s *ServiceConvertersSuite) TestConvertArtifact() {
 	groupID := uint64(99)
 
 	tests := []struct {
-		name                    string
-		input                   *model.GroupsIOArtifact
-		expectNil               bool
-		expectCreatedAt         *string
-		expectUpdatedAt         *string
-		expectFileUploadedAt    *string
-		expectLastPostedAt      *string
-		expectFileUploaded      *bool
-		expectLastPostedMsgID   *uint64
-		expectArtifactID        string
-		expectGroupID           *uint64
-		expectCreatedBy         bool
-		expectLastModifiedBy    bool
+		name                  string
+		input                 *model.GroupsIOArtifact
+		expectNil             bool
+		expectCreatedAt       *string
+		expectUpdatedAt       *string
+		expectFileUploadedAt  *string
+		expectLastPostedAt    *string
+		expectFileUploaded    *bool
+		expectLastPostedMsgID *uint64
+		expectArtifactID      string
+		expectGroupID         *uint64
+		expectCreatedBy       bool
+		expectLastModifiedBy  bool
 	}{
 		{
 			name:      "nil input returns nil",

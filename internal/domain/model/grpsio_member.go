@@ -20,7 +20,7 @@ type GrpsIOMember struct {
 	GroupID  *int64 `json:"group_id"`  // Groups.io group ID
 
 	// Member Information
-	Username string `json:"username"` // Username
+	Username     string `json:"username"` // Username
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Email        string `json:"email"`        // Required, RFC 5322
