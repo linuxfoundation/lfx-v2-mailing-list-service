@@ -31,7 +31,6 @@ func convertMember(m *model.GrpsIOMember) *mailinglist.GroupsioMember {
 		DeliveryMode: converter.NonEmptyString(m.DeliveryMode),
 		ModStatus:    converter.NonEmptyString(m.ModStatus),
 		Status:       converter.NonEmptyString(m.Status),
-		UserID:       converter.NonEmptyString(m.UserID),
 		Organization: converter.NonEmptyString(m.Organization),
 		JobTitle:     converter.NonEmptyString(m.JobTitle),
 		Username:     converter.NonEmptyString(m.Username),
@@ -60,7 +59,7 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 	}
 	return &mailinglist.GroupsioSubgroup{
 		ID:             &ml.UID,
-		ProjectUID:     &ml.ProjectUID,
+		ProjectUID:     converter.NonEmptyString(ml.ProjectUID),
 		CommitteeUID:   converter.NonEmptyString(committeeUID),
 		ServiceID:      &ml.ServiceUID,
 		GroupID:        ml.GroupID,

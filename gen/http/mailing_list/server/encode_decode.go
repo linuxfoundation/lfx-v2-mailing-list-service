@@ -2606,7 +2606,6 @@ func marshalMailinglistGroupsioMemberToGroupsioMemberResponseBody(v *mailinglist
 		DeliveryMode: v.DeliveryMode,
 		ModStatus:    v.ModStatus,
 		Status:       v.Status,
-		UserID:       v.UserID,
 		Organization: v.Organization,
 		JobTitle:     v.JobTitle,
 		Username:     v.Username,

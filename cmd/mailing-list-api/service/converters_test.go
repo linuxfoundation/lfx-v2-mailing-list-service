@@ -66,7 +66,6 @@ func (s *ServiceConvertersSuite) TestConvertMember() {
 				DeliveryMode:   "single",
 				ModStatus:      "none",
 				Status:         "normal",
-				UserID:         "user-1",
 				Organization:   "Acme",
 				JobTitle:       "Engineer",
 				Username:       "alice",
