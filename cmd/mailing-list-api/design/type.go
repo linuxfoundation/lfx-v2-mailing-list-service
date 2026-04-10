@@ -173,7 +173,6 @@ var GroupsioMemberType = dsl.Type("groupsio-member", func() {
 	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode")
 	dsl.Attribute("mod_status", dsl.String, "Moderation status")
 	dsl.Attribute("status", dsl.String, "Member status")
-	dsl.Attribute("user_id", dsl.String, "User ID")
 	dsl.Attribute("organization", dsl.String, "Member organization")
 	dsl.Attribute("job_title", dsl.String, "Member job title")
 	dsl.Attribute("username", dsl.String, "Groups.io username")
@@ -199,7 +198,6 @@ var GroupsioMemberRequestType = dsl.Type("groupsio-member-request", func() {
 	dsl.Attribute("delivery_mode", dsl.String, "Email delivery mode", func() {
 		dsl.Enum("email_delivery_single", "email_delivery_digest", "email_delivery_none", "email_delivery_special", "email_delivery_html_digest", "email_delivery_summary")
 	})
-	dsl.Attribute("user_id", dsl.String, "User ID")
 	dsl.Attribute("organization", dsl.String, "Member organization")
 	dsl.Attribute("job_title", dsl.String, "Member job title")
 })

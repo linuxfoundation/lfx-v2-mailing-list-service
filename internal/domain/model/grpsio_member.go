@@ -18,11 +18,9 @@ type GrpsIOMember struct {
 
 	MemberID *int64 `json:"member_id"` // Groups.io member ID
 	GroupID  *int64 `json:"group_id"`  // Groups.io group ID
-	Source   string `json:"source"`    // "api", "webhook", or "mock" - tracks origin for business logic
 
 	// Member Information
-	UserID       string `json:"user_id,omitempty"` // User-service ID of the member
-	Username     string `json:"username"`          // Username
+	Username string `json:"username"` // Username
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Email        string `json:"email"`        // Required, RFC 5322

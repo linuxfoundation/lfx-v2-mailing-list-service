@@ -608,7 +608,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 		expectStatus     string
 		expectMemberType string
 		expectVoting     string
-		expectUserID     string
 		expectOrg        string
 		expectJobTitle   string
 		expectRole       string
@@ -668,7 +667,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 				Status:       "normal",
 				MemberType:   "committee",
 				VotingStatus: "approved",
-				UserID:       "user-1",
 				Organization: "Acme",
 				JobTitle:     "Engineer",
 				Role:         "member",
@@ -683,7 +681,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 			expectStatus:     "normal",
 			expectMemberType: "committee",
 			expectVoting:     "approved",
-			expectUserID:     "user-1",
 			expectOrg:        "Acme",
 			expectJobTitle:   "Engineer",
 			expectRole:       "member",
@@ -707,7 +704,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 			s.Equal(tt.expectStatus, got.Status)
 			s.Equal(tt.expectMemberType, got.MemberType)
 			s.Equal(tt.expectVoting, got.VotingStatus)
-			s.Equal(tt.expectUserID, got.UserID)
 			s.Equal(tt.expectOrg, got.Organization)
 			s.Equal(tt.expectJobTitle, got.JobTitle)
 			s.Equal(tt.expectRole, got.Role)
