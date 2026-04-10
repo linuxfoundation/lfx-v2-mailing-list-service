@@ -18,3 +18,11 @@ type MailingListUpdatedEvent struct {
 	// NewMailingList contains the mailing list state after the update
 	NewMailingList *GroupsIOMailingList `json:"new_mailing_list"`
 }
+
+// CommitteeMailingListChangedEvent is published when a mailing list CRUD operation
+// changes committee-related state. Additional fields can be added here as more
+// committee attributes become driven by mailing list operations.
+type CommitteeMailingListChangedEvent struct {
+	CommitteeUID   string `json:"committee_uid"`
+	HasMailingList bool   `json:"has_mailing_list"`
+}

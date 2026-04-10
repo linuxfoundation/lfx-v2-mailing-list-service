@@ -114,9 +114,13 @@ func main() {
 		orchestrator.WithMailingListReaderTranslator(translator),
 	)
 
+	mailingListEventPublisher := service.MessagePublisher(ctx)
+
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
+		orchestrator.WithMailingListEventReader(mailingListReaderOrchestrator),
+		orchestrator.WithMailingListPublisher(mailingListEventPublisher),
 	)
 
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(

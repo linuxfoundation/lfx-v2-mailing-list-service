@@ -6,12 +6,12 @@ package constants
 // NATS subject constants for message publishing
 const (
 	// Indexing subjects for search and discovery
-	IndexGroupsIOServiceSubject              = "lfx.index.groupsio_service"
-	IndexGroupsIOServiceSettingsSubject      = "lfx.index.groupsio_service_settings"
-	IndexGroupsIOMailingListSubject          = "lfx.index.groupsio_mailing_list"
-	IndexGroupsIOMailingListSettingsSubject  = "lfx.index.groupsio_mailing_list_settings"
-	IndexGroupsIOMemberSubject               = "lfx.index.groupsio_member"
-	IndexGroupsIOArtifactSubject             = "lfx.index.groupsio_artifact"
+	IndexGroupsIOServiceSubject             = "lfx.index.groupsio_service"
+	IndexGroupsIOServiceSettingsSubject     = "lfx.index.groupsio_service_settings"
+	IndexGroupsIOMailingListSubject         = "lfx.index.groupsio_mailing_list"
+	IndexGroupsIOMailingListSettingsSubject = "lfx.index.groupsio_mailing_list_settings"
+	IndexGroupsIOMemberSubject              = "lfx.index.groupsio_member"
+	IndexGroupsIOArtifactSubject            = "lfx.index.groupsio_artifact"
 
 	// Generic FGA sync subjects for OpenFGA integration
 	FGASyncUpdateAccessSubject = "lfx.fga-sync.update_access"
@@ -28,4 +28,9 @@ const (
 	// Mailing list events from mailing-list-api
 	MailingListCreatedSubject = "lfx.mailing-list-api.mailing_list_created"
 	MailingListUpdatedSubject = "lfx.mailing-list-api.mailing_list_updated"
+
+	// CommitteeMailingListChangedSubject is published when a mailing list CRUD operation
+	// changes committee-related state (e.g. has_mailing_list flag).
+	// Consumed by committee-api to update the committee document.
+	CommitteeMailingListChangedSubject = "lfx.mailing-list-api.committee_mailing_list.changed"
 )
