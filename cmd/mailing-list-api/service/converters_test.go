@@ -97,15 +97,16 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 	nonZeroTime := time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name               string
-		input              *model.GroupsIOMailingList
-		expectNil          bool
-		expectCommitteeUID *string
-		expectCreatedAt    *string
-		expectUpdatedAt    *string
-		expectName         string
-		expectProjectUID   string
-		expectServiceID    string
+		name                string
+		input               *model.GroupsIOMailingList
+		expectNil           bool
+		expectCommitteeUID  *string
+		expectCreatedAt     *string
+		expectUpdatedAt     *string
+		expectName          string
+		expectProjectUID    string
+		expectProjectUIDNil bool
+		expectServiceID     string
 	}{
 		{
 			name:      "nil input returns nil",
@@ -156,6 +157,11 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 			expectProjectUID: "proj-1",
 			expectServiceID:  "svc-1",
 		},
+		{
+			name:                "empty ProjectUID produces nil project_uid field",
+			input:               &model.GroupsIOMailingList{ProjectUID: ""},
+			expectProjectUIDNil: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -172,7 +178,9 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 			if tt.expectName != "" {
 				s.Equal(tt.expectName, ptrVal(got.Name))
 			}
-			if tt.expectProjectUID != "" {
+			if tt.expectProjectUIDNil {
+				s.Nil(got.ProjectUID)
+			} else if tt.expectProjectUID != "" {
 				s.Equal(tt.expectProjectUID, ptrVal(got.ProjectUID))
 			}
 			if tt.expectServiceID != "" {
