@@ -108,8 +108,6 @@ type AddGroupsioMemberPayload struct {
 	ModStatus *string
 	// Email delivery mode
 	DeliveryMode *string
-	// User ID
-	UserID *string
 	// Member organization
 	Organization *string
 	// Member job title
@@ -382,8 +380,6 @@ type GroupsioMember struct {
 	ModStatus *string
 	// Member status
 	Status *string
-	// User ID
-	UserID *string
 	// Member organization
 	Organization *string
 	// Member job title
@@ -568,8 +564,6 @@ type UpdateGroupsioMemberPayload struct {
 	ModStatus *string
 	// Email delivery mode
 	DeliveryMode *string
-	// User ID
-	UserID *string
 	// Member organization
 	Organization *string
 	// Member job title

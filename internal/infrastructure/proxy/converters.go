@@ -106,7 +106,6 @@ func fromWireMember(w *memberWire) *model.GrpsIOMember {
 		Status:         w.Status,
 		MemberType:     w.MemberType,
 		VotingStatus:   w.VotingStatus,
-		UserID:         w.UserID,
 		Organization:   w.Organization,
 		JobTitle:       w.JobTitle,
 		Role:           w.Role,
@@ -176,7 +175,6 @@ func toWireMemberRequest(m *model.GrpsIOMember) *memberRequestWire {
 	return &memberRequestWire{
 		Email:        m.Email,
 		Name:         m.GroupsFullName,
-		UserID:       m.UserID,
 		DeliveryMode: m.DeliveryMode,
 		MemberType:   m.MemberType,
 		ModStatus:    m.ModStatus,

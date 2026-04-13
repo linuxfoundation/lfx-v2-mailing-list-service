@@ -3309,7 +3309,6 @@ func unmarshalGroupsioMemberResponseBodyToMailinglistGroupsioMember(v *GroupsioM
 		DeliveryMode: v.DeliveryMode,
 		ModStatus:    v.ModStatus,
 		Status:       v.Status,
-		UserID:       v.UserID,
 		Organization: v.Organization,
 		JobTitle:     v.JobTitle,
 		Username:     v.Username,
