@@ -13,6 +13,12 @@ image:
 # replicaCount is the number of replicas for the deployment
 replicaCount: 1
 
+# deployment configures the Deployment object itself.
+deployment:
+  # labels are additional labels applied to the Deployment metadata.
+  labels:
+    app.kubernetes.io/name: "lfx-v2-mailing-list-service"
+
 # podAnnotations are additional annotations applied to the pod template.
 # Example:
 #   prometheus.io/scrape: "true"
