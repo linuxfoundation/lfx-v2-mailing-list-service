@@ -245,7 +245,6 @@ func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.A
 	member := &model.GrpsIOMember{
 		Email:          converter.StringVal(p.Email),
 		GroupsFullName: converter.StringVal(p.Name),
-		UserID:         converter.StringVal(p.UserID),
 		DeliveryMode:   converter.StringVal(p.DeliveryMode),
 		MemberType:     converter.StringVal(p.MemberType),
 		ModStatus:      converter.StringVal(p.ModStatus),
@@ -271,7 +270,6 @@ func (s *mailingListAPI) UpdateGroupsioMember(ctx context.Context, p *mailinglis
 	member := &model.GrpsIOMember{
 		Email:          converter.StringVal(p.Email),
 		GroupsFullName: converter.StringVal(p.Name),
-		UserID:         converter.StringVal(p.UserID),
 		DeliveryMode:   converter.StringVal(p.DeliveryMode),
 		MemberType:     converter.StringVal(p.MemberType),
 		ModStatus:      converter.StringVal(p.ModStatus),

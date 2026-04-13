@@ -182,7 +182,6 @@ func transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug stri
 		ProjectSlug:       projectSlug,
 		MemberID:          mapconv.Int64Ptr(data, "member_id"),
 		GroupID:           mapconv.Int64Ptr(data, "group_id"),
-		UserID:            mapconv.StringVal(data, "user_id"),
 		Username:          mapconv.StringVal(data, "username"),
 		FirstName:         firstName,
 		LastName:          lastName,
@@ -201,7 +200,6 @@ func transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug stri
 		DeliveryModeList:  mapconv.StringVal(data, "delivery_mode_list"),
 		ModStatus:         mapconv.StringVal(data, "mod_status"),
 		Status:            mapconv.StringVal(data, "status"),
-		Source:            "v1-sync",
 	}
 
 	if ts := mapconv.StringVal(data, "created_at"); ts != "" {
