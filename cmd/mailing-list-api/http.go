@@ -8,6 +8,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -55,7 +56,12 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 	)
 	{
 		eh := errorHandler(ctx)
-		mailingListServiceServer = mailinglistservicesvr.New(mailingListServiceEndpoints, mux, dec, enc, eh, nil, nil, nil, nil, nil)
+		koDataPath := os.Getenv("KO_DATA_PATH")
+		if koDataPath == "" {
+			koDataPath = "../../gen/http/"
+		}
+		koDataDir := http.Dir(koDataPath)
+		mailingListServiceServer = mailinglistservicesvr.New(mailingListServiceEndpoints, mux, dec, enc, eh, nil, koDataDir, koDataDir, koDataDir, koDataDir)
 	}
 
 	// Configure the mux.
