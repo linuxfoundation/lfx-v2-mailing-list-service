@@ -102,8 +102,6 @@ type AddGroupsioMemberRequestBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -123,8 +121,6 @@ type UpdateGroupsioMemberRequestBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Email delivery mode
 	DeliveryMode *string `form:"delivery_mode,omitempty" json:"delivery_mode,omitempty" xml:"delivery_mode,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -386,8 +382,6 @@ type AddGroupsioMemberResponseBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -421,8 +415,6 @@ type GetGroupsioMemberResponseBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -456,8 +448,6 @@ type UpdateGroupsioMemberResponseBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -1223,8 +1213,6 @@ type GroupsioMemberResponseBody struct {
 	ModStatus *string `form:"mod_status,omitempty" json:"mod_status,omitempty" xml:"mod_status,omitempty"`
 	// Member status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// User ID
-	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// Member organization
 	Organization *string `form:"organization,omitempty" json:"organization,omitempty" xml:"organization,omitempty"`
 	// Member job title
@@ -1479,7 +1467,6 @@ func NewAddGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *AddGroup
 		DeliveryMode: res.DeliveryMode,
 		ModStatus:    res.ModStatus,
 		Status:       res.Status,
-		UserID:       res.UserID,
 		Organization: res.Organization,
 		JobTitle:     res.JobTitle,
 		Username:     res.Username,
@@ -1502,7 +1489,6 @@ func NewGetGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *GetGroup
 		DeliveryMode: res.DeliveryMode,
 		ModStatus:    res.ModStatus,
 		Status:       res.Status,
-		UserID:       res.UserID,
 		Organization: res.Organization,
 		JobTitle:     res.JobTitle,
 		Username:     res.Username,
@@ -1526,7 +1512,6 @@ func NewUpdateGroupsioMemberResponseBody(res *mailinglist.GroupsioMember) *Updat
 		DeliveryMode: res.DeliveryMode,
 		ModStatus:    res.ModStatus,
 		Status:       res.Status,
-		UserID:       res.UserID,
 		Organization: res.Organization,
 		JobTitle:     res.JobTitle,
 		Username:     res.Username,
@@ -2567,7 +2552,6 @@ func NewAddGroupsioMemberPayload(body *AddGroupsioMemberRequestBody, subgroupID 
 		MemberType:   body.MemberType,
 		ModStatus:    body.ModStatus,
 		DeliveryMode: body.DeliveryMode,
-		UserID:       body.UserID,
 		Organization: body.Organization,
 		JobTitle:     body.JobTitle,
 	}
@@ -2597,7 +2581,6 @@ func NewUpdateGroupsioMemberPayload(body *UpdateGroupsioMemberRequestBody, subgr
 		MemberType:   body.MemberType,
 		ModStatus:    body.ModStatus,
 		DeliveryMode: body.DeliveryMode,
-		UserID:       body.UserID,
 		Organization: body.Organization,
 		JobTitle:     body.JobTitle,
 	}

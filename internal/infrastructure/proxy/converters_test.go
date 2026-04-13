@@ -332,14 +332,14 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 
 func (s *ProxyConvertersSuite) TestFromWireArtifactUser() {
 	tests := []struct {
-		name               string
-		input              *artifactUserWire
-		expectNil          bool
-		expectID           string
-		expectUsername     string
-		expectName         string
-		expectEmail        string
-		expectProfilePic   string
+		name             string
+		input            *artifactUserWire
+		expectNil        bool
+		expectID         string
+		expectUsername   string
+		expectName       string
+		expectEmail      string
+		expectProfilePic string
 	}{
 		{
 			name:      "nil input returns nil",
@@ -386,30 +386,30 @@ func (s *ProxyConvertersSuite) TestFromWireArtifact() {
 	ts := time.Date(2026, 4, 2, 2, 9, 1, 0, time.UTC)
 
 	tests := []struct {
-		name                    string
-		input                   *artifactWire
-		expectNil               bool
-		expectArtifactID        string
-		expectGroupID           uint64
-		expectProjectID         string
-		expectCommitteeID       string
-		expectType              string
-		expectMediaType         string
-		expectFilename          string
-		expectLinkURL           string
-		expectDownloadURL       string
-		expectS3Key             string
-		expectFileUploaded      *bool
-		expectFileUploadStatus  string
-		expectFileUploadedAt    *time.Time
-		expectMessageIDs        []uint64
-		expectLastPostedAt      *time.Time
-		expectLastPostedMsgID   *uint64
-		expectDescription       string
-		expectCreatedByID       string
-		expectLastModByID       string
-		expectCreatedAt         time.Time
-		expectUpdatedAt         time.Time
+		name                   string
+		input                  *artifactWire
+		expectNil              bool
+		expectArtifactID       string
+		expectGroupID          uint64
+		expectProjectID        string
+		expectCommitteeID      string
+		expectType             string
+		expectMediaType        string
+		expectFilename         string
+		expectLinkURL          string
+		expectDownloadURL      string
+		expectS3Key            string
+		expectFileUploaded     *bool
+		expectFileUploadStatus string
+		expectFileUploadedAt   *time.Time
+		expectMessageIDs       []uint64
+		expectLastPostedAt     *time.Time
+		expectLastPostedMsgID  *uint64
+		expectDescription      string
+		expectCreatedByID      string
+		expectLastModByID      string
+		expectCreatedAt        time.Time
+		expectUpdatedAt        time.Time
 	}{
 		{
 			name:      "nil input returns nil",
@@ -417,8 +417,8 @@ func (s *ProxyConvertersSuite) TestFromWireArtifact() {
 			expectNil: true,
 		},
 		{
-			name:  "valid RFC3339 created_at and last_modified_at are parsed",
-			input: &artifactWire{CreatedAt: "2026-04-02T02:09:01Z", UpdatedAt: "2026-04-02T02:09:01Z"},
+			name:            "valid RFC3339 created_at and last_modified_at are parsed",
+			input:           &artifactWire{CreatedAt: "2026-04-02T02:09:01Z", UpdatedAt: "2026-04-02T02:09:01Z"},
 			expectCreatedAt: ts,
 			expectUpdatedAt: ts,
 		},
@@ -608,7 +608,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 		expectStatus     string
 		expectMemberType string
 		expectVoting     string
-		expectUserID     string
 		expectOrg        string
 		expectJobTitle   string
 		expectRole       string
@@ -668,7 +667,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 				Status:       "normal",
 				MemberType:   "committee",
 				VotingStatus: "approved",
-				UserID:       "user-1",
 				Organization: "Acme",
 				JobTitle:     "Engineer",
 				Role:         "member",
@@ -683,7 +681,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 			expectStatus:     "normal",
 			expectMemberType: "committee",
 			expectVoting:     "approved",
-			expectUserID:     "user-1",
 			expectOrg:        "Acme",
 			expectJobTitle:   "Engineer",
 			expectRole:       "member",
@@ -707,7 +704,6 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 			s.Equal(tt.expectStatus, got.Status)
 			s.Equal(tt.expectMemberType, got.MemberType)
 			s.Equal(tt.expectVoting, got.VotingStatus)
-			s.Equal(tt.expectUserID, got.UserID)
 			s.Equal(tt.expectOrg, got.Organization)
 			s.Equal(tt.expectJobTitle, got.JobTitle)
 			s.Equal(tt.expectRole, got.Role)

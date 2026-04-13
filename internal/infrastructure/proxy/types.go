@@ -81,7 +81,6 @@ type memberWire struct {
 	DeliveryMode string `json:"delivery_mode,omitempty"`
 	ModStatus    string `json:"mod_status,omitempty"`
 	Status       string `json:"status,omitempty"`
-	UserID       string `json:"user_id,omitempty"`
 	Organization string `json:"organization,omitempty"`
 	JobTitle     string `json:"job_title,omitempty"`
 	Username     string `json:"username,omitempty"`
@@ -95,7 +94,6 @@ type memberWire struct {
 type memberRequestWire struct {
 	Email        string `json:"email,omitempty"`
 	Name         string `json:"name,omitempty"`
-	UserID       string `json:"user_id,omitempty"`
 	DeliveryMode string `json:"delivery_mode,omitempty"`
 	MemberType   string `json:"member_type,omitempty"`
 	ModStatus    string `json:"mod_status,omitempty"`
