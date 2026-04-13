@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"time"
 
+	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
 	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -170,7 +171,7 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		Operation:  "update_access",
 		Data:       accessData,
 	}
-	if err := publisher.Access(ctx, constants.FGASyncUpdateAccessSubject, accessMsg); err != nil {
+	if err := publisher.Access(ctx, fgaconstants.GenericUpdateAccessSubject, accessMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup access message", "uid", uid, "error", err)
 	}
 
@@ -233,7 +234,7 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		Operation:  "delete_access",
 		Data:       fgatypes.GenericDeleteData{UID: uid},
 	}
-	if err := publisher.Access(ctx, constants.FGASyncDeleteAccessSubject, deleteMsg); err != nil {
+	if err := publisher.Access(ctx, fgaconstants.GenericDeleteAccessSubject, deleteMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
 	}
 

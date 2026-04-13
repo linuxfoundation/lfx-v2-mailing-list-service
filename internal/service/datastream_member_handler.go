@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
 	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -104,7 +105,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 				Relations: []string{constants.RelationMember},
 			},
 		}
-		if err := publisher.Access(ctx, constants.FGASyncMemberPutSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
 		}
 	}
@@ -159,7 +160,7 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 				Relations: []string{},
 			},
 		}
-		if err := publisher.Access(ctx, constants.FGASyncMemberRemoveSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA remove message", "uid", uid, "error", err)
 		}
 	}
