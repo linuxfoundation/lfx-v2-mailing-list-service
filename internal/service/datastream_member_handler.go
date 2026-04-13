@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -94,10 +95,10 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	}
 
 	if member.Username != "" {
-		accessMsg := model.GenericFGAMessage{
+		accessMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
 			Operation:  "member_put",
-			Data: model.FGAMemberPutData{
+			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
 				Username:  principal.FromUsername(member.Username),
 				Relations: []string{constants.RelationMember},
@@ -149,10 +150,10 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 	_, username, mailingListUID := parseMemberMappingValue(storedValue)
 	if username != "" {
-		accessMsg := model.GenericFGAMessage{
+		accessMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
 			Operation:  "member_remove",
-			Data: model.FGAMemberPutData{
+			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
 				Username:  principal.FromUsername(username),
 				Relations: []string{},

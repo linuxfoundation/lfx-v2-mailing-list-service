@@ -10,6 +10,7 @@ import (
 	"time"
 
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -101,7 +102,7 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 			relations[constants.RelationAuditor] = auditors
 		}
 	}
-	accessData := model.FGAUpdateAccessData{
+	accessData := fgatypes.GenericAccessData{
 		UID:    uid,
 		Public: svc.Public,
 		References: map[string][]string{
@@ -111,7 +112,7 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	if len(relations) > 0 {
 		accessData.Relations = relations
 	}
-	accessMsg := model.GenericFGAMessage{
+	accessMsg := fgatypes.GenericFGAMessage{
 		ObjectType: constants.ObjectTypeGroupsIOService,
 		Operation:  "update_access",
 		Data:       accessData,
@@ -148,10 +149,10 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 		return pkgerrors.IsTransient(err)
 	}
 
-	deleteMsg := model.GenericFGAMessage{
+	deleteMsg := fgatypes.GenericFGAMessage{
 		ObjectType: constants.ObjectTypeGroupsIOService,
 		Operation:  "delete_access",
-		Data:       model.FGADeleteAccessData{UID: uid},
+		Data:       fgatypes.GenericDeleteData{UID: uid},
 	}
 	if err := publisher.Access(ctx, constants.FGASyncDeleteAccessSubject, deleteMsg); err != nil {
 		slog.WarnContext(ctx, "failed to publish service delete access message", "uid", uid, "error", err)

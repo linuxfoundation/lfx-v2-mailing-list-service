@@ -92,33 +92,3 @@ func (g *IndexerMessage) BuildWithIndexingConfig(ctx context.Context, input any,
 	return msg, nil
 }
 
-// GenericFGAMessage is the envelope for all FGA sync operations.
-// It uses the generic, resource-agnostic FGA sync handlers.
-type GenericFGAMessage struct {
-	ObjectType string `json:"object_type"` // Resource type, e.g. "groupsio_service"
-	Operation  string `json:"operation"`   // Operation name, e.g. "update_access"
-	Data       any    `json:"data"`        // Operation-specific payload
-}
-
-// FGAUpdateAccessData is the data payload for update_access operations.
-// This is a full sync — any relations not listed (and not excluded) will be removed.
-type FGAUpdateAccessData struct {
-	UID              string              `json:"uid"`
-	Public           bool                `json:"public"`
-	Relations        map[string][]string `json:"relations,omitempty"`
-	References       map[string][]string `json:"references,omitempty"`
-	ExcludeRelations []string            `json:"exclude_relations,omitempty"`
-}
-
-// FGADeleteAccessData is the data payload for delete_access operations.
-type FGADeleteAccessData struct {
-	UID string `json:"uid"`
-}
-
-// FGAMemberPutData is the data payload for member_put and member_remove operations.
-type FGAMemberPutData struct {
-	UID                   string   `json:"uid"`
-	Username              string   `json:"username"`
-	Relations             []string `json:"relations"`
-	MutuallyExclusiveWith []string `json:"mutually_exclusive_with,omitempty"`
-}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -189,12 +190,12 @@ func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing
 	assert.Len(t, pub.AccessCalls, 1)
 	assert.Equal(t, constants.FGASyncMemberPutSubject, pub.AccessCalls[0].Subject)
 
-	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	msg, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
 	assert.True(t, ok)
 	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
 	assert.Equal(t, "member_put", msg.Operation)
 
-	data, ok := msg.Data.(model.FGAMemberPutData)
+	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
 	assert.Equal(t, []string{constants.RelationMember}, data.Relations)
@@ -215,12 +216,12 @@ func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *test
 	assert.Len(t, pub.AccessCalls, 1)
 	assert.Equal(t, constants.FGASyncMemberRemoveSubject, pub.AccessCalls[0].Subject)
 
-	msg, ok := pub.AccessCalls[0].Message.(model.GenericFGAMessage)
+	msg, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
 	assert.True(t, ok)
 	assert.Equal(t, constants.ObjectTypeGroupsIOMailingList, msg.ObjectType)
 	assert.Equal(t, "member_remove", msg.Operation)
 
-	data, ok := msg.Data.(model.FGAMemberPutData)
+	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
 	assert.Empty(t, data.Relations)
