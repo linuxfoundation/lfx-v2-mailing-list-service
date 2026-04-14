@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -94,16 +96,16 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	}
 
 	if member.Username != "" {
-		accessMsg := model.GenericFGAMessage{
+		accessMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
 			Operation:  "member_put",
-			Data: model.FGAMemberPutData{
+			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
 				Username:  principal.FromUsername(member.Username),
 				Relations: []string{constants.RelationMember},
 			},
 		}
-		if err := publisher.Access(ctx, constants.FGASyncMemberPutSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
 		}
 	}
@@ -149,16 +151,16 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 
 	_, username, mailingListUID := parseMemberMappingValue(storedValue)
 	if username != "" {
-		accessMsg := model.GenericFGAMessage{
+		accessMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
 			Operation:  "member_remove",
-			Data: model.FGAMemberPutData{
+			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
 				Username:  principal.FromUsername(username),
 				Relations: []string{},
 			},
 		}
-		if err := publisher.Access(ctx, constants.FGASyncMemberRemoveSubject, accessMsg); err != nil {
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA remove message", "uid", uid, "error", err)
 		}
 	}

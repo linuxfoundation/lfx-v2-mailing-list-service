@@ -5,7 +5,6 @@ package model
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -251,51 +250,6 @@ func TestMessageAction_Constants(t *testing.T) {
 	assert.Equal(t, MessageAction("created"), ActionCreated)
 	assert.Equal(t, MessageAction("updated"), ActionUpdated)
 	assert.Equal(t, MessageAction("deleted"), ActionDeleted)
-}
-
-func TestGenericFGAMessage_Struct(t *testing.T) {
-	// Test that GenericFGAMessage and FGAUpdateAccessData can be properly marshaled/unmarshaled
-	accessData := FGAUpdateAccessData{
-		UID:    "access-123",
-		Public: true,
-		Relations: map[string][]string{
-			"writer": {"user123"},
-		},
-		References: map[string][]string{
-			"project": {"project-456"},
-		},
-	}
-	msg := GenericFGAMessage{
-		ObjectType: constants.ObjectTypeGroupsIOService,
-		Operation:  "update_access",
-		Data:       accessData,
-	}
-
-	// Test JSON marshaling
-	data, err := json.Marshal(msg)
-	require.NoError(t, err)
-
-	// Test JSON unmarshaling of the envelope
-	var unmarshaled GenericFGAMessage
-	err = json.Unmarshal(data, &unmarshaled)
-	require.NoError(t, err)
-
-	assert.Equal(t, msg.ObjectType, unmarshaled.ObjectType)
-	assert.Equal(t, msg.Operation, unmarshaled.Operation)
-
-	// Data is decoded as map[string]any when unmarshaling into GenericFGAMessage
-	dataMap, ok := unmarshaled.Data.(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "access-123", dataMap["uid"])
-	assert.Equal(t, true, dataMap["public"])
-
-	relationsMap, ok := dataMap["relations"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, []any{"user123"}, relationsMap["writer"])
-
-	referencesMap, ok := dataMap["references"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, []any{"project-456"}, referencesMap["project"])
 }
 
 // Benchmark for Build method with realistic data

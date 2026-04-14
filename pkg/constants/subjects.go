@@ -13,12 +13,6 @@ const (
 	IndexGroupsIOMemberSubject              = "lfx.index.groupsio_member"
 	IndexGroupsIOArtifactSubject            = "lfx.index.groupsio_artifact"
 
-	// Generic FGA sync subjects for OpenFGA integration
-	FGASyncUpdateAccessSubject = "lfx.fga-sync.update_access"
-	FGASyncDeleteAccessSubject = "lfx.fga-sync.delete_access"
-	FGASyncMemberPutSubject    = "lfx.fga-sync.member_put"
-	FGASyncMemberRemoveSubject = "lfx.fga-sync.member_remove"
-
 	// Committee event subjects from committee-api
 	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"
 	CommitteeMemberDeletedSubject = "lfx.committee-api.committee_member.deleted"
