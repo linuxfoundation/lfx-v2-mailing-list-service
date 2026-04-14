@@ -10,7 +10,7 @@ require (
 	github.com/auth0/go-auth0 v1.33.0
 	github.com/auth0/go-jwt-middleware/v2 v2.3.0
 	github.com/google/uuid v1.6.0
-	github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17-0.20260413222802-7f3a6be4424e
+	github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17
 	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14
 	github.com/nats-io/nats.go v1.43.0
 	github.com/remychantenay/slog-otel v1.3.4
