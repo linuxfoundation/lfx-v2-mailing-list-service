@@ -31,7 +31,7 @@ func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[st
 	}
 
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
-	_, ok := mappings.GetMappingValue(ctx, gidKey)
+	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
 	if !ok {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing artifact for retry",
 			"uid", uid, "group_id", *groupID)
@@ -72,13 +72,13 @@ func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[st
 	artifact := transformV1ToGroupsIOArtifact(uid, data)
 
 	isPublic := false
-	groupRef := fmt.Sprintf("groupsio_artifact:%s", uid)
+	mailingListRef := fmt.Sprintf("groupsio_mailing_list:%s", mailingListUID)
 	indexingConfig := &indexertypes.IndexingConfig{
 		ObjectID:             uid,
 		Public:               &isPublic,
-		AccessCheckObject:    groupRef,
+		AccessCheckObject:    mailingListRef,
 		AccessCheckRelation:  "viewer",
-		HistoryCheckObject:   groupRef,
+		HistoryCheckObject:   mailingListRef,
 		HistoryCheckRelation: "auditor",
 		ParentRefs:           artifact.ParentRefs(),
 		NameAndAliases:       artifact.NameAndAliases(),
