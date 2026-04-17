@@ -446,9 +446,9 @@ Artifacts use a typed `IndexingConfig` (no server-side enrichers). No FGA `Acces
 |---|---|
 | `object_id` | `{artifact_id}` |
 | `public` | `false` (always) |
-| `access_check_object` | `groupsio_mailing_list:{parent_mailing_list_uid}` |
+| `access_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
 | `access_check_relation` | `viewer` |
-| `history_check_object` | `groupsio_mailing_list:{parent_mailing_list_uid}` |
+| `history_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
 | `history_check_relation` | `auditor` |
 
 ### Search Behavior
