@@ -11,6 +11,8 @@ metadata:
   annotations:
     "helm.sh/resource-policy": keep
   {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   bucket: {{ .Values.nats.groupsio_services_kv_bucket.name }}
   history: {{ .Values.nats.groupsio_services_kv_bucket.history }}
@@ -30,6 +32,8 @@ metadata:
   annotations:
     "helm.sh/resource-policy": keep
   {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   bucket: {{ .Values.nats.groupsio_service_settings_kv_bucket.name }}
   history: {{ .Values.nats.groupsio_service_settings_kv_bucket.history }}
@@ -49,6 +53,8 @@ metadata:
   annotations:
     "helm.sh/resource-policy": keep
   {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   bucket: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.name }}
   history: {{ .Values.nats.groupsio_mailing_lists_kv_bucket.history }}
@@ -68,6 +74,8 @@ metadata:
   annotations:
     "helm.sh/resource-policy": keep
   {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   bucket: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.name }}
   history: {{ .Values.nats.groupsio_mailing_list_settings_kv_bucket.history }}
@@ -87,6 +95,8 @@ metadata:
   annotations:
     "helm.sh/resource-policy": keep
   {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   bucket: {{ .Values.nats.groupsio_members_kv_bucket.name }}
   history: {{ .Values.nats.groupsio_members_kv_bucket.history }}
