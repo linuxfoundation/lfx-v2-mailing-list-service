@@ -124,8 +124,10 @@ func HandleDataStreamArtifactDelete(ctx context.Context, uid string, publisher p
 		return false
 	}
 
+	// IndexingConfig with ObjectID is required so the indexer skips ValidateObjectType,
+	// which would fail because there is no server-side enricher for groupsio_artifact.
 	msg := &model.IndexerMessage{Action: model.ActionDeleted}
-	built, err := msg.Build(ctx, uid)
+	built, err := msg.BuildWithIndexingConfig(ctx, uid, &indexertypes.IndexingConfig{ObjectID: uid})
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build artifact delete indexer message", "uid", uid, "error", err)
 		return false
