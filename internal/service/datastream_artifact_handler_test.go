@@ -65,6 +65,10 @@ func TestHandleDataStreamArtifactDelete_SendsIndexingConfig(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, msg.IndexingConfig, "delete must include IndexingConfig so the indexer skips ValidateObjectType")
 	assert.Equal(t, "art-1", msg.IndexingConfig.ObjectID)
+	assert.NotEmpty(t, msg.IndexingConfig.AccessCheckObject)
+	assert.NotEmpty(t, msg.IndexingConfig.AccessCheckRelation)
+	assert.NotEmpty(t, msg.IndexingConfig.HistoryCheckObject)
+	assert.NotEmpty(t, msg.IndexingConfig.HistoryCheckRelation)
 }
 
 func TestHandleDataStreamArtifactDelete_NeverIndexed_ACK(t *testing.T) {
