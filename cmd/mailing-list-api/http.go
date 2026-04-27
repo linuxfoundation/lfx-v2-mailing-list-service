@@ -77,7 +77,12 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 		handler = debug.HTTP()(handler)
 	}
 	// Add OpenTelemetry HTTP instrumentation (outermost to capture full request lifecycle)
-	handler = otelhttp.NewHandler(handler, "mailing-list-api")
+	handler = otelhttp.NewHandler(handler, "mailing-list-api",
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			p := r.URL.Path
+			return p != mailinglistservicesvr.LivezMailingListPath() && p != mailinglistservicesvr.ReadyzMailingListPath()
+		}),
+	)
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
