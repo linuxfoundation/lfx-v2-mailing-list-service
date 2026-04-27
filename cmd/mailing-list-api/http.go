@@ -80,7 +80,7 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 	handler = otelhttp.NewHandler(handler, "mailing-list-api",
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			p := r.URL.Path
-			return p != "/healthz" && p != "/livez" && p != "/readyz"
+			return p != mailinglistservicesvr.LivezMailingListPath() && p != mailinglistservicesvr.ReadyzMailingListPath()
 		}),
 	)
 
