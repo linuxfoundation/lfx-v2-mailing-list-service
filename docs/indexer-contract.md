@@ -440,7 +440,7 @@ The message is a `GenericFGAMessage` with `object_type: groupsio_mailing_list`, 
 
 ### Access Control (IndexingConfig)
 
-Artifacts use a typed `IndexingConfig` (no server-side enrichers). No FGA `AccessMessage` is published — access is checked at query time via the indexing config.
+Artifacts use a typed `IndexingConfig`. No FGA `AccessMessage` is published — access is checked at query time via the indexing config.
 
 | Field | Value |
 |---|---|
