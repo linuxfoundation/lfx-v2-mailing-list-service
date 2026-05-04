@@ -58,7 +58,7 @@ sequenceDiagram
     EP->>MP: resolveAction(key)<br/>missing/tombstone → Created<br/>present → Updated
     EP->>EP: transformTo<Entity>(data)
     EP->>IDX: Publish IndexerMessage (Created|Updated)
-    EP->>FGA: Publish AccessMessage (update_access)
+    EP->>FGA: Publish AccessMessage (lfx.fga-sync.update_access)
     EP->>MP: putMapping(key, uid)
 ```
 
@@ -83,7 +83,7 @@ sequenceDiagram
         EP->>EP: ACK (duplicate, skip)
     else not tombstoned
         EP->>IDX: Publish IndexerMessage (Deleted)
-        EP->>FGA: Publish AccessMessage (delete_all_access)
+        EP->>FGA: Publish AccessMessage (lfx.fga-sync.delete_access)
         EP->>MP: putTombstone(key)
     end
 ```
@@ -185,7 +185,7 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 | _(resolved from reverse index)_ | `MailingListUID` |
 | _(hardcoded)_ | `Source = "v1-sync"` |
 
-> Note: Members do **not** publish a separate FGA access message — access is inherited from the parent mailing list's access record.
+> Note: Members publish `lfx.fga-sync.member_put` on create/update and `lfx.fga-sync.member_remove` on delete to manage per-user access to the parent `groupsio_mailing_list` — distinct from the `update_access`/`delete_access` messages used for services and mailing lists.
 
 ---
 
@@ -195,13 +195,15 @@ The member handler reads this entry to resolve the parent `MailingListUID` befor
 |---|---|---|
 | Service | `lfx.index.groupsio_service` | All actions (Created / Updated / Deleted) |
 | Service | `lfx.index.groupsio_service_settings` | Created / Updated only (when writers/auditors present) |
-| Service | `lfx.update_access.groupsio_service` | Created / Updated only |
-| Service | `lfx.delete_all_access.groupsio_service` | Deleted only |
+| Service | `lfx.fga-sync.update_access` | Created / Updated only (`fgaconstants.GenericUpdateAccessSubject`) |
+| Service | `lfx.fga-sync.delete_access` | Deleted only (`fgaconstants.GenericDeleteAccessSubject`) |
 | Mailing List | `lfx.index.groupsio_mailing_list` | All actions (Created / Updated / Deleted) |
 | Mailing List | `lfx.index.groupsio_mailing_list_settings` | Created / Updated only (when writers/auditors present) |
-| Mailing List | `lfx.update_access.groupsio_mailing_list` | Created / Updated only |
-| Mailing List | `lfx.delete_all_access.groupsio_mailing_list` | Deleted only |
+| Mailing List | `lfx.fga-sync.update_access` | Created / Updated only (`fgaconstants.GenericUpdateAccessSubject`) |
+| Mailing List | `lfx.fga-sync.delete_access` | Deleted only (`fgaconstants.GenericDeleteAccessSubject`) |
 | Member | `lfx.index.groupsio_member` | All actions (Created / Updated / Deleted) |
+| Member | `lfx.fga-sync.member_put` | Created / Updated only (`fgaconstants.GenericMemberPutSubject`) |
+| Member | `lfx.fga-sync.member_remove` | Deleted only (`fgaconstants.GenericMemberRemoveSubject`) |
 
 ---
 
