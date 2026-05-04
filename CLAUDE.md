@@ -88,10 +88,10 @@ The codebase follows hexagonal/clean architecture principles:
 - `lfx.index.groupsio_service` - Service indexing
 - `lfx.index.groupsio_mailing_list` - Mailing list indexing
 - `lfx.index.groupsio_member` - Member indexing
-- `lfx.update_access.groupsio_service` - Service access control
-- `lfx.delete_all_access.groupsio_service` - Service access deletion
-- `lfx.update_access.groupsio_mailing_list` - Mailing list access control
-- `lfx.delete_all_access.groupsio_mailing_list` - Mailing list access deletion
+- `lfx.fga-sync.update_access` - Access control create/update (services and mailing lists; generic subject from `fgaconstants.GenericUpdateAccessSubject`)
+- `lfx.fga-sync.delete_access` - Access control deletion (services and mailing lists; generic subject from `fgaconstants.GenericDeleteAccessSubject`)
+- `lfx.fga-sync.member_put` - Member access grant on create/update (generic subject from `fgaconstants.GenericMemberPutSubject`)
+- `lfx.fga-sync.member_remove` - Member access revocation on delete (generic subject from `fgaconstants.GenericMemberRemoveSubject`)
 
 ### Error Handling
 Custom error types in `pkg/errors/`:
