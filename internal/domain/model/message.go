@@ -33,8 +33,7 @@ type IndexerMessage struct {
 	Data    any               `json:"data"`
 	// Tags is a list of tags to be set on the indexed resource for search
 	Tags []string `json:"tags"`
-	// IndexingConfig carries optional indexer-specific configuration.
-	// When non-nil it bypasses server-side enrichers and uses the supplied values directly.
+	// IndexingConfig provides indexing metadata for the resource and is required for all actions.
 	IndexingConfig *indexertypes.IndexingConfig `json:"indexing_config,omitempty"`
 }
 
