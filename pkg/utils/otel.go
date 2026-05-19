@@ -313,7 +313,8 @@ func endpointURL(raw string, insecure bool) string {
 }
 
 // newSampler creates a trace.Sampler from OTEL_TRACES_SAMPLER and
-// OTEL_TRACES_SAMPLER_ARG, falling back to parentbased_traceidratio.
+// OTEL_TRACES_SAMPLER_ARG, defaulting to parentbased_traceidratio.
+// When TracesSamplerArg is unset or invalid, parseRatio defaults to 1.0 (100% sample rate).
 func newSampler(cfg OTelConfig) trace.Sampler {
 	parseRatio := func() float64 {
 		if cfg.TracesSamplerArg != "" {
@@ -330,6 +331,7 @@ func newSampler(cfg OTelConfig) trace.Sampler {
 			}
 			return r
 		}
+		// No sampler arg provided: default to 1.0 (100% sample rate)
 		return 1.0
 	}
 
