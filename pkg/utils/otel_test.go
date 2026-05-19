@@ -273,9 +273,9 @@ func TestNewPropagator_Defaults(t *testing.T) {
 
 	fields := prop.Fields()
 	expectedFields := map[string]bool{
-		"traceparent":  false,
-		"tracestate":   false,
-		"baggage":      false,
+		"traceparent":   false,
+		"tracestate":    false,
+		"baggage":       false,
 		"uber-trace-id": false,
 	}
 
