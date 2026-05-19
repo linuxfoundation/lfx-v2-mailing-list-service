@@ -607,15 +607,36 @@ func TestNewSampler(t *testing.T) {
 }
 
 // TestNewSampler_InvalidArg verifies that an invalid OTEL_TRACES_SAMPLER_ARG
-// falls back to 1.0 without panicking.
+// falls back to 1.0 (always sample) without panicking.
 func TestNewSampler_InvalidArg(t *testing.T) {
+	// Test parse error case: "invalid" cannot be parsed as float64
 	cfg := OTelConfig{
-		TracesSampler:    "parentbased_traceidratio",
+		TracesSampler:    "traceidratio",
 		TracesSamplerArg: "invalid",
 	}
 	s := newSampler(cfg)
 	if s == nil {
 		t.Fatal("newSampler returned nil for invalid OTEL_TRACES_SAMPLER_ARG")
+	}
+	// Should fallback to 1.0, so a root span should always be sampled
+	result := s.ShouldSample(sdktrace.SamplingParameters{})
+	if result.Decision != sdktrace.RecordAndSample {
+		t.Errorf("expected RecordAndSample with fallback ratio 1.0, got %v", result.Decision)
+	}
+
+	// Test out-of-range case: "1.5" parses but exceeds [0,1] range
+	cfg2 := OTelConfig{
+		TracesSampler:    "traceidratio",
+		TracesSamplerArg: "1.5",
+	}
+	s2 := newSampler(cfg2)
+	if s2 == nil {
+		t.Fatal("newSampler returned nil for out-of-range OTEL_TRACES_SAMPLER_ARG")
+	}
+	// Should fallback to 1.0, so a root span should always be sampled
+	result2 := s2.ShouldSample(sdktrace.SamplingParameters{})
+	if result2.Decision != sdktrace.RecordAndSample {
+		t.Errorf("expected RecordAndSample with fallback ratio 1.0, got %v", result2.Decision)
 	}
 }
 
@@ -625,11 +646,31 @@ func TestNewSampler_ParentHonored(t *testing.T) {
 	cfg := OTelConfig{}
 	s := newSampler(cfg) // default = parentbased_traceidratio
 
-	// With a sampled parent, child should also be sampled
-	sampledParent := trace.SpanContext{}.WithTraceFlags(trace.FlagsSampled)
+	// Create a valid (non-zero) parent SpanContext that is sampled
+	traceID, _ := trace.TraceIDFromHex("12345678901234567890123456789012")
+	spanID, _ := trace.SpanIDFromHex("1234567890123456")
+	sampledParent := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	})
 	parentCtx := trace.ContextWithRemoteSpanContext(context.Background(), sampledParent)
 	result := s.ShouldSample(sdktrace.SamplingParameters{ParentContext: parentCtx})
 	if result.Decision != sdktrace.RecordAndSample {
 		t.Errorf("expected RecordAndSample with sampled parent, got %v", result.Decision)
+	}
+
+	// Also test with unsampled parent
+	unsampledParent := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.TraceFlags(0),
+		Remote:     true,
+	})
+	parentCtx2 := trace.ContextWithRemoteSpanContext(context.Background(), unsampledParent)
+	result2 := s.ShouldSample(sdktrace.SamplingParameters{ParentContext: parentCtx2})
+	if result2.Decision != sdktrace.Drop {
+		t.Errorf("expected Drop with unsampled parent, got %v", result2.Decision)
 	}
 }
