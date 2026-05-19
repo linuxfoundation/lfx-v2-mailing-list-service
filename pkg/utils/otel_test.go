@@ -85,6 +85,8 @@ func TestOTelConfigFromEnv_CustomValues(t *testing.T) {
 	t.Setenv("OTEL_METRICS_EXPORTER", "otlp")
 	t.Setenv("OTEL_LOGS_EXPORTER", "otlp")
 	t.Setenv("OTEL_PROPAGATORS", "tracecontext,baggage")
+	t.Setenv("OTEL_TRACES_SAMPLER", "parentbased_traceidratio")
+	t.Setenv("OTEL_TRACES_SAMPLER_ARG", "0.5")
 
 	cfg := OTelConfigFromEnv()
 
@@ -114,6 +116,12 @@ func TestOTelConfigFromEnv_CustomValues(t *testing.T) {
 	}
 	if cfg.Propagators != "tracecontext,baggage" {
 		t.Errorf("expected Propagators 'tracecontext,baggage', got %q", cfg.Propagators)
+	}
+	if cfg.TracesSampler != "parentbased_traceidratio" {
+		t.Errorf("expected TracesSampler 'parentbased_traceidratio', got %q", cfg.TracesSampler)
+	}
+	if cfg.TracesSamplerArg != "0.5" {
+		t.Errorf("expected TracesSamplerArg '0.5', got %q", cfg.TracesSamplerArg)
 	}
 }
 
