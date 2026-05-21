@@ -75,6 +75,7 @@ type OTelConfig struct {
 	// Env: OTEL_TRACES_EXPORTER (default: "none")
 	TracesExporter string
 	// TracesSampler specifies the sampler to use.
+	// When empty, defaults to parentbased_traceidratio with ratio 1.0.
 	// Env: OTEL_TRACES_SAMPLER (default: "")
 	TracesSampler string
 	// TracesSamplerArg specifies the sampler argument.
