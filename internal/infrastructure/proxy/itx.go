@@ -21,6 +21,7 @@ import (
 	pkgauth "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/auth"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/httpclient"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2"
 )
 
@@ -596,11 +597,16 @@ func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, er
 		return nil, fmt.Errorf("ITX client private key is required")
 	}
 
+	// Create otel-instrumented HTTP client to use for both Auth0 token
+	// requests and ITX API calls, so both appear as child spans in traces.
+	otelClient := &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
 	authConfig, err := authentication.New(
 		ctx,
 		config.Auth0Domain,
 		authentication.WithClientID(config.ClientID),
 		authentication.WithClientAssertion(config.PrivateKey, "RS256"),
+		authentication.WithClient(otelClient),
 	)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to create Auth0 authentication client", "error", err)
@@ -608,7 +614,9 @@ func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, er
 	}
 
 	tokenSource := pkgauth.NewAuth0TokenSource(ctx, authConfig, config.Audience, itxScope)
+	// Wrap the oauth2 transport with otelhttp so ITX API calls appear in traces.
 	oauthHTTPClient := oauth2.NewClient(ctx, oauth2.ReuseTokenSource(nil, tokenSource))
+	oauthHTTPClient.Transport = otelhttp.NewTransport(oauthHTTPClient.Transport)
 	oauthHTTPClient.Timeout = config.Timeout
 
 	return &itx{
