@@ -599,7 +599,10 @@ func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, er
 
 	// Create otel-instrumented HTTP client to use for both Auth0 token
 	// requests and ITX API calls, so both appear as child spans in traces.
-	otelClient := &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	otelClient := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   config.Timeout,
+	}
 
 	authConfig, err := authentication.New(
 		ctx,
