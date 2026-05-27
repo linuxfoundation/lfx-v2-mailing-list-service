@@ -597,8 +597,8 @@ func NewProxy(ctx context.Context, config Config) (port.GroupsIOReaderWriter, er
 		return nil, fmt.Errorf("ITX client private key is required")
 	}
 
-	// Create otel-instrumented HTTP client to use for both Auth0 token
-	// requests and ITX API calls, so both appear as child spans in traces.
+	// Create an otel-instrumented HTTP client for Auth0 token requests;
+	// ITX API calls are instrumented separately via oauthHTTPClient below.
 	otelClient := &http.Client{
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 		Timeout:   config.Timeout,
