@@ -8,12 +8,14 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/auth0/go-jwt-middleware/v2/jwks"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const (
@@ -22,6 +24,7 @@ const (
 	defaultIssuer      = "heimdall"
 	defaultAudience    = "lfx-v2-mailing-list-service"
 	defaultJWKSURL     = "http://heimdall:4457/.well-known/jwks"
+	jwksClientTimeout  = 10 * time.Second
 )
 
 // JWTAuthConfig holds the configuration parameters for JWT authentication.
@@ -65,7 +68,7 @@ type JWTAuth struct {
 
 // ParsePrincipal extracts the principal from the JWT claims.
 func (j *JWTAuth) ParsePrincipal(ctx context.Context, token string, logger *slog.Logger) (string, error) {
-  	// To avoid having to use a valid JWT token for local development, we can use the
+	// To avoid having to use a valid JWT token for local development, we can use the
 	// MockLocalPrincipal configuration parameter.
 	if j.config.MockLocalPrincipal != "" {
 		logger.InfoContext(ctx, "JWT authentication is disabled, returning mock principal",
@@ -141,7 +144,11 @@ func NewJWTAuth(config JWTAuthConfig) (*JWTAuth, error) {
 		slog.Error("unexpected URL parsing of default issuer")
 		return nil, err
 	}
-	provider := jwks.NewCachingProvider(issuer, 5*time.Minute, jwks.WithCustomJWKSURI(jwksURL))
+	otelClient := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   jwksClientTimeout,
+	}
+	provider := jwks.NewCachingProvider(issuer, 5*time.Minute, jwks.WithCustomJWKSURI(jwksURL), jwks.WithCustomClient(otelClient))
 
 	// Set up the JWT validator.
 	jwtValidator, err := validator.New(
