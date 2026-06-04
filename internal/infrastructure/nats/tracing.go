@@ -55,6 +55,7 @@ func publishWithSpan(ctx context.Context, conn *natsgo.Conn, subject string, dat
 	defer span.End()
 
 	msg := natsgo.NewMsg(subject)
+	msg.Header = make(natsgo.Header)
 	msg.Data = data
 	otel.GetTextMapPropagator().Inject(ctx, natsHeaderCarrier(msg.Header))
 
@@ -80,6 +81,7 @@ func requestWithSpan(ctx context.Context, conn *natsgo.Conn, subject string, dat
 	defer span.End()
 
 	msg := natsgo.NewMsg(subject)
+	msg.Header = make(natsgo.Header)
 	msg.Data = data
 	otel.GetTextMapPropagator().Inject(ctx, natsHeaderCarrier(msg.Header))
 
