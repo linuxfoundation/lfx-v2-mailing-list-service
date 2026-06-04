@@ -68,7 +68,7 @@ func buildKey(subject, direction, fromID string) (string, error) {
 
 // lookup performs the NATS request/reply and validates the response.
 func (t *NATSTranslator) lookup(ctx context.Context, key string) (string, error) {
-	msg, err := t.conn.RequestWithContext(ctx, lookupSubject, []byte(key))
+	msg, err := requestWithSpan(ctx, t.conn, lookupSubject, []byte(key))
 	if err != nil {
 		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
 			return "", errs.NewServiceUnavailable("v1-sync-helper lookup timed out", err)

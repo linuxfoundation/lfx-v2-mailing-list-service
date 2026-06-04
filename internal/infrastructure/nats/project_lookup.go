@@ -33,7 +33,7 @@ func (p *natsProjectLookup) GetProjectSlug(ctx context.Context, projectUID strin
 	reqCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
-	msg, err := p.conn.RequestWithContext(reqCtx, constants.ProjectGetSlugSubject, []byte(projectUID))
+	msg, err := requestWithSpan(reqCtx, p.conn, constants.ProjectGetSlugSubject, []byte(projectUID))
 	if err != nil {
 		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
 			return "", errs.NewServiceUnavailable("project slug lookup timed out", err)
