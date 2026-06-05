@@ -17,6 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type contextKey string
+
+const outerKey contextKey = "outer-key"
+
 func TestGrpsIOWebhookBodyCaptureMiddleware(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -358,11 +362,11 @@ func TestGrpsIOWebhookBodyCaptureMiddleware_ErrorHandling(t *testing.T) {
 
 func TestGrpsIOWebhookBodyCaptureMiddleware_ChainedMiddleware(t *testing.T) {
 	testBody := `{"action":"test"}`
-	
+
 	// Simulate another middleware that modifies context
 	outerMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "outer-key", "outer-value")
+			ctx := context.WithValue(r.Context(), outerKey, "outer-value")
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
@@ -376,7 +380,7 @@ func TestGrpsIOWebhookBodyCaptureMiddleware_ChainedMiddleware(t *testing.T) {
 		if bodyBytes, ok := r.Context().Value(constants.GrpsIOWebhookBodyContextKey).([]byte); ok {
 			capturedBody = bodyBytes
 		}
-		if val, ok := r.Context().Value("outer-key").(string); ok {
+		if val, ok := r.Context().Value(outerKey).(string); ok {
 			outerValue = val
 		}
 		w.WriteHeader(http.StatusOK)

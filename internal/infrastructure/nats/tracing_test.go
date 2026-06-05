@@ -56,7 +56,9 @@ func TestNatsHeaderCarrier(t *testing.T) {
 func TestPublishWithSpan(t *testing.T) {
 	exporter := tracetest.NewInMemoryExporter()
 	tp := trace.NewTracerProvider(trace.WithBatcher(exporter))
-	defer tp.Shutdown(context.Background())
+	defer func() {
+		_ = tp.Shutdown(context.Background())
+	}()
 	otel.SetTracerProvider(tp)
 
 	t.Run("creates Producer span with correct attributes", func(t *testing.T) {
@@ -91,7 +93,9 @@ func TestPublishWithSpan(t *testing.T) {
 func TestRequestWithSpan(t *testing.T) {
 	exporter := tracetest.NewInMemoryExporter()
 	tp := trace.NewTracerProvider(trace.WithBatcher(exporter))
-	defer tp.Shutdown(context.Background())
+	defer func() {
+		_ = tp.Shutdown(context.Background())
+	}()
 	otel.SetTracerProvider(tp)
 
 	t.Run("creates Client span with correct attributes", func(t *testing.T) {
@@ -220,9 +224,4 @@ func TestNilHeaderPanicFix(t *testing.T) {
 		carrier.Set("trace-id", "xyz789")
 		assert.Equal(t, "xyz789", carrier.Get("trace-id"))
 	})
-}
-
-// testMockConn is a test helper
-type testMockConn struct {
-	publishFn func(*natsgo.Msg) error
 }

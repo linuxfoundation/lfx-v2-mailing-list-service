@@ -109,7 +109,6 @@ func (o *GroupsIOServiceReaderOrchestrator) FindParentService(ctx context.Contex
 	return mapServiceResponse(ctx, o.translator, svc)
 }
 
-
 // NewGroupsIOServiceReaderOrchestrator creates a new reader orchestrator with the given options.
 func NewGroupsIOServiceReaderOrchestrator(opts ...ServiceReaderOrchestratorOption) *GroupsIOServiceReaderOrchestrator {
 	o := &GroupsIOServiceReaderOrchestrator{}

@@ -157,8 +157,8 @@ func HandleDataStreamArtifactDelete(ctx context.Context, uid string, publisher p
 func transformV1ToGroupsIOArtifact(uid string, data map[string]any) *model.GroupsIOArtifact {
 	artifact := &model.GroupsIOArtifact{
 		ArtifactID:       uid,
-		ProjectUID:  mapconv.StringVal(data, "project_id"),
-		CommitteeUID: mapconv.StringVal(data, "committee_id"),
+		ProjectUID:       mapconv.StringVal(data, "project_id"),
+		CommitteeUID:     mapconv.StringVal(data, "committee_id"),
 		Type:             mapconv.StringVal(data, "type"),
 		MediaType:        mapconv.StringVal(data, "media_type"),
 		Filename:         mapconv.StringVal(data, "filename"),

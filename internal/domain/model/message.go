@@ -90,4 +90,3 @@ func (g *IndexerMessage) BuildWithIndexingConfig(ctx context.Context, input any,
 	msg.IndexingConfig = indexingConfig
 	return msg, nil
 }
-
