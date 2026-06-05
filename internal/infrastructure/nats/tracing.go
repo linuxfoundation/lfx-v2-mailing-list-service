@@ -47,8 +47,8 @@ func publishWithSpan(ctx context.Context, conn *natsgo.Conn, subject string, dat
 		trace.WithSpanKind(trace.SpanKindProducer),
 		trace.WithAttributes(
 			attribute.String("messaging.system", "nats"),
-			attribute.String("messaging.destination", subject),
-			attribute.String("messaging.operation", "publish"),
+			attribute.String("messaging.destination.name", subject),
+			attribute.String("messaging.operation.type", "send"),
 			attribute.Int("messaging.message.body.size", len(data)),
 		),
 	)
@@ -73,8 +73,8 @@ func requestWithSpan(ctx context.Context, conn *natsgo.Conn, subject string, dat
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			attribute.String("messaging.system", "nats"),
-			attribute.String("messaging.destination", subject),
-			attribute.String("messaging.operation", "request"),
+			attribute.String("messaging.destination.name", subject),
+			attribute.String("messaging.operation.type", "send"),
 			attribute.Int("messaging.message.body.size", len(data)),
 		),
 	)

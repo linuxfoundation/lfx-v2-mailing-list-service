@@ -24,7 +24,7 @@ func TestNatsHeaderCarrier(t *testing.T) {
 	})
 
 	t.Run("Set and Get", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		carrier.Set("key1", "value1")
 		assert.Equal(t, "value1", carrier.Get("key1"))
 	})
@@ -37,7 +37,7 @@ func TestNatsHeaderCarrier(t *testing.T) {
 	})
 
 	t.Run("Keys returns all keys", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		carrier.Set("key1", "value1")
 		carrier.Set("key2", "value2")
 
@@ -59,6 +59,12 @@ func TestPublishWithSpan(t *testing.T) {
 	defer func() {
 		_ = tp.Shutdown(context.Background())
 	}()
+
+	// Restore previous tracer provider after test
+	previousTP := otel.GetTracerProvider()
+	t.Cleanup(func() {
+		otel.SetTracerProvider(previousTP)
+	})
 	otel.SetTracerProvider(tp)
 
 	t.Run("creates Producer span with correct attributes", func(t *testing.T) {
@@ -96,6 +102,12 @@ func TestRequestWithSpan(t *testing.T) {
 	defer func() {
 		_ = tp.Shutdown(context.Background())
 	}()
+
+	// Restore previous tracer provider after test
+	previousTP := otel.GetTracerProvider()
+	t.Cleanup(func() {
+		otel.SetTracerProvider(previousTP)
+	})
 	otel.SetTracerProvider(tp)
 
 	t.Run("creates Client span with correct attributes", func(t *testing.T) {
@@ -123,6 +135,12 @@ func TestRequestWithSpan(t *testing.T) {
 
 // TestTraceContextInjection tests that trace context is properly injected into message headers.
 func TestTraceContextInjection(t *testing.T) {
+	// Restore previous propagator after test
+	previousProp := otel.GetTextMapPropagator()
+	t.Cleanup(func() {
+		otel.SetTextMapPropagator(previousProp)
+	})
+
 	// Setup OTel with a propagator
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
@@ -163,25 +181,25 @@ func TestTraceContextInjection(t *testing.T) {
 // TestHeaderCarrierEdgeCases tests edge cases in the header carrier.
 func TestHeaderCarrierEdgeCases(t *testing.T) {
 	t.Run("empty header returns empty keys", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		assert.Equal(t, 0, len(carrier.Keys()))
 	})
 
 	t.Run("Set overwrites previous value", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		carrier.Set("key", "value1")
 		carrier.Set("key", "value2")
 		assert.Equal(t, "value2", carrier.Get("key"))
 	})
 
 	t.Run("empty string values are handled correctly", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		carrier.Set("key", "")
 		assert.Equal(t, "", carrier.Get("key"))
 	})
 
 	t.Run("case-sensitive key handling", func(t *testing.T) {
-		carrier := natsHeaderCarrier{}
+		carrier := natsHeaderCarrier(make(natsgo.Header))
 		carrier.Set("Key", "value1")
 		carrier.Set("key", "value2")
 		// NATS headers are case-sensitive in the map keys
