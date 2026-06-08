@@ -364,7 +364,7 @@ When a member has a non-empty `username`, the handler also publishes an FGA memb
 - **Put member:** `lfx.fga-sync.member_put` on create/update
 - **Remove member:** `lfx.fga-sync.member_remove` on delete
 
-The message is a `GenericFGAMessage` with `object_type: groupsio_mailing_list`, `operation: member_put` / `member_remove`, and a `FGAMemberPutData` payload containing `uid` (the mailing list UID), `username` (the member's LFX username), and `relations: ["member"]`.
+The message is a `GenericFGAMessage` with `object_type: groupsio_mailing_list`, `operation: member_put` / `member_remove`, and a `GenericMemberData` payload containing `uid` (the mailing list UID), `username` (the member's LFX username), and `relations: ["member"]`.
 
 ### Search Behavior (IndexingConfig)
 
