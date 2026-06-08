@@ -199,6 +199,7 @@ func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing
 	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, "alice@example.com", data.Username)
 	assert.Equal(t, []string{constants.RelationMember}, data.Relations)
 }
 
@@ -225,6 +226,7 @@ func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *test
 	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, "alice@example.com", data.Username)
 	assert.Empty(t, data.Relations)
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
