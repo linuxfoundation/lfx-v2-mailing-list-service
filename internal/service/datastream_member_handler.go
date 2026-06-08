@@ -224,6 +224,7 @@ func transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug stri
 
 // buildMemberMappingValue encodes uid, username, and mailingListUID into a single string
 // so they can be recovered on delete without an extra lookup.
+// Username must not contain "|" — the pipe delimiter would corrupt parseMemberMappingValue.
 func buildMemberMappingValue(uid, username, mailingListUID string) string {
 	return fmt.Sprintf("%s|%s|%s", uid, username, mailingListUID)
 }
