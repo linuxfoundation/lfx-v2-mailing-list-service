@@ -14,6 +14,10 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NATSClient wraps the NATS connection and provides access control operations
@@ -77,7 +81,27 @@ func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandl
 	if !c.conn.IsConnected() {
 		return nil, errors.NewServiceUnavailable("NATS connection not ready")
 	}
-	return c.conn.QueueSubscribe(subject, queue, handler)
+	return c.conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
+		var hdr nats.Header
+		if msg.Header != nil {
+			hdr = msg.Header
+		}
+		msgCtx := otel.GetTextMapPropagator().Extract(context.Background(), natsHeaderCarrier(hdr))
+		msgCtx, span := tracer.Start(msgCtx, "nats.process",
+			trace.WithSpanKind(trace.SpanKindConsumer),
+			trace.WithAttributes(
+				attribute.String("messaging.system", "nats"),
+				attribute.String("messaging.destination.name", subject),
+				attribute.String("messaging.operation.type", "process"),
+				attribute.String("messaging.consumer.group.name", queue),
+				attribute.Int("messaging.message.body.size", len(msg.Data)),
+			),
+		)
+		defer span.End()
+		_ = msgCtx // context available for future use
+		handler(msg)
+		span.SetStatus(codes.Ok, "")
+	})
 }
 
 // KeyValueStore opens the named KV bucket and caches it on the client.
