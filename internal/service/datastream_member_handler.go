@@ -18,7 +18,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/principal"
 )
 
 // HandleDataStreamMemberUpdate transforms the v1 payload into a GrpsIOMember and publishes an
@@ -101,7 +100,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 			Operation:  "member_put",
 			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
-				Username:  principal.FromUsername(member.Username),
+				Username:  member.Username,
 				Relations: []string{constants.RelationMember},
 			},
 		}
@@ -156,7 +155,7 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 			Operation:  "member_remove",
 			Data: fgatypes.GenericMemberData{
 				UID:       mailingListUID,
-				Username:  principal.FromUsername(username),
+				Username:  username,
 				Relations: []string{},
 			},
 		}
@@ -225,6 +224,7 @@ func transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug stri
 
 // buildMemberMappingValue encodes uid, username, and mailingListUID into a single string
 // so they can be recovered on delete without an extra lookup.
+// Username must not contain "|" — the pipe delimiter would corrupt parseMemberMappingValue.
 func buildMemberMappingValue(uid, username, mailingListUID string) string {
 	return fmt.Sprintf("%s|%s|%s", uid, username, mailingListUID)
 }

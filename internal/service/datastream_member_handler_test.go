@@ -199,7 +199,32 @@ func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing
 	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, "alice@example.com", data.Username)
 	assert.Equal(t, []string{constants.RelationMember}, data.Relations)
+}
+
+func TestHandleDataStreamMemberUpdate_WithLFXHandleUsername_PublishesMemberPut(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+		map[string]any{
+			"group_id":  float64(42),
+			"username":  "alice.smith",
+			"full_name": "Alice Smith",
+		},
+		pub, m)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.AccessCalls, 1)
+
+	msg, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	data, ok := msg.Data.(fgatypes.GenericMemberData)
+	assert.True(t, ok)
+	assert.Equal(t, "alice.smith", data.Username)
 }
 
 func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
@@ -225,6 +250,7 @@ func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *test
 	data, ok := msg.Data.(fgatypes.GenericMemberData)
 	assert.True(t, ok)
 	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, "alice@example.com", data.Username)
 	assert.Empty(t, data.Relations)
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
