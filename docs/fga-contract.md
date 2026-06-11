@@ -123,7 +123,7 @@ These fields are carried inside the message `data` object.
 
 ### member_put (Member Create/Update)
 
-Published to `lfx.fga-sync.member_put` when a member event is processed and the member has a non-empty `Username`. The username is resolved to an Auth0 `sub` value via `principal.FromUsername` before sending.
+Published to `lfx.fga-sync.member_put` when a member event is processed and the member has a non-empty `Username`.
 
 The object UID is the **parent mailing list UID**, not the member UID. The parent is resolved from the `group_id` → mailing list reverse index.
 
@@ -139,12 +139,12 @@ The object UID is the **parent mailing list UID**, not the member UID. The paren
 | Field | Value | Condition |
 |---|---|---|
 | `uid` | `MailingListUID` (parent mailing list) | Always |
-| `username` | Auth0 `sub` of the member | Always (skipped if `Username` is empty) |
+| `username` | LFX username (from v1 `username` field) | Always (skipped if `Username` is empty) |
 | `relations` | `["member"]` | Always |
 
 ### member_remove (Member Delete)
 
-Published to `lfx.fga-sync.member_remove` when a member delete event is processed and the stored mapping contains a non-empty username. The username is resolved to an Auth0 `sub` value via `principal.FromUsername` before sending.
+Published to `lfx.fga-sync.member_remove` when a member delete event is processed and the stored mapping contains a non-empty username.
 
 The object UID is the **parent mailing list UID**, recovered from the stored member mapping (`uid|username|mailingListUID`).
 
@@ -152,7 +152,7 @@ The object UID is the **parent mailing list UID**, recovered from the stored mem
 |---|---|
 | `object_type` | `groupsio_mailing_list` |
 | `uid` | `MailingListUID` (parent mailing list) |
-| `username` | Auth0 `sub` of the member |
+| `username` | LFX username (from stored member mapping) |
 | `relations` | `[]` (empty — removes all relations for the user) |
 
 ### Delete
