@@ -16,7 +16,6 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -86,8 +85,8 @@ func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandl
 		if msg.Header != nil {
 			hdr = msg.Header
 		}
-		msgCtx := otel.GetTextMapPropagator().Extract(context.Background(), natsHeaderCarrier(hdr))
-		msgCtx, span := tracer.Start(msgCtx, "nats.process",
+		hdrCtx := otel.GetTextMapPropagator().Extract(context.Background(), natsHeaderCarrier(hdr))
+		_, span := tracer.Start(hdrCtx, "nats.process",
 			trace.WithSpanKind(trace.SpanKindConsumer),
 			trace.WithAttributes(
 				attribute.String("messaging.system", "nats"),
@@ -98,9 +97,7 @@ func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandl
 			),
 		)
 		defer span.End()
-		_ = msgCtx // context available for future use
 		handler(msg)
-		span.SetStatus(codes.Ok, "")
 	})
 }
 
