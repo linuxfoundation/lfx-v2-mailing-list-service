@@ -59,7 +59,7 @@ func (m *messagingPublisher) publish(ctx context.Context, subject string, messag
 	}
 
 	// Publish message
-	if err := m.client.conn.Publish(subject, data); err != nil {
+	if err := publishWithSpan(ctx, m.client.conn, subject, data); err != nil {
 		slog.ErrorContext(ctx, "failed to publish message to NATS",
 			"error", err,
 			"subject", subject,

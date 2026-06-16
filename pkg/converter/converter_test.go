@@ -107,5 +107,5 @@ func TestInt64Val(t *testing.T) {
 	}
 }
 
-func strPtr(s string) *string  { return &s }
-func int64Ptr(i int64) *int64  { return &i }
+func strPtr(s string) *string { return &s }
+func int64Ptr(i int64) *int64 { return &i }

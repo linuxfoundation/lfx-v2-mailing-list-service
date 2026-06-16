@@ -50,7 +50,7 @@ import (
 )
 
 const (
-	kvBucketName = "v1-objects"
+	kvBucketName   = "v1-objects"
 	scrollPageSize = 200
 )
 
