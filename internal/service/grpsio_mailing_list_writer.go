@@ -11,16 +11,19 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
 // GroupsIOMailingListOrchestrator implements port.GroupsIOMailingListWriter by wrapping an inner
 // GroupsIOMailingListWriter and translating v2 UUIDs to v1 SFIDs before forwarding requests.
 // It also publishes committee mailing list status events after each mutation.
 type GroupsIOMailingListOrchestrator struct {
-	writer     port.GroupsIOMailingListWriter
-	reader     port.GroupsIOMailingListReader
-	translator port.Translator
-	publisher  port.MessagePublisher
+	writer                 port.GroupsIOMailingListWriter
+	reader                 port.GroupsIOMailingListReader
+	translator             port.Translator
+	publisher              port.MessagePublisher
+	serviceReader          port.GroupsIOServiceReader
+	committeeProjectLookup port.CommitteeProjectLookup
 }
 
 // MailingListOrchestratorOption configures a GroupsIOMailingListOrchestrator.
@@ -55,10 +58,57 @@ func WithMailingListPublisher(p port.MessagePublisher) MailingListOrchestratorOp
 	}
 }
 
+// WithMailingListServiceReader sets the service reader used to resolve a service's project.
+func WithMailingListServiceReader(r port.GroupsIOServiceReader) MailingListOrchestratorOption {
+	return func(o *GroupsIOMailingListOrchestrator) {
+		o.serviceReader = r
+	}
+}
+
+// WithMailingListCommitteeProjectLookup sets the lookup used to resolve a committee's project.
+func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) MailingListOrchestratorOption {
+	return func(o *GroupsIOMailingListOrchestrator) {
+		o.committeeProjectLookup = l
+	}
+}
+
+// validateCommitteeProject checks that the supplied committee belongs to the same project as
+// the parent service. No-op when no committee is present or either dependency is unset.
+// On success it sets ml.ProjectUID from the authoritative service record.
+func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.Context, ml *model.GroupsIOMailingList) error {
+	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+		return nil
+	}
+	if o.serviceReader == nil || o.committeeProjectLookup == nil {
+		return nil
+	}
+
+	svc, err := o.serviceReader.GetService(ctx, ml.ServiceUID)
+	if err != nil {
+		return err
+	}
+
+	committeeProject, err := o.committeeProjectLookup.GetCommitteeProject(ctx, ml.Committees[0].UID)
+	if err != nil {
+		return err
+	}
+
+	if committeeProject != svc.ProjectUID {
+		return errs.NewValidation("committee does not belong to the service's project")
+	}
+
+	ml.ProjectUID = svc.ProjectUID
+	return nil
+}
+
 // CreateMailingList creates a new mailing list, mapping project_uid (v2) -> project_id (v1)
 // and committee_uid (v2) -> committee_id (v1) before forwarding.
 // After a successful create it publishes a committee mailing list status event.
 func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	if err := o.validateCommitteeProject(ctx, ml); err != nil {
+		return nil, err
+	}
+
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
 		return nil, err
@@ -94,6 +144,10 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 //     committee is shared across multiple mailing lists.
 //   - notifyCommitteeAdded always publishes has_mailing_list=true unconditionally.
 func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context, mailingListID string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	if err := o.validateCommitteeProject(ctx, ml); err != nil {
+		return nil, err
+	}
+
 	// Snapshot the current committee association before the update so we can detect changes.
 	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
 

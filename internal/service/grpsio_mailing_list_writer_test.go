@@ -11,6 +11,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -95,6 +96,37 @@ func (p *passthroughTranslator) MapID(_ context.Context, _, _, fromID string) (s
 
 var _ port.Translator = (*passthroughTranslator)(nil)
 
+// stubServiceReader returns the configured service/err from GetService.
+type stubServiceReader struct {
+	svc *model.GroupsIOService
+	err error
+}
+
+func (r *stubServiceReader) GetService(_ context.Context, _ string) (*model.GroupsIOService, error) {
+	return r.svc, r.err
+}
+func (r *stubServiceReader) ListServices(_ context.Context, _ string) ([]*model.GroupsIOService, int, error) {
+	return nil, 0, nil
+}
+func (r *stubServiceReader) GetProjects(_ context.Context) ([]string, error) { return nil, nil }
+func (r *stubServiceReader) FindParentService(_ context.Context, _ string) (*model.GroupsIOService, error) {
+	return nil, nil
+}
+
+var _ port.GroupsIOServiceReader = (*stubServiceReader)(nil)
+
+// stubCommitteeProjectLookup returns the configured projectUID/err from GetCommitteeProject.
+type stubCommitteeProjectLookup struct {
+	projectUID string
+	err        error
+}
+
+func (s *stubCommitteeProjectLookup) GetCommitteeProject(_ context.Context, _ string) (string, error) {
+	return s.projectUID, s.err
+}
+
+var _ port.CommitteeProjectLookup = (*stubCommitteeProjectLookup)(nil)
+
 // ---- helpers ----
 
 func mlWith(committeeUID string) *model.GroupsIOMailingList {
@@ -113,6 +145,30 @@ func newTestOrchestrator(
 		reader:     reader,
 		translator: &passthroughTranslator{},
 		publisher:  pub,
+	}
+}
+
+func newTestOrchestratorWithValidation(
+	writer port.GroupsIOMailingListWriter,
+	reader port.GroupsIOMailingListReader,
+	pub port.MessagePublisher,
+	svcReader port.GroupsIOServiceReader,
+	committeeProjectLookup port.CommitteeProjectLookup,
+) *GroupsIOMailingListOrchestrator {
+	return &GroupsIOMailingListOrchestrator{
+		writer:                 writer,
+		reader:                 reader,
+		translator:             &passthroughTranslator{},
+		publisher:              pub,
+		serviceReader:          svcReader,
+		committeeProjectLookup: committeeProjectLookup,
+	}
+}
+
+func mlWithService(committeeUID, serviceUID string) *model.GroupsIOMailingList {
+	return &model.GroupsIOMailingList{
+		ServiceUID: serviceUID,
+		Committees: []model.Committee{{UID: committeeUID}},
 	}
 }
 
@@ -473,4 +529,117 @@ func TestCommitteeHasRemainingMailingLists_Empty_ReturnsFalse(t *testing.T) {
 	reader := &stubMLReader{listMLs: []*model.GroupsIOMailingList{}}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
 	assert.False(t, o.committeeHasRemainingMailingLists(context.Background(), "c-1", "ml-1"))
+}
+
+// ---- validateCommitteeProject ----
+
+func TestValidateCommitteeProject_NoCommittee_Skips(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{ServiceUID: "svc-1"}
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
+func TestValidateCommitteeProject_NilServiceReader_Skips(t *testing.T) {
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, nil, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
+func TestValidateCommitteeProject_NilLookup_Skips(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, nil)
+
+	ml := mlWithService("committee-1", "svc-1")
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
+func TestValidateCommitteeProject_SameProject_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+	assert.Equal(t, "proj-A", ml.ProjectUID, "ProjectUID should be set from the service")
+}
+
+func TestValidateCommitteeProject_DifferentProject_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-B"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_ServiceReaderError_Propagates(t *testing.T) {
+	svcErr := errors.New("service not found")
+	svcReader := &stubServiceReader{err: svcErr}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.Equal(t, svcErr, err)
+}
+
+func TestValidateCommitteeProject_LookupError_Propagates(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookupErr := errors.New("committee not found")
+	lookup := &stubCommitteeProjectLookup{err: lookupErr}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.Equal(t, lookupErr, err)
+}
+
+// ---- CreateMailingList + UpdateMailingList validation integration ----
+
+func TestCreateMailingList_CrossProjectCommittee_ReturnsError(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	writer := &stubMLWriter{createResp: mlWith("committee-1")}
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-B"}
+	o := newTestOrchestratorWithValidation(writer, nil, spy, svcReader, lookup)
+
+	_, err := o.CreateMailingList(context.Background(), mlWithService("committee-1", "svc-1"))
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+	assert.Empty(t, spy.calls, "no event published on validation failure")
+}
+
+func TestCreateMailingList_SameProjectCommittee_Succeeds(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	writer := &stubMLWriter{createResp: mlWith("committee-1")}
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(writer, nil, spy, svcReader, lookup)
+
+	resp, err := o.CreateMailingList(context.Background(), mlWithService("committee-1", "svc-1"))
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestUpdateMailingList_CrossProjectCommittee_ReturnsError(t *testing.T) {
+	spy := &spyInternalPublisher{}
+	writer := &stubMLWriter{updateResp: mlWith("committee-1")}
+	reader := &stubMLReader{ml: mlWith("committee-old")}
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-B"}
+	o := newTestOrchestratorWithValidation(writer, reader, spy, svcReader, lookup)
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWithService("committee-1", "svc-1"))
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+	assert.Empty(t, spy.calls, "no event published on validation failure")
 }
