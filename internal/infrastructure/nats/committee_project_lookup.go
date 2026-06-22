@@ -6,6 +6,7 @@ package nats
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -62,10 +63,14 @@ func (c *natsCommitteeProjectLookup) GetCommitteeProject(ctx context.Context, co
 	}
 
 	if resp.Error != "" {
-		if resp.Error == "not found" {
+		if strings.Contains(strings.ToLower(resp.Error), "not found") {
 			return "", errs.NewNotFound(resp.Error)
 		}
 		return "", errs.NewValidation(resp.Error)
+	}
+
+	if resp.ProjectUID == "" {
+		return "", errs.NewServiceUnavailable("committee project lookup returned empty project UID")
 	}
 
 	return resp.ProjectUID, nil

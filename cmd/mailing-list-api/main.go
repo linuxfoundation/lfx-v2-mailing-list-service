@@ -18,7 +18,6 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	orchestrator "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
@@ -117,7 +116,7 @@ func main() {
 
 	mailingListEventPublisher := service.MessagePublisher(ctx)
 
-	committeeProjectLookup := infraNATS.NewNATSCommitteeProjectLookup(service.GetNATSClient(ctx))
+	committeeProjectLookup := service.CommitteeProjectLookup(ctx)
 
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),

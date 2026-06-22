@@ -131,6 +131,7 @@ var _ port.CommitteeProjectLookup = (*stubCommitteeProjectLookup)(nil)
 
 func mlWith(committeeUID string) *model.GroupsIOMailingList {
 	return &model.GroupsIOMailingList{
+		ServiceUID: "test-service",
 		Committees: []model.Committee{{UID: committeeUID}},
 	}
 }
@@ -141,10 +142,12 @@ func newTestOrchestrator(
 	pub port.MessagePublisher,
 ) *GroupsIOMailingListOrchestrator {
 	return &GroupsIOMailingListOrchestrator{
-		writer:     writer,
-		reader:     reader,
-		translator: &passthroughTranslator{},
-		publisher:  pub,
+		writer:                 writer,
+		reader:                 reader,
+		translator:             &passthroughTranslator{},
+		publisher:              pub,
+		serviceReader:          &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "test-project"}},
+		committeeProjectLookup: &stubCommitteeProjectLookup{projectUID: "test-project"},
 	}
 }
 
@@ -542,20 +545,48 @@ func TestValidateCommitteeProject_NoCommittee_Skips(t *testing.T) {
 	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
 }
 
-func TestValidateCommitteeProject_NilServiceReader_Skips(t *testing.T) {
+func TestValidateCommitteeProject_NilServiceReader_ReturnsServiceUnavailable(t *testing.T) {
 	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
 	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, nil, lookup)
 
 	ml := mlWithService("committee-1", "svc-1")
-	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
 }
 
-func TestValidateCommitteeProject_NilLookup_Skips(t *testing.T) {
+func TestValidateCommitteeProject_NilLookup_ReturnsServiceUnavailable(t *testing.T) {
 	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
 	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, nil)
 
 	ml := mlWithService("committee-1", "svc-1")
-	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+func TestValidateCommitteeProject_NilService_ReturnsServiceUnavailable(t *testing.T) {
+	svcReader := &stubServiceReader{svc: nil} // returns nil, nil
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+func TestValidateCommitteeProject_MissingServiceUID_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{UID: "committee-1"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
 }
 
 func TestValidateCommitteeProject_SameProject_Passes(t *testing.T) {

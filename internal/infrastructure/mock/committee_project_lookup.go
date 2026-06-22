@@ -26,8 +26,11 @@ func NewFakeCommitteeProjectLookup() *FakeCommitteeProjectLookup {
 }
 
 // GetCommitteeProject returns the pre-configured project UID for committeeUID.
-// Returns NotFound when no entry is set (matching the real implementation).
+// Returns Validation for empty UID and NotFound when no entry is set (matching the real implementation).
 func (f *FakeCommitteeProjectLookup) GetCommitteeProject(_ context.Context, committeeUID string) (string, error) {
+	if committeeUID == "" {
+		return "", errs.NewValidation("committee UID is required")
+	}
 	if f.Err != nil {
 		return "", f.Err
 	}

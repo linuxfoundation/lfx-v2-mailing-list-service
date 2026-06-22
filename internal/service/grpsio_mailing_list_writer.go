@@ -73,19 +73,27 @@ func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) Mailin
 }
 
 // validateCommitteeProject checks that the supplied committee belongs to the same project as
-// the parent service. No-op when no committee is present or either dependency is unset.
-// On success it sets ml.ProjectUID from the authoritative service record.
+// the parent service. No-op when no committee is present. Returns ServiceUnavailable when
+// required dependencies are not configured. On success it sets ml.ProjectUID from the
+// authoritative service record.
 func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.Context, ml *model.GroupsIOMailingList) error {
 	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
 		return nil
 	}
 	if o.serviceReader == nil || o.committeeProjectLookup == nil {
-		return nil
+		return errs.NewServiceUnavailable("committee project validation is not configured")
+	}
+
+	if ml.ServiceUID == "" {
+		return errs.NewValidation("service_id is required when committee_uid is provided")
 	}
 
 	svc, err := o.serviceReader.GetService(ctx, ml.ServiceUID)
 	if err != nil {
 		return err
+	}
+	if svc == nil {
+		return errs.NewServiceUnavailable("service reader returned nil service")
 	}
 
 	committeeProject, err := o.committeeProjectLookup.GetCommitteeProject(ctx, ml.Committees[0].UID)
