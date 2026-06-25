@@ -219,3 +219,27 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 
 	return publisher
 }
+
+// CommitteeProjectLookup initializes the committee project lookup implementation.
+// REPOSITORY_SOURCE controls which backend is used (default: "nats").
+func CommitteeProjectLookup(ctx context.Context) port.CommitteeProjectLookup {
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock committee project lookup")
+		return infrastructure.NewFakeCommitteeProjectLookup()
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS committee project lookup")
+		return nats.NewNATSCommitteeProjectLookup(GetNATSClient(ctx))
+
+	default:
+		log.Fatalf("unsupported committee project lookup implementation: %s", repoSource)
+	}
+
+	return nil
+}

@@ -116,11 +116,15 @@ func main() {
 
 	mailingListEventPublisher := service.MessagePublisher(ctx)
 
+	committeeProjectLookup := service.CommitteeProjectLookup(ctx)
+
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
 		orchestrator.WithMailingListEventReader(mailingListReaderOrchestrator),
 		orchestrator.WithMailingListPublisher(mailingListEventPublisher),
+		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
+		orchestrator.WithMailingListCommitteeProjectLookup(committeeProjectLookup),
 	)
 
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
