@@ -55,6 +55,14 @@ func (f *FakeMappingStore) PutMapping(_ context.Context, key, value string) erro
 	return nil
 }
 
+func (f *FakeMappingStore) CreateMapping(_ context.Context, key, value string) error {
+	if _, exists := f.values[key]; exists {
+		return port.ErrMappingAlreadyExists
+	}
+	f.values[key] = value
+	return nil
+}
+
 func (f *FakeMappingStore) PutTombstone(_ context.Context, key string) error {
 	f.tombstones[key] = true
 	delete(f.values, key)

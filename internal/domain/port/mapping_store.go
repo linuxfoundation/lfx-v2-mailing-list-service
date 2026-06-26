@@ -5,9 +5,13 @@ package port
 
 import (
 	"context"
+	"errors"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
+
+// ErrMappingAlreadyExists is returned by CreateMapping when the key already exists.
+var ErrMappingAlreadyExists = errors.New("mapping key already exists")
 
 // MappingReader abstracts read operations on the v1-mappings KV bucket.
 // Implementations hide storage-level details such as tombstone markers and
@@ -37,6 +41,11 @@ type MappingWriter interface {
 	// PutMapping records that an entity has been successfully processed so that
 	// subsequent events for the same key are treated as updates rather than creates.
 	PutMapping(ctx context.Context, key, value string) error
+
+	// CreateMapping atomically writes key=value only when the key does not yet
+	// exist. Returns ErrMappingAlreadyExists when the key is already present,
+	// allowing callers to use it as a compare-and-set dedup guard.
+	CreateMapping(ctx context.Context, key, value string) error
 
 	// PutTombstone writes the deletion marker to prevent duplicate delete
 	// processing on consumer redelivery.

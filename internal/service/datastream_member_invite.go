@@ -81,11 +81,19 @@ func (h *MemberInviteHandler) MaybeSendInvite(
 		return
 	}
 
-	// Dedup: skip if an invite has already been sent (or is pending) for this member.
+	// Dedup: atomically claim the invite slot via CreateMapping. Because Create only
+	// succeeds when the key is absent, concurrent redeliveries or replicas that race
+	// here will all fail on the same atomic KV operation and skip gracefully — no
+	// separate Get+Put window to exploit.
 	inviteSentKey := memberInviteSentKey(member.UID)
-	if _, present := h.mappings.GetMappingValue(ctx, inviteSentKey); present {
-		logger.DebugContext(ctx, "LFID invite already sent for mailing-list member, skipping",
-			"member_uid", member.UID)
+	if err := h.mappings.CreateMapping(ctx, inviteSentKey, "pending"); err != nil {
+		if errors.Is(err, port.ErrMappingAlreadyExists) {
+			logger.DebugContext(ctx, "LFID invite already sent or in-flight for mailing-list member, skipping",
+				"member_uid", member.UID)
+		} else {
+			logger.WarnContext(ctx, "failed to claim invite dedup slot; skipping to avoid duplicate",
+				"member_uid", member.UID, "error", err)
+		}
 		return
 	}
 
@@ -131,15 +139,6 @@ func (h *MemberInviteHandler) MaybeSendInvite(
 		Role:           constants.InviteRoleMember,
 		ReturnURL:      returnURL,
 		ExpirationDays: 30,
-	}
-
-	// Write a "pending" marker before calling SendInvite to close the duplicate-invite
-	// window: a concurrent redelivery that passes the GetMappingValue check above would
-	// also see this marker and skip, preventing two goroutines from both calling SendInvite.
-	if err := h.mappings.PutMapping(ctx, inviteSentKey, "pending"); err != nil {
-		logger.WarnContext(ctx, "failed to store pending invite marker; skipping to avoid duplicate",
-			"member_uid", member.UID, "error", err)
-		return
 	}
 
 	result, sendErr := h.inviteSender.SendInvite(ctx, req)
