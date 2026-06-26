@@ -81,27 +81,17 @@ func (h *MemberInviteHandler) MaybeSendInvite(
 		return
 	}
 
-	// Dedup: atomically claim the invite slot via CreateMapping. Because Create only
-	// succeeds when the key is absent, concurrent redeliveries or replicas that race
-	// here will all fail on the same atomic KV operation and skip gracefully — no
-	// separate Get+Put window to exploit.
+	// Skip if we already sent an invite for this member.
 	inviteSentKey := memberInviteSentKey(member.UID)
-	if err := h.mappings.CreateMapping(ctx, inviteSentKey, "pending"); err != nil {
-		if errors.Is(err, port.ErrMappingAlreadyExists) {
-			logger.DebugContext(ctx, "LFID invite already sent or in-flight for mailing-list member, skipping",
-				"member_uid", member.UID)
-		} else {
-			logger.WarnContext(ctx, "failed to claim invite dedup slot; skipping to avoid duplicate",
-				"member_uid", member.UID, "error", err)
-		}
+	if _, present := h.mappings.GetMappingValue(ctx, inviteSentKey); present {
+		logger.DebugContext(ctx, "LFID invite already sent for mailing-list member, skipping",
+			"member_uid", member.UID)
 		return
 	}
 
 	// Check whether the participant already has an LFID. Transient auth-service errors
-	// fall through and still attempt the invite — skipping here would permanently lose the
-	// invite opportunity because the KV mapping is already stored (this message won't be
-	// redelivered as ActionCreated again). The invite service handles the edge case where
-	// the user already has an LFID.
+	// fall through and still attempt the invite. The invite service handles the edge case
+	// where the user already has an LFID.
 	username, err := h.userReader.UsernameByEmail(ctx, email)
 	if err == nil && username != "" {
 		logger.DebugContext(ctx, "mailing-list member already has LFID, skipping invite",
