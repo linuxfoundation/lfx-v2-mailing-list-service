@@ -47,6 +47,12 @@ type MappingWriter interface {
 	// allowing callers to use it as a compare-and-set dedup guard.
 	CreateMapping(ctx context.Context, key, value string) error
 
+	// PurgeMapping removes the key and all its history so a subsequent
+	// CreateMapping call can succeed. Used to release an in-flight claim
+	// (e.g. "pending" invite dedup slot) when the operation it guards fails,
+	// allowing JetStream redelivery to retry cleanly.
+	PurgeMapping(ctx context.Context, key string) error
+
 	// PutTombstone writes the deletion marker to prevent duplicate delete
 	// processing on consumer redelivery.
 	PutTombstone(ctx context.Context, key string) error

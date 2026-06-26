@@ -63,6 +63,11 @@ func (f *FakeMappingStore) CreateMapping(_ context.Context, key, value string) e
 	return nil
 }
 
+func (f *FakeMappingStore) PurgeMapping(_ context.Context, key string) error {
+	delete(f.values, key)
+	return nil
+}
+
 func (f *FakeMappingStore) PutTombstone(_ context.Context, key string) error {
 	f.tombstones[key] = true
 	delete(f.values, key)

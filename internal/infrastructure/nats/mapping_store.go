@@ -79,6 +79,10 @@ func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value 
 	return err
 }
 
+func (m *natsMappingReaderWriter) PurgeMapping(ctx context.Context, key string) error {
+	return m.kv.Purge(ctx, key)
+}
+
 func (m *natsMappingReaderWriter) PutTombstone(ctx context.Context, key string) error {
 	_, err := m.kv.Put(ctx, key, []byte(constants.KVTombstoneMarker))
 	return err

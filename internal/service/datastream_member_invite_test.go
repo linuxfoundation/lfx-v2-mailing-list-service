@@ -300,6 +300,27 @@ func TestMaybeSendInvite_KVFallbackToTitle(t *testing.T) {
 	assert.Equal(t, "Dev Title List", sender.lastReq.Resource.Name)
 }
 
+func TestMaybeSendInvite_SendFails_PurgesSlotForRetry(t *testing.T) {
+	sender := &stubInviteSender{err: errors.New("invite service unavailable")}
+	m := mock.NewFakeMappingStore()
+	kv := newStubKV()
+	kv.setJSON(kvPrefixSubgroupV1+"sg-10", map[string]any{"group_name": "Test List"})
+
+	h := newTestHandler(sender, &stubUserReader{err: port.ErrUserNotFound}, m, kv)
+	require.NotNil(t, h)
+
+	h.MaybeSendInvite(context.Background(), silentLogger(), &model.GrpsIOMember{
+		UID:            "mem-fail",
+		Email:          "fail@example.com",
+		MailingListUID: "sg-10",
+	})
+
+	assert.True(t, sender.called, "SendInvite should have been attempted")
+	// Dedup slot must be purged so JetStream redelivery can retry.
+	_, present := m.GetMappingValue(context.Background(), memberInviteSentKey("mem-fail"))
+	assert.False(t, present, "dedup slot should be purged after send failure to allow retry")
+}
+
 func TestMaybeSendInvite_UserReaderTransientError_ProceedsWithInvite(t *testing.T) {
 	// Transient auth-service errors should not block the invite: the comment in the
 	// production code explains that skipping would permanently lose the invite

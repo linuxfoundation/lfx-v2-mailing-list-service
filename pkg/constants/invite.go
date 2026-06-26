@@ -12,8 +12,9 @@ const InviteRoleMember = "Member"
 // one mailing-list-service replica processes each event.
 const InviteAcceptedQueueGroup = "mailing-list-service-invite-accepted"
 
-// KVMemberLFIDInviteSentPrefix is the v1-mappings key prefix used to track whether an
-// LFID invite has already been sent for a given mailing list member. The full key is
-// "<prefix>.<memberUID>". A "pending" value indicates the invite is in-flight; any
-// other non-empty value is the InviteUID returned by the invite service.
+// KVMemberLFIDInviteSentPrefix is the v1-mappings key prefix used to dedup LFID invites
+// for mailing-list members. The full key is "<prefix>.<memberUID>". The key is created
+// atomically with value "pending" before SendInvite is called (preventing concurrent
+// duplicate sends); on success it is overwritten with the InviteUID; on failure it is
+// purged so JetStream redelivery can retry.
 const KVMemberLFIDInviteSentPrefix = "groupsio-member-lfid-invite-sent"
