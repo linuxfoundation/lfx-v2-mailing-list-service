@@ -32,4 +32,7 @@ const (
 	// changes committee-related state (e.g. has_mailing_list flag).
 	// Consumed by committee-api to update the committee document.
 	CommitteeMailingListChangedSubject = "lfx.mailing-list-api.committee_mailing_list.changed"
+
+	// AuthEmailToUsernameSubject resolves a primary email address to an LFX username via the auth service.
+	AuthEmailToUsernameSubject = "lfx.auth-service.email_to_username"
 )
