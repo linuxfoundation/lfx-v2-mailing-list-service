@@ -25,6 +25,9 @@ type NATSInviteSender struct {
 
 // NewInviteSender creates a new NATS-based invite sender.
 func NewInviteSender(nc Requester, logger *slog.Logger) *NATSInviteSender {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	logger.Info("invite sender initialized", "subject", inviteapi.SendInviteSubject)
 	return &NATSInviteSender{nc: nc, logger: logger}
 }

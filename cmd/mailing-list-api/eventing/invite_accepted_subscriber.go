@@ -43,6 +43,9 @@ func NewInviteAcceptedSubscriber(
 	acceptanceClient port.InviteAcceptanceClient,
 	logger *slog.Logger,
 ) *InviteAcceptedSubscriber {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &InviteAcceptedSubscriber{
 		nc:               nc,
 		acceptanceClient: acceptanceClient,

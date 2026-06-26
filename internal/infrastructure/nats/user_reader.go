@@ -25,6 +25,9 @@ type NATSUserReader struct {
 
 // NewUserReader creates a new NATS-based user reader.
 func NewUserReader(nc Requester, logger *slog.Logger) *NATSUserReader {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	logger.Info("user reader initialized", "subject", constants.AuthEmailToUsernameSubject)
 	return &NATSUserReader{nc: nc, logger: logger}
 }
@@ -34,7 +37,7 @@ func NewUserReader(nc Requester, logger *slog.Logger) *NATSUserReader {
 func (r *NATSUserReader) UsernameByEmail(ctx context.Context, email string) (string, error) {
 	email = strings.TrimSpace(email)
 	if email == "" {
-		return "", port.ErrUserNotFound
+		return "", fmt.Errorf("email_to_username: empty email address")
 	}
 
 	reqCtx, cancel := context.WithTimeout(ctx, userReaderTimeout)

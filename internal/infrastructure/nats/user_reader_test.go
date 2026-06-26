@@ -31,10 +31,11 @@ func newUserReader(msg *natsgo.Msg, err error) *NATSUserReader {
 	return &NATSUserReader{nc: sr, logger: slog.New(slog.DiscardHandler)}
 }
 
-func TestUsernameByEmail_EmptyEmail_NotFound(t *testing.T) {
+func TestUsernameByEmail_EmptyEmail_ReturnsError(t *testing.T) {
 	r := newUserReader(nil, nil)
 	_, err := r.UsernameByEmail(context.Background(), "   ")
-	assert.ErrorIs(t, err, port.ErrUserNotFound)
+	assert.Error(t, err)
+	assert.NotErrorIs(t, err, port.ErrUserNotFound)
 }
 
 func TestUsernameByEmail_RequestError_ReturnsError(t *testing.T) {
