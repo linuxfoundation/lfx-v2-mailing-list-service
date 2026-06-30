@@ -22,9 +22,11 @@ import (
 
 // HandleDataStreamMemberUpdate transforms the v1 payload into a GrpsIOMember and publishes an
 // indexer message and, when the member has a username, an FGA put_member access message.
+// When inviteHandler is non-nil and the member was just created without a username, it
+// also sends a best-effort LFID invite.
 // Returns true to NAK when the parent subgroup mapping is absent (ordering guarantee)
 // or on transient errors.
-func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, inviteHandler *MemberInviteHandler) bool {
 	// Members carry group_id (Groups.io numeric ID) rather than a direct mailing_list_uid.
 	// Resolve the parent subgroup UID via the reverse index written by the subgroup handler.
 	groupID := mapconv.Int64Ptr(data, "group_id")
@@ -113,6 +115,15 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	if err := mappings.PutMapping(ctx, mKey, mappingValue); err != nil {
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
 	}
+
+	// Best-effort: send an LFID invite for newly-created members without a username.
+	// This runs after the mapping is stored so that ActionCreated is reliably detected,
+	// and errors are logged and swallowed — they must not NAK the data-stream message.
+	if ShouldSendMemberInvite(action, member.Username, member.Email) {
+		funcLogger := slog.Default().With("uid", uid, "mailing_list_uid", mailingListUID)
+		inviteHandler.MaybeSendInvite(ctx, funcLogger, member)
+	}
+
 	return false
 }
 

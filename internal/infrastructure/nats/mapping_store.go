@@ -5,6 +5,7 @@ package nats
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -68,6 +69,18 @@ func (m *natsMappingReaderWriter) GetMappingValue(ctx context.Context, key strin
 func (m *natsMappingReaderWriter) PutMapping(ctx context.Context, key, value string) error {
 	_, err := m.kv.Put(ctx, key, []byte(value))
 	return err
+}
+
+func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value string) error {
+	_, err := m.kv.Create(ctx, key, []byte(value))
+	if errors.Is(err, jetstream.ErrKeyExists) {
+		return port.ErrMappingAlreadyExists
+	}
+	return err
+}
+
+func (m *natsMappingReaderWriter) PurgeMapping(ctx context.Context, key string) error {
+	return m.kv.Purge(ctx, key)
 }
 
 func (m *natsMappingReaderWriter) PutTombstone(ctx context.Context, key string) error {
