@@ -4,53 +4,6 @@
 package constants
 
 const (
-	// KVBucketNameGroupsIOServices is the name of the KV bucket for services.
-	KVBucketNameGroupsIOServices = "groupsio-services"
-
-	// KVBucketNameGroupsIOServiceSettings is the name of the KV bucket for service settings.
-	KVBucketNameGroupsIOServiceSettings = "groupsio-service-settings"
-
-	// KVBucketNameGroupsIOMailingLists is the name of the KV bucket for mailing lists.
-	KVBucketNameGroupsIOMailingLists = "groupsio-mailing-lists"
-
-	// KVBucketNameGroupsIOMailingListSettings is the name of the KV bucket for mailing list settings.
-	KVBucketNameGroupsIOMailingListSettings = "groupsio-mailing-list-settings"
-
-	// KVBucketNameGroupsIOMembers is the name of the KV bucket for members.
-	KVBucketNameGroupsIOMembers = "groupsio-members"
-
-	// Lookup key patterns for unique constraints
-	// KVLookupGroupsIOServicePrefix is the key pattern for unique constraint lookups
-	KVLookupGroupsIOServicePrefix = "lookup/groupsio-services/%s"
-
-	// Service secondary index key patterns for external GroupsIO IDs
-	// KVLookupGroupsIOServiceByGroupIDPrefix is the key pattern for GroupID index (lookup by Groups.io group ID)
-	KVLookupGroupsIOServiceByGroupIDPrefix = "lookup/groupsio-service-groupid/%d"
-	// KVLookupGroupsIOServiceByProjectUIDPrefix is the key pattern for ProjectUID index (lookup by ProjectUID)
-	KVLookupGroupsIOServiceByProjectUIDPrefix = "lookup/groupsio-service-projectuid/%s"
-
-	// Mailing list secondary index key patterns
-	// KVLookupMailingListServicePrefix is the key pattern for service index
-	KVLookupGroupsIOMailingListServicePrefix = "lookup/groupsio-mailing-list-service/%s"
-	// KVLookupMailingListCommitteePrefix is the key pattern for committee index
-	KVLookupGroupsIOMailingListCommitteePrefix = "lookup/groupsio-mailing-list-committee/%s"
-	// KVLookupMailingListProjectPrefix is the key pattern for project index
-	KVLookupGroupsIOMailingListProjectPrefix = "lookup/groupsio-mailing-list-project/%s"
-	// KVLookupMailingListConstraintPrefix is the key pattern for uniqueness constraint (hashed service_id + group_name)
-	KVLookupGroupsIOMailingListConstraintPrefix = "lookup/groupsio-mailing-list-name/%s"
-	// KVLookupGroupsIOMailingListBySubgroupIDPrefix is the key pattern for SubgroupID index (lookup by Groups.io subgroup ID)
-	KVLookupGroupsIOMailingListBySubgroupIDPrefix = "lookup/groupsio-mailing-list-subgroupid/%d"
-
-	// Member lookup key patterns
-	// KVLookupGroupsIOMemberPrefix is the key pattern for member unique constraint lookups (email per mailing list)
-	KVLookupGroupsIOMemberPrefix = "lookup/groupsio-members/%s"
-	// KVLookupGroupsIOMemberConstraintPrefix is the key pattern for member uniqueness constraint (mailing_list_uid + email)
-	KVLookupGroupsIOMemberConstraintPrefix = "lookup/groupsio-member-email/%s"
-	// KVLookupGroupsIOMemberByMemberIDPrefix is the key pattern for GroupsIOMemberID index (lookup by Groups.io member ID)
-	KVLookupGroupsIOMemberByMemberIDPrefix = "lookup/groupsio-member-memberid/%d"
-	// KVLookupGroupsIOMemberByGroupIDPrefix is the key pattern for GroupsIOGroupID index (lookup by Groups.io group ID)
-	KVLookupGroupsIOMemberByGroupIDPrefix = "lookup/groupsio-member-groupid/%d"
-
 	// KVBucketNameV1Mappings is the shared KV bucket used by v1 eventing consumers to track
 	// processed entities (idempotency, created-vs-updated, tombstone markers for deletes).
 	KVBucketNameV1Mappings = "v1-mappings"
@@ -86,12 +39,4 @@ const (
 	// KVMappingPrefixCommitteeBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
 	// committee.sfid.{sfid} → v2 committee UID. Used to resolve the v1 committee SFID to a v2 UID.
 	KVMappingPrefixCommitteeBySFID = "committee.sfid"
-
-	// Key prefixes for bucket detection
-	// GroupsIOMailingListKeyPrefix is the common prefix for all mailing list related keys
-	GroupsIOMailingListKeyPrefix = "lookup/groupsio-mailing-list/"
-	// GroupsIOServiceLookupKeyPrefix is the prefix for service lookup keys
-	GroupsIOServiceLookupKeyPrefix = "lookup/groupsio-services/"
-	// GroupsIOMemberLookupKeyPrefix is the prefix for member lookup keys
-	GroupsIOMemberLookupKeyPrefix = "lookup/groupsio-members/"
 )
