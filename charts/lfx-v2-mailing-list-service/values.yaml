@@ -229,6 +229,11 @@ app:
   # use_oidc_contextualizer is a boolean to determine if the OIDC contextualizer should be used
   use_oidc_contextualizer: true
 
+  # extraEnv allows injecting additional environment variables into the container.
+  # Supports both simple key-value pairs and Kubernetes field references.
+  # These are rendered BEFORE OTEL variables, allowing use in OTEL configuration.
+  extraEnv: []
+
   # otel is the configuration for OpenTelemetry tracing
   otel:
     # serviceName is the service name for OpenTelemetry resource identification
