@@ -19,6 +19,11 @@ const (
 	CommitteeMemberUpdatedSubject = "lfx.committee-api.committee_member.updated"
 	CommitteeListMembersSubject   = "lfx.committee-api.list_members"
 
+	// CommitteeGetProjectSubject is the request-reply subject for resolving a v2 committee UID
+	// to its owning v2 project UID. Served by lfx-v2-committee-service (LFXV2-2472).
+	// Request: JSON {"committee_uid":"<uuid>"}  Response: JSON {"project_uid":"<uuid>"} or {"error":"<msg>"}
+	CommitteeGetProjectSubject = "lfx.committee-api.get_project"
+
 	// Mailing list events from mailing-list-api
 	MailingListCreatedSubject = "lfx.mailing-list-api.mailing_list_created"
 	MailingListUpdatedSubject = "lfx.mailing-list-api.mailing_list_updated"
@@ -27,4 +32,7 @@ const (
 	// changes committee-related state (e.g. has_mailing_list flag).
 	// Consumed by committee-api to update the committee document.
 	CommitteeMailingListChangedSubject = "lfx.mailing-list-api.committee_mailing_list.changed"
+
+	// AuthEmailToUsernameSubject resolves a primary email address to an LFX username via the auth service.
+	AuthEmailToUsernameSubject = "lfx.auth-service.email_to_username"
 )

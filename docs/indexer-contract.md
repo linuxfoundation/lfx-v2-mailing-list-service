@@ -344,6 +344,8 @@ This allows the member and artifact handlers to resolve the mailing list UID fro
 
 > **v1-sync note:** `project_uid` and `project_slug` are resolved by the subgroup handler (written to `groupsio-subgroup-project.{subgroup_uid}`) and read by the member handler before indexing. The member handler NAKs if the project mapping is absent, ensuring the subgroup is fully processed first.
 
+> **LFID invite side effect (LFXV2-1835):** When a member record is first created (`action == ActionCreated`) and the `username` field is empty while `email` is present, the handler best-effort sends an LFID invite via the invite service (NATS subject `lfx.invite-service.send_invite`). The invite is skipped if (a) a prior invite has already been sent (dedup key `groupsio-member-lfid-invite-sent.{member_uid}` present in the v1-mappings KV), (b) the email already maps to an existing LFID account, or (c) the parent mailing list name cannot be resolved from the v1-objects KV. When the invite is accepted, the acceptance event (`lfx.invite-service.invite_accepted`, filtered to `resource_type == "mailing_list"`) triggers a `POST v2/groupsio/invite_accepted` call to the ITX GroupsIO backend, which enriches all member records for that email with the new username. The enriched record then flows back through the data stream and the FGA `member_put` tuple is published on the next sync. This feature is gated by the `INVITES_ENABLED=true` environment variable.
+
 ### Tags
 
 | Tag Format | Example | Purpose |

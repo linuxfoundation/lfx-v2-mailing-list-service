@@ -16,8 +16,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	mailinglistservice "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
+	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
 	orchestrator "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	logging "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/log"
@@ -116,11 +118,15 @@ func main() {
 
 	mailingListEventPublisher := service.MessagePublisher(ctx)
 
+	committeeProjectLookup := service.CommitteeProjectLookup(ctx)
+
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
 		orchestrator.WithMailingListEventReader(mailingListReaderOrchestrator),
 		orchestrator.WithMailingListPublisher(mailingListEventPublisher),
+		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
+		orchestrator.WithMailingListCommitteeProjectLookup(committeeProjectLookup),
 	)
 
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
@@ -136,6 +142,33 @@ func main() {
 	)
 
 	slog.InfoContext(ctx, "ITX proxy client initialized")
+
+	// ---- LFID invite feature ----
+	// Initialise invite deps when INVITES_ENABLED=true.  The acceptance subscriber
+	// starts independently of EVENTING_ENABLED so that enrichment works even when
+	// the data stream consumer is not running on this replica.
+	inviteCfg := service.InviteConfig()
+	var (
+		inviteSender  *infraNATS.NATSInviteSender
+		userReader    *infraNATS.NATSUserReader
+		inviteAccSub  *eventing.InviteAcceptedSubscriber
+	)
+	if inviteCfg.Enabled {
+		natsClient := service.GetNATSClient(ctx)
+		inviteSender = infraNATS.NewInviteSender(natsClient, slog.Default())
+		userReader = infraNATS.NewUserReader(natsClient, slog.Default())
+
+		inviteAccSub = eventing.NewInviteAcceptedSubscriber(natsClient, proxyClient, slog.Default())
+		if err := inviteAccSub.Start(ctx); err != nil {
+			slog.ErrorContext(ctx, "failed to start invite_accepted subscriber; continuing without it",
+				"error", err)
+			inviteAccSub = nil
+		} else {
+			slog.InfoContext(ctx, "invite_accepted subscriber started")
+		}
+	} else {
+		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
+	}
 
 	// Create the mailing list API service
 	mailingListSvc := service.NewMailingListAPI(
@@ -173,8 +206,9 @@ func main() {
 
 	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
 
-	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var)
-	if err := handleDataStream(ctx, &wg); err != nil {
+	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var).
+	// Pass invite deps so the member handler can send LFID invites when fully configured.
+	if err := handleDataStream(ctx, &wg, inviteSender, userReader, inviteCfg.SelfServeBaseURL); err != nil {
 		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
 		os.Exit(1)
 	}
@@ -183,6 +217,12 @@ func main() {
 	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
 		"signal", <-errc,
 	)
+
+	// Stop the invite_accepted subscriber before cancelling the context so that
+	// in-flight AcceptInvite calls can complete gracefully.
+	if inviteAccSub != nil {
+		inviteAccSub.Stop()
+	}
 
 	cancel()
 

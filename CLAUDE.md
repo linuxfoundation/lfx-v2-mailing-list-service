@@ -53,7 +53,7 @@ The codebase follows hexagonal/clean architecture principles:
 
 **Infrastructure Layer** (`internal/infrastructure/`):
 - `auth/` - JWT authentication using Heimdall tokens
-- `nats/` - NATS messaging client, JetStream key-value storage, and storage abstractions
+- `nats/` - NATS messaging client, JetStream KV access (`v1-mappings`, `v1-objects`), and mapping store abstractions
 - `mock/` - Mock implementations for testing (auth, grpsio service)
 
 **Application Layer**:
@@ -78,7 +78,7 @@ The codebase follows hexagonal/clean architecture principles:
 - Context-based principal propagation using `constants.PrincipalContextID`
 
 ### NATS Integration
-- **JetStream Storage**: Key-value storage for services, mailing lists, and members
+- **JetStream KV**: Reads `v1-objects` (v1 DynamoDB CDC from lfx-v1-sync-helper) and `v1-mappings` (idempotency / entity mapping state)
 - **Message Publishing**: Publishes indexing and access control events
 - **Data Stream**: Subscribes to v1 DynamoDB KV events for data migration/sync
 - **Connection Management**: Reconnection handling and readiness checks

@@ -71,6 +71,15 @@ func (c *NATSClient) IsReady(ctx context.Context) error {
 	return nil
 }
 
+// RequestWithContext sends a NATS request and waits for a single reply.
+// It is used for request/reply patterns such as invite sending and username lookup.
+func (c *NATSClient) RequestWithContext(ctx context.Context, subject string, data []byte) (*nats.Msg, error) {
+	if c.conn == nil {
+		return nil, errors.NewServiceUnavailable("NATS connection not initialized")
+	}
+	return c.conn.RequestWithContext(ctx, subject, data)
+}
+
 // QueueSubscribe creates a queue subscription for load-balanced message processing
 // Returns subscription handle and error
 func (c *NATSClient) QueueSubscribe(subject, queue string, handler nats.MsgHandler) (*nats.Subscription, error) {
