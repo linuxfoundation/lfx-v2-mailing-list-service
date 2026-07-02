@@ -179,11 +179,13 @@ spec:
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
 
-        - authorizer: openfga_check
+        - authorizer: openfga_or_check
           config:
             values:
               relation: writer
               object: "groupsio_service:{{ "{{- .Request.Body.service_id -}}" }}"
+              or_relation: "{{ "{{- if .Request.Body.committee_uid -}}writer{{- end -}}" }}"
+              or_object: "{{ "{{- if .Request.Body.committee_uid -}}committee:{{- .Request.Body.committee_uid -}}{{- end -}}" }}"
         {{- else }}
         - authorizer: allow_all
         {{- end }}

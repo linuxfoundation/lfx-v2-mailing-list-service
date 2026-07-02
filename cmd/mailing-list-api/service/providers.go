@@ -191,6 +191,49 @@ func natsPublisher(ctx context.Context) port.MessagePublisher {
 	return natsPublisherClient
 }
 
+// InviteFeatureConfig holds configuration for the LFID invite feature.
+type InviteFeatureConfig struct {
+	// Enabled controls whether LFID invite sending and acceptance are active.
+	Enabled bool
+	// SelfServeBaseURL is the base URL for the LFX self-serve web application,
+	// used to build the invite return URL (e.g. https://app.lfx.dev).
+	SelfServeBaseURL string
+}
+
+// InviteConfig reads invite feature configuration from environment variables.
+// INVITES_ENABLED enables the feature (default: false).
+// LFX_SELF_SERVE_BASE_URL overrides the self-serve base URL; when absent it is
+// derived from LFX_ENVIRONMENT (prod/staging/dev).
+func InviteConfig() InviteFeatureConfig {
+	enabled := strings.EqualFold(os.Getenv("INVITES_ENABLED"), "true") ||
+		strings.EqualFold(os.Getenv("INVITES_ENABLED"), "yes")
+	if !enabled {
+		return InviteFeatureConfig{}
+	}
+
+	baseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
+	if baseURL == "" {
+		baseURL = selfServeBaseURLForEnv(os.Getenv("LFX_ENVIRONMENT"))
+	}
+	return InviteFeatureConfig{
+		Enabled:          true,
+		SelfServeBaseURL: baseURL,
+	}
+}
+
+// selfServeBaseURLForEnv returns the default self-serve base URL for the given
+// LFX_ENVIRONMENT value. An empty or unrecognised environment defaults to prod.
+func selfServeBaseURLForEnv(env string) string {
+	switch strings.ToLower(env) {
+	case "staging":
+		return "https://app.staging.lfx.dev"
+	case "dev":
+		return "https://app.dev.lfx.dev"
+	default:
+		return "https://app.lfx.dev"
+	}
+}
+
 // MessagePublisher initializes the service publisher implementation
 func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	var publisher port.MessagePublisher
@@ -218,4 +261,28 @@ func MessagePublisher(ctx context.Context) port.MessagePublisher {
 	}
 
 	return publisher
+}
+
+// CommitteeProjectLookup initializes the committee project lookup implementation.
+// REPOSITORY_SOURCE controls which backend is used (default: "nats").
+func CommitteeProjectLookup(ctx context.Context) port.CommitteeProjectLookup {
+	repoSource := os.Getenv("REPOSITORY_SOURCE")
+	if repoSource == "" {
+		repoSource = "nats"
+	}
+
+	switch repoSource {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock committee project lookup")
+		return infrastructure.NewFakeCommitteeProjectLookup()
+
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS committee project lookup")
+		return nats.NewNATSCommitteeProjectLookup(GetNATSClient(ctx))
+
+	default:
+		log.Fatalf("unsupported committee project lookup implementation: %s", repoSource)
+	}
+
+	return nil
 }

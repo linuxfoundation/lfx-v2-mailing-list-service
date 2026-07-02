@@ -15,6 +15,8 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	svc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
@@ -23,15 +25,42 @@ import (
 //
 // Enabled only when EVENTING_ENABLED=true. If disabled, the function
 // is a no-op and returns nil.
-func handleDataStream(ctx context.Context, wg *sync.WaitGroup) error {
+//
+// When inviteSender and userReader are non-nil and selfServeBaseURL is non-empty,
+// a MemberInviteHandler is constructed and wired into the member event processor.
+func handleDataStream(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	inviteSender port.InviteSender,
+	userReader port.UserReader,
+	selfServeBaseURL string,
+) error {
 	if !dataStreamEnabled() {
 		slog.InfoContext(ctx, "data stream processor disabled (EVENTING_ENABLED not set to true)")
 		return nil
 	}
 
 	natsClient := service.GetNATSClient(ctx)
+	mappings := service.MappingReaderWriter(ctx)
 
-	handler := eventing.NewEventHandler(service.MessagePublisher(ctx), service.MappingReaderWriter(ctx), infraNATS.NewNATSProjectLookup(natsClient))
+	// Build the LFID invite handler for member events when fully configured.
+	var memberInviteHandler *svc.MemberInviteHandler
+	if inviteSender != nil && userReader != nil && selfServeBaseURL != "" {
+		v1ObjectsKV, kvErr := natsClient.KeyValue(ctx, constants.KVBucketV1Objects)
+		if kvErr != nil {
+			slog.WarnContext(ctx, "failed to open v1-objects KV for invite handler; invite sending disabled",
+				"error", kvErr)
+		} else {
+			memberInviteHandler = svc.NewMemberInviteHandler(inviteSender, userReader, mappings, v1ObjectsKV, selfServeBaseURL)
+		}
+	}
+
+	handlerOpts := []eventing.EventHandlerOption{}
+	if memberInviteHandler != nil {
+		handlerOpts = append(handlerOpts, eventing.WithMemberInviteHandler(memberInviteHandler))
+	}
+
+	handler := eventing.NewEventHandler(service.MessagePublisher(ctx), mappings, infraNATS.NewNATSProjectLookup(natsClient), handlerOpts...)
 	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
 
 	cfg := dataStreamConfig()

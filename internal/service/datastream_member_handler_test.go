@@ -28,7 +28,7 @@ func setProjectMapping(m *mock.FakeMappingStore, mailingListUID, projectUID, pro
 func TestHandleDataStreamMemberUpdate_MissingGroupID_ACK(t *testing.T) {
 	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
 		map[string]any{},
-		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore())
+		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore(), nil)
 	assert.False(t, nak, "missing group_id should ACK (malformed data, no retry)")
 }
 
@@ -36,7 +36,7 @@ func TestHandleDataStreamMemberUpdate_ParentSubgroupAbsent_NAK(t *testing.T) {
 	// group_id present but no subgroup mapping written yet
 	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
 		map[string]any{"group_id": float64(42)},
-		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore())
+		&mock.SpyMessagePublisher{}, mock.NewFakeMappingStore(), nil)
 	assert.True(t, nak, "absent subgroup mapping should NAK for retry")
 }
 
@@ -47,7 +47,7 @@ func TestHandleDataStreamMemberUpdate_ProjectMappingAbsent_NAK(t *testing.T) {
 
 	nak := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
 		map[string]any{"group_id": float64(42)},
-		&mock.SpyMessagePublisher{}, m)
+		&mock.SpyMessagePublisher{}, m, nil)
 	assert.True(t, nak, "absent project mapping should NAK for retry")
 }
 
@@ -61,7 +61,7 @@ func TestHandleDataStreamMemberUpdate_Tombstoned_ACK(t *testing.T) {
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
 		map[string]any{"group_id": float64(42)},
-		pub, m)
+		pub, m, nil)
 
 	assert.False(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "tombstoned member should not publish")
@@ -80,7 +80,7 @@ func TestHandleDataStreamMemberUpdate_HappyPath_ACKAndPublishesAndWritesMapping(
 			"email":     "alice@example.com",
 			"full_name": "Alice Smith",
 		},
-		pub, m)
+		pub, m, nil)
 
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
@@ -103,7 +103,7 @@ func TestHandleDataStreamMemberUpdate_ProjectFieldsPopulated(t *testing.T) {
 			"group_id": float64(42),
 			"email":    "alice@example.com",
 		},
-		pub, m)
+		pub, m, nil)
 
 	assert.Len(t, pub.IndexerCalls, 1)
 	indexerMsg, ok := pub.IndexerCalls[0].Message.(*model.IndexerMessage)
@@ -125,7 +125,7 @@ func TestHandleDataStreamMemberUpdate_CreateVsUpdate_Action(t *testing.T) {
 	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
 
 	assert.Equal(t, model.ActionCreated, m.ResolveAction(ctx, mKey))
-	HandleDataStreamMemberUpdate(ctx, "mem-1", data(), &mock.SpyMessagePublisher{}, m)
+	HandleDataStreamMemberUpdate(ctx, "mem-1", data(), &mock.SpyMessagePublisher{}, m, nil)
 	assert.Equal(t, model.ActionUpdated, m.ResolveAction(ctx, mKey))
 }
 
@@ -184,7 +184,7 @@ func TestHandleDataStreamMemberUpdate_WithUsername_PublishesMemberPut(t *testing
 			"username":  "alice@example.com",
 			"full_name": "Alice Smith",
 		},
-		pub, m)
+		pub, m, nil)
 
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
@@ -215,7 +215,7 @@ func TestHandleDataStreamMemberUpdate_WithLFXHandleUsername_PublishesMemberPut(t
 			"username":  "alice.smith",
 			"full_name": "Alice Smith",
 		},
-		pub, m)
+		pub, m, nil)
 
 	assert.False(t, nak)
 	assert.Len(t, pub.AccessCalls, 1)

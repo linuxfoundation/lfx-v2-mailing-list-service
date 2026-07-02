@@ -182,7 +182,7 @@ lfx-v2-mailing-list-service/
 │   ├── constants/                  # Application constants
 │   │   ├── context.go              # Context keys
 │   │   ├── global.go               # Global constants
-│   │   ├── storage.go              # Storage bucket names
+│   │   ├── storage.go              # NATS KV bucket names and v1-mappings key prefixes
 │   │   └── subjects.go             # NATS subject definitions
 │   ├── errors/                     # Error types
 │   └── auth/                       # Auth0 token source helpers

@@ -122,6 +122,14 @@ type inviteMembersRequestWire struct {
 	Emails []string `json:"emails"`
 }
 
+// acceptInviteRequestWire is the JSON payload for POST /v2/groupsio/invite_accepted.
+// It instructs the ITX GroupsIO backend to enrich all member records whose email
+// matches the acceptor with the newly-resolved username.
+type acceptInviteRequestWire struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
 // artifactUserWire represents a user reference on an artifact (creator or last modifier).
 type artifactUserWire struct {
 	ID             string `json:"id,omitempty"`

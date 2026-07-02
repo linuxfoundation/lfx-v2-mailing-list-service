@@ -395,6 +395,29 @@ func (c *itx) InviteMembers(ctx context.Context, mailingListID string, emails []
 	return nil
 }
 
+// AcceptInvite calls the ITX GroupsIO backend to enrich all mailing-list member records
+// tied to email with the accepted username and profile data.
+// It satisfies port.InviteAcceptanceClient.
+func (c *itx) AcceptInvite(ctx context.Context, email, username string) error {
+	body, err := json.Marshal(acceptInviteRequestWire{Email: email, Username: username})
+	if err != nil {
+		return errs.NewUnexpected("failed to marshal accept-invite request", err)
+	}
+
+	u, err := c.buildURL("v2", "groupsio", "invite_accepted")
+	if err != nil {
+		return errs.NewUnexpected("failed to build accept-invite URL", err)
+	}
+
+	_, err = c.httpClient.Request(ctx, http.MethodPost, u, bytes.NewReader(body), map[string]string{
+		"Content-Type": "application/json",
+	})
+	if err != nil {
+		return c.handleRequestError(err)
+	}
+	return nil
+}
+
 // ---- GroupsIOMailingListReader implementation ----
 
 // ListMailingLists lists GroupsIO mailing lists, optionally filtered by project and/or committee v1 IDs.

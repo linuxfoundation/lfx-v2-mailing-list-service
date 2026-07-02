@@ -12,6 +12,9 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 )
 
+// EventHandlerOption is a functional option for configuring eventHandler.
+type EventHandlerOption func(*eventHandler)
+
 const (
 	// KV key prefixes matching lfx-v1-sync-helper's naming convention.
 	kvPrefixService  = "itx-groupsio-v2-service."
@@ -29,18 +32,33 @@ type eventHandler struct {
 	publisher     port.MessagePublisher
 	mappings      port.MappingReaderWriter
 	projectLookup port.ProjectLookup
+	memberInvite  *service.MemberInviteHandler
+}
+
+// WithMemberInviteHandler returns an EventHandlerOption that wires up the LFID invite
+// handler for mailing-list members. When this option is not provided (or the handler
+// is nil), invite sending is disabled and the event processor runs without it.
+func WithMemberInviteHandler(h *service.MemberInviteHandler) EventHandlerOption {
+	return func(eh *eventHandler) {
+		eh.memberInvite = h
+	}
 }
 
 // NewEventHandler constructs a DataEventHandler for GroupsIO entities.
 // publisher is used to emit indexer and access control messages.
 // mappings is the v1-mappings abstraction used for idempotency tracking.
 // projectLookup is used by the subgroup handler to fetch the project slug.
-func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) port.DataEventHandler {
-	return &eventHandler{
+// Additional behaviour (e.g. LFID invite sending) can be added via options.
+func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup, opts ...EventHandlerOption) port.DataEventHandler {
+	eh := &eventHandler{
 		publisher:     publisher,
 		mappings:      mappings,
 		projectLookup: projectLookup,
 	}
+	for _, opt := range opts {
+		opt(eh)
+	}
+	return eh
 }
 
 // HandleChange dispatches a PUT event to the correct entity handler.
@@ -68,7 +86,7 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 		if isSoftDelete {
 			return service.HandleDataStreamMemberDelete(ctx, uid, h.publisher, h.mappings)
 		}
-		return service.HandleDataStreamMemberUpdate(ctx, uid, data, h.publisher, h.mappings)
+		return service.HandleDataStreamMemberUpdate(ctx, uid, data, h.publisher, h.mappings, h.memberInvite)
 
 	case strings.HasPrefix(key, kvPrefixArtifact):
 		uid := key[len(kvPrefixArtifact):]
