@@ -46,6 +46,9 @@ spec:
                 {{- toYaml $config.valueFrom | nindent 16 }}
               {{- end }}
             {{- end }}
+            {{- with .Values.app.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             {{- $otelServiceName := .Values.app.otel.serviceName | toString | trim }}
             {{- if ne $otelServiceName "" }}
             - name: OTEL_SERVICE_NAME
