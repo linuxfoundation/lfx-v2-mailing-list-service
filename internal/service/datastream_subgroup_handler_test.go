@@ -182,3 +182,33 @@ func TestHandleDataStreamSubgroupDelete_HappyPath_ACKAndTombstones(t *testing.T)
 	assert.True(t, m.IsTombstoned(context.Background(),
 		fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup)))
 }
+
+func TestTransformV1ToGrpsIOMailingList_VisibilityMapping(t *testing.T) {
+	tests := []struct {
+		name               string
+		visibility         any
+		wantPublic         bool
+		wantAudienceAccess string
+	}{
+		{"lowercase public", "public", true, "public"},
+		{"mixed-case Public", "Public", true, "Public"},
+		{"uppercase PUBLIC", "PUBLIC", true, "PUBLIC"},
+		{"approval_required", "approval_required", false, "approval_required"},
+		{"invite_only", "invite_only", false, "invite_only"},
+		{"missing visibility", nil, false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := map[string]any{}
+			if tt.visibility != nil {
+				data["visibility"] = tt.visibility
+			}
+
+			list := transformV1ToGrpsIOMailingList("sg-1", data)
+
+			assert.Equal(t, tt.wantPublic, list.Public)
+			assert.Equal(t, tt.wantAudienceAccess, list.AudienceAccess)
+		})
+	}
+}
