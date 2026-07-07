@@ -167,7 +167,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `group_id` | int64 (optional) | Groups.io numeric group ID |
 | `group_name` | string | Groups.io group name; emitted as empty string when not populated |
 | `public` | bool | Whether the mailing list is publicly accessible |
-| `audience_access` | string | Access model: `public`, `approval_required`, or `invite_only`; not populated by v1-sync transform — emitted as empty string |
+| `audience_access` | string | Access model: `public`, `approval_required`, or `invite_only` |
 | `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
 | `type` | string | List type: `announcement`, `discussion_moderated`, or `discussion_open` |
 | `subscriber_count` | int | Current number of subscribers |
@@ -185,7 +185,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
 
-> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` (from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. `audience_access`, `project_name`, and `project_slug` are not set by the transform and will be emitted as empty strings.
+> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
 
 ### Tags
 
