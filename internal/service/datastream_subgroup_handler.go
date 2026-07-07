@@ -286,6 +286,8 @@ func userInfoUsernames(users []model.UserInfo) []string {
 
 // transformV1ToGrpsIOMailingList maps v1 DynamoDB fields to the GrpsIOMailingList domain model.
 func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.GroupsIOMailingList {
+	// visibility is the legacy ITX/DynamoDB field (itx-groupsio-v2-subgroup.visibility), synced
+	// verbatim via lfx-v1-sync-helper with no casing normalization upstream — hence EqualFold below.
 	visibility := mapconv.StringVal(data, "visibility")
 	list := &model.GroupsIOMailingList{
 		UID:            uid,
