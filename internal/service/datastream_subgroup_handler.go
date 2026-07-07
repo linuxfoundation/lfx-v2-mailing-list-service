@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
@@ -285,20 +286,22 @@ func userInfoUsernames(users []model.UserInfo) []string {
 
 // transformV1ToGrpsIOMailingList maps v1 DynamoDB fields to the GrpsIOMailingList domain model.
 func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.GroupsIOMailingList {
+	visibility := mapconv.StringVal(data, "visibility")
 	list := &model.GroupsIOMailingList{
-		UID:         uid,
-		GroupID:     mapconv.Int64Ptr(data, "group_id"),
-		GroupName:   mapconv.StringVal(data, "group_name"),
-		Public:      mapconv.StringVal(data, "visibility") == "Public",
-		Type:        mapconv.StringVal(data, "type"),
-		Description: mapconv.StringVal(data, "description"),
-		Title:       mapconv.StringVal(data, "title"),
-		SubjectTag:  mapconv.StringVal(data, "subject_tag"),
-		URL:         mapconv.StringVal(data, "url"),
-		Flags:       mapconv.StringSliceVal(data, "flags"),
-		ServiceUID:  mapconv.StringVal(data, "parent_id"),
-		ProjectUID:  mapconv.StringVal(data, "project_id"),
-		Source:      "v1-sync",
+		UID:            uid,
+		GroupID:        mapconv.Int64Ptr(data, "group_id"),
+		GroupName:      mapconv.StringVal(data, "group_name"),
+		Public:         strings.EqualFold(visibility, "public"),
+		AudienceAccess: visibility,
+		Type:           mapconv.StringVal(data, "type"),
+		Description:    mapconv.StringVal(data, "description"),
+		Title:          mapconv.StringVal(data, "title"),
+		SubjectTag:     mapconv.StringVal(data, "subject_tag"),
+		URL:            mapconv.StringVal(data, "url"),
+		Flags:          mapconv.StringSliceVal(data, "flags"),
+		ServiceUID:     mapconv.StringVal(data, "parent_id"),
+		ProjectUID:     mapconv.StringVal(data, "project_id"),
+		Source:         "v1-sync",
 	}
 
 	if n := mapconv.Int64Ptr(data, "subscriber_count"); n != nil {
