@@ -68,6 +68,15 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	action := mappings.ResolveAction(ctx, mKey)
 
+	// For updates, read the previously-stored username so we can detect when it has been
+	// cleared and revoke stale FGA access before writing the new state.
+	oldUsername := ""
+	if action == model.ActionUpdated {
+		if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
+			_, oldUsername, _ = parseMemberMappingValue(storedValue)
+		}
+	}
+
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
 
 	mailingListRef := fmt.Sprintf("groupsio_mailing_list:%s", mailingListUID)
@@ -94,6 +103,23 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, built); err != nil {
 		slog.ErrorContext(ctx, "failed to publish member indexer message", "uid", uid, "error", err)
 		return pkgerrors.IsTransient(err)
+	}
+
+	// If the username was removed or changed, revoke the old FGA access before granting new
+	// access so the user never holds more permissions than intended.
+	if oldUsername != "" && oldUsername != member.Username {
+		removeMsg := fgatypes.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_remove",
+			Data: fgatypes.GenericMemberData{
+				UID:       mailingListUID,
+				Username:  oldUsername,
+				Relations: []string{},
+			},
+		}
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, removeMsg); err != nil {
+			slog.WarnContext(ctx, "failed to publish member FGA remove for old username", "uid", uid, "error", err)
+		}
 	}
 
 	if member.Username != "" {
