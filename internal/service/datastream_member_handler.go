@@ -66,20 +66,18 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return false
 	}
 
-	action := mappings.ResolveAction(ctx, mKey)
-
-	// For updates, read the previously-stored username and mailing list UID so we can detect
-	// when either has changed and revoke stale FGA access before writing the new state.
+	// Single read: determine action and capture old state in one call.
+	// ResolveAction also calls kv.Get internally and converts any error into ActionCreated,
+	// which would silently bypass stale-tuple removal. Using GetMappingValue directly avoids
+	// that hidden failure path. The interface cannot yet distinguish "key not found" from a
+	// transient storage error — both return false — so a transient failure here still
+	// produces ActionCreated. A proper NAK requires adding error return to MappingReader
+	// (tracked as a follow-up interface change).
+	action := model.ActionCreated
 	oldUsername := ""
 	oldMailingListUID := ""
-	if action == model.ActionUpdated {
-		storedValue, ok := mappings.GetMappingValue(ctx, mKey)
-		if !ok {
-			// ResolveAction confirmed a live mapping exists; GetMappingValue returning false
-			// indicates a transient KV read error. NAK so the event is redelivered.
-			slog.WarnContext(ctx, "failed to read existing member mapping, NAKing for retry", "uid", uid)
-			return true
-		}
+	if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
+		action = model.ActionUpdated
 		_, oldUsername, oldMailingListUID = parseMemberMappingValue(storedValue)
 	}
 
@@ -150,12 +148,14 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		}
 		if err := publisher.Access(ctx, fgaconstants.GenericMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
+			return pkgerrors.IsTransient(err)
 		}
 	}
 
 	mappingValue := buildMemberMappingValue(uid, member.Username, mailingListUID)
 	if err := mappings.PutMapping(ctx, mKey, mappingValue); err != nil {
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	// Best-effort: send an LFID invite for newly-created members without a username.

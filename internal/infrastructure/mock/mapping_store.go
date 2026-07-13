@@ -12,9 +12,10 @@ import (
 
 // FakeMappingStore is an in-memory MappingReaderWriter for unit tests.
 type FakeMappingStore struct {
-	values     map[string]string
-	tombstones map[string]bool
-	getErrors  map[string]bool
+	values      map[string]string
+	tombstones  map[string]bool
+	getErrors   map[string]bool
+	putErrors   map[string]error
 }
 
 var _ port.MappingReaderWriter = (*FakeMappingStore)(nil)
@@ -22,9 +23,10 @@ var _ port.MappingReaderWriter = (*FakeMappingStore)(nil)
 // NewFakeMappingStore returns an empty FakeMappingStore.
 func NewFakeMappingStore() *FakeMappingStore {
 	return &FakeMappingStore{
-		values:    make(map[string]string),
+		values:     make(map[string]string),
 		tombstones: make(map[string]bool),
-		getErrors: make(map[string]bool),
+		getErrors:  make(map[string]bool),
+		putErrors:  make(map[string]error),
 	}
 }
 
@@ -34,6 +36,9 @@ func (f *FakeMappingStore) Set(key, value string) { f.values[key] = value }
 // SimulateGetError causes GetMappingValue to return ("", false) for the given key,
 // simulating a transient KV read error even when the key exists.
 func (f *FakeMappingStore) SimulateGetError(key string) { f.getErrors[key] = true }
+
+// SimulatePutError causes PutMapping to return the given error for the given key.
+func (f *FakeMappingStore) SimulatePutError(key string, err error) { f.putErrors[key] = err }
 
 func (f *FakeMappingStore) ResolveAction(_ context.Context, key string) model.MessageAction {
 	if _, ok := f.values[key]; ok {
@@ -60,6 +65,9 @@ func (f *FakeMappingStore) GetMappingValue(_ context.Context, key string) (strin
 }
 
 func (f *FakeMappingStore) PutMapping(_ context.Context, key, value string) error {
+	if err, ok := f.putErrors[key]; ok {
+		return err
+	}
 	f.values[key] = value
 	return nil
 }
