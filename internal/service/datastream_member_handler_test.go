@@ -294,6 +294,56 @@ func TestHandleDataStreamMemberUpdate_UsernameChanged_RemovesOldAndAddsNew(t *te
 	assert.Equal(t, "bob@example.com", putData.Data.(fgatypes.GenericMemberData).Username)
 }
 
+func TestHandleDataStreamMemberUpdate_MappingReadError_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+	// Key exists (so ResolveAction returns ActionUpdated) but GetMappingValue will fail
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+	m.SimulateGetError(mKey)
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{"group_id": float64(42), "username": "alice@example.com"},
+		pub, m, nil)
+
+	assert.True(t, nak, "transient mapping read error should NAK for retry")
+	assert.Empty(t, pub.IndexerCalls, "should not publish when mapping is unreadable")
+	assert.Empty(t, pub.AccessCalls)
+}
+
+func TestHandleDataStreamMemberUpdate_MailingListChanged_RemovesOldTuple(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	// Member was previously in sg-old, now arriving under sg-new
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-new")
+	setProjectMapping(m, "sg-new", "proj-uid", "my-project")
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-old")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{"group_id": float64(42), "username": "alice@example.com"},
+		pub, m, nil)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	// remove for old (sg-old, alice), then put for new (sg-new, alice)
+	assert.Len(t, pub.AccessCalls, 2)
+	assert.Equal(t, fgaconstants.GenericMemberRemoveSubject, pub.AccessCalls[0].Subject)
+	removeData, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-old", removeData.Data.(fgatypes.GenericMemberData).UID)
+	assert.Equal(t, "alice@example.com", removeData.Data.(fgatypes.GenericMemberData).Username)
+
+	assert.Equal(t, fgaconstants.GenericMemberPutSubject, pub.AccessCalls[1].Subject)
+	putData, ok := pub.AccessCalls[1].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-new", putData.Data.(fgatypes.GenericMemberData).UID)
+}
+
 func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	ctx := context.Background()

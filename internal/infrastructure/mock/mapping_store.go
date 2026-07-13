@@ -14,17 +14,26 @@ import (
 type FakeMappingStore struct {
 	values     map[string]string
 	tombstones map[string]bool
+	getErrors  map[string]bool
 }
 
 var _ port.MappingReaderWriter = (*FakeMappingStore)(nil)
 
 // NewFakeMappingStore returns an empty FakeMappingStore.
 func NewFakeMappingStore() *FakeMappingStore {
-	return &FakeMappingStore{values: make(map[string]string), tombstones: make(map[string]bool)}
+	return &FakeMappingStore{
+		values:    make(map[string]string),
+		tombstones: make(map[string]bool),
+		getErrors: make(map[string]bool),
+	}
 }
 
 // Set pre-populates a key/value pair (helper for test setup).
 func (f *FakeMappingStore) Set(key, value string) { f.values[key] = value }
+
+// SimulateGetError causes GetMappingValue to return ("", false) for the given key,
+// simulating a transient KV read error even when the key exists.
+func (f *FakeMappingStore) SimulateGetError(key string) { f.getErrors[key] = true }
 
 func (f *FakeMappingStore) ResolveAction(_ context.Context, key string) model.MessageAction {
 	if _, ok := f.values[key]; ok {
@@ -43,7 +52,7 @@ func (f *FakeMappingStore) IsTombstoned(_ context.Context, key string) bool {
 }
 
 func (f *FakeMappingStore) GetMappingValue(_ context.Context, key string) (string, bool) {
-	if f.tombstones[key] {
+	if f.tombstones[key] || f.getErrors[key] {
 		return "", false
 	}
 	v, ok := f.values[key]
