@@ -107,6 +107,8 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	// If the username was removed or changed, revoke the old FGA access before granting new
 	// access so the user never holds more permissions than intended.
+	// Retry transient publish failures: if we continue and overwrite the mapping, the old
+	// username is lost and the stale tuple can never be recovered.
 	if oldUsername != "" && oldUsername != member.Username {
 		removeMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
@@ -119,6 +121,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		}
 		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, removeMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA remove for old username", "uid", uid, "error", err)
+			return pkgerrors.IsTransient(err)
 		}
 	}
 
