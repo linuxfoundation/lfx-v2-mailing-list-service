@@ -37,7 +37,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
 	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
-	if !ok {
+	if !ok || mailingListUID == "" {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing member for retry",
 			"uid", uid, "group_id", *groupID)
 		return true // NAK — retry with backoff
@@ -79,6 +79,13 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
 		action = model.ActionUpdated
 		_, oldUsername, oldMailingListUID = parseMemberMappingValue(storedValue)
+		// Warn when the stored mapping is missing the mailing list UID (written by an older
+		// version of the handler). Parent-change FGA revocation cannot fire without it —
+		// reprocess the member or run a mapping backfill to repair affected entries.
+		if oldUsername != "" && oldMailingListUID == "" {
+			slog.WarnContext(ctx, "stored member mapping lacks mailing list UID — parent-change FGA revocation disabled for this entry",
+				"uid", uid)
+		}
 	}
 
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
