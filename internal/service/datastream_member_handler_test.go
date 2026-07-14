@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -226,6 +227,134 @@ func TestHandleDataStreamMemberUpdate_WithLFXHandleUsername_PublishesMemberPut(t
 	assert.True(t, ok)
 	assert.Equal(t, "alice.smith", data.Username)
 }
+
+func TestHandleDataStreamMemberUpdate_UsernameCleared_PublishesMemberRemove(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+	// Pre-existing mapping with username stored
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+
+	pub := &mock.SpyMessagePublisher{}
+	// Update arrives with username removed
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{
+			"group_id":  float64(42),
+			"full_name": "Alice Smith",
+			// username intentionally absent
+		},
+		pub, m, nil)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	// Should have exactly one access call: member_remove for the old username
+	assert.Len(t, pub.AccessCalls, 1)
+	assert.Equal(t, fgaconstants.GenericMemberRemoveSubject, pub.AccessCalls[0].Subject)
+
+	msg, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, "member_remove", msg.Operation)
+	data, ok := msg.Data.(fgatypes.GenericMemberData)
+	assert.True(t, ok)
+	assert.Equal(t, "sg-1", data.UID)
+	assert.Equal(t, "alice@example.com", data.Username)
+	assert.Empty(t, data.Relations)
+}
+
+func TestHandleDataStreamMemberUpdate_UsernameChanged_RemovesOldAndAddsNew(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{
+			"group_id":  float64(42),
+			"username":  "bob@example.com",
+			"full_name": "Bob Jones",
+		},
+		pub, m, nil)
+
+	assert.False(t, nak)
+	assert.Len(t, pub.IndexerCalls, 1)
+	// remove for old username, then put for new username
+	assert.Len(t, pub.AccessCalls, 2)
+	assert.Equal(t, fgaconstants.GenericMemberRemoveSubject, pub.AccessCalls[0].Subject)
+	removeData, ok := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, "alice@example.com", removeData.Data.(fgatypes.GenericMemberData).Username)
+
+	assert.Equal(t, fgaconstants.GenericMemberPutSubject, pub.AccessCalls[1].Subject)
+	putData, ok := pub.AccessCalls[1].Message.(fgatypes.GenericFGAMessage)
+	assert.True(t, ok)
+	assert.Equal(t, "bob@example.com", putData.Data.(fgatypes.GenericMemberData).Username)
+}
+
+func TestHandleDataStreamMemberUpdate_MappingReadError_TreatedAsCreate(t *testing.T) {
+	// When GetMappingValue returns false (including on transient KV error), the handler cannot
+	// distinguish "not found" from "error" — it treats the event as ActionCreated and skips
+	// any stale-tuple removal. This is an accepted limitation pending an interface change that
+	// exposes the raw error.
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	_ = m.PutMapping(ctx, mKey, "mem-1|alice@example.com|sg-1")
+	m.SimulateGetError(mKey)
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{"group_id": float64(42), "username": "bob@example.com"},
+		pub, m, nil)
+
+	// ACKed — no NAK since we can't distinguish transient from not-found without interface change.
+	assert.False(t, nak)
+	// No remove: oldUsername is unknown, so we cannot revoke the stale tuple.
+	assert.Equal(t, 1, len(pub.AccessCalls), "only member_put should be published — no remove since old username is unknown")
+	assert.Equal(t, fgaconstants.GenericMemberPutSubject, pub.AccessCalls[0].Subject)
+}
+
+func TestHandleDataStreamMemberUpdate_MemberPutFailure_Transient_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+
+	pub := &mock.SpyMessagePublisher{AccessError: errors.New("connection refused")}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{"group_id": float64(42), "username": "alice@example.com"},
+		pub, m, nil)
+
+	assert.True(t, nak, "transient member_put failure should NAK for retry")
+	// Mapping must NOT have been written — redelivery needs to retry member_put too.
+	_, mappingWritten := m.GetMappingValue(ctx, fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember))
+	assert.False(t, mappingWritten, "mapping must not be written when member_put fails")
+}
+
+func TestHandleDataStreamMemberUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	ctx := context.Background()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+	setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	m.SimulatePutError(mKey, errors.New("connection timeout"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberUpdate(ctx, "mem-1",
+		map[string]any{"group_id": float64(42), "username": "alice@example.com"},
+		pub, m, nil)
+
+	assert.True(t, nak, "transient PutMapping failure should NAK for retry")
+	// FGA put was already published — redelivery will resend it, which is idempotent.
+	assert.Len(t, pub.AccessCalls, 1, "member_put was published before the mapping write failed")
+}
+
 
 func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
 	m := mock.NewFakeMappingStore()

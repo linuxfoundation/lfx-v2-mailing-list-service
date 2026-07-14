@@ -37,7 +37,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
 	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
-	if !ok {
+	if !ok || mailingListUID == "" {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing member for retry",
 			"uid", uid, "group_id", *groupID)
 		return true // NAK — retry with backoff
@@ -66,7 +66,19 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return false
 	}
 
-	action := mappings.ResolveAction(ctx, mKey)
+	// Single read: determine action and capture old state in one call.
+	// ResolveAction also calls kv.Get internally and converts any error into ActionCreated,
+	// which would silently bypass stale-tuple removal. Using GetMappingValue directly avoids
+	// that hidden failure path. The interface cannot yet distinguish "key not found" from a
+	// transient storage error — both return false — so a transient failure here still
+	// produces ActionCreated. A proper NAK requires adding error return to MappingReader
+	// (tracked as a follow-up interface change).
+	action := model.ActionCreated
+	oldUsername := ""
+	if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
+		action = model.ActionUpdated
+		_, oldUsername, _ = parseMemberMappingValue(storedValue)
+	}
 
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
 
@@ -96,6 +108,27 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return pkgerrors.IsTransient(err)
 	}
 
+	// Revoke the old FGA tuple before granting the new one when the username changes or
+	// is cleared. A member record's group_id (and therefore mailingListUID) is immutable,
+	// so the remove always targets the same mailing list as the put.
+	// Retry transient publish failures: continuing would overwrite the mapping and lose
+	// the old username, making the stale tuple unrecoverable.
+	if oldUsername != "" && oldUsername != member.Username {
+		removeMsg := fgatypes.GenericFGAMessage{
+			ObjectType: constants.ObjectTypeGroupsIOMailingList,
+			Operation:  "member_remove",
+			Data: fgatypes.GenericMemberData{
+				UID:       mailingListUID,
+				Username:  oldUsername,
+				Relations: []string{},
+			},
+		}
+		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, removeMsg); err != nil {
+			slog.WarnContext(ctx, "failed to publish member FGA remove for old username", "uid", uid, "error", err)
+			return pkgerrors.IsTransient(err)
+		}
+	}
+
 	if member.Username != "" {
 		accessMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
@@ -108,12 +141,14 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		}
 		if err := publisher.Access(ctx, fgaconstants.GenericMemberPutSubject, accessMsg); err != nil {
 			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
+			return pkgerrors.IsTransient(err)
 		}
 	}
 
 	mappingValue := buildMemberMappingValue(uid, member.Username, mailingListUID)
 	if err := mappings.PutMapping(ctx, mKey, mappingValue); err != nil {
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	// Best-effort: send an LFID invite for newly-created members without a username.

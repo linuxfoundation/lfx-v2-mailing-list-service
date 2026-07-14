@@ -11,9 +11,14 @@ import (
 )
 
 // SpyMessagePublisher records every call to Indexer and Access for assertion in tests.
+// Set AccessError or IndexerError to inject a failure returned on every subsequent matching call.
 type SpyMessagePublisher struct {
 	IndexerCalls []PublishedMsg
 	AccessCalls  []PublishedMsg
+	// AccessError, if non-nil, is returned by every Access call.
+	AccessError error
+	// IndexerError, if non-nil, is returned by every Indexer call.
+	IndexerError error
 }
 
 // PublishedMsg holds the subject and message from a single publisher call.
@@ -26,11 +31,11 @@ var _ port.MessagePublisher = (*SpyMessagePublisher)(nil)
 
 func (s *SpyMessagePublisher) Indexer(_ context.Context, subject string, message any) error {
 	s.IndexerCalls = append(s.IndexerCalls, PublishedMsg{subject, message})
-	return nil
+	return s.IndexerError
 }
 func (s *SpyMessagePublisher) Access(_ context.Context, subject string, message any) error {
 	s.AccessCalls = append(s.AccessCalls, PublishedMsg{subject, message})
-	return nil
+	return s.AccessError
 }
 func (s *SpyMessagePublisher) Internal(_ context.Context, _ string, _ any) error { return nil }
 
