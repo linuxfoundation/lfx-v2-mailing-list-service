@@ -11,7 +11,7 @@ import (
 )
 
 // SpyMessagePublisher records every call to Indexer and Access for assertion in tests.
-// Set AccessError or IndexerError to inject failures on the next matching call.
+// Set AccessError or IndexerError to inject a failure returned on every subsequent matching call.
 type SpyMessagePublisher struct {
 	IndexerCalls []PublishedMsg
 	AccessCalls  []PublishedMsg
