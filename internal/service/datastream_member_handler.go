@@ -75,17 +75,9 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	// (tracked as a follow-up interface change).
 	action := model.ActionCreated
 	oldUsername := ""
-	oldMailingListUID := ""
 	if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
 		action = model.ActionUpdated
-		_, oldUsername, oldMailingListUID = parseMemberMappingValue(storedValue)
-		// Warn when the stored mapping is missing the mailing list UID (written by an older
-		// version of the handler). Parent-change FGA revocation cannot fire without it —
-		// reprocess the member or run a mapping backfill to repair affected entries.
-		if oldUsername != "" && oldMailingListUID == "" {
-			slog.WarnContext(ctx, "stored member mapping lacks mailing list UID — parent-change FGA revocation disabled for this entry",
-				"uid", uid)
-		}
+		_, oldUsername, _ = parseMemberMappingValue(storedValue)
 	}
 
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
@@ -116,23 +108,17 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		return pkgerrors.IsTransient(err)
 	}
 
-	// If the username or parent mailing list changed, revoke the old FGA tuple before
-	// granting the new one. Use the stored mailing list UID so the remove targets the
-	// correct group even when the member moved groups.
+	// Revoke the old FGA tuple before granting the new one when the username changes or
+	// is cleared. A member record's group_id (and therefore mailingListUID) is immutable,
+	// so the remove always targets the same mailing list as the put.
 	// Retry transient publish failures: continuing would overwrite the mapping and lose
 	// the old username, making the stale tuple unrecoverable.
-	usernameChanged := oldUsername != "" && oldUsername != member.Username
-	parentChanged := oldUsername != "" && oldMailingListUID != "" && oldMailingListUID != mailingListUID
-	if usernameChanged || parentChanged {
-		removeUID := oldMailingListUID
-		if removeUID == "" {
-			removeUID = mailingListUID
-		}
+	if oldUsername != "" && oldUsername != member.Username {
 		removeMsg := fgatypes.GenericFGAMessage{
 			ObjectType: constants.ObjectTypeGroupsIOMailingList,
 			Operation:  "member_remove",
 			Data: fgatypes.GenericMemberData{
-				UID:       removeUID,
+				UID:       mailingListUID,
 				Username:  oldUsername,
 				Relations: []string{},
 			},
