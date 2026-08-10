@@ -13,6 +13,11 @@ image:
 # replicaCount is the number of replicas for the deployment
 replicaCount: 1
 
+# annotations are additional annotations applied to the Deployment itself.
+# Example:
+#   reloader.stakater.com/auto: "true"
+annotations: {}
+
 # podAnnotations are additional annotations applied to the pod template.
 # Example:
 #   prometheus.io/scrape: "true"
