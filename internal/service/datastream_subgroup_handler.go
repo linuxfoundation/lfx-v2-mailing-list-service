@@ -214,6 +214,7 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	committeeKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, uid)
 	if err := mappings.PutMapping(ctx, committeeKey, committeeUID+"|"+isPublicStr); err != nil {
 		slog.ErrorContext(ctx, "failed to put committee mapping key", "mapping_key", committeeKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	return false
