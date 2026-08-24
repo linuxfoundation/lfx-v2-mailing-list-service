@@ -197,6 +197,20 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return pkgerrors.IsTransient(err)
 	}
 
+	// Store committee mapping for message handler: committeeUID and visibility.
+	// Value format: "{committeeUID}|{isPublic}" where isPublic is "true" or "false".
+	// Only written when the subgroup has a committee association.
+	if len(list.Committees) > 0 && list.Committees[0].UID != "" {
+		isPublicStr := "false"
+		if list.Public {
+			isPublicStr = "true"
+		}
+		committeeKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, uid)
+		if err := mappings.PutMapping(ctx, committeeKey, list.Committees[0].UID+"|"+isPublicStr); err != nil {
+			slog.ErrorContext(ctx, "failed to put committee mapping key", "mapping_key", committeeKey, "error", err)
+		}
+	}
+
 	return false
 }
 

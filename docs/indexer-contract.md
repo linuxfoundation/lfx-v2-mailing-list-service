@@ -14,6 +14,7 @@ This document is the authoritative reference for all data the mailing list servi
 - [GroupsIO Mailing List Settings](#groupsio-mailing-list-settings)
 - [GroupsIO Member](#groupsio-member)
 - [GroupsIO Artifact](#groupsio-artifact)
+- [GroupsIO Mailing List Message](#groupsio-mailing-list-message)
 
 ---
 
@@ -469,3 +470,72 @@ Artifacts use a typed `IndexingConfig`. No FGA `AccessMessage` is published — 
 | `project:{project_uid}` | Only when `project_uid` is set |
 | `committee:{committee_uid}` | Only when `committee_uid` is set |
 | `groupsio_mailing_list:{group_id}` | Always set (numeric Groups.io group ID — the artifact model does not carry a mailing list UID) |
+
+---
+
+## GroupsIO Mailing List Message
+
+**Object type:** `groupsio_mailing_list_message`
+
+**Source struct:** `internal/domain/model/grpsio_message.go` — `GroupsIOMessage`
+
+**NATS subject:** `lfx.index.groupsio_mailing_list_message`
+
+**Indexed on:** create, update, delete of a Groups.io message (v1 datastream via `datastream_message_handler.go`).
+
+One record per message. Messages share a thread via `topic_id`. Privacy is resolved at index time from the subgroup KV mapping — it is NOT stored in the DynamoDB record.
+
+### Data Schema
+
+| Field | Type | Description |
+|---|---|---|
+| `message_id` | string | Groups.io message ID (PK, stringified uint64) |
+| `group_id` | uint64 | Groups.io numeric group ID of the mailing list |
+| `topic_id` | uint64 | Groups.io topic (thread) ID; messages in the same thread share this value |
+| `subject` | string | Message/thread subject line |
+| `snippet` | string | Plaintext excerpt of the message body |
+| `sender_name` | string | Display name of the message sender |
+| `msg_num` | uint64 | Position of the message within the group |
+| `is_reply` | bool | True when this message is a reply to an existing thread |
+| `is_private` | bool | True when the parent mailing list is not public; resolved from subgroup KV mapping |
+| `group_domain` | string | Groups.io domain of the parent service (e.g. `groups.io`) |
+| `group_name` | string | Groups.io group name of the mailing list |
+| `mailing_list_uid` | string | v2 UID of the parent mailing list (resolved from `group_id` via subgroup handler mapping) |
+| `committee_uid` | string | v2 UID of the associated committee; omitted when the list has no committee |
+| `created_at` | timestamp | Message publish time (RFC3339) |
+
+### Tags
+
+| Tag Format | Example | Purpose |
+|---|---|---|
+| `topic_id:{topic_id}` | `topic_id:12345` | Thread grouping in the committee service |
+| `group_id:{group_id}` | `group_id:67890` | Per-mailing-list filtering |
+| `mailing_list:{mailing_list_uid}` | `mailing_list:abc-123` | Parent list lookup by v2 UID |
+| `committee:{committee_uid}` | `committee:def-456` | **Required for committee service weekly brief** — only present when the list has a committee association |
+
+### Access Control
+
+No FGA access control messages are published for messages (same as artifacts). Access is gated via the parent mailing list's FGA entry.
+
+| Field | Value |
+|---|---|
+| `access_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
+| `access_check_relation` | `viewer` |
+| `history_check_object` | `groupsio_mailing_list:{mailing_list_uid}` |
+| `history_check_relation` | `auditor` |
+
+### Search Behavior
+
+| Field | Value |
+|---|---|
+| `fulltext` | `subject` + ` ` + `snippet` |
+| `name_and_aliases` | `subject` |
+| `sort_name` | `subject` |
+| `public` | `false` (always; access gated via parent mailing list FGA) |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `groupsio_mailing_list:{mailing_list_uid}` | Always set |
+| `committee:{committee_uid}` | Only when `committee_uid` is set |
