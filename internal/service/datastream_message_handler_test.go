@@ -29,9 +29,26 @@ func TestHandleDataStreamMessageUpdate_ParentSubgroupAbsent_NAK(t *testing.T) {
 	assert.True(t, nak, "absent subgroup mapping should NAK for retry")
 }
 
+func TestHandleDataStreamMessageUpdate_CommitteeMappingAbsent_NAK(t *testing.T) {
+	// mailingListUID known but committee mapping not yet written — subgroup not reprocessed.
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-123")
+	// intentionally no KVMappingPrefixSubgroupCommittee entry
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMessageUpdate(context.Background(), "msg-1",
+		map[string]any{"group_id": float64(42)},
+		pub, m)
+
+	assert.True(t, nak, "absent committee mapping should NAK until subgroup is reprocessed")
+	assert.Empty(t, pub.IndexerCalls)
+}
+
 func TestHandleDataStreamMessageUpdate_NoCommittee_PublishesWithoutCommitteeTag(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-123")
+	// Subgroup processed, no committee — subgroup handler writes "|true" (public, no committeeUID).
+	m.Set(fmt.Sprintf("%s.ml-uid-123", constants.KVMappingPrefixSubgroupCommittee), "|true")
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamMessageUpdate(context.Background(), "msg-1",
@@ -50,8 +67,29 @@ func TestHandleDataStreamMessageUpdate_NoCommittee_PublishesWithoutCommitteeTag(
 
 	// No committee tag when list has no committee association.
 	for _, tag := range msg.IndexingConfig.Tags {
-		assert.NotContains(t, tag, "committee:", "should not have committee tag when no committee mapping")
+		assert.NotContains(t, tag, "committee:", "should not have committee tag when committeeUID is empty")
 	}
+}
+
+func TestHandleDataStreamMessageUpdate_PrivateListNoCommittee_IsPrivateTrue(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-123")
+	// Private list, no committee: committeeUID empty, isPublic "false".
+	m.Set(fmt.Sprintf("%s.ml-uid-123", constants.KVMappingPrefixSubgroupCommittee), "|false")
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMessageUpdate(context.Background(), "msg-private",
+		map[string]any{"group_id": float64(42)},
+		pub, m)
+
+	assert.False(t, nak)
+	require.Len(t, pub.IndexerCalls, 1)
+
+	indexMsg, ok := pub.IndexerCalls[0].Message.(*model.IndexerMessage)
+	require.True(t, ok)
+	data, ok := indexMsg.Data.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, true, data["is_private"], "private list without committee should set is_private=true")
 }
 
 func TestHandleDataStreamMessageUpdate_WithCommittee_IncludesCommitteeTag(t *testing.T) {
@@ -78,6 +116,7 @@ func TestHandleDataStreamMessageUpdate_WithCommittee_IncludesCommitteeTag(t *tes
 func TestHandleDataStreamMessageUpdate_AccessCheckUsesMailingList(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.99", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-999")
+	m.Set(fmt.Sprintf("%s.ml-uid-999", constants.KVMappingPrefixSubgroupCommittee), "|true")
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamMessageUpdate(context.Background(), "msg-99",

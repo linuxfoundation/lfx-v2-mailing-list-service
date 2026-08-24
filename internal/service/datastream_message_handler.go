@@ -39,15 +39,23 @@ func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[str
 	}
 
 	// Resolve committee UID and visibility from the subgroup-committee mapping.
-	// Value format: "{committeeUID}|{isPublic}". Absent when the list has no committee.
+	// Value format: "{committeeUID}|{isPublic}". The subgroup handler writes this on every update,
+	// including for lists without a committee (empty committeeUID). A missing key means the
+	// subgroup has not yet been reprocessed with current code — NAK so the message is retried
+	// after the subgroup handler has run and written the marker.
+	committeeMapKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, mailingListUID)
+	committeeMapVal, hasCommitteeMap := mappings.GetMappingValue(ctx, committeeMapKey)
+	if !hasCommitteeMap {
+		slog.WarnContext(ctx, "committee mapping not yet written by subgroup handler, NAKing message for retry",
+			"uid", uid, "mailing_list_uid", mailingListUID)
+		return true // NAK — retry after subgroup is reprocessed
+	}
 	var committeeUID string
 	isPrivate := false
-	if v, hasCommittee := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, mailingListUID)); hasCommittee {
-		parts := strings.SplitN(v, "|", 2)
-		committeeUID = parts[0]
-		if len(parts) == 2 {
-			isPrivate = parts[1] != "true"
-		}
+	parts := strings.SplitN(committeeMapVal, "|", 2)
+	committeeUID = parts[0]
+	if len(parts) == 2 {
+		isPrivate = parts[1] != "true"
 	}
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMessage, uid)
@@ -91,6 +99,7 @@ func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[str
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 
 	return false
@@ -109,6 +118,7 @@ func HandleDataStreamMessageDelete(ctx context.Context, uid string, publisher po
 		slog.InfoContext(ctx, "message was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
 			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+			return pkgerrors.IsTransient(err)
 		}
 		return false
 	}
@@ -135,6 +145,7 @@ func HandleDataStreamMessageDelete(ctx context.Context, uid string, publisher po
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
 		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		return pkgerrors.IsTransient(err)
 	}
 	return false
 }
