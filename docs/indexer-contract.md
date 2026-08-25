@@ -511,7 +511,7 @@ One record per message. Messages share a thread via `topic_id`. Privacy is resol
 | `topic_id:{topic_id}` | `topic_id:12345` | Thread grouping in the committee service |
 | `group_id:{group_id}` | `group_id:67890` | Per-mailing-list filtering |
 | `mailing_list:{mailing_list_uid}` | `mailing_list:abc-123` | Parent list lookup by v2 UID |
-| `committee:{committee_uid}` | `committee:def-456` | **Required for committee service weekly brief** — only present when the list has a committee association |
+| `committee:{committee_uid}` | `committee:def-456` | Filters messages by committee in the weekly brief; only present when the list has a committee association |
 
 ### Access Control
 
