@@ -138,6 +138,61 @@ func TestHandleDataStreamSubgroupUpdate_WithCommittee_ResolvesAndPublishes(t *te
 	assert.Len(t, pub.IndexerCalls, 1)
 }
 
+func TestHandleDataStreamSubgroupUpdate_CommitteeMappingFormat_WithCommittee(t *testing.T) {
+	// Verify the subgroup handler writes the committee mapping in the format the message
+	// handler expects: "{committeeUID}|{isPublic}".
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.sfid-committee", constants.KVMappingPrefixCommitteeBySFID), "committee-uid-abc")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "ml-uid",
+		map[string]any{
+			"project_id": "sfid-proj",
+			"parent_id":  "svc-1",
+			"committee":  "sfid-committee",
+			"visibility": "public",
+		},
+		&mock.SpyMessagePublisher{}, m, pl)
+
+	assert.False(t, nak)
+	val, ok := m.GetMappingValue(context.Background(),
+		fmt.Sprintf("%s.ml-uid", constants.KVMappingPrefixSubgroupCommittee))
+	assert.True(t, ok, "committee mapping should be written")
+	assert.Equal(t, "committee-uid-abc|true", val,
+		"format must be {committeeUID}|{isPublic} — message handler splits on '|'")
+}
+
+func TestHandleDataStreamSubgroupUpdate_CommitteeMappingFormat_NoCommittee(t *testing.T) {
+	// Verify the subgroup handler writes an empty-committeeUID marker when no committee is
+	// linked, so the message handler can distinguish "no committee" from "not yet processed".
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "ml-uid",
+		map[string]any{
+			"project_id": "sfid-proj",
+			"parent_id":  "svc-1",
+			// no "committee" field — private list without committee
+			"visibility": "private",
+		},
+		&mock.SpyMessagePublisher{}, m, pl)
+
+	assert.False(t, nak)
+	val, ok := m.GetMappingValue(context.Background(),
+		fmt.Sprintf("%s.ml-uid", constants.KVMappingPrefixSubgroupCommittee))
+	assert.True(t, ok, "committee mapping must be written even with no committee")
+	assert.Equal(t, "|false", val,
+		"format must be empty committeeUID with isPublic=false for private lists")
+}
+
 func TestHandleDataStreamSubgroupUpdate_NoGroupID_NoReverseIndex(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")

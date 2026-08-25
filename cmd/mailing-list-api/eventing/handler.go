@@ -21,6 +21,7 @@ const (
 	kvPrefixSubgroup = "itx-groupsio-v2-subgroup."
 	kvPrefixMember   = "itx-groupsio-v2-member."
 	kvPrefixArtifact = "itx-groupsio-v2-artifact."
+	kvPrefixMessage  = "itx-groupsio-v2-message."
 
 	// sdcDeletedAt is the field injected by lfx-v1-sync-helper on DynamoDB REMOVE events.
 	sdcDeletedAt = "_sdc_deleted_at"
@@ -95,6 +96,13 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 		}
 		return service.HandleDataStreamArtifactUpdate(ctx, uid, data, h.publisher, h.mappings)
 
+	case strings.HasPrefix(key, kvPrefixMessage):
+		uid := key[len(kvPrefixMessage):]
+		if isSoftDelete {
+			return service.HandleDataStreamMessageDelete(ctx, uid, h.publisher, h.mappings)
+		}
+		return service.HandleDataStreamMessageUpdate(ctx, uid, data, h.publisher, h.mappings)
+
 	default:
 		slog.WarnContext(ctx, "unrecognized KV key prefix in HandleChange, ACKing", "key", key)
 		return false
@@ -115,6 +123,9 @@ func (h *eventHandler) HandleRemoval(ctx context.Context, key string) bool {
 
 	case strings.HasPrefix(key, kvPrefixArtifact):
 		return service.HandleDataStreamArtifactDelete(ctx, key[len(kvPrefixArtifact):], h.publisher, h.mappings)
+
+	case strings.HasPrefix(key, kvPrefixMessage):
+		return service.HandleDataStreamMessageDelete(ctx, key[len(kvPrefixMessage):], h.publisher, h.mappings)
 
 	default:
 		slog.WarnContext(ctx, "unrecognized KV key prefix in HandleRemoval, ACKing", "key", key)

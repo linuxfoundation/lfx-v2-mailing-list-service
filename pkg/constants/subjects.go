@@ -12,6 +12,7 @@ const (
 	IndexGroupsIOMailingListSettingsSubject = "lfx.index.groupsio_mailing_list_settings"
 	IndexGroupsIOMemberSubject              = "lfx.index.groupsio_member"
 	IndexGroupsIOArtifactSubject            = "lfx.index.groupsio_artifact"
+	IndexGroupsIOMailingListMessageSubject  = "lfx.index.groupsio_mailing_list_message"
 
 	// Committee event subjects from committee-api
 	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"
