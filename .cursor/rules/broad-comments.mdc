@@ -1,0 +1,27 @@
+---
+description: Write comments and docs for the general case, not for specific callers or tickets
+alwaysApply: true
+---
+
+# Write Comments and Docs for the General Case
+
+When writing code comments, doc strings, or contract documentation (e.g. `docs/indexer-contract.md`), describe what the code or field **is** — not what one specific consumer does with it, and not the ticket that motivated it.
+
+**Rule:** If your description would only make sense for a single caller, a single feature, or a specific Jira ticket, drop that context and write for the general case.
+
+**Wrong:**
+```
+// committee:{uid} — filters messages for the weekly brief; only present when the list has a committee association
+```
+
+**Right:**
+```
+// committee:{uid} — only present when the list has a committee association
+```
+
+**Also wrong:**
+```
+// Added for LFXV2-3048 to support the committee service
+```
+
+**Right:** Put ticket context in the commit message or PR description — not in the code or docs.

@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## General Writing Rules
+
+### Comments and documentation must describe the general case
+
+When writing code comments, doc strings, or contract documentation (e.g. `docs/indexer-contract.md`), describe what the code or field **is** — not what one specific consumer does with it, and not the ticket that motivated it. If a description would only make sense for a single caller, feature, or Jira ticket, drop that context and write for the general case. Ticket context belongs in commit messages and PR descriptions, not in code or docs.
+
 ## Commands
 
 ### Development Workflow
