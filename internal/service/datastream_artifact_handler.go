@@ -100,8 +100,12 @@ func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[st
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
+			return true
+		}
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		return false
 	}
 
 	return false
