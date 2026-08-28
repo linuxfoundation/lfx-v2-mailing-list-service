@@ -109,3 +109,17 @@ func TestHandleDataStreamServiceUpdate_PutMappingFailure_Transient_NAK(t *testin
 	assert.Len(t, pub.IndexerCalls, 1, "indexer message was published before mapping write failed")
 	assert.Len(t, pub.AccessCalls, 1, "access message was published before mapping write failed")
 }
+
+func TestHandleDataStreamServiceUpdate_PutMappingFailure_Permanent_ACK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
+	m.SimulatePutError(mKey, errors.New("internal server error"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
+		map[string]any{"project_id": "sfid-proj"},
+		pub, m)
+
+	assert.False(t, nak, "permanent PutMapping failure should ACK (not retry)")
+}

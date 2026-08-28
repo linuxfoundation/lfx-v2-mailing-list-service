@@ -103,3 +103,17 @@ func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Transient_NAK(t *testi
 	assert.True(t, nak, "transient PutMapping failure should NAK for retry")
 	assert.Len(t, pub.IndexerCalls, 1, "indexer message was published before mapping write failed")
 }
+
+func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Permanent_ACK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+	mKey := fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact)
+	m.SimulatePutError(mKey, errors.New("internal server error"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamArtifactUpdate(context.Background(), "art-1",
+		map[string]any{"group_id": float64(42)},
+		pub, m)
+
+	assert.False(t, nak, "permanent PutMapping failure should ACK (not retry)")
+}
