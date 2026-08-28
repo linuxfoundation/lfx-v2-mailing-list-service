@@ -26,7 +26,7 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
 	projectSFID := mapconv.StringVal(data, "project_id")
 	if projectSFID == "" {
-		slog.ErrorContext(ctx, "missing project_id in service event, discarding", "uid", uid)
+		slog.WarnContext(ctx, "missing project_id in service event, discarding", "uid", uid)
 		return false // ACK — malformed data, retrying won't help
 	}
 	projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
@@ -123,7 +123,12 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
+			return true
+		}
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+		return false
 	}
 	return false
 }

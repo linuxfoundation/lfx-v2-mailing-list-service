@@ -28,7 +28,7 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
 	projectSFID := mapconv.StringVal(data, "project_id")
 	if projectSFID == "" {
-		slog.ErrorContext(ctx, "missing project_id in subgroup event, discarding", "uid", uid)
+		slog.WarnContext(ctx, "missing project_id in subgroup event, discarding", "uid", uid)
 		return false // ACK — malformed data, retrying won't help
 	}
 	projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
@@ -177,15 +177,24 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
+			return true
+		}
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
+		return false
 	}
 
 	// Store reverse index: group_id → subgroup UID so member events can resolve MailingListUID.
 	if list.GroupID != nil {
 		gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *list.GroupID)
 		if err := mappings.PutMapping(ctx, gidKey, uid); err != nil {
+			if pkgerrors.IsTransient(err) {
+				slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", gidKey, "error", err)
+				return true
+			}
 			slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", gidKey, "error", err)
-			return pkgerrors.IsTransient(err)
+			return false
 		}
 	}
 
@@ -194,8 +203,12 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	// NAK on failure — member events depend on this mapping to resolve project fields.
 	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, uid)
 	if err := mappings.PutMapping(ctx, projectKey, projectUID+"|"+projectSlug); err != nil {
-		slog.ErrorContext(ctx, "failed to put project mapping key, NAKing for retry", "mapping_key", projectKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put project mapping key, will retry", "mapping_key", projectKey, "error", err)
+			return true
+		}
+		slog.ErrorContext(ctx, "failed to put project mapping key", "mapping_key", projectKey, "error", err)
+		return false
 	}
 
 	// Store committee mapping for message handler: committeeUID and visibility.
@@ -214,8 +227,12 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	}
 	committeeKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, uid)
 	if err := mappings.PutMapping(ctx, committeeKey, committeeUID+"|"+isPublicStr); err != nil {
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put committee mapping key, will retry", "mapping_key", committeeKey, "error", err)
+			return true
+		}
 		slog.ErrorContext(ctx, "failed to put committee mapping key", "mapping_key", committeeKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		return false
 	}
 
 	return false

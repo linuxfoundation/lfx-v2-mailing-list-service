@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -220,6 +221,52 @@ func TestHandleDataStreamSubgroupDelete_DuplicateDelete_ACK(t *testing.T) {
 
 	assert.False(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "duplicate delete should not publish")
+}
+
+func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
+	mKey := fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup)
+	m.SimulatePutError(mKey, errors.New("connection timeout"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+		map[string]any{
+			"project_id": "sfid-proj",
+			"parent_id":  "svc-1",
+		},
+		pub, m, pl)
+
+	assert.True(t, nak, "transient PutMapping failure should NAK for retry")
+	assert.Len(t, pub.IndexerCalls, 1, "indexer message was published before mapping write failed")
+	assert.Len(t, pub.AccessCalls, 1, "access message was published before mapping write failed")
+}
+
+func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Permanent_ACK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
+	mKey := fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup)
+	m.SimulatePutError(mKey, errors.New("internal server error"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+		map[string]any{
+			"project_id": "sfid-proj",
+			"parent_id":  "svc-1",
+		},
+		pub, m, pl)
+
+	assert.False(t, nak, "permanent PutMapping failure should ACK (not retry)")
 }
 
 func TestHandleDataStreamSubgroupDelete_HappyPath_ACKAndTombstones(t *testing.T) {
