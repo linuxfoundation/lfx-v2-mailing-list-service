@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -86,4 +87,19 @@ func TestHandleDataStreamArtifactDelete_AlreadyTombstoned_ACK(t *testing.T) {
 
 	assert.False(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "duplicate delete should ACK without publishing")
+}
+
+func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+	mKey := fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact)
+	m.SimulatePutError(mKey, errors.New("connection timeout"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamArtifactUpdate(context.Background(), "art-1",
+		map[string]any{"group_id": float64(42)},
+		pub, m)
+
+	assert.True(t, nak, "transient PutMapping failure should NAK for retry")
+	assert.Len(t, pub.IndexerCalls, 1, "indexer message was published before mapping write failed")
 }

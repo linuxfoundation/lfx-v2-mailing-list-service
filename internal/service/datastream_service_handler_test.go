@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -91,4 +92,20 @@ func TestHandleDataStreamServiceDelete_HappyPath_ACKAndTombstones(t *testing.T) 
 
 	assert.True(t, m.IsTombstoned(context.Background(),
 		fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+}
+
+func TestHandleDataStreamServiceUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
+	m.SimulatePutError(mKey, errors.New("connection timeout"))
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
+		map[string]any{"project_id": "sfid-proj"},
+		pub, m)
+
+	assert.True(t, nak, "transient PutMapping failure should NAK for retry")
+	assert.Len(t, pub.IndexerCalls, 1, "indexer message was published before mapping write failed")
+	assert.Len(t, pub.AccessCalls, 1, "access message was published before mapping write failed")
 }
