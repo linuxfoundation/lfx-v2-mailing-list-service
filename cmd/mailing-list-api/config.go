@@ -5,6 +5,7 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -95,6 +96,7 @@ func parseEnv() environment {
 	}
 	natsTimeout, err := time.ParseDuration(natsTimeoutStr)
 	if err != nil {
+		slog.Warn("invalid NATS_TIMEOUT value, using default", "value", natsTimeoutStr, "default", "10s")
 		natsTimeout = 10 * time.Second
 	}
 
@@ -104,6 +106,7 @@ func parseEnv() environment {
 	}
 	natsReconnectWait, err := time.ParseDuration(natsReconnectWaitStr)
 	if err != nil {
+		slog.Warn("invalid NATS_RECONNECT_WAIT value, using default", "value", natsReconnectWaitStr, "default", "2s")
 		natsReconnectWait = 2 * time.Second
 	}
 
@@ -195,6 +198,7 @@ func selfServeBaseURLForEnv(env string) string {
 }
 
 // envInt reads an integer environment variable, returning defaultVal on absence or parse error.
+// A warning is logged when the variable is set but cannot be parsed.
 func envInt(key string, defaultVal int) int {
 	s := os.Getenv(key)
 	if s == "" {
@@ -202,6 +206,7 @@ func envInt(key string, defaultVal int) int {
 	}
 	n, err := strconv.Atoi(s)
 	if err != nil {
+		slog.Warn("invalid integer environment variable, using default", "key", key, "value", s, "default", defaultVal)
 		return defaultVal
 	}
 	return n
