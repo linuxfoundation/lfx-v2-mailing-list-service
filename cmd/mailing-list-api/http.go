@@ -24,8 +24,11 @@ import (
 )
 
 // setupHTTPServer configures and starts a HTTP server on the given host address.
-// It shuts down the server when ctx is cancelled.
-func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool, koDataPath string) {
+// It shuts down the server using the context received from shutdownCtxC, which
+// must be sent by the caller exactly once after cancelling the request context.
+// Using a shared context ensures srv.Shutdown and the caller's wg.Wait both
+// observe the same absolute deadline.
+func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool, koDataPath string, shutdownCtxC <-chan context.Context) {
 	mux := buildMux(dbg)
 
 	koDataDir := http.Dir(koDataPath)
@@ -80,8 +83,9 @@ func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoin
 		<-ctx.Done()
 		slog.InfoContext(ctx, "shutting down HTTP server", "host", host)
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
-		defer cancel()
+		// Use the shared shutdown context provided by run() so that srv.Shutdown
+		// and the outer wg.Wait observe the same absolute deadline.
+		shutdownCtx := <-shutdownCtxC
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			slog.ErrorContext(shutdownCtx, "failed to shutdown HTTP server", "error", err)
 		}

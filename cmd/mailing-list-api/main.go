@@ -224,7 +224,10 @@ func run() int {
 		addr = flags.Bind + ":" + flags.Port
 	}
 
-	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath)
+	// shutdownCtxC is a buffered channel (cap 1) used to share the single absolute
+	// shutdown deadline between run() and setupHTTPServer's goroutine.
+	shutdownCtxC := make(chan context.Context, 1)
+	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath, shutdownCtxC)
 
 	// Start data stream processor for v1 DynamoDB KV events (optional).
 	if err := handleDataStream(ctx, &wg, env, natsClient, publisher, inviteSender, userReader); err != nil {
@@ -244,10 +247,14 @@ func run() int {
 		inviteAccSub.Stop()
 	}
 
-	cancel()
-
+	// Create the shutdown deadline once and share it with the HTTP goroutine via
+	// shutdownCtxC, so both srv.Shutdown and the wg.Wait below use the same
+	// absolute deadline rather than two separate relative timers.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
+	shutdownCtxC <- shutdownCtx
+
+	cancel()
 
 	done := make(chan struct{})
 	go func() {
