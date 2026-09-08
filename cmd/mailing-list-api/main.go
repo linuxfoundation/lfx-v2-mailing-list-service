@@ -7,7 +7,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -209,12 +208,12 @@ func run() int {
 		mailingListServiceEndpoints.Use(debug.LogPayloads())
 	}
 
-	errc := make(chan error)
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errc <- fmt.Errorf("%s", <-c)
-	}()
+	// errc carries unexpected HTTP listener failures (non-ErrServerClosed).
+	// OS signals are handled separately via the signals channel so the two
+	// trigger types can be distinguished and the correct exit code returned.
+	errc := make(chan error, 1)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(ctx)
@@ -227,19 +226,29 @@ func run() int {
 	// shutdownCtxC is a buffered channel (cap 1) used to share the single absolute
 	// shutdown deadline between run() and setupHTTPServer's goroutine.
 	shutdownCtxC := make(chan context.Context, 1)
-	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath, shutdownCtxC)
 
 	// Start data stream processor for v1 DynamoDB KV events (optional).
+	// This must succeed before we start accepting HTTP traffic so that a KV
+	// bucket misconfiguration fails fast rather than silently serving requests
+	// while the background processor is broken.
 	if err := handleDataStream(ctx, &wg, env, natsClient, publisher, inviteSender, userReader); err != nil {
 		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
 		cancel()
 		return 1
 	}
 
-	// Wait for shutdown signal.
-	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
-		"signal", <-errc,
-	)
+	// All dependencies confirmed — begin accepting HTTP traffic.
+	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath, shutdownCtxC)
+
+	// Wait for a shutdown trigger — either an OS signal or an unexpected HTTP listener error.
+	httpFailure := false
+	select {
+	case sig := <-signals:
+		slog.InfoContext(ctx, "received shutdown signal, stopping servers", "signal", sig)
+	case err := <-errc:
+		slog.ErrorContext(ctx, "HTTP server failed; initiating shutdown", "error", err)
+		httpFailure = true
+	}
 
 	// Stop the invite_accepted subscriber before cancelling the context so that
 	// in-flight AcceptInvite calls can complete gracefully.
@@ -269,5 +278,8 @@ func run() int {
 		slog.WarnContext(ctx, "graceful shutdown timed out")
 	}
 
+	if httpFailure {
+		return 1
+	}
 	return 0
 }

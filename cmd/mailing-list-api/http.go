@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -74,9 +75,16 @@ func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoin
 
 		go func() {
 			slog.InfoContext(ctx, "HTTP server listening", "host", host)
-			select {
-			case errc <- srv.ListenAndServe():
-			case <-ctx.Done():
+			// ListenAndServe always returns a non-nil error. ErrServerClosed is
+			// the normal result when srv.Shutdown is called, so it is not a
+			// failure. Only unexpected errors (e.g. port already in use) are
+			// forwarded to errc so run() can distinguish them from OS signals
+			// and return the correct exit code.
+			if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				select {
+				case errc <- err:
+				case <-ctx.Done():
+				}
 			}
 		}()
 
