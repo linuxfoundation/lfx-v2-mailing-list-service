@@ -7,8 +7,6 @@ package main
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -28,7 +26,7 @@ import (
 	"goa.design/clue/debug"
 )
 
-// Build-time variables set via ldflags
+// Build-time variables set via ldflags.
 var (
 	Version   = "dev"
 	BuildTime = "unknown"
@@ -45,16 +43,17 @@ func init() {
 }
 
 func main() {
-	var (
-		dbgF = flag.Bool("d", false, "enable debug logging")
-		port = flag.String("p", defaultPort, "listen port")
-		bind = flag.String("bind", "*", "interface to bind on")
-	)
-	flag.Usage = func() {
-		flag.PrintDefaults()
-		os.Exit(2)
-	}
-	flag.Parse()
+	os.Exit(run())
+}
+
+// run is the entry point for the service logic. It returns a non-zero exit code on
+// startup failure so that orchestrators and CI can trigger crash-loop backoff or
+// mark the pipeline step as failed.
+// Deferred functions (OTel shutdown, NATS close) are called when run() returns,
+// before os.Exit fires in main.
+func run() int {
+	env := parseEnv()
+	flags := parseFlags(env.Port)
 
 	ctx := context.Background()
 
@@ -68,7 +67,7 @@ func main() {
 	otelShutdown, err := utils.SetupOTelSDKWithConfig(ctx, otelConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "error setting up OpenTelemetry SDK", "error", err)
-		os.Exit(1)
+		return 1
 	}
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
@@ -78,83 +77,103 @@ func main() {
 		}
 	}()
 
-	slog.InfoContext(ctx, "Starting ITX mailing list proxy service",
-		"bind", *bind,
-		"http-port", *port,
-		"graceful-shutdown-seconds", gracefulShutdownSeconds,
+	slog.InfoContext(ctx, "starting ITX mailing list proxy service",
+		"port", flags.Port,
 		"version", Version,
 		"build-time", BuildTime,
 		"git-commit", GitCommit,
 	)
 
-	// Initialize authentication service
-	authService := service.AuthService(ctx)
-
-	// Initialize ID translator
-	translator := service.Translator(ctx)
-
-	// Initialize GroupsIO service proxy (ITX proxy + orchestrators)
-	slog.InfoContext(ctx, "initializing GroupsIO service proxy")
-	proxyClient, err := proxy.NewProxy(ctx, service.ITXProxyConfig())
+	// Connect to NATS — all infrastructure that depends on it is built below.
+	natsClient, err := setupNATS(ctx, env)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to initialize ITX proxy client", "error", err)
-		os.Exit(1)
+		slog.ErrorContext(ctx, "error connecting to NATS", "error", err)
+		return 1
+	}
+	defer func() {
+		if closeErr := natsClient.Close(); closeErr != nil {
+			slog.ErrorContext(ctx, "error closing NATS client", "error", closeErr)
+		}
+	}()
+
+	// Initialize authentication service.
+	authSvc, err := service.NewAuthService(ctx, env.AuthSource, env.JWKSURL, env.JWTAudience, env.JWTMockPrincipal)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing authentication service", "error", err)
+		return 1
 	}
 
+	// Initialize ID translator.
+	translator, err := service.NewTranslator(ctx, env.TranslatorSource, env.TranslatorMappings, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing translator", "error", err)
+		return 1
+	}
+
+	// Initialize ITX proxy client.
+	slog.InfoContext(ctx, "initializing GroupsIO service proxy")
+	proxyClient, err := proxy.NewProxy(ctx, service.NewITXProxyConfig(env.ITXBaseURL, env.ITXClientID, env.ITXClientPrivateKey, env.ITXAuth0Domain, env.ITXAudience))
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to initialize ITX proxy client", "error", err)
+		return 1
+	}
+	slog.InfoContext(ctx, "ITX proxy client initialized")
+
+	// Initialize message publisher.
+	publisher, err := service.NewMessagePublisher(ctx, env.RepositorySource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing message publisher", "error", err)
+		return 1
+	}
+
+	// Initialize committee project lookup.
+	committeeLookup, err := service.NewCommitteeProjectLookup(ctx, env.RepositorySource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing committee project lookup", "error", err)
+		return 1
+	}
+
+	// Build orchestrators.
 	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
 		orchestrator.WithServiceReader(proxyClient),
 		orchestrator.WithServiceReaderTranslator(translator),
 	)
-
 	serviceOrchestrator := orchestrator.NewGroupsIOServiceWriterOrchestrator(
 		orchestrator.WithServiceWriter(proxyClient),
 		orchestrator.WithServiceTranslator(translator),
 	)
-
 	mailingListReaderOrchestrator := orchestrator.NewGroupsIOMailingListReaderOrchestrator(
 		orchestrator.WithMailingListReader(proxyClient),
 		orchestrator.WithMailingListReaderTranslator(translator),
 	)
-
-	mailingListEventPublisher := service.MessagePublisher(ctx)
-
-	committeeProjectLookup := service.CommitteeProjectLookup(ctx)
-
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
 		orchestrator.WithMailingListEventReader(mailingListReaderOrchestrator),
-		orchestrator.WithMailingListPublisher(mailingListEventPublisher),
+		orchestrator.WithMailingListPublisher(publisher),
 		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
-		orchestrator.WithMailingListCommitteeProjectLookup(committeeProjectLookup),
+		orchestrator.WithMailingListCommitteeProjectLookup(committeeLookup),
 	)
-
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
 		orchestrator.WithMemberReader(proxyClient),
 	)
-
 	memberWriterOrchestrator := orchestrator.NewGroupsIOMailingListMemberWriterOrchestrator(
 		orchestrator.WithMemberWriter(proxyClient),
 	)
-
 	artifactReaderOrchestrator := orchestrator.NewGroupsIOArtifactReaderOrchestrator(
 		orchestrator.WithArtifactReader(proxyClient),
 	)
 
-	slog.InfoContext(ctx, "ITX proxy client initialized")
-
 	// ---- LFID invite feature ----
-	// Initialise invite deps when INVITES_ENABLED=true.  The acceptance subscriber
-	// starts independently of EVENTING_ENABLED so that enrichment works even when
+	// Initialise invite deps when InvitesEnabled=true.  The acceptance subscriber
+	// starts independently of EventingEnabled so that enrichment works even when
 	// the data stream consumer is not running on this replica.
-	inviteCfg := service.InviteConfig()
 	var (
-		inviteSender  *infraNATS.NATSInviteSender
-		userReader    *infraNATS.NATSUserReader
-		inviteAccSub  *eventing.InviteAcceptedSubscriber
+		inviteSender *infraNATS.NATSInviteSender
+		userReader   *infraNATS.NATSUserReader
+		inviteAccSub *eventing.InviteAcceptedSubscriber
 	)
-	if inviteCfg.Enabled {
-		natsClient := service.GetNATSClient(ctx)
+	if env.InvitesEnabled {
 		inviteSender = infraNATS.NewInviteSender(natsClient, slog.Default())
 		userReader = infraNATS.NewUserReader(natsClient, slog.Default())
 
@@ -170,9 +189,10 @@ func main() {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
 	}
 
-	// Create the mailing list API service
+	// Create the mailing list API service.
 	mailingListSvc := service.NewMailingListAPI(
-		authService,
+		authSvc,
+		natsClient,
 		serviceReaderOrchestrator,
 		serviceOrchestrator,
 		mailingListReaderOrchestrator,
@@ -182,41 +202,53 @@ func main() {
 		artifactReaderOrchestrator,
 	)
 
-	// Wrap the services in endpoints
+	// Wrap the service in GOA endpoints.
 	mailingListServiceEndpoints := mailinglistservice.NewEndpoints(mailingListSvc)
-	if *dbgF {
+	if flags.Debug {
 		mailingListServiceEndpoints.Use(debug.LogPayloads())
 	}
 
-	errc := make(chan error)
-
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errc <- fmt.Errorf("%s", <-c)
-	}()
+	// errc carries unexpected HTTP listener failures (non-ErrServerClosed).
+	// OS signals are handled separately via the signals channel so the two
+	// trigger types can be distinguished and the correct exit code returned.
+	errc := make(chan error, 1)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(ctx)
 
-	addr := ":" + *port
-	if *bind != "*" {
-		addr = *bind + ":" + *port
+	addr := ":" + flags.Port
+	if flags.Bind != "*" {
+		addr = flags.Bind + ":" + flags.Port
 	}
 
-	handleHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, *dbgF)
+	// shutdownCtxC is a buffered channel (cap 1) used to share the single absolute
+	// shutdown deadline between run() and setupHTTPServer's goroutine.
+	shutdownCtxC := make(chan context.Context, 1)
 
-	// Start data stream processor for v1 DynamoDB KV events (optional — enabled via env var).
-	// Pass invite deps so the member handler can send LFID invites when fully configured.
-	if err := handleDataStream(ctx, &wg, inviteSender, userReader, inviteCfg.SelfServeBaseURL); err != nil {
+	// Start data stream processor for v1 DynamoDB KV events (optional).
+	// This must succeed before we start accepting HTTP traffic so that a KV
+	// bucket misconfiguration fails fast rather than silently serving requests
+	// while the background processor is broken.
+	if err := handleDataStream(ctx, &wg, env, natsClient, publisher, inviteSender, userReader); err != nil {
 		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
-		os.Exit(1)
+		cancel()
+		return 1
 	}
 
-	// Wait for signal.
-	slog.InfoContext(ctx, "received shutdown signal, stopping servers",
-		"signal", <-errc,
-	)
+	// All dependencies confirmed — begin accepting HTTP traffic.
+	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath, shutdownCtxC)
+
+	// Wait for a shutdown trigger — either an OS signal or an unexpected HTTP listener error.
+	httpFailure := false
+	select {
+	case sig := <-signals:
+		slog.InfoContext(ctx, "received shutdown signal, stopping servers", "signal", sig)
+	case err := <-errc:
+		slog.ErrorContext(ctx, "HTTP server failed; initiating shutdown", "error", err)
+		httpFailure = true
+	}
 
 	// Stop the invite_accepted subscriber before cancelling the context so that
 	// in-flight AcceptInvite calls can complete gracefully.
@@ -224,10 +256,14 @@ func main() {
 		inviteAccSub.Stop()
 	}
 
-	cancel()
-
+	// Create the shutdown deadline once and share it with the HTTP goroutine via
+	// shutdownCtxC, so both srv.Shutdown and the wg.Wait below use the same
+	// absolute deadline rather than two separate relative timers.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
+	shutdownCtxC <- shutdownCtx
+
+	cancel()
 
 	done := make(chan struct{})
 	go func() {
@@ -242,5 +278,8 @@ func main() {
 		slog.WarnContext(ctx, "graceful shutdown timed out")
 	}
 
-	slog.InfoContext(ctx, "exited")
+	if httpFailure {
+		return 1
+	}
+	return 0
 }

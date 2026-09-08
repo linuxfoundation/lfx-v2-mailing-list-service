@@ -11,17 +11,26 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
 )
 
+// formatTime returns t formatted as RFC3339, or "" if t is zero.
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.RFC3339)
+}
+
+// formatTimePtr returns a pointer to t formatted as RFC3339, or nil if t is nil or zero.
+func formatTimePtr(t *time.Time) *string {
+	if t == nil || t.IsZero() {
+		return nil
+	}
+	s := t.Format(time.RFC3339)
+	return &s
+}
+
 func convertMember(m *model.GrpsIOMember) *mailinglist.GroupsioMember {
 	if m == nil {
 		return nil
-	}
-	createdAt := ""
-	if !m.CreatedAt.IsZero() {
-		createdAt = m.CreatedAt.Format(time.RFC3339)
-	}
-	updatedAt := ""
-	if !m.UpdatedAt.IsZero() {
-		updatedAt = m.UpdatedAt.Format(time.RFC3339)
 	}
 	return &mailinglist.GroupsioMember{
 		ID:           converter.NonEmptyString(m.UID),
@@ -36,8 +45,8 @@ func convertMember(m *model.GrpsIOMember) *mailinglist.GroupsioMember {
 		Username:     converter.NonEmptyString(m.Username),
 		Role:         converter.NonEmptyString(m.Role),
 		VotingStatus: converter.NonEmptyString(m.VotingStatus),
-		CreatedAt:    converter.NonEmptyString(createdAt),
-		UpdatedAt:    converter.NonEmptyString(updatedAt),
+		CreatedAt:    converter.NonEmptyString(formatTime(m.CreatedAt)),
+		UpdatedAt:    converter.NonEmptyString(formatTime(m.UpdatedAt)),
 	}
 }
 
@@ -49,14 +58,6 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 	if len(ml.Committees) > 0 {
 		committeeUID = ml.Committees[0].UID
 	}
-	createdAt := ""
-	if !ml.CreatedAt.IsZero() {
-		createdAt = ml.CreatedAt.Format(time.RFC3339)
-	}
-	updatedAt := ""
-	if !ml.UpdatedAt.IsZero() {
-		updatedAt = ml.UpdatedAt.Format(time.RFC3339)
-	}
 	return &mailinglist.GroupsioSubgroup{
 		ID:             &ml.UID,
 		ProjectUID:     converter.NonEmptyString(ml.ProjectUID),
@@ -67,8 +68,8 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		Description:    &ml.Description,
 		Type:           &ml.Type,
 		AudienceAccess: &ml.AudienceAccess,
-		CreatedAt:      converter.NonEmptyString(createdAt),
-		UpdatedAt:      converter.NonEmptyString(updatedAt),
+		CreatedAt:      converter.NonEmptyString(formatTime(ml.CreatedAt)),
+		UpdatedAt:      converter.NonEmptyString(formatTime(ml.UpdatedAt)),
 	}
 }
 
@@ -89,24 +90,6 @@ func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
 	if a == nil {
 		return nil
 	}
-	createdAt := ""
-	if !a.CreatedAt.IsZero() {
-		createdAt = a.CreatedAt.Format(time.RFC3339)
-	}
-	updatedAt := ""
-	if !a.UpdatedAt.IsZero() {
-		updatedAt = a.UpdatedAt.Format(time.RFC3339)
-	}
-	var fileUploadedAt *string
-	if a.FileUploadedAt != nil && !a.FileUploadedAt.IsZero() {
-		s := a.FileUploadedAt.Format(time.RFC3339)
-		fileUploadedAt = &s
-	}
-	var lastPostedAt *string
-	if a.LastPostedAt != nil && !a.LastPostedAt.IsZero() {
-		s := a.LastPostedAt.Format(time.RFC3339)
-		lastPostedAt = &s
-	}
 	groupID := a.GroupID
 	var fileUploaded *bool
 	if a.Type == "file" {
@@ -125,29 +108,21 @@ func convertArtifact(a *model.GroupsIOArtifact) *mailinglist.GroupsioArtifact {
 		S3Key:               converter.NonEmptyString(a.S3Key),
 		FileUploaded:        fileUploaded,
 		FileUploadStatus:    converter.NonEmptyString(a.FileUploadStatus),
-		FileUploadedAt:      fileUploadedAt,
+		FileUploadedAt:      formatTimePtr(a.FileUploadedAt),
 		MessageIds:          a.MessageIDs,
-		LastPostedAt:        lastPostedAt,
+		LastPostedAt:        formatTimePtr(a.LastPostedAt),
 		LastPostedMessageID: a.LastPostedMessageID,
 		Description:         converter.NonEmptyString(a.Description),
 		CreatedBy:           convertArtifactUser(a.CreatedBy),
 		LastModifiedBy:      convertArtifactUser(a.LastModifiedBy),
-		CreatedAt:           converter.NonEmptyString(createdAt),
-		UpdatedAt:           converter.NonEmptyString(updatedAt),
+		CreatedAt:           converter.NonEmptyString(formatTime(a.CreatedAt)),
+		UpdatedAt:           converter.NonEmptyString(formatTime(a.UpdatedAt)),
 	}
 }
 
 func convertService(svc *model.GroupsIOService) *mailinglist.GroupsioService {
 	if svc == nil {
 		return nil
-	}
-	createdAt := ""
-	if !svc.CreatedAt.IsZero() {
-		createdAt = svc.CreatedAt.Format(time.RFC3339)
-	}
-	updatedAt := ""
-	if !svc.UpdatedAt.IsZero() {
-		updatedAt = svc.UpdatedAt.Format(time.RFC3339)
 	}
 	return &mailinglist.GroupsioService{
 		ID:         &svc.UID,
@@ -157,7 +132,7 @@ func convertService(svc *model.GroupsIOService) *mailinglist.GroupsioService {
 		Domain:     &svc.Domain,
 		Prefix:     &svc.Prefix,
 		Status:     &svc.Status,
-		CreatedAt:  converter.NonEmptyString(createdAt),
-		UpdatedAt:  converter.NonEmptyString(updatedAt),
+		CreatedAt:  converter.NonEmptyString(formatTime(svc.CreatedAt)),
+		UpdatedAt:  converter.NonEmptyString(formatTime(svc.UpdatedAt)),
 	}
 }
