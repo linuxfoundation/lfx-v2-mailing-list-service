@@ -67,37 +67,33 @@ func NewEventHandler(publisher port.MessagePublisher, mappings port.MappingReade
 func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[string]any) bool {
 	_, isSoftDelete := data[sdcDeletedAt]
 
-	switch {
-	case strings.HasPrefix(key, kvPrefixService):
-		uid := key[len(kvPrefixService):]
+	uid, prefix := extractUID(key)
+	switch prefix {
+	case kvPrefixService:
 		if isSoftDelete {
 			return service.HandleDataStreamServiceDelete(ctx, uid, h.publisher, h.mappings)
 		}
 		return service.HandleDataStreamServiceUpdate(ctx, uid, data, h.publisher, h.mappings)
 
-	case strings.HasPrefix(key, kvPrefixSubgroup):
-		uid := key[len(kvPrefixSubgroup):]
+	case kvPrefixSubgroup:
 		if isSoftDelete {
 			return service.HandleDataStreamSubgroupDelete(ctx, uid, h.publisher, h.mappings)
 		}
 		return service.HandleDataStreamSubgroupUpdate(ctx, uid, data, h.publisher, h.mappings, h.projectLookup)
 
-	case strings.HasPrefix(key, kvPrefixMember):
-		uid := key[len(kvPrefixMember):]
+	case kvPrefixMember:
 		if isSoftDelete {
 			return service.HandleDataStreamMemberDelete(ctx, uid, h.publisher, h.mappings)
 		}
 		return service.HandleDataStreamMemberUpdate(ctx, uid, data, h.publisher, h.mappings, h.memberInvite)
 
-	case strings.HasPrefix(key, kvPrefixArtifact):
-		uid := key[len(kvPrefixArtifact):]
+	case kvPrefixArtifact:
 		if isSoftDelete {
 			return service.HandleDataStreamArtifactDelete(ctx, uid, h.publisher, h.mappings)
 		}
 		return service.HandleDataStreamArtifactUpdate(ctx, uid, data, h.publisher, h.mappings)
 
-	case strings.HasPrefix(key, kvPrefixMessage):
-		uid := key[len(kvPrefixMessage):]
+	case kvPrefixMessage:
 		if isSoftDelete {
 			return service.HandleDataStreamMessageDelete(ctx, uid, h.publisher, h.mappings)
 		}
@@ -111,24 +107,37 @@ func (h *eventHandler) HandleChange(ctx context.Context, key string, data map[st
 
 // HandleRemoval dispatches a hard DELETE or PURGE event to the correct entity handler.
 func (h *eventHandler) HandleRemoval(ctx context.Context, key string) bool {
-	switch {
-	case strings.HasPrefix(key, kvPrefixService):
-		return service.HandleDataStreamServiceDelete(ctx, key[len(kvPrefixService):], h.publisher, h.mappings)
-
-	case strings.HasPrefix(key, kvPrefixSubgroup):
-		return service.HandleDataStreamSubgroupDelete(ctx, key[len(kvPrefixSubgroup):], h.publisher, h.mappings)
-
-	case strings.HasPrefix(key, kvPrefixMember):
-		return service.HandleDataStreamMemberDelete(ctx, key[len(kvPrefixMember):], h.publisher, h.mappings)
-
-	case strings.HasPrefix(key, kvPrefixArtifact):
-		return service.HandleDataStreamArtifactDelete(ctx, key[len(kvPrefixArtifact):], h.publisher, h.mappings)
-
-	case strings.HasPrefix(key, kvPrefixMessage):
-		return service.HandleDataStreamMessageDelete(ctx, key[len(kvPrefixMessage):], h.publisher, h.mappings)
-
+	uid, prefix := extractUID(key)
+	switch prefix {
+	case kvPrefixService:
+		return service.HandleDataStreamServiceDelete(ctx, uid, h.publisher, h.mappings)
+	case kvPrefixSubgroup:
+		return service.HandleDataStreamSubgroupDelete(ctx, uid, h.publisher, h.mappings)
+	case kvPrefixMember:
+		return service.HandleDataStreamMemberDelete(ctx, uid, h.publisher, h.mappings)
+	case kvPrefixArtifact:
+		return service.HandleDataStreamArtifactDelete(ctx, uid, h.publisher, h.mappings)
+	case kvPrefixMessage:
+		return service.HandleDataStreamMessageDelete(ctx, uid, h.publisher, h.mappings)
 	default:
 		slog.WarnContext(ctx, "unrecognized KV key prefix in HandleRemoval, ACKing", "key", key)
 		return false
 	}
+}
+
+// extractUID returns the entity UID and matched prefix for the given KV key.
+// If no known prefix matches, prefix is "" and uid equals the full key.
+func extractUID(key string) (uid, prefix string) {
+	for _, p := range []string{
+		kvPrefixService,
+		kvPrefixSubgroup,
+		kvPrefixMember,
+		kvPrefixArtifact,
+		kvPrefixMessage,
+	} {
+		if strings.HasPrefix(key, p) {
+			return key[len(p):], p
+		}
+	}
+	return key, ""
 }

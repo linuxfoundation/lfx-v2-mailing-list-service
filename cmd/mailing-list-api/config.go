@@ -59,6 +59,9 @@ type environment struct {
 	EventingMaxDeliver    int
 	EventingMaxAckPending int
 	EventingAckWaitSecs   int
+
+	// HTTP
+	KODataPath string
 }
 
 // parseFlags parses command-line flags and returns the result.
@@ -165,7 +168,17 @@ func parseEnv() environment {
 		EventingMaxDeliver:    envInt("EVENTING_MAX_DELIVER", 3),
 		EventingMaxAckPending: envInt("EVENTING_MAX_ACK_PENDING", 1000),
 		EventingAckWaitSecs:   envInt("EVENTING_ACK_WAIT_SECS", 30),
+		KODataPath:            koDataPath(),
 	}
+}
+
+// koDataPath returns the path to the ko static data directory.
+// KO_DATA_PATH is set by ko at runtime; the fallback is used during local development.
+func koDataPath() string {
+	if p := os.Getenv("KO_DATA_PATH"); p != "" {
+		return p
+	}
+	return "../../gen/http/"
 }
 
 // selfServeBaseURLForEnv returns the default self-serve base URL for the given

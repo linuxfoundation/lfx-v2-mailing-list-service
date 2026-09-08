@@ -231,7 +231,7 @@ func run() int {
 		addr = flags.Bind + ":" + env.Port
 	}
 
-	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug)
+	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath)
 
 	// Start data stream processor for v1 DynamoDB KV events (optional).
 	if err := handleDataStream(ctx, &wg, env, natsClient, mappings, publisher, inviteSender, userReader); err != nil {
