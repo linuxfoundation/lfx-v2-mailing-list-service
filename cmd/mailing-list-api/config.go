@@ -40,11 +40,11 @@ type environment struct {
 	TranslatorMappings string
 
 	// ITX proxy
-	ITXBaseURL         string
-	ITXClientID        string
+	ITXBaseURL          string
+	ITXClientID         string
 	ITXClientPrivateKey string
-	ITXAuth0Domain     string
-	ITXAudience        string
+	ITXAuth0Domain      string
+	ITXAudience         string
 
 	// Repository / publisher backend
 	RepositorySource string

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/eventing"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/cmd/mailing-list-api/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	svc "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
@@ -41,11 +42,10 @@ func handleDataStream(
 
 	// Open the v1-mappings KV store for idempotency tracking.
 	// Deferred until here so deployments with eventing disabled don't require the bucket.
-	mappingsKV, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	mappings, err := service.NewMappingReaderWriter(ctx, natsClient)
 	if err != nil {
-		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
+		return err
 	}
-	mappings := infraNATS.NewMappingReaderWriter(mappingsKV)
 
 	// Build the LFID invite handler for member events when fully configured.
 	var memberInviteHandler *svc.MemberInviteHandler
