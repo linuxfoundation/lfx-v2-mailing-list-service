@@ -9,13 +9,13 @@ import (
 	"errors"
 	"log/slog"
 
+	"goa.design/goa/v3/security"
+
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
-	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
-
-	"goa.design/goa/v3/security"
 )
 
 // mailingListAPI implements the generated mailinglist.Service interface.

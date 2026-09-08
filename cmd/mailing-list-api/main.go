@@ -79,7 +79,7 @@ func run() int {
 	}()
 
 	slog.InfoContext(ctx, "starting ITX mailing list proxy service",
-		"port", env.Port,
+		"port", flags.Port,
 		"version", Version,
 		"build-time", BuildTime,
 		"git-commit", GitCommit,
@@ -131,13 +131,6 @@ func run() int {
 	committeeLookup, err := service.NewCommitteeProjectLookup(ctx, env.RepositorySource, natsClient)
 	if err != nil {
 		slog.ErrorContext(ctx, "error initializing committee project lookup", "error", err)
-		return 1
-	}
-
-	// Initialize v1-mappings KV store for the data stream idempotency tracker.
-	mappings, err := service.NewMappingReaderWriter(ctx, natsClient)
-	if err != nil {
-		slog.ErrorContext(ctx, "error initializing mapping reader/writer", "error", err)
 		return 1
 	}
 
@@ -226,15 +219,15 @@ func run() int {
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(ctx)
 
-	addr := ":" + env.Port
+	addr := ":" + flags.Port
 	if flags.Bind != "*" {
-		addr = flags.Bind + ":" + env.Port
+		addr = flags.Bind + ":" + flags.Port
 	}
 
 	setupHTTPServer(ctx, addr, mailingListServiceEndpoints, &wg, errc, flags.Debug, env.KODataPath)
 
 	// Start data stream processor for v1 DynamoDB KV events (optional).
-	if err := handleDataStream(ctx, &wg, env, natsClient, mappings, publisher, inviteSender, userReader); err != nil {
+	if err := handleDataStream(ctx, &wg, env, natsClient, publisher, inviteSender, userReader); err != nil {
 		slog.ErrorContext(ctx, "FATAL: failed to start data stream processor", "error", err)
 		cancel()
 		return 1

@@ -80,7 +80,7 @@ func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoin
 		<-ctx.Done()
 		slog.InfoContext(ctx, "shutting down HTTP server", "host", host)
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			slog.ErrorContext(shutdownCtx, "failed to shutdown HTTP server", "error", err)
