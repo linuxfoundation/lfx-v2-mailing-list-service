@@ -24,9 +24,9 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/middleware"
 )
 
-// handleHTTPServer starts configures and starts a HTTP server on the given
-// URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+// setupHTTPServer configures and starts a HTTP server on the given host address.
+// It shuts down the server when ctx is cancelled.
+func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
 
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
