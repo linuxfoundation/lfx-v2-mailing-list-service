@@ -31,6 +31,12 @@ const (
 	KVMappingPrefixSubgroupProject = "groupsio-subgroup-project"
 	// KVMappingPrefixArtifact is the v1-mappings key prefix for GroupsIO artifacts.
 	KVMappingPrefixArtifact = "groupsio-artifact"
+	// KVMappingPrefixMessage is the v1-mappings key prefix for GroupsIO messages.
+	KVMappingPrefixMessage = "groupsio-message"
+	// KVMappingPrefixSubgroupCommittee is the v1-mappings reverse index written by the subgroup handler:
+	// groupsio-subgroup-committee.{mailingListUID} → "{committeeUID}|{isPublic}".
+	// Read by the message handler to resolve committee association and visibility without extra RPCs.
+	KVMappingPrefixSubgroupCommittee = "groupsio-subgroup-committee"
 
 	// KVMappingPrefixProjectBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
 	// project.sfid.{sfid} → v2 project UID. Used to resolve the v1 project_id (SFID) to a v2 UID.

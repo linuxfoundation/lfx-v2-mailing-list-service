@@ -44,7 +44,7 @@ type GroupsIOMailingList struct {
 
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	SystemUpdatedAt time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
+	SystemUpdatedAt *time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 
 // GroupsIOMailingListSettings represents the settings for a GroupsIO mailing list (user management).

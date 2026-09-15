@@ -1,18 +1,15 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-// Package service provides provider functions for initializing service dependencies.
+// Package service provides factory functions for initializing service dependencies.
 package service
 
 import (
 	"context"
 	"encoding/base64"
-	"log"
+	"fmt"
 	"log/slog"
-	"os"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -23,85 +20,95 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
-var (
-	natsPublisherClient port.MessagePublisher
-
-	natsDoOnce sync.Once
-	natsClient *nats.NATSClient
-)
-
-// AuthService initializes the authentication service implementation
-func AuthService(ctx context.Context) port.Authenticator {
-	var authService port.Authenticator
-
-	authSource := os.Getenv("AUTH_SOURCE")
-	if authSource == "" {
-		authSource = "jwt"
-	}
-
-	switch authSource {
+// NewAuthService initializes and returns the authentication service implementation.
+// source controls the backend: "jwt" (default) or "mock".
+func NewAuthService(ctx context.Context, source, jwksURL, jwtAudience, mockPrincipal string) (port.Authenticator, error) {
+	switch source {
 	case "mock":
 		slog.InfoContext(ctx, "initializing mock authentication service")
-		authService = infrastructure.NewMockAuthService()
+		return infrastructure.NewMockAuthService(), nil
 	case "jwt":
 		slog.InfoContext(ctx, "initializing JWT authentication service")
 		jwtConfig := auth.JWTAuthConfig{
-			JWKSURL:            os.Getenv("JWKS_URL"),
-			Audience:           os.Getenv("JWT_AUDIENCE"),
-			MockLocalPrincipal: os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL"),
+			JWKSURL:            jwksURL,
+			Audience:           jwtAudience,
+			MockLocalPrincipal: mockPrincipal,
 		}
-		jwtAuth, err := auth.NewJWTAuth(jwtConfig)
-		if err != nil {
-			log.Fatalf("failed to initialize JWT authentication service: %v", err)
-		}
-		authService = jwtAuth
+		return auth.NewJWTAuth(jwtConfig)
 	default:
-		log.Fatalf("unsupported authentication service implementation: %s", authSource)
+		return nil, fmt.Errorf("unsupported authentication service implementation: %s", source)
 	}
-
-	return authService
 }
 
-// Translator initializes the ID translator implementation.
-// TRANSLATOR_SOURCE controls which backend is used (default: "nats").
-// In mock mode, TRANSLATOR_MAPPINGS_FILE points to the YAML mappings file.
-func Translator(ctx context.Context) port.Translator {
-	source := os.Getenv("TRANSLATOR_SOURCE")
-	if source == "" {
-		source = "nats"
-	}
-
+// NewTranslator initializes and returns the ID translator implementation.
+// source controls the backend: "nats" (default) or "mock".
+func NewTranslator(ctx context.Context, source, mappingsFile string, natsClient *nats.NATSClient) (port.Translator, error) {
 	switch source {
 	case "mock":
-		filePath := os.Getenv("TRANSLATOR_MAPPINGS_FILE")
-		if filePath == "" {
-			filePath = "translator_mappings.yaml"
-		}
-		slog.InfoContext(ctx, "initializing mock translator", "file", filePath)
-		t, err := infrastructure.NewMockTranslator(filePath)
+		slog.InfoContext(ctx, "initializing mock translator", "file", mappingsFile)
+		t, err := infrastructure.NewMockTranslator(mappingsFile)
 		if err != nil {
-			log.Fatalf("failed to initialize mock translator: %v", err)
+			return nil, fmt.Errorf("failed to initialize mock translator: %w", err)
 		}
-		return t
+		return t, nil
 	case "nats":
 		slog.InfoContext(ctx, "initializing NATS translator")
-		return nats.NewNATSTranslatorFromClient(GetNATSClient(ctx), 5*time.Second)
+		return nats.NewNATSTranslatorFromClient(natsClient, 5*time.Second), nil
 	default:
-		log.Fatalf("unsupported translator implementation: %s", source)
+		return nil, fmt.Errorf("unsupported translator implementation: %s", source)
 	}
-
-	return nil
 }
 
-// ITXProxyConfig reads ITX proxy configuration from environment variables.
-func ITXProxyConfig() proxy.Config {
+// NewITXProxyConfig builds the ITX proxy configuration from the provided values.
+// privateKey is base64-decoded transparently if necessary.
+func NewITXProxyConfig(baseURL, clientID, privateKey, auth0Domain, audience string) proxy.Config {
 	return proxy.Config{
-		BaseURL:     os.Getenv("ITX_BASE_URL"),
-		ClientID:    os.Getenv("ITX_CLIENT_ID"),
-		PrivateKey:  decodePrivateKey(os.Getenv("ITX_CLIENT_PRIVATE_KEY")),
-		Auth0Domain: os.Getenv("ITX_AUTH0_DOMAIN"),
-		Audience:    os.Getenv("ITX_AUDIENCE"),
+		BaseURL:     baseURL,
+		ClientID:    clientID,
+		PrivateKey:  decodePrivateKey(privateKey),
+		Auth0Domain: auth0Domain,
+		Audience:    audience,
 		Timeout:     30 * time.Second,
+	}
+}
+
+// NewMappingReaderWriter initializes the v1-mappings KV abstraction used by the
+// data stream event handler for idempotency tracking.
+func NewMappingReaderWriter(ctx context.Context, natsClient *nats.NATSClient) (port.MappingReaderWriter, error) {
+	kv, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
+	}
+	return nats.NewMappingReaderWriter(kv), nil
+}
+
+// NewMessagePublisher initializes the message publisher implementation.
+// source controls the backend: "nats" (default) or "mock".
+func NewMessagePublisher(ctx context.Context, source string, natsClient *nats.NATSClient) (port.MessagePublisher, error) {
+	switch source {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock message publisher")
+		return infrastructure.NewMockMessagePublisher(), nil
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS message publisher")
+		return nats.NewMessagePublisher(natsClient), nil
+	default:
+		return nil, fmt.Errorf("unsupported message publisher implementation: %s", source)
+	}
+}
+
+// NewCommitteeProjectLookup initializes the committee project lookup implementation.
+// source controls the backend: "nats" (default) or "mock".
+func NewCommitteeProjectLookup(ctx context.Context, source string, natsClient *nats.NATSClient) (port.CommitteeProjectLookup, error) {
+	switch source {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock committee project lookup")
+		return infrastructure.NewFakeCommitteeProjectLookup(), nil
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS committee project lookup")
+		return nats.NewNATSCommitteeProjectLookup(natsClient), nil
+	default:
+		return nil, fmt.Errorf("unsupported committee project lookup implementation: %s", source)
 	}
 }
 
@@ -117,172 +124,4 @@ func decodePrivateKey(key string) string {
 		return key
 	}
 	return string(decoded)
-}
-
-func natsInit(ctx context.Context) {
-	natsDoOnce.Do(func() {
-		natsURL := os.Getenv("NATS_URL")
-		if natsURL == "" {
-			natsURL = "nats://localhost:4222"
-		}
-
-		natsTimeout := os.Getenv("NATS_TIMEOUT")
-		if natsTimeout == "" {
-			natsTimeout = "10s"
-		}
-		natsTimeoutDuration, err := time.ParseDuration(natsTimeout)
-		if err != nil {
-			log.Fatalf("invalid NATS timeout duration: %v", err)
-		}
-
-		natsMaxReconnect := os.Getenv("NATS_MAX_RECONNECT")
-		if natsMaxReconnect == "" {
-			natsMaxReconnect = "3"
-		}
-		natsMaxReconnectInt, err := strconv.Atoi(natsMaxReconnect)
-		if err != nil {
-			log.Fatalf("invalid NATS max reconnect value %s: %v", natsMaxReconnect, err)
-		}
-
-		natsReconnectWait := os.Getenv("NATS_RECONNECT_WAIT")
-		if natsReconnectWait == "" {
-			natsReconnectWait = "2s"
-		}
-		natsReconnectWaitDuration, err := time.ParseDuration(natsReconnectWait)
-		if err != nil {
-			log.Fatalf("invalid NATS reconnect wait duration %s : %v", natsReconnectWait, err)
-		}
-
-		config := nats.Config{
-			URL:           natsURL,
-			Timeout:       natsTimeoutDuration,
-			MaxReconnect:  natsMaxReconnectInt,
-			ReconnectWait: natsReconnectWaitDuration,
-		}
-
-		client, errNewClient := nats.NewClient(ctx, config)
-		if errNewClient != nil {
-			log.Fatalf("failed to create NATS client: %v", errNewClient)
-		}
-		natsClient = client
-		natsPublisherClient = nats.NewMessagePublisher(client)
-	})
-}
-
-// GetNATSClient returns the initialized NATS client for subscriptions
-func GetNATSClient(ctx context.Context) *nats.NATSClient {
-	natsInit(ctx)
-	return natsClient
-}
-
-// MappingReaderWriter initializes the v1-mappings KV abstraction used by the
-// data stream event handler for idempotency tracking.
-func MappingReaderWriter(ctx context.Context) port.MappingReaderWriter {
-	client := GetNATSClient(ctx)
-	kv, err := client.KeyValue(ctx, constants.KVBucketNameV1Mappings)
-	if err != nil {
-		log.Fatalf("failed to access %s KV bucket: %v", constants.KVBucketNameV1Mappings, err)
-	}
-	return nats.NewMappingReaderWriter(kv)
-}
-
-func natsPublisher(ctx context.Context) port.MessagePublisher {
-	natsInit(ctx)
-	return natsPublisherClient
-}
-
-// InviteFeatureConfig holds configuration for the LFID invite feature.
-type InviteFeatureConfig struct {
-	// Enabled controls whether LFID invite sending and acceptance are active.
-	Enabled bool
-	// SelfServeBaseURL is the base URL for the LFX self-serve web application,
-	// used to build the invite return URL (e.g. https://app.lfx.dev).
-	SelfServeBaseURL string
-}
-
-// InviteConfig reads invite feature configuration from environment variables.
-// INVITES_ENABLED enables the feature (default: false).
-// LFX_SELF_SERVE_BASE_URL overrides the self-serve base URL; when absent it is
-// derived from LFX_ENVIRONMENT (prod/staging/dev).
-func InviteConfig() InviteFeatureConfig {
-	enabled := strings.EqualFold(os.Getenv("INVITES_ENABLED"), "true") ||
-		strings.EqualFold(os.Getenv("INVITES_ENABLED"), "yes")
-	if !enabled {
-		return InviteFeatureConfig{}
-	}
-
-	baseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
-	if baseURL == "" {
-		baseURL = selfServeBaseURLForEnv(os.Getenv("LFX_ENVIRONMENT"))
-	}
-	return InviteFeatureConfig{
-		Enabled:          true,
-		SelfServeBaseURL: baseURL,
-	}
-}
-
-// selfServeBaseURLForEnv returns the default self-serve base URL for the given
-// LFX_ENVIRONMENT value. An empty or unrecognised environment defaults to prod.
-func selfServeBaseURLForEnv(env string) string {
-	switch strings.ToLower(env) {
-	case "staging":
-		return "https://app.staging.lfx.dev"
-	case "dev":
-		return "https://app.dev.lfx.dev"
-	default:
-		return "https://app.lfx.dev"
-	}
-}
-
-// MessagePublisher initializes the service publisher implementation
-func MessagePublisher(ctx context.Context) port.MessagePublisher {
-	var publisher port.MessagePublisher
-
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock service publisher")
-		publisher = infrastructure.NewMockMessagePublisher()
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS service publisher")
-		natsPublisher := natsPublisher(ctx)
-		if natsPublisher == nil {
-			log.Fatalf("failed to initialize NATS publisher")
-		}
-		publisher = natsPublisher
-
-	default:
-		log.Fatalf("unsupported service publisher implementation: %s", repoSource)
-	}
-
-	return publisher
-}
-
-// CommitteeProjectLookup initializes the committee project lookup implementation.
-// REPOSITORY_SOURCE controls which backend is used (default: "nats").
-func CommitteeProjectLookup(ctx context.Context) port.CommitteeProjectLookup {
-	repoSource := os.Getenv("REPOSITORY_SOURCE")
-	if repoSource == "" {
-		repoSource = "nats"
-	}
-
-	switch repoSource {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock committee project lookup")
-		return infrastructure.NewFakeCommitteeProjectLookup()
-
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS committee project lookup")
-		return nats.NewNATSCommitteeProjectLookup(GetNATSClient(ctx))
-
-	default:
-		log.Fatalf("unsupported committee project lookup implementation: %s", repoSource)
-	}
-
-	return nil
 }

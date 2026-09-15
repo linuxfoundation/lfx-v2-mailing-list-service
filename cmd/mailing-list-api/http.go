@@ -6,9 +6,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -24,86 +24,30 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/middleware"
 )
 
-// handleHTTPServer starts configures and starts a HTTP server on the given
-// URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+// setupHTTPServer configures and starts a HTTP server on the given host address.
+// It shuts down the server using the context received from shutdownCtxC, which
+// must be sent by the caller exactly once after cancelling the request context.
+// Using a shared context ensures srv.Shutdown and the caller's wg.Wait both
+// observe the same absolute deadline.
+func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoints *mailinglistservice.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool, koDataPath string, shutdownCtxC <-chan context.Context) {
+	mux := buildMux(dbg)
 
-	// Provide the transport specific request decoder and response encoder.
-	// The goa http package has built-in support for JSON, XML and gob.
-	// Other encodings can be used by providing the corresponding functions,
-	// see goa.design/implement/encoding.
-	var (
-		dec = goahttp.RequestDecoder
-		enc = goahttp.ResponseEncoder
+	koDataDir := http.Dir(koDataPath)
+	eh := errorHandler()
+	mailingListServiceServer := mailinglistservicesvr.New(
+		mailingListServiceEndpoints, mux,
+		goahttp.RequestDecoder, goahttp.ResponseEncoder,
+		eh, nil,
+		koDataDir, koDataDir, koDataDir, koDataDir,
 	)
-
-	// Build the service HTTP request multiplexer and mount debug and profiler
-	// endpoints in debug mode.
-	var mux goahttp.MiddlewareMuxer
-	{
-		mux = goahttp.NewMuxer()
-
-		// Register route-tagging middleware before any mounts so chi sees it
-		// for all routes. Reads RoutePattern after next.ServeHTTP because chi
-		// populates the pattern during routing (inside ServeHTTP), not before.
-		mux.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer func() {
-					rctx := chi.RouteContext(r.Context())
-					if rctx != nil {
-						routePattern := rctx.RoutePattern()
-						if routePattern != "" {
-							if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-								labeler.Add(semconv.HTTPRoute(routePattern))
-							}
-							span := trace.SpanFromContext(r.Context())
-							span.SetAttributes(semconv.HTTPRoute(routePattern))
-							span.SetName(r.Method + " " + routePattern)
-						}
-					}
-				}()
-				next.ServeHTTP(w, r)
-			})
-		})
-
-		if dbg {
-			// Mount pprof handlers for memory profiling under /debug/pprof.
-			debug.MountPprofHandlers(debug.Adapt(mux))
-			// Mount /debug endpoint to enable or disable debug logs at runtime.
-			debug.MountDebugLogEnabler(debug.Adapt(mux))
-		}
-	}
-
-	// Wrap the endpoints with the transport specific layers. The generated
-	// server packages contains code generated from the design which maps
-	// the service input and output data structures to HTTP requests and
-	// responses.
-	var (
-		mailingListServiceServer *mailinglistservicesvr.Server
-	)
-	{
-		eh := errorHandler(ctx)
-		koDataPath := os.Getenv("KO_DATA_PATH")
-		if koDataPath == "" {
-			koDataPath = "../../gen/http/"
-		}
-		koDataDir := http.Dir(koDataPath)
-		mailingListServiceServer = mailinglistservicesvr.New(mailingListServiceEndpoints, mux, dec, enc, eh, nil, koDataDir, koDataDir, koDataDir, koDataDir)
-	}
-
-	// Configure the mux.
 	mailinglistservicesvr.Mount(mux, mailingListServiceServer)
 
 	var handler http.Handler = mux
-	// Add RequestID middleware first
 	handler = middleware.RequestIDMiddleware()(handler)
-	// Add Authorization middleware
 	handler = middleware.AuthorizationMiddleware()(handler)
 	if dbg {
-		// Log query and response bodies if debug logs are enabled.
 		handler = debug.HTTP()(handler)
 	}
-	// Add OpenTelemetry HTTP instrumentation (outermost to capture full request lifecycle)
 	handler = otelhttp.NewHandler(handler, "mailing-list-api",
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			p := r.URL.Path
@@ -111,9 +55,6 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 		}),
 	)
 
-	// Start HTTP server using default configuration, change the code to
-	// configure the server as required by your service.
-	srv := &http.Server{Addr: host, Handler: handler, ReadHeaderTimeout: time.Second * 60}
 	for _, m := range mailingListServiceServer.Mounts {
 		slog.InfoContext(ctx, "HTTP endpoint mounted",
 			"method", m.Method,
@@ -122,43 +63,84 @@ func handleHTTPServer(ctx context.Context, host string, mailingListServiceEndpoi
 		)
 	}
 
+	srv := &http.Server{
+		Addr:              host,
+		Handler:           handler,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
 	(*wg).Add(1)
 	go func() {
 		defer (*wg).Done()
 
-		// Start HTTP server in a separate goroutine.
 		go func() {
 			slog.InfoContext(ctx, "HTTP server listening", "host", host)
-			select {
-			case errc <- srv.ListenAndServe():
-			case <-ctx.Done(): // avoid deadlock if channel already satisfied
+			// ListenAndServe always returns a non-nil error. ErrServerClosed is
+			// the normal result when srv.Shutdown is called, so it is not a
+			// failure. Only unexpected errors (e.g. port already in use) are
+			// forwarded to errc so run() can distinguish them from OS signals
+			// and return the correct exit code.
+			if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				select {
+				case errc <- err:
+				case <-ctx.Done():
+				}
 			}
 		}()
 
 		<-ctx.Done()
 		slog.InfoContext(ctx, "shutting down HTTP server", "host", host)
 
-		// Shutdown gracefully with a 30s timeout.
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		err := srv.Shutdown(ctx)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to shutdown HTTP server", "error", err)
+		// Use the shared shutdown context provided by run() so that srv.Shutdown
+		// and the outer wg.Wait observe the same absolute deadline.
+		shutdownCtx := <-shutdownCtxC
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			slog.ErrorContext(shutdownCtx, "failed to shutdown HTTP server", "error", err)
 		}
 	}()
 }
 
-// errorHandler returns a function that writes and logs the given error.
-// The function also writes and logs the error unique ID so that it's possible
-// to correlate.
-func errorHandler(logCtx context.Context) func(context.Context, http.ResponseWriter, error) {
+// buildMux constructs the GOA HTTP mux with route-tagging OTel middleware.
+// Debug profiling endpoints are mounted when dbg is true.
+func buildMux(dbg bool) goahttp.MiddlewareMuxer {
+	mux := goahttp.NewMuxer()
+
+	// Register route-tagging middleware before any mounts so chi sees it for all
+	// routes. The pattern is read after next.ServeHTTP because chi populates it
+	// during routing (inside ServeHTTP), not before.
+	mux.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				rctx := chi.RouteContext(r.Context())
+				if rctx == nil {
+					return
+				}
+				routePattern := rctx.RoutePattern()
+				if routePattern == "" {
+					return
+				}
+				if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+					labeler.Add(semconv.HTTPRoute(routePattern))
+				}
+				span := trace.SpanFromContext(r.Context())
+				span.SetAttributes(semconv.HTTPRoute(routePattern))
+				span.SetName(r.Method + " " + routePattern)
+			}()
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	if dbg {
+		debug.MountPprofHandlers(debug.Adapt(mux))
+		debug.MountDebugLogEnabler(debug.Adapt(mux))
+	}
+
+	return mux
+}
+
+// errorHandler returns a GOA error handler that logs unhandled HTTP errors.
+func errorHandler() func(context.Context, http.ResponseWriter, error) {
 	return func(ctx context.Context, _ http.ResponseWriter, err error) {
-		// Log with request context but include info from both contexts
-		slog.ErrorContext(ctx, "HTTP error occurred",
-			"error", err,
-			"has_server_context", logCtx != nil,
-			"has_request_context", ctx != nil,
-		)
+		slog.ErrorContext(ctx, "HTTP error occurred", "error", err)
 	}
 }
