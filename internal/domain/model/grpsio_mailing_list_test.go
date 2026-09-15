@@ -307,7 +307,6 @@ func BenchmarkGroupsIOMailingListSettings_Tags(b *testing.B) {
 	}
 }
 
-// createValidTestMailingList returns a fully populated GroupsIOMailingList for use in tests
 // TestGroupsIOMailingList_SystemUpdatedAt_Serialization verifies the omitempty
 // behaviour of the SystemUpdatedAt pointer field introduced to fix zero-time
 // serialization. A nil pointer must be omitted entirely; a non-nil value must
@@ -336,6 +335,7 @@ func TestGroupsIOMailingList_SystemUpdatedAt_Serialization(t *testing.T) {
 	})
 }
 
+// createValidTestMailingList returns a fully populated GroupsIOMailingList for use in tests
 // across the model package.
 func createValidTestMailingList() *GroupsIOMailingList {
 	return &GroupsIOMailingList{
