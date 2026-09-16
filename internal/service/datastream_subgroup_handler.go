@@ -369,7 +369,7 @@ func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.Grou
 
 	if ts := mapconv.StringVal(data, "last_system_modified_at"); ts != "" {
 		if t, err := time.Parse(time.RFC3339, ts); err == nil {
-			list.SystemUpdatedAt = t
+			list.SystemUpdatedAt = &t
 		}
 	}
 

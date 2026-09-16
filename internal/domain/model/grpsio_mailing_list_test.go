@@ -4,10 +4,13 @@
 package model
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGroupsIOMailingList_Tags(t *testing.T) {
@@ -302,6 +305,34 @@ func BenchmarkGroupsIOMailingListSettings_Tags(b *testing.B) {
 	for b.Loop() {
 		_ = settings.Tags()
 	}
+}
+
+// TestGroupsIOMailingList_SystemUpdatedAt_Serialization verifies the omitempty
+// behaviour of the SystemUpdatedAt pointer field introduced to fix zero-time
+// serialization. A nil pointer must be omitted entirely; a non-nil value must
+// round-trip as an RFC3339 timestamp.
+func TestGroupsIOMailingList_SystemUpdatedAt_Serialization(t *testing.T) {
+	t.Run("nil omits field", func(t *testing.T) {
+		ml := &GroupsIOMailingList{SystemUpdatedAt: nil}
+		data, err := json.Marshal(ml)
+		require.NoError(t, err)
+		var m map[string]any
+		require.NoError(t, json.Unmarshal(data, &m))
+		_, present := m["system_updated_at"]
+		assert.False(t, present, "system_updated_at must be absent when SystemUpdatedAt is nil")
+	})
+
+	t.Run("non-nil serializes as RFC3339", func(t *testing.T) {
+		ts := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+		ml := &GroupsIOMailingList{SystemUpdatedAt: &ts}
+		data, err := json.Marshal(ml)
+		require.NoError(t, err)
+		var m map[string]any
+		require.NoError(t, json.Unmarshal(data, &m))
+		val, present := m["system_updated_at"]
+		assert.True(t, present, "system_updated_at must be present when SystemUpdatedAt is non-nil")
+		assert.Equal(t, "2026-01-15T12:00:00Z", val)
+	})
 }
 
 // createValidTestMailingList returns a fully populated GroupsIOMailingList for use in tests
