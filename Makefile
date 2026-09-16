@@ -7,7 +7,7 @@ BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 GIT_COMMIT := $(shell git rev-parse HEAD)
 
 # Goa CLI
-GOA_VERSION := v3.21.5
+GOA_VERSION := v3.30.0
 MODULE      := $(shell go list -m)
 
 # Docker
