@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 // HandleDataStreamServiceUpdate transforms the v1 payload into a GrpsIOService and publishes
@@ -122,6 +124,31 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 		slog.WarnContext(ctx, "failed to publish service access message", "uid", uid, "error", err)
 	}
 
+	// Keep the service domain available to subgroup events, which denormalize it onto
+	// mailing-list documents so consumers do not need access to the parent service.
+	// Write it before publishing the service mapping, which makes the parent visible
+	// to subgroup processing.
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, uid)
+	if err := mappings.PutMapping(ctx, domainKey, svc.Domain); err != nil {
+		// An existing service mapping may already be visible to subgroups. Check
+		// and clear a stale domain on every failed write, including transient ones.
+		storedDomain, present, readErr := mappings.GetMappingValueWithError(ctx, domainKey)
+		if readErr != nil {
+			return retryUnsafeDomainMapping(ctx, uid, mKey, domainKey, err, readErr, mappings)
+		}
+		if present && storedDomain != svc.Domain {
+			if clearErr := mappings.PutTombstone(ctx, domainKey); clearErr != nil {
+				return retryUnsafeDomainMapping(ctx, uid, mKey, domainKey, err, clearErr, mappings)
+			}
+		}
+		if !isPermanentDomainMappingError(err) {
+			slog.WarnContext(ctx, "failed to put service domain mapping, will retry (repair required if deliveries are exhausted)",
+				"uid", uid, "mapping_key", domainKey, "error", err)
+			return true
+		}
+		slog.ErrorContext(ctx, "permanent service domain mapping failure, indexing service without a domain mapping",
+			"uid", uid, "mapping_key", domainKey, "error", err)
+	}
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
 		if pkgerrors.IsTransient(err) {
 			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
@@ -133,12 +160,40 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 	return false
 }
 
+// isPermanentDomainMappingError recognizes NATS errors which cannot be fixed by
+// immediate redelivery. Unknown errors are retried rather than ACKed as permanent.
+func isPermanentDomainMappingError(err error) bool {
+	if errors.Is(err, jetstream.ErrInvalidKey) {
+		return true
+	}
+	var apiErr *jetstream.APIError
+	return errors.As(err, &apiErr) && apiErr.Code >= 400 && apiErr.Code < 500 &&
+		apiErr.Code != 408 && apiErr.Code != 429
+}
+
+// retryUnsafeDomainMapping prevents existing subgroups from reading a stale
+// domain when its replacement or cleanup cannot be verified.
+func retryUnsafeDomainMapping(ctx context.Context, uid, serviceKey, domainKey string, writeErr, repairErr error, mappings port.MappingReaderWriter) bool {
+	if err := mappings.PutTombstone(ctx, serviceKey); err != nil {
+		slog.ErrorContext(ctx, "failed to hide service mapping with unverified domain", "uid", uid,
+			"mapping_key", serviceKey, "error", err)
+	}
+	slog.ErrorContext(ctx, "service domain mapping could not be repaired; NAKing for operational repair",
+		"uid", uid, "mapping_key", domainKey, "write_error", writeErr, "repair_error", repairErr)
+	return true
+}
+
 // HandleDataStreamServiceDelete publishes a delete indexer message and tombstones the mapping.
 // Returns true to NAK on transient errors.
 func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, uid)
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, uid)
 
 	if mappings.IsTombstoned(ctx, mKey) {
+		if err := mappings.PutTombstone(ctx, domainKey); err != nil {
+			slog.ErrorContext(ctx, "failed to tombstone service domain mapping, will retry", "mapping_key", domainKey, "error", err)
+			return true
+		}
 		slog.InfoContext(ctx, "service already deleted, ACKing duplicate", "uid", uid)
 		return false
 	}
@@ -164,10 +219,17 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 		slog.WarnContext(ctx, "failed to publish service delete access message", "uid", uid, "error", err)
 	}
 
-	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+	// Tombstone the domain first so a failed write cannot leave a live domain after
+	// the service tombstone causes subsequent deliveries to take the duplicate path.
+	domainTombstoneErr := mappings.PutTombstone(ctx, domainKey)
+	if domainTombstoneErr != nil {
+		slog.ErrorContext(ctx, "failed to tombstone service domain mapping, will retry", "mapping_key", domainKey, "error", domainTombstoneErr)
 	}
-	return false
+	serviceTombstoneErr := mappings.PutTombstone(ctx, mKey)
+	if serviceTombstoneErr != nil {
+		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", serviceTombstoneErr)
+	}
+	return domainTombstoneErr != nil || serviceTombstoneErr != nil
 }
 
 // buildServiceSettings constructs a GrpsIOServiceSettings from v1 writers/auditors.

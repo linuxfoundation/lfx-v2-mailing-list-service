@@ -5,6 +5,7 @@ package mock
 
 import (
 	"context"
+	"errors"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -12,10 +13,11 @@ import (
 
 // FakeMappingStore is an in-memory MappingReaderWriter for unit tests.
 type FakeMappingStore struct {
-	values      map[string]string
-	tombstones  map[string]bool
-	getErrors   map[string]bool
-	putErrors   map[string]error
+	values          map[string]string
+	tombstones      map[string]bool
+	getErrors       map[string]bool
+	putErrors       map[string]error
+	tombstoneErrors map[string]error
 }
 
 var _ port.MappingReaderWriter = (*FakeMappingStore)(nil)
@@ -23,10 +25,11 @@ var _ port.MappingReaderWriter = (*FakeMappingStore)(nil)
 // NewFakeMappingStore returns an empty FakeMappingStore.
 func NewFakeMappingStore() *FakeMappingStore {
 	return &FakeMappingStore{
-		values:     make(map[string]string),
-		tombstones: make(map[string]bool),
-		getErrors:  make(map[string]bool),
-		putErrors:  make(map[string]error),
+		values:          make(map[string]string),
+		tombstones:      make(map[string]bool),
+		getErrors:       make(map[string]bool),
+		putErrors:       make(map[string]error),
+		tombstoneErrors: make(map[string]error),
 	}
 }
 
@@ -39,6 +42,16 @@ func (f *FakeMappingStore) SimulateGetError(key string) { f.getErrors[key] = tru
 
 // SimulatePutError causes PutMapping to return the given error for the given key.
 func (f *FakeMappingStore) SimulatePutError(key string, err error) { f.putErrors[key] = err }
+
+// SimulateTombstoneError causes PutTombstone to return the given error for the key.
+// Pass nil to clear a previously configured error.
+func (f *FakeMappingStore) SimulateTombstoneError(key string, err error) {
+	if err == nil {
+		delete(f.tombstoneErrors, key)
+		return
+	}
+	f.tombstoneErrors[key] = err
+}
 
 func (f *FakeMappingStore) ResolveAction(_ context.Context, key string) model.MessageAction {
 	if _, ok := f.values[key]; ok {
@@ -56,12 +69,23 @@ func (f *FakeMappingStore) IsTombstoned(_ context.Context, key string) bool {
 	return f.tombstones[key]
 }
 
-func (f *FakeMappingStore) GetMappingValue(_ context.Context, key string) (string, bool) {
-	if f.tombstones[key] || f.getErrors[key] {
+func (f *FakeMappingStore) GetMappingValue(ctx context.Context, key string) (string, bool) {
+	value, present, err := f.GetMappingValueWithError(ctx, key)
+	if err != nil {
 		return "", false
 	}
+	return value, present
+}
+
+func (f *FakeMappingStore) GetMappingValueWithError(_ context.Context, key string) (string, bool, error) {
+	if f.tombstones[key] || f.getErrors[key] {
+		if f.getErrors[key] {
+			return "", false, errors.New("simulated mapping read error")
+		}
+		return "", false, nil
+	}
 	v, ok := f.values[key]
-	return v, ok
+	return v, ok, nil
 }
 
 func (f *FakeMappingStore) PutMapping(_ context.Context, key, value string) error {
@@ -86,6 +110,9 @@ func (f *FakeMappingStore) PurgeMapping(_ context.Context, key string) error {
 }
 
 func (f *FakeMappingStore) PutTombstone(_ context.Context, key string) error {
+	if err, ok := f.tombstoneErrors[key]; ok {
+		return err
+	}
 	f.tombstones[key] = true
 	delete(f.values, key)
 	return nil
