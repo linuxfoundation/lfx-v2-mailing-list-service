@@ -177,6 +177,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `title` | string | Mailing list title |
 | `subject_tag` | string | Email subject tag; emitted as empty string when not populated |
 | `service_uid` | string | UID of the parent GroupsIO service |
+| `domain` | string | Groups.io domain copied from the parent service so consumers can use it without reading the service object |
 | `project_uid` | string | v2 UID of the owning project (resolved from v1 SFID) |
 | `project_name` | string | Name of the owning project; emitted as empty string when not populated |
 | `project_slug` | string | Slug of the owning project; emitted as empty string when not populated |
@@ -186,7 +187,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
 
-> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
+> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. The subgroup handler resolves the parent service's domain from the `groupsio-service-domain.{service_uid}` mapping and sets `domain` before indexing; it NAKs until that mapping is available. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
 
 ### Tags
 

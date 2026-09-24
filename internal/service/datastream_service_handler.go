@@ -130,6 +130,17 @@ func HandleDataStreamServiceUpdate(ctx context.Context, uid string, data map[str
 		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
 		return false
 	}
+	// Keep the service domain available to subgroup events, which denormalize it onto
+	// mailing-list documents so consumers do not need access to the parent service.
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, uid)
+	if err := mappings.PutMapping(ctx, domainKey, svc.Domain); err != nil {
+		if pkgerrors.IsTransient(err) {
+			slog.WarnContext(ctx, "failed to put service domain mapping, will retry", "mapping_key", domainKey, "error", err)
+			return true
+		}
+		slog.ErrorContext(ctx, "failed to put service domain mapping", "mapping_key", domainKey, "error", err)
+		return false
+	}
 	return false
 }
 
@@ -166,6 +177,10 @@ func HandleDataStreamServiceDelete(ctx context.Context, uid string, publisher po
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
 		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+	}
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, uid)
+	if err := mappings.PutTombstone(ctx, domainKey); err != nil {
+		slog.ErrorContext(ctx, "failed to tombstone service domain mapping", "mapping_key", domainKey, "error", err)
 	}
 	return false
 }
