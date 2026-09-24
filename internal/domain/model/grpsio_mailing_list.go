@@ -35,6 +35,7 @@ type GroupsIOMailingList struct {
 	Title       string `json:"title"`
 	SubjectTag  string `json:"subject_tag"`  // Optional
 	ServiceUID  string `json:"service_uid"`  // Service UUID (required)
+	Domain      string `json:"domain"`       // Groups.io domain inherited from the parent service
 	ProjectUID  string `json:"project_uid"`  // Inherited from parent service
 	ProjectName string `json:"project_name"` // Inherited from parent service
 	ProjectSlug string `json:"project_slug"` // Inherited from parent service
@@ -42,8 +43,8 @@ type GroupsIOMailingList struct {
 	URL   string   `json:"url,omitempty"`   // The groups.io URL for the subgroup
 	Flags []string `json:"flags,omitempty"` // Warning messages about unusual settings
 
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 	SystemUpdatedAt *time.Time `json:"system_updated_at,omitempty"` // Last modified by system (scripts/webhooks)
 }
 

@@ -52,6 +52,11 @@ func TestHandleDataStreamServiceUpdate_HappyPath_ACKAndPublishes(t *testing.T) {
 	_, present := m.GetMappingValue(context.Background(),
 		fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService))
 	assert.True(t, present, "mapping should be written after successful processing")
+
+	domain, present := m.GetMappingValue(context.Background(),
+		fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain))
+	assert.True(t, present, "service domain mapping should be written")
+	assert.Equal(t, "example.com", domain)
 }
 
 func TestHandleDataStreamServiceUpdate_CreateVsUpdate_Action(t *testing.T) {
@@ -81,6 +86,8 @@ func TestHandleDataStreamServiceDelete_DuplicateDelete_ACK(t *testing.T) {
 
 func TestHandleDataStreamServiceDelete_HappyPath_ACKAndTombstones(t *testing.T) {
 	m := mock.NewFakeMappingStore()
+	domainKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain)
+	m.Set(domainKey, "example.com")
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamServiceDelete(context.Background(), "svc-1", pub, m)
 
@@ -92,6 +99,7 @@ func TestHandleDataStreamServiceDelete_HappyPath_ACKAndTombstones(t *testing.T) 
 
 	assert.True(t, m.IsTombstoned(context.Background(),
 		fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+	assert.True(t, m.IsTombstoned(context.Background(), domainKey))
 }
 
 func TestHandleDataStreamServiceUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,7 @@ func TestHandleDataStreamSubgroupUpdate_ProjectSlugLookupFails_NAK(t *testing.T)
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Err = fmt.Errorf("project service unavailable")
@@ -47,6 +49,7 @@ func TestHandleDataStreamSubgroupUpdate_CommitteeMappingAbsent_NAK(t *testing.T)
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -78,10 +81,25 @@ func TestHandleDataStreamSubgroupUpdate_ParentServiceAbsent_NAK(t *testing.T) {
 	assert.True(t, nak, "absent parent service should NAK")
 }
 
+func TestHandleDataStreamSubgroupUpdate_ParentServiceDomainAbsent_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+
+	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+		map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"},
+		&mock.SpyMessagePublisher{}, m, pl)
+	assert.True(t, nak, "missing parent service domain should NAK")
+}
+
 func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappings(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -99,6 +117,9 @@ func TestHandleDataStreamSubgroupUpdate_HappyPath_ACKAndPublishesAndWritesMappin
 	assert.False(t, nak)
 	assert.Len(t, pub.IndexerCalls, 1)
 	assert.Equal(t, constants.IndexGroupsIOMailingListSubject, pub.IndexerCalls[0].Subject)
+	indexMessage := pub.IndexerCalls[0].Message.(*model.IndexerMessage)
+	indexedData := indexMessage.Data.(map[string]any)
+	assert.Equal(t, "lists.example.org", indexedData["domain"])
 	assert.Len(t, pub.AccessCalls, 1)
 	assert.Equal(t, fgaconstants.GenericUpdateAccessSubject, pub.AccessCalls[0].Subject)
 
@@ -122,6 +143,7 @@ func TestHandleDataStreamSubgroupUpdate_WithCommittee_ResolvesAndPublishes(t *te
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.sfid-committee", constants.KVMappingPrefixCommitteeBySFID), "committee-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -146,6 +168,7 @@ func TestHandleDataStreamSubgroupUpdate_CommitteeMappingFormat_WithCommittee(t *
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.sfid-committee", constants.KVMappingPrefixCommitteeBySFID), "committee-uid-abc")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -173,6 +196,7 @@ func TestHandleDataStreamSubgroupUpdate_CommitteeMappingFormat_NoCommittee(t *te
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -198,6 +222,7 @@ func TestHandleDataStreamSubgroupUpdate_NoGroupID_NoReverseIndex(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -227,6 +252,7 @@ func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Transient_NAK(t *testi
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
@@ -251,6 +277,7 @@ func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Permanent_ACK(t *testi
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService), "svc-1")
+	m.Set(fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain), "lists.example.org")
 
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
