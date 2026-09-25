@@ -1,0 +1,39 @@
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+
+package constants
+
+// NATS subject constants for message publishing
+const (
+	// Indexing subjects for search and discovery
+	IndexGroupsIOServiceSubject             = "lfx.index.groupsio_service"
+	IndexGroupsIOServiceSettingsSubject     = "lfx.index.groupsio_service_settings"
+	IndexGroupsIOMailingListSubject         = "lfx.index.groupsio_mailing_list"
+	IndexGroupsIOMailingListSettingsSubject = "lfx.index.groupsio_mailing_list_settings"
+	IndexGroupsIOMemberSubject              = "lfx.index.groupsio_member"
+	IndexGroupsIOArtifactSubject            = "lfx.index.groupsio_artifact"
+	IndexGroupsIOMailingListMessageSubject  = "lfx.index.groupsio_mailing_list_message"
+
+	// Committee event subjects from committee-api
+	CommitteeMemberCreatedSubject = "lfx.committee-api.committee_member.created"
+	CommitteeMemberDeletedSubject = "lfx.committee-api.committee_member.deleted"
+	CommitteeMemberUpdatedSubject = "lfx.committee-api.committee_member.updated"
+	CommitteeListMembersSubject   = "lfx.committee-api.list_members"
+
+	// CommitteeGetProjectSubject is the request-reply subject for resolving a v2 committee UID
+	// to its owning v2 project UID. Served by lfx-v2-committee-service (LFXV2-2472).
+	// Request: JSON {"committee_uid":"<uuid>"}  Response: JSON {"project_uid":"<uuid>"} or {"error":"<msg>"}
+	CommitteeGetProjectSubject = "lfx.committee-api.get_project"
+
+	// Mailing list events from mailing-list-api
+	MailingListCreatedSubject = "lfx.mailing-list-api.mailing_list_created"
+	MailingListUpdatedSubject = "lfx.mailing-list-api.mailing_list_updated"
+
+	// CommitteeMailingListChangedSubject is published when a mailing list CRUD operation
+	// changes committee-related state (e.g. has_mailing_list flag).
+	// Consumed by committee-api to update the committee document.
+	CommitteeMailingListChangedSubject = "lfx.mailing-list-api.committee_mailing_list.changed"
+
+	// AuthEmailToUsernameSubject resolves a primary email address to an LFX username via the auth service.
+	AuthEmailToUsernameSubject = "lfx.auth-service.email_to_username"
+)
