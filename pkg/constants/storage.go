@@ -17,6 +17,9 @@ const (
 
 	// KVMappingPrefixService is the v1-mappings key prefix for GroupsIO services.
 	KVMappingPrefixService = "groupsio-service"
+	// KVMappingPrefixServiceDomain stores the Groups.io domain for a service so subgroup
+	// records can denormalize it without having to read the restricted parent service object.
+	KVMappingPrefixServiceDomain = "groupsio-service-domain"
 	// KVMappingPrefixSubgroup is the v1-mappings key prefix for GroupsIO subgroups (mailing lists).
 	KVMappingPrefixSubgroup = "groupsio-subgroup"
 	// KVMappingPrefixMember is the v1-mappings key prefix for GroupsIO members.

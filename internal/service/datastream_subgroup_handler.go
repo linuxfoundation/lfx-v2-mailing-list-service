@@ -67,6 +67,23 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return true // NAK — retry with backoff
 	}
 
+	// The parent service is access-restricted for some callers. Copy its domain onto
+	// the mailing-list resource when available, without blocking indexing while the
+	// parent service is being fully configured.
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, list.ServiceUID)
+	serviceDomain, domainMappingPresent, err := mappings.GetMappingValueWithError(ctx, domainKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read parent service domain mapping, NAKing subgroup for retry",
+			"uid", uid, "service_uid", list.ServiceUID, "error", err)
+		return true
+	}
+	if domainMappingPresent && serviceDomain != "" {
+		list.Domain = serviceDomain
+	} else {
+		slog.InfoContext(ctx, "parent service domain absent or empty, indexing subgroup without domain",
+			"uid", uid, "service_uid", list.ServiceUID)
+	}
+
 	// Look up project slug from the project service. NAK on transient errors so the
 	// subgroup is retried once the project service is available. This is done after
 	// dependency checks to avoid unnecessary RPCs when the record will NAK anyway.

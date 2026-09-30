@@ -55,15 +55,29 @@ func (m *natsMappingReaderWriter) IsTombstoned(ctx context.Context, key string) 
 }
 
 func (m *natsMappingReaderWriter) GetMappingValue(ctx context.Context, key string) (string, bool) {
-	entry, err := m.kv.Get(ctx, key)
-	if err != nil || entry == nil {
+	value, present, err := m.GetMappingValueWithError(ctx, key)
+	if err != nil {
 		return "", false
+	}
+	return value, present
+}
+
+func (m *natsMappingReaderWriter) GetMappingValueWithError(ctx context.Context, key string) (string, bool, error) {
+	entry, err := m.kv.Get(ctx, key)
+	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if entry == nil {
+		return "", false, nil
 	}
 	val := string(entry.Value())
 	if val == constants.KVTombstoneMarker {
-		return "", false
+		return "", false, nil
 	}
-	return val, true
+	return val, true, nil
 }
 
 func (m *natsMappingReaderWriter) PutMapping(ctx context.Context, key, value string) error {

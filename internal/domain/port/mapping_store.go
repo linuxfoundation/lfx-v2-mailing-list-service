@@ -34,6 +34,11 @@ type MappingReader interface {
 	// is not tombstoned. Used when the caller needs the actual value (e.g. the
 	// reverse group_id → subgroup UID index in the member handler).
 	GetMappingValue(ctx context.Context, key string) (string, bool)
+
+	// GetMappingValueWithError returns the stored value, whether it exists and is
+	// not tombstoned, and any storage read error. Callers can distinguish an
+	// absent optional mapping from a failed read that should be retried.
+	GetMappingValueWithError(ctx context.Context, key string) (string, bool, error)
 }
 
 // MappingWriter abstracts write operations on the v1-mappings KV bucket.
