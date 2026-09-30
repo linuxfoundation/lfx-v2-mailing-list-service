@@ -5,7 +5,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,7 +12,6 @@ import (
 	"strings"
 
 	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
-	msgpack "github.com/vmihailenco/msgpack/v5"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -24,7 +22,7 @@ import (
 
 // kvPrefixSubgroupV1 is the v1-objects key prefix for GroupsIO subgroup records.
 // Used by MemberInviteHandler to resolve the mailing-list display name.
-const kvPrefixSubgroupV1 = "itx-groupsio-v2-subgroup."
+const kvPrefixSubgroupV1 = constants.KVObjectPrefixSubgroup
 
 // memberInviteSentKeyFmt is the format for the v1-mappings dedup key.
 const memberInviteSentKeyFmt = "%s.%s"
@@ -172,7 +170,7 @@ func (h *MemberInviteHandler) mailingListName(ctx context.Context, mailingListUI
 		return "", false
 	}
 
-	data, decErr := decodeMapData(entry.Value())
+	data, decErr := mapconv.DecodeMapData(entry.Value())
 	if decErr != nil {
 		return "", false
 	}
@@ -184,19 +182,6 @@ func (h *MemberInviteHandler) mailingListName(ctx context.Context, mailingListUI
 		return title, true
 	}
 	return "", false
-}
-
-// decodeMapData unmarshals KV entry bytes as JSON first, then msgpack.
-// Mirrors the decode logic used by the data-stream consumer.
-func decodeMapData(data []byte) (map[string]any, error) {
-	var result map[string]any
-	if err := json.Unmarshal(data, &result); err == nil {
-		return result, nil
-	}
-	if err := msgpack.Unmarshal(data, &result); err == nil {
-		return result, nil
-	}
-	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack")
 }
 
 // ShouldSendMemberInvite reports whether a new member event without an LFID should

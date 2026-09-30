@@ -1,0 +1,24 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+{{- if .Values.nats.kv_bucket_subgroup_service_index.creation }}
+apiVersion: jetstream.nats.io/v1beta2
+kind: KeyValue
+metadata:
+  name: groupsio-subgroup-service-index
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.nats.kv_bucket_subgroup_service_index.keep }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+spec:
+  bucket: groupsio-subgroup-service-index
+  replicas: {{ .Values.nats.kv_bucket_subgroup_service_index.replicas }}
+  history: {{ .Values.nats.kv_bucket_subgroup_service_index.history }}
+  storage: {{ .Values.nats.kv_bucket_subgroup_service_index.storage }}
+  maxValueSize: {{ .Values.nats.kv_bucket_subgroup_service_index.maxValueSize }}
+  maxBytes: {{ .Values.nats.kv_bucket_subgroup_service_index.maxBytes }}
+  compression: {{ .Values.nats.kv_bucket_subgroup_service_index.compression }}
+{{- end }}
