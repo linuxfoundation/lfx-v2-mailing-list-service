@@ -245,6 +245,14 @@ After a successful update, the handler writes a reverse index to `v1-mappings`:
 
 This allows the member and artifact handlers to resolve the mailing list UID from the Groups.io numeric `group_id`.
 
+The handler also maintains an index in the `groupsio-subgroup-service-index` KV bucket for enumerating mailing lists by service:
+- Key: `groupsio-subgroup-service.{service_uid}.{uid}` → Value: `{uid}`
+- Key: `groupsio-subgroup-parent.{uid}` → Value: `{service_uid}`
+- Key: `groupsio-subgroup-previous-service.{uid}` → Value: `{old_service_uid}` while a move's old index entry awaits cleanup
+
+The parent key tracks moves and deletions; the pending-move key preserves the old service UID across retries until its index entry is tombstoned. `ListSubgroupsByService` filters the service index to live subgroup and parent mappings, and returns an error if enumeration is incomplete. This index is populated as subgroup events are processed; lists indexed before it was introduced require subgroup processing to populate it.
+For existing lists, run [`scripts/backfill_subgroup_service_index/`](../scripts/backfill_subgroup_service_index/README.md) to populate these mappings without replaying subgroup events or reindexing documents.
+
 ---
 
 ## GroupsIO Mailing List Settings

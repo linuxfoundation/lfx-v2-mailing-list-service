@@ -13,9 +13,9 @@ import (
 // ErrMappingAlreadyExists is returned by CreateMapping when the key already exists.
 var ErrMappingAlreadyExists = errors.New("mapping key already exists")
 
-// MappingReader abstracts read operations on the v1-mappings KV bucket.
+// MappingReader abstracts reads from v1-mappings and the subgroup service index bucket.
 // Implementations hide storage-level details such as tombstone markers and
-// key-not-found semantics behind domain-meaningful operations.
+// key-not-found semantics behind domain-meaningful operations, routing by key prefix.
 type MappingReader interface {
 	// ResolveAction returns ActionCreated when the key is absent or tombstoned
 	// (entity never seen, or previously deleted and being re-created), and
@@ -41,7 +41,8 @@ type MappingReader interface {
 	GetMappingValueWithError(ctx context.Context, key string) (string, bool, error)
 }
 
-// MappingWriter abstracts write operations on the v1-mappings KV bucket.
+// MappingWriter abstracts writes to v1-mappings and the subgroup service index bucket.
+// Implementations route keys by prefix.
 type MappingWriter interface {
 	// PutMapping records that an entity has been successfully processed so that
 	// subsequent events for the same key are treated as updates rather than creates.
@@ -63,8 +64,11 @@ type MappingWriter interface {
 	PutTombstone(ctx context.Context, key string) error
 }
 
-// MappingReaderWriter combines read and write access to the v1-mappings KV bucket.
+// MappingReaderWriter combines access to v1-mappings and the subgroup service index KV bucket.
 type MappingReaderWriter interface {
 	MappingReader
 	MappingWriter
+	// ListSubgroupsByService returns live subgroup UIDs indexed under a service.
+	// Order is unspecified; an incomplete KV enumeration returns an error.
+	ListSubgroupsByService(ctx context.Context, serviceUID string) ([]string, error)
 }

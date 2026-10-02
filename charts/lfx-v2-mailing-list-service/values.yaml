@@ -98,6 +98,25 @@ nats:
   # url is the URL of the NATS server
   url: nats://lfx-platform-nats.lfx.svc.cluster.local:4222
 
+  # kv_bucket_subgroup_service_index stores mailing-list UIDs by service and each list's parent service.
+  kv_bucket_subgroup_service_index:
+    # Set creation to false if the bucket is managed separately.
+    creation: true
+    # Preserve the lookup mappings when the chart is uninstalled.
+    keep: true
+    # replicas is the number of replicas for the KV bucket.
+    replicas: 1
+    # history is the number of history entries to keep per key.
+    history: 1
+    # storage is the storage type for the KV bucket.
+    storage: file
+    # maxValueSize is the maximum size of a value in the KV bucket.
+    maxValueSize: 1024
+    # maxBytes is the maximum number of bytes in the KV bucket.
+    maxBytes: 1073741824  # 1GB
+    # compression determines whether KV bucket data is compressed.
+    compression: true
+
 # openfga is the configuration for the OpenFGA server
 openfga:
   # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization

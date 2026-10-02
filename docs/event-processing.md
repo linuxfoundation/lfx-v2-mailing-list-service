@@ -19,6 +19,7 @@ graph TD
     KV1[NATS KV: v1-objects]
     EP[EventProcessor<br/>mailing-list-service]
     KV2[NATS KV: v1-mappings<br/>idempotency store]
+    KVI[NATS KV: groupsio-subgroup-service-index<br/>service-to-list lookup]
     IDX[Indexer Service<br/>OpenSearch]
     FGA[FGA-Sync Service<br/>OpenFGA]
 
@@ -26,6 +27,7 @@ graph TD
     SH -->|PUT/DEL to KV| KV1
     KV1 -->|JetStream consumer| EP
     EP <-->|read/write mappings| KV2
+    EP <-->|read/write service lookup| KVI
     EP -->|index messages| IDX
     EP -->|access messages| FGA
 ```
@@ -111,6 +113,10 @@ value:            <mailing_list_uid>
 ```
 
 The member handler reads this entry to resolve the parent `MailingListUID` before building the indexer message.
+
+### Service-to-Mailing-List Index
+
+After writing the gid, project and committee mappings needed by other events, the subgroup handler maintains two keys in the dedicated `groupsio-subgroup-service-index` KV bucket. These allow a service event to enumerate its mailing lists without scanning all subgroup records. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups.
 
 ---
 
@@ -221,6 +227,16 @@ The `v1-mappings` KV bucket tracks processing state for each entity:
 
 On consumer redelivery, tombstone markers prevent duplicate downstream operations. Missing keys and tombstoned entries are both treated as "never seen" for create-vs-update resolution.
 
+The separate `groupsio-subgroup-service-index` bucket stores:
+
+| Mapping | Key Pattern | Value |
+|---|---|---|
+| Mailing lists by service | `groupsio-subgroup-service.<service_uid>.<uid>` | `<uid>` |
+| Mailing list parent service | `groupsio-subgroup-parent.<uid>` | `<service_uid>` |
+| Pending move cleanup | `groupsio-subgroup-previous-service.<uid>` | `<old_service_uid>` until its index key is tombstoned |
+
+Removed index entries use the same `!del` tombstone marker. These keys are routed to the dedicated bucket by prefix; the processed-subgroup mapping remains in `v1-mappings`. A lookup returns an error rather than a partial list if the KV watcher closes before completing its initial replay.
+
 ---
 
 ## Configuration
@@ -320,7 +336,7 @@ Watch for these log messages:
 
 | Symptom | Action |
 |---|---|
-| No events processed | Verify `EVENTING_ENABLED=true`, check NATS connectivity, confirm `v1-objects` bucket exists |
+| No events processed or startup fails | Verify `EVENTING_ENABLED=true`, check NATS connectivity, confirm `v1-objects`, `v1-mappings` and `groupsio-subgroup-service-index` buckets exist |
 | Repeated NAK / ordering failures | Ensure `lfx-v1-sync-helper` is populating the KV bucket in dependency order |
 | Duplicate events replayed | Inspect `v1-mappings` bucket for missing tombstones |
 | Consumer not progressing | Check downstream indexer / FGA-sync availability; review `EVENTING_MAX_DELIVER` |
@@ -349,7 +365,7 @@ internal/
     └── datastream_member_handler.go      # Member transform + publish
 ```
 
-The `MappingReaderWriter` port abstracts all `v1-mappings` KV operations (create-vs-update resolution, parent-dependency checks, tombstone writes) behind domain-meaningful methods. The JetStream KV details — including the `!del` tombstone marker — are encapsulated entirely in `internal/infrastructure/nats/mapping_store.go`.
+The `MappingReaderWriter` port abstracts `v1-mappings` operations (create-vs-update resolution, parent-dependency checks and tombstones) and the dedicated `groupsio-subgroup-service-index` lookup. The NATS adapter routes reads and writes by key prefix; both buckets use the `!del` tombstone marker.
 
 ### Adding a New Entity Type
 
@@ -368,7 +384,8 @@ The `MappingReaderWriter` port abstracts all `v1-mappings` KV operations (create
 unset EVENTING_ENABLED
 make run
 
-# Enable with a local NATS server
+# Enable with a local NATS server after creating v1-objects, v1-mappings
+# and groupsio-subgroup-service-index (the service Helm chart creates the last one)
 export EVENTING_ENABLED=true
 export NATS_URL=nats://localhost:4222
 make run

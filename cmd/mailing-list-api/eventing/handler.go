@@ -10,6 +10,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
 // EventHandlerOption is a functional option for configuring eventHandler.
@@ -18,13 +19,13 @@ type EventHandlerOption func(*eventHandler)
 const (
 	// KV key prefixes matching lfx-v1-sync-helper's naming convention.
 	kvPrefixService  = "itx-groupsio-v2-service."
-	kvPrefixSubgroup = "itx-groupsio-v2-subgroup."
+	kvPrefixSubgroup = constants.KVObjectPrefixSubgroup
 	kvPrefixMember   = "itx-groupsio-v2-member."
 	kvPrefixArtifact = "itx-groupsio-v2-artifact."
 	kvPrefixMessage  = "itx-groupsio-v2-message."
 
 	// sdcDeletedAt is the field injected by lfx-v1-sync-helper on DynamoDB REMOVE events.
-	sdcDeletedAt = "_sdc_deleted_at"
+	sdcDeletedAt = constants.KVObjectSoftDeletedAt
 )
 
 // eventHandler implements port.DataEventHandler and routes KV events to the
