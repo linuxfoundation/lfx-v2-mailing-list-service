@@ -114,6 +114,10 @@ value:            <mailing_list_uid>
 
 The member handler reads this entry to resolve the parent `MailingListUID` before building the indexer message.
 
+When the parent service domain changes, the service handler uses the current service record and the service-to-list index to find the lists, reads the latest subgroup records from `v1-objects`, and publishes full mailing-list update messages. The `groupsio-service-domain-indexed.{service_uid}` mapping is invalidated before any list is updated and records the domain only after all lists are refreshed. This lets a later domain revert repair partial fan-out; delayed deliveries reconcile from the latest service record instead of overwriting newer domains.
+
+Service updates and subgroup updates acquire per-service leases in `groupsio-service-domain-locks` before publishing, preventing concurrent replicas from overtaking a domain refresh. Subgroup moves lock both old and new parents in stable order. Contending deliveries wait for the lock. Active leases are renewed with revision-checked writes during long fan-outs; an orphaned or expired lock requires operational repair rather than automatic takeover, since KV revisions cannot fence a publish already in flight. The processor fetches one event at a time and sends JetStream `InProgress` acknowledgements at an interval derived from its configured AckWait. Hard-deleted subgroup source entries are treated as absent while their index cleanup is pending.
+
 ### Service-to-Mailing-List Index
 
 After writing the gid, project and committee mappings needed by other events, the subgroup handler maintains two keys in the dedicated `groupsio-subgroup-service-index` KV bucket. These allow a service event to enumerate its mailing lists without scanning all subgroup records. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups.
@@ -223,6 +227,7 @@ The `v1-mappings` KV bucket tracks processing state for each entity:
 | Synced (subgroup) | `groupsio-subgroup.<uid>` | `<uid>` |
 | Synced (member) | `groupsio-member.<uid>` | `<uid>` |
 | Reverse index | `groupsio-subgroup-gid.<group_id>` | `<uid>` |
+| Propagated service domain | `groupsio-service-domain-indexed.<service_uid>` | Last successfully propagated domain (may be empty) |
 | Deleted (tombstone) | any of the above | `!del` |
 
 On consumer redelivery, tombstone markers prevent duplicate downstream operations. Missing keys and tombstoned entries are both treated as "never seen" for create-vs-update resolution.

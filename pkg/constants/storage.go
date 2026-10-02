@@ -12,6 +12,8 @@ const (
 	KVBucketV1Objects = "v1-objects"
 	// KVBucketSubgroupServiceIndex stores the service-to-subgroup lookup and each subgroup's current parent.
 	KVBucketSubgroupServiceIndex = "groupsio-subgroup-service-index"
+	// KVBucketServiceDomainLocks coordinates service and subgroup indexing across replicas.
+	KVBucketServiceDomainLocks = "groupsio-service-domain-locks"
 
 	// KVTombstoneMarker marks deleted or superseded entries in v1-mappings and
 	// groupsio-subgroup-service-index.
@@ -22,6 +24,9 @@ const (
 	// KVMappingPrefixServiceDomain stores the Groups.io domain for a service so subgroup
 	// records can denormalize it without having to read the restricted parent service object.
 	KVMappingPrefixServiceDomain = "groupsio-service-domain"
+	// KVMappingPrefixServiceDomainIndexed tracks the last service domain propagated
+	// to its mailing lists, so a failed fan-out is retried on redelivery.
+	KVMappingPrefixServiceDomainIndexed = "groupsio-service-domain-indexed"
 	// KVMappingPrefixSubgroup is the v1-mappings key prefix for GroupsIO subgroups (mailing lists).
 	KVMappingPrefixSubgroup = "groupsio-subgroup"
 	// KVMappingPrefixSubgroupByService indexes subgroup UIDs by their parent service UID

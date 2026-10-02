@@ -103,30 +103,7 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 
 	action := mappings.ResolveAction(ctx, mKey)
 
-	isPublic := list.Public
-	listRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
-	indexingConfig := &indexertypes.IndexingConfig{
-		ObjectID:             uid,
-		Public:               &isPublic,
-		AccessCheckObject:    listRef,
-		AccessCheckRelation:  "viewer",
-		HistoryCheckObject:   listRef,
-		HistoryCheckRelation: "auditor",
-		ParentRefs:           list.ParentRefs(),
-		NameAndAliases:       list.NameAndAliases(),
-		SortName:             list.SortName(),
-		Fulltext:             list.Fulltext(),
-		Tags:                 list.Tags(),
-	}
-
-	msg := &model.IndexerMessage{Action: action, Tags: list.Tags()}
-	built, err := msg.BuildWithIndexingConfig(ctx, list, indexingConfig)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to build subgroup indexer message", "uid", uid, "error", err)
-		return false
-	}
-
-	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
+	if err := publishMailingListIndex(ctx, list, action, publisher); err != nil {
 		slog.ErrorContext(ctx, "failed to publish subgroup indexer message", "uid", uid, "error", err)
 		return pkgerrors.IsTransient(err)
 	}
@@ -316,6 +293,33 @@ func retrySubgroupIndexError(ctx context.Context, uid, key, operation string, er
 }
 
 // HandleDataStreamSubgroupDelete publishes a delete indexer message and tombstones the mapping.
+// HandleDataStreamSubgroupUnassociated removes a list from its old service
+// without tombstoning its subgroup mapping, allowing future reparenting.
+func HandleDataStreamSubgroupUnassociated(ctx context.Context, uid, previous string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, previous, uid)
+	if !mappings.IsMappingPresent(ctx, indexKey) {
+		return false
+	}
+	msg := &model.IndexerMessage{Action: model.ActionDeleted}
+	built, err := msg.Build(ctx, uid)
+	if err != nil {
+		return false
+	}
+	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
+		return pkgerrors.IsTransient(err)
+	}
+	if err := mappings.PurgeMapping(ctx, indexKey); err != nil {
+		slog.WarnContext(ctx, "failed to purge subgroup service index", "uid", uid, "mapping_key", indexKey, "error", err)
+		return true
+	}
+	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
+	if err := mappings.PutTombstone(ctx, parentKey); err != nil {
+		slog.WarnContext(ctx, "failed to clear subgroup parent mapping", "uid", uid, "mapping_key", parentKey, "error", err)
+		return true
+	}
+	return false
+}
+
 func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
 	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)

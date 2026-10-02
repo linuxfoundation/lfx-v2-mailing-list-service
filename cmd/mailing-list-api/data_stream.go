@@ -46,26 +46,31 @@ func handleDataStream(
 	if err != nil {
 		return err
 	}
+	v1ObjectsKV, err := natsClient.KeyValue(ctx, constants.KVBucketV1Objects)
+	if err != nil {
+		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketV1Objects, err)
+	}
+	lockKV, err := natsClient.KeyValue(ctx, constants.KVBucketServiceDomainLocks)
+	if err != nil {
+		return fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketServiceDomainLocks, err)
+	}
 
 	// Build the LFID invite handler for member events when fully configured.
 	var memberInviteHandler *svc.MemberInviteHandler
 	if inviteSender != nil && userReader != nil && env.SelfServeBaseURL != "" {
-		v1ObjectsKV, kvErr := natsClient.KeyValue(ctx, constants.KVBucketV1Objects)
-		if kvErr != nil {
-			slog.WarnContext(ctx, "failed to open v1-objects KV for invite handler; invite sending disabled",
-				"error", kvErr)
-		} else {
-			memberInviteHandler = svc.NewMemberInviteHandler(inviteSender, userReader, mappings, v1ObjectsKV, env.SelfServeBaseURL)
-		}
+		memberInviteHandler = svc.NewMemberInviteHandler(inviteSender, userReader, mappings, v1ObjectsKV, env.SelfServeBaseURL)
 	}
 
-	handlerOpts := []eventing.EventHandlerOption{}
+	handlerOpts := []eventing.EventHandlerOption{
+		eventing.WithSubgroupObjectReader(infraNATS.NewSubgroupObjectReader(v1ObjectsKV)),
+		eventing.WithServiceDomainLock(infraNATS.NewServiceDomainLock(lockKV)),
+	}
 	if memberInviteHandler != nil {
 		handlerOpts = append(handlerOpts, eventing.WithMemberInviteHandler(memberInviteHandler))
 	}
 
 	handler := eventing.NewEventHandler(publisher, mappings, infraNATS.NewNATSProjectLookup(natsClient), handlerOpts...)
-	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
+	streamConsumer := infraNATS.NewDataStreamConsumer(handler, time.Duration(env.EventingAckWaitSecs)*time.Second)
 
 	cfg := eventing.Config{
 		ConsumerName:  env.EventingConsumerName,

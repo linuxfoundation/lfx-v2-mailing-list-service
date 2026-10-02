@@ -37,6 +37,9 @@ func (m *messagingPublisher) Internal(ctx context.Context, subject string, messa
 
 // publish is the common method for publishing messages to NATS
 func (m *messagingPublisher) publish(ctx context.Context, subject string, message any, messageType string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	// Check if client is ready
 	if err := m.client.IsReady(ctx); err != nil {
 		slog.ErrorContext(ctx, "NATS client is not ready for publishing",
@@ -59,6 +62,9 @@ func (m *messagingPublisher) publish(ctx context.Context, subject string, messag
 	}
 
 	// Publish message
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := publishWithSpan(ctx, m.client.conn, subject, data); err != nil {
 		slog.ErrorContext(ctx, "failed to publish message to NATS",
 			"error", err,

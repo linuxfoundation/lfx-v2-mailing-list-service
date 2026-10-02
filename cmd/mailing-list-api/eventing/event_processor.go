@@ -5,6 +5,7 @@ package eventing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
+	natsgo "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -41,7 +43,7 @@ type EventProcessor interface {
 type natsEventProcessor struct {
 	natsClient *infraNATS.NATSClient
 	consumer   jetstream.Consumer
-	consumeCtx jetstream.ConsumeContext
+	stop       context.CancelFunc
 	config     Config
 }
 
@@ -82,35 +84,36 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 	}
 	ep.consumer = consumer
 
-	consumeCtx, err := consumer.Consume(
-		func(jMsg jetstream.Msg) {
-			meta, err := jMsg.Metadata()
-			if err != nil {
-				slog.ErrorContext(ctx, "failed to read stream message metadata, ACKing to avoid poison pill",
-					"subject", jMsg.Subject(), "error", err)
-				_ = jMsg.Ack()
-				return
-			}
-			streamConsumer.Process(ctx, model.StreamMessage{
-				Key:           kvKey(jMsg.Subject()),
-				Data:          jMsg.Data(),
-				IsRemoval:     isKVRemoval(jMsg),
-				DeliveryCount: meta.NumDelivered,
-				Ack:           jMsg.Ack,
-				Nak:           jMsg.NakWithDelay,
-			})
-		},
-		jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
-			slog.With("error", err).Error("data stream KV consumer error")
-		}),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to start consuming messages: %w", err)
-	}
-	ep.consumeCtx = consumeCtx
-
+	// Fetch one message at a time: Consume prefetches hundreds of deliveries
+	// whose AckWait can expire before the serial handler starts heartbeating.
+	loopCtx, stop := context.WithCancel(ctx)
+	ep.stop = stop
 	slog.InfoContext(ctx, "data stream processor started successfully")
-	<-ctx.Done()
+	for loopCtx.Err() == nil {
+		jMsg, err := consumer.Next(jetstream.FetchMaxWait(5 * time.Second))
+		if err != nil {
+			if loopCtx.Err() == nil && !errors.Is(err, natsgo.ErrTimeout) {
+				slog.ErrorContext(ctx, "data stream KV consumer error", "error", err)
+			}
+			continue
+		}
+		meta, err := jMsg.Metadata()
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to read stream message metadata, ACKing to avoid poison pill",
+				"subject", jMsg.Subject(), "error", err)
+			_ = jMsg.Ack()
+			continue
+		}
+		streamConsumer.Process(loopCtx, model.StreamMessage{
+			Key:           kvKey(jMsg.Subject()),
+			Data:          jMsg.Data(),
+			IsRemoval:     isKVRemoval(jMsg),
+			DeliveryCount: meta.NumDelivered,
+			Ack:           jMsg.Ack,
+			Nak:           jMsg.NakWithDelay,
+			InProgress:    jMsg.InProgress,
+		})
+	}
 	slog.InfoContext(ctx, "data stream processor context cancelled")
 	return nil
 }
@@ -120,9 +123,8 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 func (ep *natsEventProcessor) Stop(ctx context.Context) error {
 	slog.InfoContext(ctx, "stopping data stream processor")
 
-	if ep.consumeCtx != nil {
-		ep.consumeCtx.Stop()
-		slog.InfoContext(ctx, "data stream consumer stopped")
+	if ep.stop != nil {
+		ep.stop()
 	}
 
 	slog.InfoContext(ctx, "data stream processor stopped")

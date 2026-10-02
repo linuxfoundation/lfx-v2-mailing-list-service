@@ -158,7 +158,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 
 **NATS subject:** `lfx.index.groupsio_mailing_list`
 
-**Indexed on:** create, update, delete of a GroupsIO mailing list (v1 datastream via `datastream_subgroup_handler.go`).
+**Indexed on:** create, update, delete of a GroupsIO mailing list (v1 datastream via `datastream_subgroup_handler.go`), and on a parent service domain change (`datastream_service_handler.go`).
 
 ### Data Schema
 
@@ -188,6 +188,9 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
 
 > **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. The subgroup handler sets `domain` from the `groupsio-service-domain.{service_uid}` mapping when available; if the mapping is absent or empty, it indexes without a `domain` field. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
+
+When a service's domain changes (including being cleared), the service handler reads the latest service record from `v1-objects`, enumerates live lists using `groupsio-subgroup-service-index`, reads their current subgroup records, and publishes full `updated` messages with the same mailing-list `IndexingConfig` and the new domain. It does not replay KV events or emit list settings or access messages. `groupsio-service-domain-indexed.{service_uid}` in `v1-mappings` is invalidated before fan-out and set only after all publishes succeed, so partial fan-outs and subsequent domain reverts reindex every list. Delayed deliveries use the current service record rather than their stale event payload.
+Service and subgroup publications for a parent service are serialized with a lease in `groupsio-service-domain-locks`; missing or deleted subgroup objects are skipped while the corresponding index entry is cleaned up.
 
 ### Tags
 
