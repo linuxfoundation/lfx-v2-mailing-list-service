@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -101,32 +102,36 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return false
 	}
 
-	action := mappings.ResolveAction(ctx, mKey)
-
-	isPublic := list.Public
-	listRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
-	indexingConfig := &indexertypes.IndexingConfig{
-		ObjectID:             uid,
-		Public:               &isPublic,
-		AccessCheckObject:    listRef,
-		AccessCheckRelation:  "viewer",
-		HistoryCheckObject:   listRef,
-		HistoryCheckRelation: "auditor",
-		ParentRefs:           list.ParentRefs(),
-		NameAndAliases:       list.NameAndAliases(),
-		SortName:             list.SortName(),
-		Fulltext:             list.Fulltext(),
-		Tags:                 list.Tags(),
-	}
-
-	msg := &model.IndexerMessage{Action: action, Tags: list.Tags()}
-	built, err := msg.BuildWithIndexingConfig(ctx, list, indexingConfig)
+	unassociatedKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociated, uid)
+	completedUID, wasUnassociated, err := mappings.GetMappingValueWithError(ctx, unassociatedKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to build subgroup indexer message", "uid", uid, "error", err)
-		return false
+		slog.WarnContext(ctx, "failed to read subgroup unassociation marker, will retry", "uid", uid, "mapping_key", unassociatedKey, "error", err)
+		return true
+	}
+	if wasUnassociated && completedUID != uid {
+		slog.ErrorContext(ctx, "unexpected subgroup unassociation marker", "uid", uid, "mapping_value", completedUID)
+		return true
+	}
+	unassociationPendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociationPending, uid)
+	pendingUID, wasPending, err := mappings.GetMappingValueWithError(ctx, unassociationPendingKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read subgroup unassociation progress, will retry", "uid", uid, "mapping_key", unassociationPendingKey, "error", err)
+		return true
+	}
+	if wasPending && pendingUID != uid {
+		slog.ErrorContext(ctx, "unexpected subgroup unassociation progress marker", "uid", uid, "mapping_value", pendingUID)
+		return true
+	}
+	action := mappings.ResolveAction(ctx, mKey)
+	// Persist a recovery pointer before publishing. If the parent/index writes
+	// later fail and the source loses parent_id, unassociation can still find
+	// and remove the document and inherited service access.
+	publishedParentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPublishedParent, uid)
+	if err := mappings.PutMapping(ctx, publishedParentKey, list.ServiceUID); err != nil {
+		return retrySubgroupIndexError(ctx, uid, publishedParentKey, "record subgroup publication parent", err)
 	}
 
-	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
+	if err := publishMailingListIndex(ctx, list, action, publisher); err != nil {
 		slog.ErrorContext(ctx, "failed to publish subgroup indexer message", "uid", uid, "error", err)
 		return pkgerrors.IsTransient(err)
 	}
@@ -190,7 +195,8 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		Data:       accessData,
 	}
 	if err := publisher.Access(ctx, fgaconstants.GenericUpdateAccessSubject, accessMsg); err != nil {
-		slog.WarnContext(ctx, "failed to publish subgroup access message", "uid", uid, "error", err)
+		slog.WarnContext(ctx, "failed to publish subgroup access message, will retry", "uid", uid, "error", err)
+		return true
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
@@ -302,6 +308,19 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
 		}
 	}
+	// Clear the old completion marker only after index, access, and parent
+	// mappings are reconciled. Otherwise backfill might restore an index for
+	// a still-inaccessible mailing list without replaying its access event.
+	if err := mappings.PutTombstone(ctx, unassociatedKey); err != nil {
+		slog.WarnContext(ctx, "failed to invalidate subgroup unassociation marker, will retry", "uid", uid, "mapping_key", unassociatedKey, "error", err)
+		return true
+	}
+	if wasPending {
+		if err := mappings.PutTombstone(ctx, unassociationPendingKey); err != nil {
+			slog.WarnContext(ctx, "failed to clear subgroup unassociation progress, will retry", "uid", uid, "mapping_key", unassociationPendingKey, "error", err)
+			return true
+		}
+	}
 
 	return false
 }
@@ -313,6 +332,197 @@ func retrySubgroupIndexError(ctx context.Context, uid, key, operation string, er
 	}
 	slog.ErrorContext(ctx, "permanent subgroup service index failure", "uid", uid, "mapping_key", key, "operation", operation, "error", err)
 	return false
+}
+
+// HandleDataStreamSubgroupUnassociated removes a list from its old service
+// without tombstoning its subgroup mapping, allowing future reparenting.
+func HandleDataStreamSubgroupUnassociated(ctx context.Context, uid, previous string, source map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	publishedParentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPublishedParent, uid)
+	publishedParent, published, err := mappings.GetMappingValueWithError(ctx, publishedParentKey)
+	if err != nil {
+		return true
+	}
+	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
+	pendingParent, pending, err := mappings.GetMappingValueWithError(ctx, pendingKey)
+	if err != nil {
+		return true
+	}
+	if !constants.ValidKVKeySegment(uid) || previous != "" && !constants.ValidKVKeySegment(previous) ||
+		published && !constants.ValidKVKeySegment(publishedParent) || pending && !constants.ValidKVKeySegment(pendingParent) {
+		slog.ErrorContext(ctx, "invalid subgroup or parent UID for unassociation cleanup", "uid", uid, "service_uid", previous, "published_service_uid", publishedParent, "pending_service_uid", pendingParent)
+		return true
+	}
+	// A partial move can publish under a new parent while the stored parent
+	// still names the old service. Keep both index keys until deletion and
+	// access revocation succeed, so redelivery can finish either cleanup.
+	parents := []string{}
+	if previous != "" {
+		parents = append(parents, previous)
+	}
+	if published && publishedParent != "" && publishedParent != previous {
+		parents = append(parents, publishedParent)
+	}
+	if pending && pendingParent != "" && pendingParent != previous && pendingParent != publishedParent {
+		parents = append(parents, pendingParent)
+	}
+	indexKeys := make([]string, 0, len(parents))
+	indexed := false
+	for _, parent := range parents {
+		indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, parent, uid)
+		_, present, readErr := mappings.GetMappingValueWithError(ctx, indexKey)
+		if readErr != nil {
+			slog.WarnContext(ctx, "failed to read subgroup service index", "uid", uid, "mapping_key", indexKey, "error", readErr)
+			return true
+		}
+		if present {
+			indexed = true
+			indexKeys = append(indexKeys, indexKey)
+		}
+	}
+	// Older indexed lists may predate all service-index pointers. A live
+	// forward mapping still means their document may need UID-based deletion.
+	forwardKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
+	forwardUID, forwardPresent, err := mappings.GetMappingValueWithError(ctx, forwardKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read subgroup mapping for unassociation, will retry", "uid", uid, "error", err)
+		return true
+	}
+	if forwardPresent && forwardUID != uid {
+		slog.ErrorContext(ctx, "unexpected subgroup mapping for unassociation", "uid", uid, "mapping_value", forwardUID)
+		return true
+	}
+	// Persist progress before either destructive publication. Completion is
+	// recorded later, so a failure between access revocation and that final
+	// write cannot be mistaken for a never-unassociated legacy list.
+	unassociationPendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociationPending, uid)
+	progressUID, progressPresent, err := mappings.GetMappingValueWithError(ctx, unassociationPendingKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read subgroup unassociation progress, will retry", "uid", uid, "error", err)
+		return true
+	}
+	if progressPresent && progressUID != uid {
+		slog.ErrorContext(ctx, "unexpected subgroup unassociation progress marker", "uid", uid, "mapping_value", progressUID)
+		return true
+	}
+	if err := mappings.PutMapping(ctx, unassociationPendingKey, uid); err != nil {
+		slog.WarnContext(ctx, "failed to record subgroup unassociation progress, will retry", "uid", uid, "error", err)
+		return true
+	}
+	if indexed || published || forwardPresent {
+		if err := ctx.Err(); err != nil {
+			return true
+		}
+		isPublic := false
+		msg := &model.IndexerMessage{Action: model.ActionDeleted}
+		built, buildErr := msg.BuildWithIndexingConfig(ctx, uid, &indexertypes.IndexingConfig{
+			ObjectID:             uid,
+			Public:               &isPublic,
+			AccessCheckObject:    "groupsio_mailing_list:" + uid,
+			AccessCheckRelation:  "viewer",
+			HistoryCheckObject:   "groupsio_mailing_list:" + uid,
+			HistoryCheckRelation: "auditor",
+		})
+		if buildErr != nil {
+			slog.ErrorContext(ctx, "failed to build subgroup unassociation delete message, will retry", "uid", uid, "service_uid", previous, "error", buildErr)
+			return true
+		}
+		if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
+			slog.ErrorContext(ctx, "failed to publish subgroup unassociation delete message", "uid", uid, "error", err)
+			return pkgerrors.IsTransient(err)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return true
+	}
+	if HandleDataStreamSubgroupUnassociatedAccess(ctx, uid, source, publisher, mappings) {
+		return true
+	}
+	for _, indexKey := range indexKeys {
+		if err := mappings.PurgeMapping(ctx, indexKey); err != nil {
+			slog.WarnContext(ctx, "failed to purge subgroup service index", "uid", uid, "mapping_key", indexKey, "error", err)
+			return true
+		}
+	}
+	if pending {
+		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
+			slog.WarnContext(ctx, "failed to clear pending subgroup move", "uid", uid, "mapping_key", pendingKey, "error", err)
+			return true
+		}
+	}
+	if published {
+		if err := mappings.PutTombstone(ctx, publishedParentKey); err != nil {
+			slog.WarnContext(ctx, "failed to clear published subgroup parent", "uid", uid, "mapping_key", publishedParentKey, "error", err)
+			return true
+		}
+	}
+	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
+	if err := mappings.PutTombstone(ctx, parentKey); err != nil {
+		slog.WarnContext(ctx, "failed to clear subgroup parent mapping", "uid", uid, "mapping_key", parentKey, "error", err)
+		return true
+	}
+	// Write completion last: a failed delete, access sync, or index cleanup
+	// must never be mistaken for an already-unassociated subgroup.
+	unassociatedKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociated, uid)
+	if err := mappings.PutMapping(ctx, unassociatedKey, uid); err != nil {
+		slog.WarnContext(ctx, "failed to record subgroup unassociation completion, will retry", "uid", uid, "mapping_key", unassociatedKey, "error", err)
+		return true
+	}
+	if err := mappings.PutTombstone(ctx, unassociationPendingKey); err != nil {
+		slog.WarnContext(ctx, "failed to clear subgroup unassociation progress, will retry", "uid", uid, "mapping_key", unassociationPendingKey, "error", err)
+		return true
+	}
+	return false
+}
+
+// HandleDataStreamSubgroupUnassociatedAccess reconciles public viewer access
+// and the message handler's cached visibility from the latest source record.
+// Separately managed member, writer, auditor, and committee relations are kept.
+func HandleDataStreamSubgroupUnassociatedAccess(ctx context.Context, uid string, source map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	if ctx.Err() != nil {
+		return true
+	}
+	public := strings.EqualFold(mapconv.StringVal(source, "visibility"), "public")
+	committeeKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, uid)
+	committeeMapping, present, err := mappings.GetMappingValueWithError(ctx, committeeKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read subgroup committee visibility, will retry", "uid", uid, "mapping_key", committeeKey, "error", err)
+		return true
+	}
+	committeeUID := ""
+	if present {
+		committeeUID = strings.SplitN(committeeMapping, "|", 2)[0]
+	} else if committeeSFID := mapconv.StringVal(source, "committee"); committeeSFID != "" {
+		mappingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID)
+		committeeUID, present, err = mappings.GetMappingValueWithError(ctx, mappingKey)
+		if err != nil || !present {
+			slog.WarnContext(ctx, "committee mapping unavailable for parentless mailing list, will retry", "uid", uid, "mapping_key", mappingKey, "error", err)
+			return true
+		}
+	}
+	access := fgatypes.GenericFGAMessage{
+		ObjectType: constants.ObjectTypeGroupsIOMailingList,
+		Operation:  "update_access",
+		Data: fgatypes.GenericAccessData{
+			UID:    uid,
+			Public: public,
+			References: map[string][]string{
+				constants.RelationGroupsIOService: {},
+			},
+			ExcludeRelations: []string{constants.RelationMember, constants.RelationWriter, constants.RelationAuditor, constants.RelationCommittee},
+		},
+	}
+	if err := publisher.Access(ctx, fgaconstants.GenericUpdateAccessSubject, access); err != nil {
+		slog.WarnContext(ctx, "failed to reconcile subgroup public and service access, will retry", "uid", uid, "error", err)
+		return true
+	}
+	if ctx.Err() != nil {
+		return true
+	}
+	if err := mappings.PutMapping(ctx, committeeKey, committeeUID+"|"+strconv.FormatBool(public)); err != nil {
+		slog.WarnContext(ctx, "failed to update subgroup committee visibility, will retry", "uid", uid, "mapping_key", committeeKey, "error", err)
+		return true
+	}
+	return ctx.Err() != nil
 }
 
 // HandleDataStreamSubgroupDelete publishes a delete indexer message and tombstones the mapping.
@@ -328,8 +538,28 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		return false
 	}
 
-	// If there is no mapping entry, this record was never indexed — nothing to delete.
-	if !mappings.IsMappingPresent(ctx, mKey) {
+	// Publication can succeed before the forward mapping is stored. In that
+	// case the recovery pointer still requires a document and access delete.
+	publicationKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPublishedParent, uid)
+	_, published, err := mappings.GetMappingValueWithError(ctx, publicationKey)
+	if err != nil {
+		return true
+	}
+	forwardUID, forwardPresent, err := mappings.GetMappingValueWithError(ctx, mKey)
+	if err != nil || forwardPresent && forwardUID != uid {
+		return true
+	}
+	completionKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociated, uid)
+	completedUID, complete, err := mappings.GetMappingValueWithError(ctx, completionKey)
+	if err != nil || complete && completedUID != uid {
+		return true
+	}
+	progressKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociationPending, uid)
+	progressUID, pendingCleanup, err := mappings.GetMappingValueWithError(ctx, progressKey)
+	if err != nil || pendingCleanup && progressUID != uid {
+		return true
+	}
+	if !forwardPresent && !published && !complete && !pendingCleanup {
 		slog.InfoContext(ctx, "subgroup was never indexed, skipping OpenSearch delete", "uid", uid)
 		return removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings)
 	}
@@ -352,46 +582,56 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		Data:       fgatypes.GenericDeleteData{UID: uid},
 	}
 	if err := publisher.Access(ctx, fgaconstants.GenericDeleteAccessSubject, deleteMsg); err != nil {
-		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
+		slog.WarnContext(ctx, "failed to publish subgroup delete access message, will retry", "uid", uid, "error", err)
+		return true
 	}
 
 	return removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings)
 }
 
-// removeSubgroupServiceIndex clears the parent pointer before the forward mapping,
-// so redelivery can finish cleanup even after an intermediate failure.
+// removeSubgroupServiceIndex clears all known service index entries before the
+// parent pointers, so redelivery can finish cleanup after an intermediate failure.
 func removeSubgroupServiceIndex(ctx context.Context, uid, subgroupKey, parentKey string, mappings port.MappingReaderWriter) bool {
+	publishedParentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPublishedParent, uid)
 	parentUID, present, err := mappings.GetMappingValueWithError(ctx, parentKey)
 	if err != nil {
 		return retrySubgroupIndexError(ctx, uid, parentKey, "read subgroup parent for deletion", err)
 	}
-	if present {
-		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(parentUID) {
-			slog.ErrorContext(ctx, "invalid subgroup or parent UID for service index cleanup", "uid", uid, "parent_uid", parentUID)
-			return false
-		}
-		indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, parentUID, uid)
-		if err := mappings.PutTombstone(ctx, indexKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, indexKey, "remove subgroup service index", err)
-		}
-		if err := mappings.PutTombstone(ctx, parentKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, parentKey, "remove subgroup parent mapping", err)
-		}
+	publishedService, published, err := mappings.GetMappingValueWithError(ctx, publishedParentKey)
+	if err != nil {
+		return retrySubgroupIndexError(ctx, uid, publishedParentKey, "read published subgroup parent for deletion", err)
 	}
 	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
 	pendingService, pending, err := mappings.GetMappingValueWithError(ctx, pendingKey)
 	if err != nil {
 		return retrySubgroupIndexError(ctx, uid, pendingKey, "read pending subgroup move for deletion", err)
 	}
+	parents := make(map[string]struct{}, 3)
+	for _, candidate := range []struct {
+		uid     string
+		present bool
+	}{{parentUID, present}, {publishedService, published}, {pendingService, pending}} {
+		if !candidate.present {
+			continue
+		}
+		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(candidate.uid) {
+			slog.ErrorContext(ctx, "invalid subgroup or parent UID for service index cleanup", "uid", uid, "parent_uid", candidate.uid)
+			return true
+		}
+		parents[candidate.uid] = struct{}{}
+	}
+	for serviceUID := range parents {
+		indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, serviceUID, uid)
+		if err := mappings.PutTombstone(ctx, indexKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, indexKey, "remove subgroup service index", err)
+		}
+	}
+	if present {
+		if err := mappings.PutTombstone(ctx, parentKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, parentKey, "remove subgroup parent mapping", err)
+		}
+	}
 	if pending {
-		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(pendingService) {
-			slog.ErrorContext(ctx, "invalid pending service UID for index cleanup", "uid", uid, "service_uid", pendingService)
-			return false
-		}
-		oldIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, pendingService, uid)
-		if err := mappings.PutTombstone(ctx, oldIndexKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
-		}
 		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
 			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
 		}
@@ -399,6 +639,17 @@ func removeSubgroupServiceIndex(ctx context.Context, uid, subgroupKey, parentKey
 	if err := mappings.PutTombstone(ctx, subgroupKey); err != nil {
 		slog.ErrorContext(ctx, "failed to put tombstone, will retry", "mapping_key", subgroupKey, "error", err)
 		return true
+	}
+	if err := mappings.PutTombstone(ctx, publishedParentKey); err != nil {
+		return retrySubgroupIndexError(ctx, uid, publishedParentKey, "remove published subgroup parent", err)
+	}
+	unassociatedKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociated, uid)
+	if err := mappings.PutTombstone(ctx, unassociatedKey); err != nil {
+		return retrySubgroupIndexError(ctx, uid, unassociatedKey, "remove subgroup unassociation marker", err)
+	}
+	unassociationPendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupUnassociationPending, uid)
+	if err := mappings.PutTombstone(ctx, unassociationPendingKey); err != nil {
+		return retrySubgroupIndexError(ctx, uid, unassociationPendingKey, "remove subgroup unassociation progress", err)
 	}
 	return false
 }

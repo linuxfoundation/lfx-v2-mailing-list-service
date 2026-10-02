@@ -114,9 +114,23 @@ value:            <mailing_list_uid>
 
 The member handler reads this entry to resolve the parent `MailingListUID` before building the indexer message.
 
+When the parent service domain changes, the service handler uses the current service record and the service-to-list index to find the lists, reads the latest subgroup records from `v1-objects`, and publishes full mailing-list update messages. The `groupsio-service-domain-indexed.{service_uid}` mapping is invalidated before any list is updated and records the domain only after all lists are refreshed. This lets a later domain revert repair partial fan-out; delayed deliveries reconcile from the latest service record instead of overwriting newer domains.
+
+Service updates and subgroup updates acquire per-service leases in `groupsio-service-domain-locks` before publishing, preventing concurrent replicas from overtaking a domain refresh. Subgroup moves lock both old and new parents in stable order. Contending deliveries wait for the lock. Active leases are renewed with revision-checked writes during long fan-outs; an orphaned or expired lock requires operational repair rather than automatic takeover, since KV revisions cannot fence a publish already in flight. The processor fetches one event at a time and sends JetStream `InProgress` acknowledgements at an interval derived from its configured AckWait. Hard-deleted subgroup source entries are treated as absent while their index cleanup is pending.
+
+#### Repair an orphaned service-domain lock
+
+Watch for the `service domain lock expired or corrupt; manual repair required` error and alert on any occurrence. The log includes the `uid` and `mapping_key`; blocked deliveries can exhaust `EVENTING_MAX_DELIVER` while the lock remains orphaned. Locks named `service.<service_uid>` coordinate service work; locks named `service.subgroup-<subgroup_uid>` coordinate subgroup changes and removals. To recover:
+
+1. Verify that no mailing-list-service pod is still processing the affected service or subgroup; stop the event consumer on all replicas before deleting the lock. Confirm the active owner has exited (an expired timestamp alone is not proof).
+2. Read the logged `mapping_key` from the `groupsio-service-domain-locks` bucket and record its revision. Delete **only that revision** using a revision-checked KV deletion; if the revision changed, restart the investigation. Do not purge the whole bucket or configure automatic TTL expiry.
+3. Restart event processing and recover deliveries that may have exhausted `EVENTING_MAX_DELIVER` according to the lock key:
+   - For `service.<service_uid>`, first identify **every** subgroup create, move, unassociation, or removal delivery blocked on this service lock that exhausted `EVENTING_MAX_DELIVER` (check consumer max-deliver advisories and processing logs). Reprocess each affected `itx-groupsio-v2-subgroup.<subgroup_uid>` from its latest `v1-objects` state, or replay its removal if absent. Verify its forward and parent/service-index mappings, indexed document, settings, and access reflect the current source. Only then redeliver/reprocess the latest `itx-groupsio-v2-service.<service_uid>` record (or its removal if absent) and confirm `groupsio-service-domain-indexed.<service_uid>` matches the current service domain when present. Service replay alone cannot repair subgroup state or discover lists whose service index was never written.
+   - For `service.subgroup-<subgroup_uid>`, redeliver/reprocess the latest `itx-groupsio-v2-subgroup.<subgroup_uid>` record from `v1-objects`; if absent, replay its removal event so subgroup index and access cleanup can finish. Verify the subgroup mappings and indexed document reflect the current source state.
+
 ### Service-to-Mailing-List Index
 
-After writing the gid, project and committee mappings needed by other events, the subgroup handler maintains two keys in the dedicated `groupsio-subgroup-service-index` KV bucket. These allow a service event to enumerate its mailing lists without scanning all subgroup records. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups.
+After writing the gid, project and committee mappings needed by other events, the subgroup handler maintains the service-to-list lookup in the dedicated `groupsio-subgroup-service-index` KV bucket. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. Unassociation writes `groupsio-subgroup-unassociation-pending.{uid}` before deleting a document or revoking access, then writes `groupsio-subgroup-unassociated.{uid}` only after UID-based document/access and service-index cleanup; later parentless updates reconcile both the public `viewer` grant and the message-privacy visibility cache from current source state. A later reparenting update clears both markers only after restoring the document, access, and parent mappings. Hard deletion treats either marker as evidence that FGA access must be fully deleted, even if the forward and published-parent mappings are gone. Thus a live legacy subgroup without service-index pointers is still cleaned up rather than mistaken for an already-unassociated list. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups and reports any pending cleanup, parentless records lacking a completion marker, or associated records retaining one for reconciliation. During a quiescent write run it invalidates each affected service's domain checkpoint before adding mappings; replay the latest service records afterward to reindex lists even when their domains are unchanged.
 
 ---
 
@@ -223,6 +237,7 @@ The `v1-mappings` KV bucket tracks processing state for each entity:
 | Synced (subgroup) | `groupsio-subgroup.<uid>` | `<uid>` |
 | Synced (member) | `groupsio-member.<uid>` | `<uid>` |
 | Reverse index | `groupsio-subgroup-gid.<group_id>` | `<uid>` |
+| Propagated service domain | `groupsio-service-domain-indexed.<service_uid>` | Last successfully propagated domain (may be empty) |
 | Deleted (tombstone) | any of the above | `!del` |
 
 On consumer redelivery, tombstone markers prevent duplicate downstream operations. Missing keys and tombstoned entries are both treated as "never seen" for create-vs-update resolution.
@@ -234,8 +249,9 @@ The separate `groupsio-subgroup-service-index` bucket stores:
 | Mailing lists by service | `groupsio-subgroup-service.<service_uid>.<uid>` | `<uid>` |
 | Mailing list parent service | `groupsio-subgroup-parent.<uid>` | `<service_uid>` |
 | Pending move cleanup | `groupsio-subgroup-previous-service.<uid>` | `<old_service_uid>` until its index key is tombstoned |
+| Published parent recovery | `groupsio-subgroup-published-parent.<uid>` | `<service_uid>` recorded before publishing, for cleanup if later parent/index writes fail |
 
-Removed index entries use the same `!del` tombstone marker. These keys are routed to the dedicated bucket by prefix; the processed-subgroup mapping remains in `v1-mappings`. A lookup returns an error rather than a partial list if the KV watcher closes before completing its initial replay.
+On unassociation, cleanup considers the stored, published and pending previous parents: a partial move may leave them pointing to different services. It deletes the mailing-list document and revokes inherited access before purging those services' index keys and tombstoning the recovery pointers. Hard deletion likewise tombstones every distinct service-index key before clearing parent pointers so redelivery can complete interrupted cleanup. Removed index entries use the same `!del` tombstone marker. These keys are routed to the dedicated bucket by prefix; the processed-subgroup mapping remains in `v1-mappings` for reparenting. A lookup returns an error rather than a partial list if the KV watcher closes before completing its initial replay.
 
 ---
 
@@ -336,7 +352,7 @@ Watch for these log messages:
 
 | Symptom | Action |
 |---|---|
-| No events processed or startup fails | Verify `EVENTING_ENABLED=true`, check NATS connectivity, confirm `v1-objects`, `v1-mappings` and `groupsio-subgroup-service-index` buckets exist |
+| No events processed or startup fails | Verify `EVENTING_ENABLED=true`, check NATS connectivity, confirm all four required buckets exist: `v1-objects`, `v1-mappings`, `groupsio-subgroup-service-index`, and `groupsio-service-domain-locks`. Eventing now fails startup if `v1-objects` or the lock bucket cannot be opened. |
 | Repeated NAK / ordering failures | Ensure `lfx-v1-sync-helper` is populating the KV bucket in dependency order |
 | Duplicate events replayed | Inspect `v1-mappings` bucket for missing tombstones |
 | Consumer not progressing | Check downstream indexer / FGA-sync availability; review `EVENTING_MAX_DELIVER` |
@@ -384,8 +400,9 @@ The `MappingReaderWriter` port abstracts `v1-mappings` operations (create-vs-upd
 unset EVENTING_ENABLED
 make run
 
-# Enable with a local NATS server after creating v1-objects, v1-mappings
-# and groupsio-subgroup-service-index (the service Helm chart creates the last one)
+# Enable with a local NATS server after creating v1-objects, v1-mappings,
+# groupsio-subgroup-service-index, and groupsio-service-domain-locks
+# (the service Helm chart creates the service-index and lock buckets by default)
 export EVENTING_ENABLED=true
 export NATS_URL=nats://localhost:4222
 make run
