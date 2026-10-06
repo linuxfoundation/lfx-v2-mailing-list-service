@@ -45,6 +45,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -59,7 +60,7 @@ const (
 // Reindexing groupsio_mailing_list also republishes groupsio_mailing_list_settings from the same KV entry.
 var objectTypeConfig = map[string]string{
 	"groupsio_service":      "itx-groupsio-v2-service.",
-	"groupsio_mailing_list": "itx-groupsio-v2-subgroup.",
+	"groupsio_mailing_list": constants.KVObjectPrefixSubgroup,
 	"groupsio_member":       "itx-groupsio-v2-member.",
 	"groupsio_artifact":     "itx-groupsio-v2-artifact.",
 }

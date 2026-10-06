@@ -72,14 +72,18 @@ func NewITXProxyConfig(baseURL, clientID, privateKey, auth0Domain, audience stri
 	}
 }
 
-// NewMappingReaderWriter initializes the v1-mappings KV abstraction used by the
-// data stream event handler for idempotency tracking.
+// NewMappingReaderWriter opens the shared v1-mappings and dedicated subgroup
+// service index buckets used by the data stream event handler.
 func NewMappingReaderWriter(ctx context.Context, natsClient *nats.NATSClient) (port.MappingReaderWriter, error) {
 	kv, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
 	}
-	return nats.NewMappingReaderWriter(kv), nil
+	serviceIndex, err := natsClient.KeyValue(ctx, constants.KVBucketSubgroupServiceIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketSubgroupServiceIndex, err)
+	}
+	return nats.NewMappingReaderWriter(kv, serviceIndex), nil
 }
 
 // NewMessagePublisher initializes the message publisher implementation.

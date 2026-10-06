@@ -67,6 +67,23 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return true // NAK — retry with backoff
 	}
 
+	// The parent service is access-restricted for some callers. Copy its domain onto
+	// the mailing-list resource when available, without blocking indexing while the
+	// parent service is being fully configured.
+	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, list.ServiceUID)
+	serviceDomain, domainMappingPresent, err := mappings.GetMappingValueWithError(ctx, domainKey)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read parent service domain mapping, NAKing subgroup for retry",
+			"uid", uid, "service_uid", list.ServiceUID, "error", err)
+		return true
+	}
+	if domainMappingPresent && serviceDomain != "" {
+		list.Domain = serviceDomain
+	} else {
+		slog.InfoContext(ctx, "parent service domain absent or empty, indexing subgroup without domain",
+			"uid", uid, "service_uid", list.ServiceUID)
+	}
+
 	// Look up project slug from the project service. NAK on transient errors so the
 	// subgroup is retried once the project service is available. This is done after
 	// dependency checks to avoid unnecessary RPCs when the record will NAK anyway.
@@ -235,14 +252,78 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return false
 	}
 
+	// Index each subgroup under its parent service after the mappings needed by
+	// member and message events. Concurrent subgroups write separate index keys.
+	if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(list.ServiceUID) {
+		slog.ErrorContext(ctx, "invalid subgroup or service UID for service index", "uid", uid, "service_uid", list.ServiceUID)
+		return false
+	}
+	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
+	previousService, _, err := mappings.GetMappingValueWithError(ctx, parentKey)
+	if err != nil {
+		return retrySubgroupIndexError(ctx, uid, parentKey, "read subgroup parent mapping", err)
+	}
+	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
+	pendingService, _, err := mappings.GetMappingValueWithError(ctx, pendingKey)
+	if err != nil {
+		return retrySubgroupIndexError(ctx, uid, pendingKey, "read pending subgroup move", err)
+	}
+	serviceIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, list.ServiceUID, uid)
+	if err := mappings.PutMapping(ctx, serviceIndexKey, uid); err != nil {
+		return retrySubgroupIndexError(ctx, uid, serviceIndexKey, "index subgroup by service", err)
+	}
+	if previousService != "" && previousService != list.ServiceUID {
+		if !constants.ValidKVKeySegment(previousService) {
+			slog.ErrorContext(ctx, "invalid previous service UID for index cleanup", "uid", uid, "service_uid", previousService)
+			return false
+		}
+		// Persist the old service before switching the parent, so a retry can
+		// finish cleanup even after the parent has already changed.
+		if err := mappings.PutMapping(ctx, pendingKey, previousService); err != nil {
+			return retrySubgroupIndexError(ctx, uid, pendingKey, "record pending subgroup move", err)
+		}
+		pendingService = previousService
+	}
+	if err := mappings.PutMapping(ctx, parentKey, list.ServiceUID); err != nil {
+		return retrySubgroupIndexError(ctx, uid, parentKey, "store subgroup parent service", err)
+	}
+	if pendingService != "" {
+		if !constants.ValidKVKeySegment(pendingService) {
+			slog.ErrorContext(ctx, "invalid pending service UID for index cleanup", "uid", uid, "service_uid", pendingService)
+			return false
+		}
+		if pendingService != list.ServiceUID {
+			oldIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, pendingService, uid)
+			if err := mappings.PutTombstone(ctx, oldIndexKey); err != nil {
+				return retrySubgroupIndexError(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
+			}
+		}
+		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
+		}
+	}
+
+	return false
+}
+
+func retrySubgroupIndexError(ctx context.Context, uid, key, operation string, err error) bool {
+	if pkgerrors.IsTransient(err) {
+		slog.WarnContext(ctx, "subgroup service index failure, will retry", "uid", uid, "mapping_key", key, "operation", operation, "error", err)
+		return true
+	}
+	slog.ErrorContext(ctx, "permanent subgroup service index failure", "uid", uid, "mapping_key", key, "operation", operation, "error", err)
 	return false
 }
 
 // HandleDataStreamSubgroupDelete publishes a delete indexer message and tombstones the mapping.
 func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
+	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
 
 	if mappings.IsTombstoned(ctx, mKey) {
+		if removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings) {
+			return true
+		}
 		slog.InfoContext(ctx, "subgroup already deleted, ACKing duplicate", "uid", uid)
 		return false
 	}
@@ -250,10 +331,7 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 	// If there is no mapping entry, this record was never indexed — nothing to delete.
 	if !mappings.IsMappingPresent(ctx, mKey) {
 		slog.InfoContext(ctx, "subgroup was never indexed, skipping OpenSearch delete", "uid", uid)
-		if err := mappings.PutTombstone(ctx, mKey); err != nil {
-			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
-		}
-		return false
+		return removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings)
 	}
 
 	msg := &model.IndexerMessage{Action: model.ActionDeleted}
@@ -277,8 +355,50 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 		slog.WarnContext(ctx, "failed to publish subgroup delete access message", "uid", uid, "error", err)
 	}
 
-	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+	return removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings)
+}
+
+// removeSubgroupServiceIndex clears the parent pointer before the forward mapping,
+// so redelivery can finish cleanup even after an intermediate failure.
+func removeSubgroupServiceIndex(ctx context.Context, uid, subgroupKey, parentKey string, mappings port.MappingReaderWriter) bool {
+	parentUID, present, err := mappings.GetMappingValueWithError(ctx, parentKey)
+	if err != nil {
+		return retrySubgroupIndexError(ctx, uid, parentKey, "read subgroup parent for deletion", err)
+	}
+	if present {
+		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(parentUID) {
+			slog.ErrorContext(ctx, "invalid subgroup or parent UID for service index cleanup", "uid", uid, "parent_uid", parentUID)
+			return false
+		}
+		indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, parentUID, uid)
+		if err := mappings.PutTombstone(ctx, indexKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, indexKey, "remove subgroup service index", err)
+		}
+		if err := mappings.PutTombstone(ctx, parentKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, parentKey, "remove subgroup parent mapping", err)
+		}
+	}
+	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
+	pendingService, pending, err := mappings.GetMappingValueWithError(ctx, pendingKey)
+	if err != nil {
+		return retrySubgroupIndexError(ctx, uid, pendingKey, "read pending subgroup move for deletion", err)
+	}
+	if pending {
+		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(pendingService) {
+			slog.ErrorContext(ctx, "invalid pending service UID for index cleanup", "uid", uid, "service_uid", pendingService)
+			return false
+		}
+		oldIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, pendingService, uid)
+		if err := mappings.PutTombstone(ctx, oldIndexKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
+		}
+		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
+			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
+		}
+	}
+	if err := mappings.PutTombstone(ctx, subgroupKey); err != nil {
+		slog.ErrorContext(ctx, "failed to put tombstone, will retry", "mapping_key", subgroupKey, "error", err)
+		return true
 	}
 	return false
 }

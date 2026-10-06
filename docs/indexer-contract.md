@@ -177,6 +177,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `title` | string | Mailing list title |
 | `subject_tag` | string | Email subject tag; emitted as empty string when not populated |
 | `service_uid` | string | UID of the parent GroupsIO service |
+| `domain` | string (optional) | Domain copied from the parent service when available; omitted while the service is not fully configured |
 | `project_uid` | string | v2 UID of the owning project (resolved from v1 SFID) |
 | `project_name` | string | Name of the owning project; emitted as empty string when not populated |
 | `project_slug` | string | Slug of the owning project; emitted as empty string when not populated |
@@ -186,7 +187,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `updated_at` | timestamp | Last update time (RFC3339) |
 | `system_updated_at` | timestamp (optional) | Last modified by a system process |
 
-> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
+> **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. The subgroup handler sets `domain` from the `groupsio-service-domain.{service_uid}` mapping when available; if the mapping is absent or empty, it indexes without a `domain` field. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
 
 ### Tags
 
@@ -243,6 +244,14 @@ After a successful update, the handler writes a reverse index to `v1-mappings`:
 - Key: `groupsio-subgroup-gid.{group_id}` → Value: `{uid}`
 
 This allows the member and artifact handlers to resolve the mailing list UID from the Groups.io numeric `group_id`.
+
+The handler also maintains an index in the `groupsio-subgroup-service-index` KV bucket for enumerating mailing lists by service:
+- Key: `groupsio-subgroup-service.{service_uid}.{uid}` → Value: `{uid}`
+- Key: `groupsio-subgroup-parent.{uid}` → Value: `{service_uid}`
+- Key: `groupsio-subgroup-previous-service.{uid}` → Value: `{old_service_uid}` while a move's old index entry awaits cleanup
+
+The parent key tracks moves and deletions; the pending-move key preserves the old service UID across retries until its index entry is tombstoned. `ListSubgroupsByService` filters the service index to live subgroup and parent mappings, and returns an error if enumeration is incomplete. This index is populated as subgroup events are processed; lists indexed before it was introduced require subgroup processing to populate it.
+For existing lists, run [`scripts/backfill_subgroup_service_index/`](../scripts/backfill_subgroup_service_index/README.md) to populate these mappings without replaying subgroup events or reindexing documents.
 
 ---
 

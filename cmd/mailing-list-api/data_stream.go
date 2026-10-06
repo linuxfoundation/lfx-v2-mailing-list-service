@@ -40,8 +40,8 @@ func handleDataStream(
 		return nil
 	}
 
-	// Open the v1-mappings KV store for idempotency tracking.
-	// Deferred until here so deployments with eventing disabled don't require the bucket.
+	// Open v1-mappings for idempotency and the subgroup service index for lookups.
+	// Deferred until here so deployments with eventing disabled don't require either bucket.
 	mappings, err := service.NewMappingReaderWriter(ctx, natsClient)
 	if err != nil {
 		return err
