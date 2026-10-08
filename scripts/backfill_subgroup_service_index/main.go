@@ -4,8 +4,9 @@
 // backfill_subgroup_service_index populates the dedicated
 // groupsio-subgroup-service-index KV bucket from existing v1-objects records,
 // checking v1-mappings to skip unprocessed subgroups. It does not replay KV
-// events or send indexer messages. By default it only reports planned writes;
-// pass -write to persist mappings.
+// events or send indexer messages. Write mode invalidates affected service
+// propagation checkpoints for a subsequent service replay. By default it only
+// reports planned writes; pass -write to persist mappings.
 package main
 
 import (
@@ -117,6 +118,14 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 	}
 	forwardKey := constants.KVMappingPrefixSubgroup + "." + uid
 	store := infraNATS.NewMappingReaderWriter(mappings, serviceIndex)
+	progressKey := constants.KVMappingPrefixSubgroupUnassociationPending + "." + uid
+	progressUID, cleanupPending, err := store.GetMappingValueWithError(ctx, progressKey)
+	if err != nil {
+		return false, fmt.Errorf("read unassociation progress %s: %w", progressKey, err)
+	}
+	if cleanupPending {
+		return false, fmt.Errorf("subgroup %s has unfinished unassociation %s (value %q); reconcile through subgroup event processing before backfill", uid, progressKey, progressUID)
+	}
 	forward, present, err := store.GetMappingValueWithError(ctx, forwardKey)
 	if err != nil {
 		return false, fmt.Errorf("read mapping %s: %w", forwardKey, err)
@@ -135,22 +144,48 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 	if err != nil {
 		return false, fmt.Errorf("decode subgroup JSON/msgpack: %w", err)
 	}
+	if data == nil {
+		return false, errors.New("decode subgroup JSON/msgpack: null object")
+	}
 	if _, deleted := data[constants.KVObjectSoftDeletedAt]; deleted {
 		return false, nil
 	}
+	parentKey := constants.KVMappingPrefixSubgroupParent + "." + uid
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + "." + uid
+	pendingKey := constants.KVMappingPrefixSubgroupPreviousService + "." + uid
 	serviceUID, ok := data["parent_id"].(string)
-	if !ok || serviceUID == "" {
-		return false, fmt.Errorf("missing parent_id")
+	if !ok && data["parent_id"] != nil {
+		return false, fmt.Errorf("invalid parent_id type %T", data["parent_id"])
+	}
+	if serviceUID == "" {
+		// Unassociation retains the forward mapping for later reparenting.
+		// Missing pointers alone do not prove a legacy indexed list was cleaned.
+		for _, pointer := range []string{parentKey, publishedKey, pendingKey} {
+			value, present, readErr := store.GetMappingValueWithError(ctx, pointer)
+			if readErr != nil {
+				return false, fmt.Errorf("read unassociated subgroup pointer %s: %w", pointer, readErr)
+			}
+			if present {
+				return false, fmt.Errorf("missing parent_id with uncleared %s %q", pointer, value)
+			}
+		}
+		completionKey := constants.KVMappingPrefixSubgroupUnassociated + "." + uid
+		completedUID, complete, readErr := store.GetMappingValueWithError(ctx, completionKey)
+		if readErr != nil {
+			return false, fmt.Errorf("read unassociation completion %s: %w", completionKey, readErr)
+		}
+		if !complete || completedUID != uid {
+			return false, fmt.Errorf("missing parent_id without confirmed unassociation cleanup for %s", uid)
+		}
+		return false, nil
 	}
 	if !constants.ValidKVKeySegment(serviceUID) {
 		return false, fmt.Errorf("invalid parent_id %q", serviceUID)
 	}
-	parentKey := constants.KVMappingPrefixSubgroupParent + "." + uid
 	previousParent, present, err := store.GetMappingValueWithError(ctx, parentKey)
 	if err != nil {
 		return false, err
 	}
-	pendingKey := constants.KVMappingPrefixSubgroupPreviousService + "." + uid
 	pendingService, pending, err := store.GetMappingValueWithError(ctx, pendingKey)
 	if err != nil {
 		return false, err
@@ -169,12 +204,27 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 	if indexed && indexedUID != uid {
 		return false, fmt.Errorf("service index %s has unexpected UID %q", indexKey, indexedUID)
 	}
+	completionKey := constants.KVMappingPrefixSubgroupUnassociated + "." + uid
+	completedUID, unassociated, err := store.GetMappingValueWithError(ctx, completionKey)
+	if err != nil {
+		return false, fmt.Errorf("read unassociation completion %s: %w", completionKey, err)
+	}
+	if unassociated {
+		return false, fmt.Errorf("associated subgroup %s still has unassociation marker %s (value %q); reconcile its access through subgroup event processing before backfill", uid, completionKey, completedUID)
+	}
 	if present && previousParent == serviceUID && indexed && !pending {
 		return false, nil
 	}
 	slog.InfoContext(ctx, "backfill subgroup service mapping", "uid", uid, "service_uid", serviceUID, "write", write)
 	if !write {
 		return true, nil
+	}
+	// An earlier domain event may have checkpointed an empty service lookup.
+	// Invalidate before exposing new mappings, so a replay with the unchanged
+	// domain still refreshes this mailing list. Run while eventing is quiescent.
+	checkpointKey := constants.KVMappingPrefixServiceDomainIndexed + "." + serviceUID
+	if _, err := mappings.Put(ctx, checkpointKey, []byte(constants.KVTombstoneMarker)); err != nil {
+		return false, fmt.Errorf("invalidate service domain checkpoint: %w", err)
 	}
 	// Write the index first; readers verify the parent pointer and forward mapping.
 	if !indexed {

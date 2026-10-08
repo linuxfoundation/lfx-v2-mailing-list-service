@@ -158,7 +158,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 
 **NATS subject:** `lfx.index.groupsio_mailing_list`
 
-**Indexed on:** create, update, delete of a GroupsIO mailing list (v1 datastream via `datastream_subgroup_handler.go`).
+**Indexed on:** create, update, delete of a GroupsIO mailing list (v1 datastream via `datastream_subgroup_handler.go`), and on a parent service domain change (`datastream_service_handler.go`).
 
 ### Data Schema
 
@@ -189,6 +189,9 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 
 > **v1-sync transform note:** `transformV1ToGrpsIOMailingList` populates `uid`, `group_id`, `group_name`, `public` and `audience_access` (both derived from `visibility`), `type`, `description`, `title`, `subject_tag`, `url`, `flags`, `service_uid` (from `parent_id`), `project_uid`, `source` ("v1-sync"), `subscriber_count`, `committees`, and timestamps. The subgroup handler sets `domain` from the `groupsio-service-domain.{service_uid}` mapping when available; if the mapping is absent or empty, it indexes without a `domain` field. `project_name` and `project_slug` are not set by the transform and will be emitted as empty strings.
 
+When a service's domain changes (including being cleared), the service handler reads the latest service record from `v1-objects`, enumerates live lists using `groupsio-subgroup-service-index`, reads their current subgroup records, and publishes full `updated` messages with the same mailing-list `IndexingConfig` and the new domain. It does not replay KV events or emit list settings or access messages. `groupsio-service-domain-indexed.{service_uid}` in `v1-mappings` is invalidated before fan-out and set only after all publishes succeed, so partial fan-outs and subsequent domain reverts reindex every list. Delayed deliveries use the current service record rather than their stale event payload.
+Service and subgroup publications for a parent service are serialized with a lease in `groupsio-service-domain-locks`; missing or deleted subgroup objects are skipped while the corresponding index entry is cleaned up.
+
 ### Tags
 
 | Tag Format | Example | Purpose |
@@ -215,6 +218,8 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `references.committee` | committee UIDs (one per associated committee) |
 | `references.writer` | usernames from writers (when settings present) |
 | `references.auditor` | usernames from auditors (when settings present) |
+
+When a subgroup loses its service association, it publishes an `update_access` full sync with an empty `groupsio_service` reference and `public` derived from its latest `visibility`. The `viewer` relation is reconciled to that current public state, while member, writer, auditor, and committee relations remain excluded because they are managed by their respective flows. Initial and subsequent parentless updates also refresh the `groupsio-subgroup-committee.{uid}` visibility cache used for message privacy, preserving its committee UID. The list's indexed document is deleted with a complete delete `IndexingConfig`, while its subgroup mapping remains live for future reparenting. Hard deletion still publishes `delete_access` when an unassociation marker shows access may remain, even if the forward and published-parent mappings are absent.
 
 ### Search Behavior (IndexingConfig)
 
@@ -249,9 +254,12 @@ The handler also maintains an index in the `groupsio-subgroup-service-index` KV 
 - Key: `groupsio-subgroup-service.{service_uid}.{uid}` → Value: `{uid}`
 - Key: `groupsio-subgroup-parent.{uid}` → Value: `{service_uid}`
 - Key: `groupsio-subgroup-previous-service.{uid}` → Value: `{old_service_uid}` while a move's old index entry awaits cleanup
+- Key: `groupsio-subgroup-published-parent.{uid}` → Value: `{service_uid}` recorded before publishing a subgroup document so unassociation can clean up even when later parent/index writes fail
+- Key: `groupsio-subgroup-unassociated.{uid}` → Value: `{uid}` after unassociation deletes the document, revokes inherited service access, and clears all known service-index pointers; tombstoned only after a later subgroup update restores its document, access, and parent mappings
+- Key: `groupsio-subgroup-unassociation-pending.{uid}` → Value: `{uid}` before unassociation publishes a document delete or access revocation; tombstoned only after cleanup completes or a subsequent subgroup update restores document, access, and parent mappings
 
-The parent key tracks moves and deletions; the pending-move key preserves the old service UID across retries until its index entry is tombstoned. `ListSubgroupsByService` filters the service index to live subgroup and parent mappings, and returns an error if enumeration is incomplete. This index is populated as subgroup events are processed; lists indexed before it was introduced require subgroup processing to populate it.
-For existing lists, run [`scripts/backfill_subgroup_service_index/`](../scripts/backfill_subgroup_service_index/README.md) to populate these mappings without replaying subgroup events or reindexing documents.
+The parent key tracks moves and deletions; the pending-move key preserves the old service UID across retries until its index entry is tombstoned. Unassociation cleans index entries for the stored, published and pending previous parents after deleting the document and revoking service access; it retains the processed-subgroup mapping for reparenting. Hard deletion tombstones all distinct index entries before clearing these pointers. `ListSubgroupsByService` filters the service index to live subgroup and parent mappings, and returns an error if enumeration is incomplete. This index is populated as subgroup events are processed; lists indexed before it was introduced require subgroup processing to populate it.
+For existing lists, run [`scripts/backfill_subgroup_service_index/`](../scripts/backfill_subgroup_service_index/README.md) while event processing is quiescent to populate these mappings without replaying subgroup events. The script invalidates affected service domain checkpoints; replay the latest service records after backfill to reindex their mailing lists, including services whose domains have not changed.
 
 ---
 
