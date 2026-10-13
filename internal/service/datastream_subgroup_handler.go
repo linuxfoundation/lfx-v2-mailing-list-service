@@ -228,30 +228,6 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 		return false
 	}
 
-	// Store committee mapping for message handler: committeeUID and visibility.
-	// Value format: "{committeeUID}|{isPublic}" where isPublic is "true" or "false".
-	// Written on every update (including when no committee) so message handlers can distinguish
-	// "subgroup processed, no committee" (mapping present, empty committeeUID) from
-	// "subgroup not yet processed with current code" (mapping absent → NAK).
-	// This also overwrites stale committee data when a committee association is removed.
-	committeeUID := ""
-	if len(list.Committees) > 0 && list.Committees[0].UID != "" {
-		committeeUID = list.Committees[0].UID
-	}
-	isPublicStr := "false"
-	if list.Public {
-		isPublicStr = "true"
-	}
-	committeeKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, uid)
-	if err := mappings.PutMapping(ctx, committeeKey, committeeUID+"|"+isPublicStr); err != nil {
-		if pkgerrors.IsTransient(err) {
-			slog.WarnContext(ctx, "failed to put committee mapping key, will retry", "mapping_key", committeeKey, "error", err)
-			return true
-		}
-		slog.ErrorContext(ctx, "failed to put committee mapping key", "mapping_key", committeeKey, "error", err)
-		return false
-	}
-
 	// Index each subgroup under its parent service after the mappings needed by
 	// member and message events. Concurrent subgroups write separate index keys.
 	if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(list.ServiceUID) {
