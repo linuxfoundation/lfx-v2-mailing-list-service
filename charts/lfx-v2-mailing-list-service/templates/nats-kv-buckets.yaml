@@ -22,3 +22,25 @@ spec:
   maxBytes: {{ .Values.nats.kv_bucket_subgroup_service_index.maxBytes }}
   compression: {{ .Values.nats.kv_bucket_subgroup_service_index.compression }}
 {{- end }}
+---
+{{- if .Values.nats.kv_bucket_service_domain_locks.creation }}
+apiVersion: jetstream.nats.io/v1beta2
+kind: KeyValue
+metadata:
+  name: groupsio-service-domain-locks
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.nats.kv_bucket_service_domain_locks.keep }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+spec:
+  bucket: groupsio-service-domain-locks
+  replicas: {{ .Values.nats.kv_bucket_service_domain_locks.replicas }}
+  history: {{ .Values.nats.kv_bucket_service_domain_locks.history }}
+  storage: {{ .Values.nats.kv_bucket_service_domain_locks.storage }}
+  maxValueSize: {{ .Values.nats.kv_bucket_service_domain_locks.maxValueSize }}
+  maxBytes: {{ .Values.nats.kv_bucket_service_domain_locks.maxBytes }}
+  compression: {{ .Values.nats.kv_bucket_service_domain_locks.compression }}
+{{- end }}

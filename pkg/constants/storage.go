@@ -12,6 +12,8 @@ const (
 	KVBucketV1Objects = "v1-objects"
 	// KVBucketSubgroupServiceIndex stores the service-to-subgroup lookup and each subgroup's current parent.
 	KVBucketSubgroupServiceIndex = "groupsio-subgroup-service-index"
+	// KVBucketServiceDomainLocks coordinates service and subgroup indexing across replicas.
+	KVBucketServiceDomainLocks = "groupsio-service-domain-locks"
 
 	// KVTombstoneMarker marks deleted or superseded entries in v1-mappings and
 	// groupsio-subgroup-service-index.
@@ -22,6 +24,9 @@ const (
 	// KVMappingPrefixServiceDomain stores the Groups.io domain for a service so subgroup
 	// records can denormalize it without having to read the restricted parent service object.
 	KVMappingPrefixServiceDomain = "groupsio-service-domain"
+	// KVMappingPrefixServiceDomainIndexed tracks the last service domain propagated
+	// to its mailing lists, so a failed fan-out is retried on redelivery.
+	KVMappingPrefixServiceDomainIndexed = "groupsio-service-domain-indexed"
 	// KVMappingPrefixSubgroup is the v1-mappings key prefix for GroupsIO subgroups (mailing lists).
 	KVMappingPrefixSubgroup = "groupsio-subgroup"
 	// KVMappingPrefixSubgroupByService indexes subgroup UIDs by their parent service UID
@@ -32,9 +37,18 @@ const (
 	// allowing a move or deletion to clean up its previous service index entry.
 	// Key: groupsio-subgroup-parent.{subgroupUID} → service UID (groupsio-subgroup-service-index bucket).
 	KVMappingPrefixSubgroupParent = "groupsio-subgroup-parent"
+	// KVMappingPrefixSubgroupPublishedParent records the parent whose subgroup
+	// document may have been published, even if normal mapping writes fail.
+	KVMappingPrefixSubgroupPublishedParent = "groupsio-subgroup-published-parent"
 	// KVMappingPrefixSubgroupPreviousService records the old service during a move
 	// until its index entry has been tombstoned, including across event redeliveries.
 	KVMappingPrefixSubgroupPreviousService = "groupsio-subgroup-previous-service"
+	// KVMappingPrefixSubgroupUnassociated records completed document/access and
+	// service-index cleanup while the forward subgroup mapping stays live.
+	KVMappingPrefixSubgroupUnassociated = "groupsio-subgroup-unassociated"
+	// KVMappingPrefixSubgroupUnassociationPending records cleanup started
+	// before document deletion or inherited-access revocation can occur.
+	KVMappingPrefixSubgroupUnassociationPending = "groupsio-subgroup-unassociation-pending"
 	// KVMappingPrefixMember is the v1-mappings key prefix for GroupsIO members.
 	KVMappingPrefixMember = "groupsio-member"
 	// KVMappingPrefixSubgroupByGroupID is the v1-mappings reverse index: Groups.io group_id → subgroup UID.

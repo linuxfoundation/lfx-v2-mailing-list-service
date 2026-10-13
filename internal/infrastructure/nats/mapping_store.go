@@ -31,7 +31,10 @@ func NewMappingReaderWriter(kv, serviceIndex jetstream.KeyValue) port.MappingRea
 func (m *natsMappingReaderWriter) bucketFor(key string) jetstream.KeyValue {
 	if strings.HasPrefix(key, constants.KVMappingPrefixSubgroupByService+".") ||
 		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupParent+".") ||
-		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupPreviousService+".") {
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupPublishedParent+".") ||
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupPreviousService+".") ||
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupUnassociated+".") ||
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupUnassociationPending+".") {
 		return m.serviceIndex
 	}
 	return m.kv

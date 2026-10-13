@@ -117,6 +117,25 @@ nats:
     # compression determines whether KV bucket data is compressed.
     compression: true
 
+  # kv_bucket_service_domain_locks coordinates domain propagation with subgroup indexing.
+  kv_bucket_service_domain_locks:
+    # creation determines whether this chart creates the bucket.
+    creation: true
+    # keep preserves the bucket during Helm uninstall.
+    keep: true
+    # replicas is the number of NATS stream replicas.
+    replicas: 1
+    # history is the number of revisions kept per key.
+    history: 1
+    # storage is the NATS storage type.
+    storage: file
+    # maxValueSize is the largest lease value in bytes.
+    maxValueSize: 1024
+    # maxBytes is the maximum bucket size.
+    maxBytes: 1073741824  # 1GB
+    # compression controls stream compression.
+    compression: false
+
 # openfga is the configuration for the OpenFGA server
 openfga:
   # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization

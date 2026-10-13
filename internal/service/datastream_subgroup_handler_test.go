@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -261,6 +262,203 @@ func TestHandleDataStreamSubgroupUpdate_NoGroupID_NoReverseIndex(t *testing.T) {
 	assert.False(t, ok, "should not write reverse index when group_id is absent")
 }
 
+func TestSubgroupUnassociated_PurgeThenParentFailureRetriesCleanup(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	uid := "ml-1"
+	indexKey := constants.KVMappingPrefixSubgroupByService + ".svc-1." + uid
+	parentKey := constants.KVMappingPrefixSubgroupParent + "." + uid
+	subgroupKey := constants.KVMappingPrefixSubgroup + "." + uid
+	m.Set(indexKey, uid)
+	m.Set(parentKey, "svc-1")
+	m.Set(subgroupKey, uid)
+	m.SimulateTombstoneError(parentKey, errors.New("connection unavailable"))
+	pub := &mock.SpyMessagePublisher{}
+	assert.True(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "svc-1", map[string]any{"visibility": "public"}, pub, m))
+	require.Len(t, pub.IndexerCalls, 1)
+	msg := pub.IndexerCalls[0].Message.(*model.IndexerMessage)
+	assert.Equal(t, model.ActionDeleted, msg.Action)
+	require.NotNil(t, msg.IndexingConfig)
+	assert.Equal(t, uid, msg.IndexingConfig.ObjectID)
+	assert.NotEmpty(t, msg.IndexingConfig.AccessCheckObject)
+	assert.NotEmpty(t, msg.IndexingConfig.HistoryCheckRelation)
+	require.Len(t, pub.AccessCalls, 1)
+	access := pub.AccessCalls[0].Message.(fgatypes.GenericFGAMessage)
+	assert.Equal(t, fgaconstants.GenericUpdateAccessSubject, pub.AccessCalls[0].Subject)
+	data := access.Data.(fgatypes.GenericAccessData)
+	assert.Empty(t, data.References[constants.RelationGroupsIOService])
+	assert.True(t, data.Public, "unassociation must preserve the list's current public visibility")
+	assert.NotContains(t, data.ExcludeRelations, constants.RelationViewer, "viewer must track current visibility")
+	assert.Contains(t, data.ExcludeRelations, constants.RelationMember)
+	assert.Contains(t, data.ExcludeRelations, constants.RelationWriter)
+	_, present := m.GetMappingValue(ctx, indexKey)
+	assert.False(t, present)
+	assert.Equal(t, "svc-1", mustMapping(t, ctx, m, parentKey))
+	m.SimulateTombstoneError(parentKey, nil)
+	assert.False(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "svc-1", map[string]any{"visibility": "public"}, pub, m))
+	assert.Len(t, pub.AccessCalls, 2, "redelivery after index purge must still revoke service access")
+	assert.True(t, m.IsTombstoned(ctx, parentKey))
+	assert.Equal(t, uid, mustMapping(t, ctx, m, subgroupKey), "reparenting must remain possible")
+}
+
+func TestSubgroupUnassociated_AccessFailurePreservesIndexForRetry(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	indexKey := constants.KVMappingPrefixSubgroupByService + ".svc-1.ml-1"
+	m.Set(indexKey, "ml-1")
+	m.Set(constants.KVMappingPrefixSubgroupParent+".ml-1", "svc-1")
+	pub := &mock.SpyMessagePublisher{AccessError: errors.New("connection unavailable")}
+	assert.True(t, HandleDataStreamSubgroupUnassociated(ctx, "ml-1", "svc-1", map[string]any{"visibility": "private"}, pub, m))
+	assert.True(t, m.IsMappingPresent(ctx, indexKey))
+	pub.AccessError = nil
+	assert.False(t, HandleDataStreamSubgroupUnassociated(ctx, "ml-1", "svc-1", map[string]any{"visibility": "private"}, pub, m))
+	assert.False(t, m.IsMappingPresent(ctx, indexKey))
+}
+
+func TestSubgroupUnassociated_UsesPublishedParentWithoutNormalMapping(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	uid := "ml-1"
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + "." + uid
+	m.Set(publishedKey, "svc-1")
+	m.Set(constants.KVMappingPrefixSubgroup+"."+uid, uid)
+	pub := &mock.SpyMessagePublisher{}
+	assert.False(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "svc-1", map[string]any{"visibility": "private"}, pub, m))
+	require.Len(t, pub.IndexerCalls, 1, "published document must be deleted even without a normal parent/index")
+	require.NotNil(t, pub.IndexerCalls[0].Message.(*model.IndexerMessage).IndexingConfig)
+	require.Len(t, pub.AccessCalls, 1)
+	assert.True(t, m.IsTombstoned(ctx, publishedKey))
+	assert.Equal(t, uid, mustMapping(t, ctx, m, constants.KVMappingPrefixSubgroup+"."+uid))
+}
+
+func TestSubgroupUnassociated_MarkerFailureRetriesUIDCleanup(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	uid := "ml-1"
+	m.Set(constants.KVMappingPrefixSubgroup+"."+uid, uid)
+	markerKey := constants.KVMappingPrefixSubgroupUnassociated + "." + uid
+	pendingKey := constants.KVMappingPrefixSubgroupUnassociationPending + "." + uid
+	m.SimulatePutError(markerKey, errors.New("connection unavailable"))
+	pub := &mock.SpyMessagePublisher{}
+	require.True(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "", map[string]any{"visibility": "private"}, pub, m))
+	assert.False(t, m.IsMappingPresent(ctx, markerKey), "failed completion write must not conceal incomplete cleanup")
+	assert.Equal(t, uid, mustMapping(t, ctx, m, pendingKey), "progress survives a failed completion write")
+	require.Len(t, pub.IndexerCalls, 1)
+	assert.Equal(t, model.ActionDeleted, pub.IndexerCalls[0].Message.(*model.IndexerMessage).Action)
+	m.SimulatePutError(markerKey, nil)
+	require.False(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "", map[string]any{"visibility": "private"}, pub, m))
+	assert.Equal(t, uid, mustMapping(t, ctx, m, markerKey))
+	assert.True(t, m.IsTombstoned(ctx, pendingKey))
+	assert.Len(t, pub.IndexerCalls, 2, "redelivery must repeat idempotent UID-based cleanup")
+}
+
+func TestSubgroupUnassociated_ProgressWriteFailureDoesNotPublish(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	uid := "ml-1"
+	m.Set(constants.KVMappingPrefixSubgroup+"."+uid, uid)
+	pendingKey := constants.KVMappingPrefixSubgroupUnassociationPending + "." + uid
+	m.SimulatePutError(pendingKey, errors.New("connection unavailable"))
+	pub := &mock.SpyMessagePublisher{}
+	require.True(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "", map[string]any{"visibility": "private"}, pub, m))
+	assert.Empty(t, pub.IndexerCalls)
+	assert.Empty(t, pub.AccessCalls)
+	assert.False(t, m.IsMappingPresent(ctx, constants.KVMappingPrefixSubgroupUnassociated+"."+uid))
+}
+
+func TestParentlessCommitteeVisibilityReadAndWriteFailuresRetry(t *testing.T) {
+	ctx := context.Background()
+	uid := "ml-1"
+	key := constants.KVMappingPrefixSubgroupCommittee + "." + uid
+	source := map[string]any{"visibility": "private"}
+	pub := &mock.SpyMessagePublisher{}
+	readFailure := mock.NewFakeMappingStore()
+	readFailure.Set(key, "committee-uid|true")
+	readFailure.SimulateGetError(key)
+	require.True(t, HandleDataStreamSubgroupUnassociatedAccess(ctx, uid, source, pub, readFailure))
+	assert.Empty(t, pub.AccessCalls, "a failed mapping read must not publish an access change")
+
+	writeFailure := mock.NewFakeMappingStore()
+	writeFailure.Set(key, "committee-uid|true")
+	writeFailure.SimulatePutError(key, errors.New("connection unavailable"))
+	require.True(t, HandleDataStreamSubgroupUnassociatedAccess(ctx, uid, source, pub, writeFailure))
+	assert.Equal(t, "committee-uid|true", mustMapping(t, ctx, writeFailure, key))
+	writeFailure.SimulatePutError(key, nil)
+	require.False(t, HandleDataStreamSubgroupUnassociatedAccess(ctx, uid, source, pub, writeFailure))
+	assert.Equal(t, "committee-uid|false", mustMapping(t, ctx, writeFailure, key))
+}
+
+func TestParentlessCommitteeVisibilityRestoresMissingCacheFromSource(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixCommitteeBySFID+".committee-sfid", "committee-uid")
+	pub := &mock.SpyMessagePublisher{}
+	require.False(t, HandleDataStreamSubgroupUnassociatedAccess(ctx, "ml-1", map[string]any{
+		"visibility": "public", "committee": "committee-sfid",
+	}, pub, m))
+	assert.Equal(t, "committee-uid|true", mustMapping(t, ctx, m, constants.KVMappingPrefixSubgroupCommittee+".ml-1"))
+}
+
+func TestSubgroupUpdate_MarkerInvalidationFailureRetriesCompletedReassociation(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+	markerKey := constants.KVMappingPrefixSubgroupUnassociated + ".ml-1"
+	m.Set(markerKey, "ml-1")
+	m.SimulateTombstoneError(markerKey, errors.New("connection unavailable"))
+	lookup := mock.NewFakeProjectLookup()
+	lookup.Slugs["proj-uid"] = "project"
+	pub := &mock.SpyMessagePublisher{}
+	data := map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"}
+	require.True(t, HandleDataStreamSubgroupUpdate(ctx, "ml-1", data, pub, m, lookup))
+	assert.Len(t, pub.IndexerCalls, 1, "document is published before completing reassociation")
+	assert.Len(t, pub.AccessCalls, 1, "access is published before clearing the marker")
+	assert.Equal(t, "ml-1", mustMapping(t, ctx, m, markerKey))
+	m.SimulateTombstoneError(markerKey, nil)
+	require.False(t, HandleDataStreamSubgroupUpdate(ctx, "ml-1", map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"}, pub, m, lookup))
+	assert.True(t, m.IsTombstoned(ctx, markerKey))
+	assert.Len(t, pub.IndexerCalls, 2)
+}
+
+func TestSubgroupUpdate_ReassociationAccessFailurePreservesMarker(t *testing.T) {
+	for _, completed := range []bool{false, true} {
+		name := "interrupted before completion marker"
+		if completed {
+			name = "completed unassociation"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			m := mock.NewFakeMappingStore()
+			m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+			m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+			m.Set(constants.KVMappingPrefixSubgroup+".ml-1", "ml-1")
+			markerKey := constants.KVMappingPrefixSubgroupUnassociated + ".ml-1"
+			pendingKey := constants.KVMappingPrefixSubgroupUnassociationPending + ".ml-1"
+			m.Set(pendingKey, "ml-1")
+			if completed {
+				m.Set(markerKey, "ml-1")
+			}
+			lookup := mock.NewFakeProjectLookup()
+			lookup.Slugs["proj-uid"] = "project"
+			pub := &mock.SpyMessagePublisher{AccessError: errors.New("connection unavailable")}
+			data := func() map[string]any { return map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"} }
+			require.True(t, HandleDataStreamSubgroupUpdate(ctx, "ml-1", data(), pub, m, lookup))
+			assert.Equal(t, "ml-1", mustMapping(t, ctx, m, pendingKey))
+			if completed {
+				assert.Equal(t, "ml-1", mustMapping(t, ctx, m, markerKey))
+			}
+			assert.False(t, m.IsMappingPresent(ctx, constants.KVMappingPrefixSubgroupParent+".ml-1"))
+			pub.AccessError = nil
+			require.False(t, HandleDataStreamSubgroupUpdate(ctx, "ml-1", data(), pub, m, lookup))
+			assert.True(t, m.IsTombstoned(ctx, markerKey))
+			assert.True(t, m.IsTombstoned(ctx, pendingKey))
+			assert.True(t, m.IsMappingPresent(ctx, constants.KVMappingPrefixSubgroupParent+".ml-1"))
+			assert.Len(t, pub.AccessCalls, 2)
+		})
+	}
+}
+
 func TestSubgroupServiceIndex_CreateMoveAndDelete(t *testing.T) {
 	ctx := context.Background()
 	m := mock.NewFakeMappingStore()
@@ -450,6 +648,154 @@ func TestHandleDataStreamSubgroupDelete_DuplicateDelete_ACK(t *testing.T) {
 
 	assert.False(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "duplicate delete should not publish")
+}
+
+func TestHandleDataStreamSubgroupDelete_ForwardMappingWriteFailedAfterPublication(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "project"
+	forwardKey := constants.KVMappingPrefixSubgroup + ".sg-1"
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + ".sg-1"
+	m.SimulatePutError(forwardKey, errors.New("connection timeout"))
+	pub := &mock.SpyMessagePublisher{}
+	require.True(t, HandleDataStreamSubgroupUpdate(ctx, "sg-1", map[string]any{
+		"project_id": "sfid-proj", "parent_id": "svc-1",
+	}, pub, m, pl))
+	require.Len(t, pub.IndexerCalls, 1)
+	assert.True(t, m.IsMappingPresent(ctx, publishedKey))
+	assert.False(t, m.IsMappingPresent(ctx, forwardKey))
+
+	m.SimulatePutError(forwardKey, nil)
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, "sg-1", pub, m))
+	require.Len(t, pub.IndexerCalls, 2)
+	assert.Equal(t, model.ActionDeleted, pub.IndexerCalls[1].Message.(*model.IndexerMessage).Action)
+	require.Len(t, pub.AccessCalls, 2)
+	assert.Equal(t, fgaconstants.GenericDeleteAccessSubject, pub.AccessCalls[1].Subject)
+	assert.True(t, m.IsTombstoned(ctx, publishedKey))
+	assert.True(t, m.IsTombstoned(ctx, forwardKey))
+}
+
+func TestHandleDataStreamSubgroupDelete_AfterUnassociationWithoutForwardMappingDeletesAccess(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	m.Set(constants.KVMappingPrefixCommitteeBySFID+".committee-sfid", "committee-uid")
+	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+	lookup := mock.NewFakeProjectLookup()
+	lookup.Slugs["proj-uid"] = "project"
+	uid := "ml-1"
+	forwardKey := constants.KVMappingPrefixSubgroup + "." + uid
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + "." + uid
+	completedKey := constants.KVMappingPrefixSubgroupUnassociated + "." + uid
+	m.SimulatePutError(forwardKey, errors.New("connection timeout"))
+	pub := &mock.SpyMessagePublisher{}
+	require.True(t, HandleDataStreamSubgroupUpdate(ctx, uid, map[string]any{
+		"project_id": "sfid-proj", "parent_id": "svc-1", "committee": "committee-sfid", "writers": []string{"writer"},
+	}, pub, m, lookup))
+	assert.False(t, m.IsMappingPresent(ctx, forwardKey))
+	assert.True(t, m.IsMappingPresent(ctx, publishedKey))
+	require.False(t, HandleDataStreamSubgroupUnassociated(ctx, uid, "", map[string]any{
+		"visibility": "private", "committee": "committee-sfid",
+	}, pub, m))
+	assert.True(t, m.IsTombstoned(ctx, publishedKey))
+	assert.Equal(t, uid, mustMapping(t, ctx, m, completedKey))
+	assert.Equal(t, "committee-uid|false", mustMapping(t, ctx, m, constants.KVMappingPrefixSubgroupCommittee+"."+uid))
+	assert.False(t, m.IsMappingPresent(ctx, forwardKey))
+
+	pub.AccessError = errors.New("connection unavailable")
+	require.True(t, HandleDataStreamSubgroupDelete(ctx, uid, pub, m))
+	assert.Equal(t, uid, mustMapping(t, ctx, m, completedKey), "failed delete_access must preserve recovery evidence")
+	pub.AccessError = nil
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, uid, pub, m))
+	assert.Equal(t, fgaconstants.GenericDeleteAccessSubject, pub.AccessCalls[len(pub.AccessCalls)-1].Subject)
+	assert.True(t, m.IsTombstoned(ctx, completedKey))
+	assert.True(t, m.IsTombstoned(ctx, forwardKey))
+}
+
+func TestHandleDataStreamSubgroupDelete_ParentWriteFailedAfterIndexWrite(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "project"
+	parentKey := constants.KVMappingPrefixSubgroupParent + ".sg-1"
+	indexKey := constants.KVMappingPrefixSubgroupByService + ".svc-1.sg-1"
+	m.SimulatePutError(parentKey, errors.New("connection timeout"))
+	pub := &mock.SpyMessagePublisher{}
+	require.True(t, HandleDataStreamSubgroupUpdate(ctx, "sg-1", map[string]any{
+		"project_id": "sfid-proj", "parent_id": "svc-1",
+	}, pub, m, pl))
+	assert.True(t, m.IsMappingPresent(ctx, indexKey))
+	assert.False(t, m.IsMappingPresent(ctx, parentKey))
+	m.SimulatePutError(parentKey, nil)
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, "sg-1", pub, m))
+	assert.True(t, m.IsTombstoned(ctx, indexKey))
+	assert.True(t, m.IsTombstoned(ctx, constants.KVMappingPrefixSubgroupPublishedParent+".sg-1"))
+}
+
+func TestHandleDataStreamSubgroupDelete_PartialMoveCleansBothServiceIndexes(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	for _, serviceUID := range []string{"svc-a", "svc-b"} {
+		m.Set(constants.KVMappingPrefixService+"."+serviceUID, serviceUID)
+	}
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "project"
+	pub := &mock.SpyMessagePublisher{}
+	update := func(parent string) bool {
+		return HandleDataStreamSubgroupUpdate(ctx, "sg-1", map[string]any{
+			"project_id": "sfid-proj", "parent_id": parent,
+		}, pub, m, pl)
+	}
+	parentKey := constants.KVMappingPrefixSubgroupParent + ".sg-1"
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + ".sg-1"
+	pendingKey := constants.KVMappingPrefixSubgroupPreviousService + ".sg-1"
+	oldIndex := constants.KVMappingPrefixSubgroupByService + ".svc-a.sg-1"
+	newIndex := constants.KVMappingPrefixSubgroupByService + ".svc-b.sg-1"
+	require.False(t, update("svc-a"))
+	m.SimulatePutError(parentKey, errors.New("connection timeout"))
+	require.True(t, update("svc-b"))
+	assert.Equal(t, "svc-a", mustMapping(t, ctx, m, parentKey))
+	assert.Equal(t, "svc-b", mustMapping(t, ctx, m, publishedKey))
+	assert.Equal(t, "svc-a", mustMapping(t, ctx, m, pendingKey))
+	assert.True(t, m.IsMappingPresent(ctx, oldIndex))
+	assert.True(t, m.IsMappingPresent(ctx, newIndex))
+
+	m.SimulatePutError(parentKey, nil)
+	m.SimulateTombstoneError(newIndex, errors.New("connection timeout"))
+	require.True(t, HandleDataStreamSubgroupDelete(ctx, "sg-1", pub, m))
+	assert.True(t, m.IsMappingPresent(ctx, newIndex), "failed index cleanup must remain retryable")
+	assert.Equal(t, "svc-b", mustMapping(t, ctx, m, publishedKey))
+	assert.Equal(t, "svc-a", mustMapping(t, ctx, m, parentKey))
+
+	m.SimulateTombstoneError(newIndex, nil)
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, "sg-1", pub, m))
+	for _, key := range []string{oldIndex, newIndex, parentKey, publishedKey, pendingKey, constants.KVMappingPrefixSubgroup + ".sg-1"} {
+		assert.True(t, m.IsTombstoned(ctx, key), key)
+	}
+	callCount := len(pub.IndexerCalls)
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, "sg-1", pub, m))
+	assert.Len(t, pub.IndexerCalls, callCount, "duplicate delete should not publish")
+}
+
+func TestHandleDataStreamSubgroupDelete_ParentAlreadyClearedStillRemovesPublishedIndex(t *testing.T) {
+	ctx := context.Background()
+	m := mock.NewFakeMappingStore()
+	uid := "sg-1"
+	publishedKey := constants.KVMappingPrefixSubgroupPublishedParent + "." + uid
+	indexKey := constants.KVMappingPrefixSubgroupByService + ".svc-b." + uid
+	m.Set(publishedKey, "svc-b")
+	m.Set(indexKey, uid)
+	m.Set(constants.KVMappingPrefixSubgroup+"."+uid, uid)
+	pub := &mock.SpyMessagePublisher{}
+	require.False(t, HandleDataStreamSubgroupDelete(ctx, uid, pub, m))
+	assert.True(t, m.IsTombstoned(ctx, indexKey))
+	assert.True(t, m.IsTombstoned(ctx, publishedKey))
 }
 
 func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Transient_NAK(t *testing.T) {

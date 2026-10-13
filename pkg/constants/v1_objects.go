@@ -3,6 +3,9 @@
 
 package constants
 
+// KVObjectPrefixService is the v1-objects key prefix for Groups.io services.
+const KVObjectPrefixService = "itx-groupsio-v2-service."
+
 // KVObjectPrefixSubgroup is the v1-objects key prefix for Groups.io subgroups.
 const KVObjectPrefixSubgroup = "itx-groupsio-v2-subgroup."
 

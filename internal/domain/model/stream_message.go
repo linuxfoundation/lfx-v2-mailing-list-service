@@ -20,4 +20,6 @@ type StreamMessage struct {
 	Ack func() error
 	// Nak requeues the message with the given backoff delay.
 	Nak func(delay time.Duration) error
+	// InProgress extends the acknowledgement deadline while processing a long event.
+	InProgress func() error
 }
