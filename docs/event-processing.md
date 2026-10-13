@@ -102,6 +102,7 @@ graph LR
 
 - A **subgroup** event is NAK'd with backoff if the parent service mapping is absent from `v1-mappings`.
 - A **member** event is NAK'd with backoff if the parent subgroup mapping is absent from `v1-mappings`.
+- A **message** event is NAK'd with backoff if the `group_id` reverse index (`groupsio-subgroup-gid`) is absent from `v1-mappings`.
 
 ### Reverse Index (group_id → UID)
 
@@ -112,11 +113,11 @@ v1-mappings key:  groupsio-subgroup-gid.<group_id>
 value:            <mailing_list_uid>
 ```
 
-The member handler reads this entry to resolve the parent `MailingListUID` before building the indexer message.
+The member and message handlers read this entry to resolve the parent `MailingListUID` before building the indexer message.
 
 ### Service-to-Mailing-List Index
 
-After writing the gid, project and committee mappings needed by other events, the subgroup handler maintains two keys in the dedicated `groupsio-subgroup-service-index` KV bucket. These allow a service event to enumerate its mailing lists without scanning all subgroup records. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups.
+After writing the gid and project mappings needed by other events, the subgroup handler maintains two keys in the dedicated `groupsio-subgroup-service-index` KV bucket. These allow a service event to enumerate its mailing lists without scanning all subgroup records. Moves and deletes tombstone the old service key; lookups verify the index, parent and live subgroup mapping values. A dry-run-first [backfill script](../scripts/backfill_subgroup_service_index/README.md) populates the index for previously processed subgroups.
 
 ---
 

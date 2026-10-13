@@ -492,7 +492,7 @@ Artifacts use a typed `IndexingConfig`. No FGA `AccessMessage` is published — 
 
 **Indexed on:** create, update, delete of a Groups.io message (v1 datastream via `datastream_message_handler.go`).
 
-One record per message. Messages share a thread via `topic_id`. Privacy is resolved at index time from the subgroup KV mapping — it is NOT stored in the DynamoDB record.
+One record per message. Messages share a thread via `topic_id`. Committee association and visibility are not stored on the message; they are read from the parent mailing list.
 
 ### Data Schema
 
@@ -506,11 +506,9 @@ One record per message. Messages share a thread via `topic_id`. Privacy is resol
 | `sender_name` | string | Display name of the message sender |
 | `msg_num` | uint64 | Position of the message within the group |
 | `is_reply` | bool | True when this message is a reply to an existing thread |
-| `is_private` | bool | True when the parent mailing list is not public; resolved from subgroup KV mapping |
 | `group_domain` | string | Groups.io domain of the parent service (e.g. `groups.io`) |
 | `group_name` | string | Groups.io group name of the mailing list |
 | `mailing_list_uid` | string | v2 UID of the parent mailing list (resolved from `group_id` via subgroup handler mapping) |
-| `committee_uid` | string | v2 UID of the associated committee; omitted when the list has no committee |
 | `created_at` | timestamp | Message publish time (RFC3339) |
 
 ### Tags
@@ -520,7 +518,8 @@ One record per message. Messages share a thread via `topic_id`. Privacy is resol
 | `topic_id:{topic_id}` | `topic_id:12345` | Thread grouping in the committee service |
 | `group_id:{group_id}` | `group_id:67890` | Per-mailing-list filtering |
 | `mailing_list:{mailing_list_uid}` | `mailing_list:abc-123` | Parent list lookup by v2 UID |
-| `committee:{committee_uid}` | `committee:def-456` | Only present when the list has a committee association |
+
+> Messages carry no committee or visibility. To find a committee's messages, resolve the committee's mailing lists (`groupsio_mailing_list` tagged `committee_uid:{uid}`) and query messages by `mailing_list:{uid}`; visibility is the list's `public` value.
 
 ### Access Control
 
@@ -547,4 +546,3 @@ No FGA access control messages are published for messages (same as artifacts). A
 | Ref | Condition |
 |---|---|
 | `groupsio_mailing_list:{mailing_list_uid}` | Always set |
-| `committee:{committee_uid}` | Only when `committee_uid` is set |

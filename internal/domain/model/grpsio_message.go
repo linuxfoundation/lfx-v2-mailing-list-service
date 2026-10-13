@@ -10,7 +10,6 @@ import (
 
 // GroupsIOMessage represents a single Groups.io mailing list message.
 // One record per message; messages are grouped into threads by TopicID.
-// IsPrivate is resolved at index time from the subgroup KV mapping — it is NOT stored in DynamoDB.
 type GroupsIOMessage struct {
 	MessageID      string    `json:"message_id"`
 	GroupID        uint64    `json:"group_id"`
@@ -20,17 +19,15 @@ type GroupsIOMessage struct {
 	SenderName     string    `json:"sender_name"`
 	MsgNum         uint64    `json:"msg_num"`
 	IsReply        bool      `json:"is_reply"`
-	IsPrivate      bool      `json:"is_private"`
 	GroupDomain    string    `json:"group_domain"`
 	GroupName      string    `json:"group_name"`
 	MailingListUID string    `json:"mailing_list_uid"`
-	CommitteeUID   string    `json:"committee_uid,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
-// Tags returns the indexing tags for the message. Includes committee tag only when the
-// mailing list has a committee association, allowing the committee service to filter by
-// `tags=committee:{uid}`.
+// Tags returns the indexing tags for the message. The owning mailing list is tagged as
+// `mailing_list:{uid}`; committee association and visibility are not stored on the message
+// and are resolved from the mailing list at query time.
 func (m *GroupsIOMessage) Tags() []string {
 	if m == nil {
 		return nil
@@ -41,9 +38,6 @@ func (m *GroupsIOMessage) Tags() []string {
 	}
 	if m.MailingListUID != "" {
 		tags = append(tags, fmt.Sprintf("mailing_list:%s", m.MailingListUID))
-	}
-	if m.CommitteeUID != "" {
-		tags = append(tags, fmt.Sprintf("committee:%s", m.CommitteeUID))
 	}
 	return tags
 }
@@ -56,9 +50,6 @@ func (m *GroupsIOMessage) ParentRefs() []string {
 	var refs []string
 	if m.MailingListUID != "" {
 		refs = append(refs, fmt.Sprintf("groupsio_mailing_list:%s", m.MailingListUID))
-	}
-	if m.CommitteeUID != "" {
-		refs = append(refs, fmt.Sprintf("committee:%s", m.CommitteeUID))
 	}
 	return refs
 }

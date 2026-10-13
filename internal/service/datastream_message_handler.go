@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	indexertypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
@@ -38,26 +37,6 @@ func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[str
 		return true // NAK — retry with backoff
 	}
 
-	// Resolve committee UID and visibility from the subgroup-committee mapping.
-	// Value format: "{committeeUID}|{isPublic}". The subgroup handler writes this on every update,
-	// including for lists without a committee (empty committeeUID). A missing key means the
-	// subgroup has not yet been reprocessed with current code — NAK so the message is retried
-	// after the subgroup handler has run and written the marker.
-	committeeMapKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupCommittee, mailingListUID)
-	committeeMapVal, hasCommitteeMap := mappings.GetMappingValue(ctx, committeeMapKey)
-	if !hasCommitteeMap {
-		slog.WarnContext(ctx, "committee mapping not yet written by subgroup handler, NAKing message for retry",
-			"uid", uid, "mailing_list_uid", mailingListUID)
-		return true // NAK — retry after subgroup is reprocessed
-	}
-	var committeeUID string
-	isPrivate := false
-	parts := strings.SplitN(committeeMapVal, "|", 2)
-	committeeUID = parts[0]
-	if len(parts) == 2 {
-		isPrivate = parts[1] != "true"
-	}
-
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMessage, uid)
 
 	if mappings.IsTombstoned(ctx, mKey) {
@@ -67,7 +46,7 @@ func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[str
 
 	action := mappings.ResolveAction(ctx, mKey)
 
-	msg := transformV1ToGroupsIOMessage(uid, mailingListUID, committeeUID, isPrivate, data)
+	msg := transformV1ToGroupsIOMessage(uid, mailingListUID, data)
 
 	isPublicBool := false
 	mailingListRef := fmt.Sprintf("groupsio_mailing_list:%s", mailingListUID)
@@ -151,12 +130,10 @@ func HandleDataStreamMessageDelete(ctx context.Context, uid string, publisher po
 }
 
 // transformV1ToGroupsIOMessage maps v1 DynamoDB fields to the GroupsIOMessage domain model.
-func transformV1ToGroupsIOMessage(uid, mailingListUID, committeeUID string, isPrivate bool, data map[string]any) *model.GroupsIOMessage {
+func transformV1ToGroupsIOMessage(uid, mailingListUID string, data map[string]any) *model.GroupsIOMessage {
 	msg := &model.GroupsIOMessage{
 		MessageID:      uid,
 		MailingListUID: mailingListUID,
-		CommitteeUID:   committeeUID,
-		IsPrivate:      isPrivate,
 		Subject:        mapconv.StringVal(data, "subject"),
 		Snippet:        mapconv.StringVal(data, "snippet"),
 		SenderName:     mapconv.StringVal(data, "sender_name"),
