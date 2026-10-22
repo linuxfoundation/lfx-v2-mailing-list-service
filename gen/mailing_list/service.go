@@ -616,6 +616,11 @@ type ServiceUnavailableError struct {
 	Message string
 }
 
+type UnauthorizedError struct {
+	// Error message
+	Message string
+}
+
 // Error returns an error description.
 func (e *BadRequestError) Error() string {
 	return ""
@@ -699,4 +704,21 @@ func (e *ServiceUnavailableError) ErrorName() string {
 // GoaErrorName returns the error name.
 func (e *ServiceUnavailableError) GoaErrorName() string {
 	return "ServiceUnavailable"
+}
+
+// Error returns an error description.
+func (e *UnauthorizedError) Error() string {
+	return ""
+}
+
+// ErrorName returns the error name.
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *UnauthorizedError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns the error name.
+func (e *UnauthorizedError) GoaErrorName() string {
+	return "Unauthorized"
 }

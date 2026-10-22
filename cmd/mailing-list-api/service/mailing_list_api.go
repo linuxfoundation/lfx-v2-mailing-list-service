@@ -58,11 +58,13 @@ func NewMailingListAPI(
 
 // JWTAuth implements the authorization logic for the JWT security scheme.
 func (s *mailingListAPI) JWTAuth(ctx context.Context, token string, _ *security.JWTScheme) (context.Context, error) {
-	principal, err := s.auth.ParsePrincipal(ctx, token, slog.Default())
+	principal, email, err := s.auth.ParsePrincipal(ctx, token, slog.Default())
 	if err != nil {
 		return ctx, err
 	}
-	return context.WithValue(ctx, constants.PrincipalContextID, principal), nil
+	ctx = context.WithValue(ctx, constants.PrincipalContextID, principal)
+	ctx = context.WithValue(ctx, constants.EmailContextID, email)
+	return ctx, nil
 }
 
 // Livez implements the liveness probe endpoint.
@@ -91,6 +93,10 @@ func mapDomainError(err error) error {
 	var validation errs.Validation
 	if errors.As(err, &validation) {
 		return &mailinglist.BadRequestError{Message: validation.Error()}
+	}
+	var unauthorized errs.Unauthorized
+	if errors.As(err, &unauthorized) {
+		return &mailinglist.UnauthorizedError{Message: unauthorized.Error()}
 	}
 	var conflict errs.Conflict
 	if errors.As(err, &conflict) {

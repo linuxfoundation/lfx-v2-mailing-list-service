@@ -880,6 +880,14 @@ paths:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
                                 message: The request was invalid.
+                "403":
+                    description: 'Unauthorized: Self-service subscription not permitted'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
                 "404":
                     description: 'NotFound: Subgroup not found'
                     content:
@@ -2639,6 +2647,18 @@ components:
             description: Service unavailable
             example:
                 message: The service is unavailable.
+            required:
+                - message
+        UnauthorizedError:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message
+                    example: Unauthorized access.
+            description: Self-service subscription not permitted
+            example:
+                message: Unauthorized access.
             required:
                 - message
         UpdateGroupsioMailingListRequestBody:

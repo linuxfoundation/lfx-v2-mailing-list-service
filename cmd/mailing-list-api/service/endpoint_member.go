@@ -5,10 +5,13 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
 // ---- GroupsIO Member endpoints ----
@@ -25,7 +28,38 @@ func (s *mailingListAPI) ListGroupsioMembers(ctx context.Context, p *mailinglist
 	return &mailinglist.GroupsioMemberList{Items: result, Total: &total}, nil
 }
 
+// authorizeAddGroupsioMember enforces self-service restrictions on top of
+// Heimdall's writer-or-public gate for add-groupsio-member. Heimdall's
+// "public" branch admits any authenticated caller for a public mailing list
+// (not just writers), so the caller is only allowed to add themselves, and
+// only with non-privileged fields, unless the request also matches via the
+// writer relation. The Go layer has no OpenFGA client to tell which branch
+// matched, so it can only recognize self-service requests (payload email
+// equal to the caller's own authenticated email) and restrict those.
+func authorizeAddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) error {
+	callerEmail, _ := ctx.Value(constants.EmailContextID).(string)
+	payloadEmail := converter.StringVal(p.Email)
+
+	if callerEmail == "" || !strings.EqualFold(callerEmail, payloadEmail) {
+		// Not a recognizable self-service request; rely on Heimdall's gate.
+		return nil
+	}
+
+	memberType := converter.StringVal(p.MemberType)
+	if memberType != "" && memberType != "direct" {
+		return errs.NewUnauthorized("self-service subscription cannot set member_type")
+	}
+	modStatus := converter.StringVal(p.ModStatus)
+	if modStatus != "" && modStatus != constants.ModStatusNone {
+		return errs.NewUnauthorized("self-service subscription cannot set mod_status")
+	}
+	return nil
+}
+
 func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
+	if err := authorizeAddGroupsioMember(ctx, p); err != nil {
+		return nil, mapDomainError(err)
+	}
 	member := &model.GrpsIOMember{
 		Email:          converter.StringVal(p.Email),
 		GroupsFullName: converter.StringVal(p.Name),

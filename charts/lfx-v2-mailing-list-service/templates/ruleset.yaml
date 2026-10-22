@@ -288,11 +288,13 @@ spec:
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
 
-        - authorizer: openfga_check
+        - authorizer: openfga_or_check
           config:
             values:
               relation: writer
               object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
+              or_relation: public
+              or_object: "groupsio_mailing_list:{{ "{{- .Request.URL.Captures.uid -}}" }}"
         {{- else }}
         - authorizer: allow_all
         {{- end }}
