@@ -5,6 +5,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"strings"
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
@@ -28,21 +30,42 @@ func (s *mailingListAPI) ListGroupsioMembers(ctx context.Context, p *mailinglist
 	return &mailinglist.GroupsioMemberList{Items: result, Total: &total}, nil
 }
 
-// authorizeAddGroupsioMember enforces self-service restrictions on top of
+// authorizeAddGroupsioMember enforces field-level restrictions on top of
 // Heimdall's writer-or-public gate for add-groupsio-member. Heimdall's
 // "public" branch admits any authenticated caller for a public mailing list
-// (not just writers), so the caller is only allowed to add themselves, and
-// only with non-privileged fields, unless the request also matches via the
-// writer relation. The Go layer has no OpenFGA client to tell which branch
-// matched, so it can only recognize self-service requests (payload email
-// equal to the caller's own authenticated email) and restrict those.
-func authorizeAddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) error {
+// (not just writers), so a caller who is not a verified writer on the list
+// is only allowed to add themselves, and only with non-privileged fields.
+// This requires knowing which branch actually matched, so it asks fga-sync
+// directly (via s.accessChecker) whether the caller holds the writer
+// relation, rather than inferring it from whether the payload email happens
+// to match the caller's own email.
+func (s *mailingListAPI) authorizeAddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) error {
+	principal, _ := ctx.Value(constants.PrincipalContextID).(string)
+	if principal == "" {
+		return errs.NewUnauthorized("missing caller identity")
+	}
+
+	object := fmt.Sprintf("%s:%s", constants.ObjectTypeGroupsIOMailingList, p.SubgroupID)
+	user := fmt.Sprintf("%s:%s", constants.ObjectTypeUser, principal)
+	isWriter, err := s.accessChecker.HasRelation(ctx, user, constants.RelationWriter, object)
+	if err != nil {
+		slog.ErrorContext(ctx, "access check failed for add-groupsio-member; failing closed",
+			"error", err, "object", object)
+		return errs.NewUnauthorized("unable to verify writer access")
+	}
+	if isWriter {
+		// Verified writer: no field restrictions beyond what the payload
+		// validation already enforces.
+		return nil
+	}
+
+	// Not a writer: Heimdall only let this through via the public branch, so
+	// restrict to a plain self-service subscription — the caller's own email,
+	// with no privileged fields.
 	callerEmail, _ := ctx.Value(constants.EmailContextID).(string)
 	payloadEmail := converter.StringVal(p.Email)
-
 	if callerEmail == "" || !strings.EqualFold(callerEmail, payloadEmail) {
-		// Not a recognizable self-service request; rely on Heimdall's gate.
-		return nil
+		return errs.NewUnauthorized("non-writer callers may only add themselves")
 	}
 
 	memberType := converter.StringVal(p.MemberType)
@@ -57,7 +80,7 @@ func authorizeAddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioM
 }
 
 func (s *mailingListAPI) AddGroupsioMember(ctx context.Context, p *mailinglist.AddGroupsioMemberPayload) (*mailinglist.GroupsioMember, error) {
-	if err := authorizeAddGroupsioMember(ctx, p); err != nil {
+	if err := s.authorizeAddGroupsioMember(ctx, p); err != nil {
 		return nil, mapDomainError(err)
 	}
 	member := &model.GrpsIOMember{

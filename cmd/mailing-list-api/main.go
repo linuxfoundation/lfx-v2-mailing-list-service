@@ -190,6 +190,7 @@ func run() int {
 	}
 
 	// Create the mailing list API service.
+	accessChecker := infraNATS.NewAccessChecker(natsClient, slog.Default())
 	mailingListSvc := service.NewMailingListAPI(
 		authSvc,
 		natsClient,
@@ -200,6 +201,7 @@ func run() int {
 		memberReaderOrchestrator,
 		memberWriterOrchestrator,
 		artifactReaderOrchestrator,
+		accessChecker,
 	)
 
 	// Wrap the service in GOA endpoints.

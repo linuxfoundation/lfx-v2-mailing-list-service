@@ -280,8 +280,14 @@ spec:
         routes:
           - path: /groupsio/mailing-lists/:uid/members
       execute:
+        # No anonymous_authenticator here: this route's "public" branch admits
+        # self-subscription on public lists, but it still requires a real
+        # authenticated caller identity so the Go layer's self-service email
+        # check (see authorizeAddGroupsioMember) has a caller email to check
+        # against. Without OIDC auth, an anonymous caller would match
+        # user:_anonymous against the public wildcard tuple with no email to
+        # restrict against.
         - authenticator: oidc
-        - authenticator: anonymous_authenticator
         {{- if .Values.app.use_oidc_contextualizer }}
         - contextualizer: oidc_contextualizer
         {{- end }}

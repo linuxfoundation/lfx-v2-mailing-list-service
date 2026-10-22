@@ -29,6 +29,7 @@ type mailingListAPI struct {
 	memberReader      port.GroupsIOMailingListMemberReader
 	memberWriter      port.GroupsIOMailingListMemberWriter
 	artifactReader    port.GroupsIOArtifactReader
+	accessChecker     port.AccessChecker
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -42,6 +43,7 @@ func NewMailingListAPI(
 	memberReader port.GroupsIOMailingListMemberReader,
 	memberWriter port.GroupsIOMailingListMemberWriter,
 	artifactReader port.GroupsIOArtifactReader,
+	accessChecker port.AccessChecker,
 ) mailinglist.Service {
 	return &mailingListAPI{
 		auth:              auth,
@@ -53,6 +55,7 @@ func NewMailingListAPI(
 		memberReader:      memberReader,
 		memberWriter:      memberWriter,
 		artifactReader:    artifactReader,
+		accessChecker:     accessChecker,
 	}
 }
 
