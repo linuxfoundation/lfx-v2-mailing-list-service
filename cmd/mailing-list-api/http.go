@@ -43,6 +43,7 @@ func setupHTTPServer(ctx context.Context, host string, mailingListServiceEndpoin
 	mailinglistservicesvr.Mount(mux, mailingListServiceServer)
 
 	var handler http.Handler = mux
+	handler = middleware.RequestBodyLimitMiddleware(middleware.DefaultMaxRequestBodyBytes)(handler)
 	handler = middleware.RequestIDMiddleware()(handler)
 	handler = middleware.AuthorizationMiddleware()(handler)
 	if dbg {

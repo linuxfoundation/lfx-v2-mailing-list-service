@@ -3,7 +3,7 @@
 
 module github.com/linuxfoundation/lfx-v2-mailing-list-service
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/auth0/go-auth0 v1.48.0
