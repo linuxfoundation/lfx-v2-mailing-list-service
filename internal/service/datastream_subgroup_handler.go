@@ -16,69 +16,82 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
 // HandleDataStreamSubgroupUpdate transforms the v1 payload into a GrpsIOMailingList and publishes
 // indexer + access control messages. Returns true to NAK when the parent service mapping
-// is absent (ordering guarantee), the project slug lookup fails (transient), or on transient errors.
+// is absent (ordering guarantee), the project slug lookup fails, or a storage or publish step
+// fails with anything not known to be permanent.
 func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) bool {
+	return handleSubgroupUpdate(ctx, uid, data, publisher, mappings, projectLookup).requeue()
+}
+
+func handleSubgroupUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, projectLookup port.ProjectLookup) outcome {
 	// Resolve v1 project SFID → v2 project UID via the shared project.sfid.{sfid} mapping
 	// written by lfx-v1-sync-helper. NAK if the project hasn't been processed yet.
 	projectSFID := mapconv.StringVal(data, "project_id")
 	if projectSFID == "" {
 		slog.WarnContext(ctx, "missing project_id in subgroup event, discarding", "uid", uid)
-		return false // ACK — malformed data, retrying won't help
+		return ack // malformed data, retrying won't help
 	}
-	projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
-	if !ok {
+	projectEntry, err := mappings.Lookup(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
+	if err != nil {
+		return failed(ctx, "failed to look up project mapping", err, "uid", uid, "project_sfid", projectSFID)
+	}
+	if !projectEntry.Present() {
 		slog.WarnContext(ctx, "project mapping not yet available, NAKing subgroup for retry",
 			"uid", uid, "project_sfid", projectSFID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
+	projectUID := projectEntry.Value
 	data["project_id"] = projectUID
 
 	// Resolve optional v1 committee SFID → v2 committee UID. NAK if the committee
 	// has been specified but hasn't been synced yet (ordering guarantee).
 	if committeeSFID := mapconv.StringVal(data, "committee"); committeeSFID != "" {
-		committeeUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID))
-		if !ok {
+		committeeEntry, err := mappings.Lookup(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID))
+		if err != nil {
+			return failed(ctx, "failed to look up committee mapping", err, "uid", uid, "committee_sfid", committeeSFID)
+		}
+		if !committeeEntry.Present() {
 			slog.WarnContext(ctx, "committee mapping not yet available, NAKing subgroup for retry",
 				"uid", uid, "committee_sfid", committeeSFID)
-			return true // NAK — retry with backoff
+			return nak // retry with backoff
 		}
-		data["committee"] = committeeUID
+		data["committee"] = committeeEntry.Value
 	}
 
 	list := transformV1ToGrpsIOMailingList(uid, data)
 
 	if list.ServiceUID == "" {
 		slog.ErrorContext(ctx, "missing parent_id in subgroup event, discarding", "uid", uid)
-		return false // ACK — malformed data, retrying won't help
+		return ack // malformed data, retrying won't help
 	}
 
 	// Parent dependency check: the indexer must have the parent service record before
 	// the child mailing list to avoid orphaned documents in OpenSearch.
 	serviceKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixService, list.ServiceUID)
-	if !mappings.IsMappingPresent(ctx, serviceKey) {
+	serviceEntry, err := mappings.Lookup(ctx, serviceKey)
+	if err != nil {
+		return failed(ctx, "failed to look up parent service mapping", err, "uid", uid, "service_uid", list.ServiceUID)
+	}
+	if !serviceEntry.Present() {
 		slog.WarnContext(ctx, "parent service not yet processed, NAKing subgroup for retry",
 			"uid", uid, "service_uid", list.ServiceUID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
 
 	// The parent service is access-restricted for some callers. Copy its domain onto
 	// the mailing-list resource when available, without blocking indexing while the
 	// parent service is being fully configured.
 	domainKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixServiceDomain, list.ServiceUID)
-	serviceDomain, domainMappingPresent, err := mappings.GetMappingValueWithError(ctx, domainKey)
+	domainEntry, err := mappings.Lookup(ctx, domainKey)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to read parent service domain mapping, NAKing subgroup for retry",
-			"uid", uid, "service_uid", list.ServiceUID, "error", err)
-		return true
+		return failed(ctx, "failed to read parent service domain mapping", err, "uid", uid, "service_uid", list.ServiceUID)
 	}
-	if domainMappingPresent && serviceDomain != "" {
-		list.Domain = serviceDomain
+	if domainEntry.Present() && domainEntry.Value != "" {
+		list.Domain = domainEntry.Value
 	} else {
 		slog.InfoContext(ctx, "parent service domain absent or empty, indexing subgroup without domain",
 			"uid", uid, "service_uid", list.ServiceUID)
@@ -91,17 +104,20 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	if err != nil {
 		slog.WarnContext(ctx, "project slug lookup failed, NAKing subgroup for retry",
 			"uid", uid, "project_uid", projectUID, "error", err)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
-		slog.InfoContext(ctx, "subgroup mapping is tombstoned, skipping update", "uid", uid)
-		return false
+	mEntry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up subgroup mapping", err, "uid", uid, "mapping_key", mKey)
 	}
-
-	action := mappings.ResolveAction(ctx, mKey)
+	if mEntry.Tombstoned() {
+		slog.InfoContext(ctx, "subgroup mapping is tombstoned, skipping update", "uid", uid)
+		return ack
+	}
+	action := mEntry.Action()
 
 	isPublic := list.Public
 	listRef := fmt.Sprintf("groupsio_mailing_list:%s", uid)
@@ -123,12 +139,11 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	built, err := msg.BuildWithIndexingConfig(ctx, list, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build subgroup indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish subgroup indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish subgroup indexer message", err, "uid", uid)
 	}
 
 	// Publish settings indexer message when writers or auditors are present.
@@ -194,24 +209,14 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
-		if pkgerrors.IsTransient(err) {
-			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
-			return true
-		}
-		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
-		return false
+		return failed(ctx, "failed to put mapping key", err, "mapping_key", mKey)
 	}
 
 	// Store reverse index: group_id → subgroup UID so member events can resolve MailingListUID.
 	if list.GroupID != nil {
 		gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *list.GroupID)
 		if err := mappings.PutMapping(ctx, gidKey, uid); err != nil {
-			if pkgerrors.IsTransient(err) {
-				slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", gidKey, "error", err)
-				return true
-			}
-			slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", gidKey, "error", err)
-			return false
+			return failed(ctx, "failed to put mapping key", err, "mapping_key", gidKey)
 		}
 	}
 
@@ -220,92 +225,92 @@ func HandleDataStreamSubgroupUpdate(ctx context.Context, uid string, data map[st
 	// NAK on failure — member events depend on this mapping to resolve project fields.
 	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, uid)
 	if err := mappings.PutMapping(ctx, projectKey, projectUID+"|"+projectSlug); err != nil {
-		if pkgerrors.IsTransient(err) {
-			slog.WarnContext(ctx, "failed to put project mapping key, will retry", "mapping_key", projectKey, "error", err)
-			return true
-		}
-		slog.ErrorContext(ctx, "failed to put project mapping key", "mapping_key", projectKey, "error", err)
-		return false
+		return failed(ctx, "failed to put project mapping key", err, "mapping_key", projectKey)
 	}
 
 	// Index each subgroup under its parent service after the mappings needed by
 	// member and message events. Concurrent subgroups write separate index keys.
 	if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(list.ServiceUID) {
 		slog.ErrorContext(ctx, "invalid subgroup or service UID for service index", "uid", uid, "service_uid", list.ServiceUID)
-		return false
+		return ack
 	}
 	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
-	previousService, _, err := mappings.GetMappingValueWithError(ctx, parentKey)
+	parentEntry, err := mappings.Lookup(ctx, parentKey)
 	if err != nil {
-		return retrySubgroupIndexError(ctx, uid, parentKey, "read subgroup parent mapping", err)
+		return subgroupIndexFailed(ctx, uid, parentKey, "read subgroup parent mapping", err)
 	}
+	previousService := parentEntry.Value
 	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
-	pendingService, _, err := mappings.GetMappingValueWithError(ctx, pendingKey)
+	pendingEntry, err := mappings.Lookup(ctx, pendingKey)
 	if err != nil {
-		return retrySubgroupIndexError(ctx, uid, pendingKey, "read pending subgroup move", err)
+		return subgroupIndexFailed(ctx, uid, pendingKey, "read pending subgroup move", err)
 	}
+	pendingService := pendingEntry.Value
 	serviceIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, list.ServiceUID, uid)
 	if err := mappings.PutMapping(ctx, serviceIndexKey, uid); err != nil {
-		return retrySubgroupIndexError(ctx, uid, serviceIndexKey, "index subgroup by service", err)
+		return subgroupIndexFailed(ctx, uid, serviceIndexKey, "index subgroup by service", err)
 	}
 	if previousService != "" && previousService != list.ServiceUID {
 		if !constants.ValidKVKeySegment(previousService) {
 			slog.ErrorContext(ctx, "invalid previous service UID for index cleanup", "uid", uid, "service_uid", previousService)
-			return false
+			return ack
 		}
 		// Persist the old service before switching the parent, so a retry can
 		// finish cleanup even after the parent has already changed.
 		if err := mappings.PutMapping(ctx, pendingKey, previousService); err != nil {
-			return retrySubgroupIndexError(ctx, uid, pendingKey, "record pending subgroup move", err)
+			return subgroupIndexFailed(ctx, uid, pendingKey, "record pending subgroup move", err)
 		}
 		pendingService = previousService
 	}
 	if err := mappings.PutMapping(ctx, parentKey, list.ServiceUID); err != nil {
-		return retrySubgroupIndexError(ctx, uid, parentKey, "store subgroup parent service", err)
+		return subgroupIndexFailed(ctx, uid, parentKey, "store subgroup parent service", err)
 	}
 	if pendingService != "" {
 		if !constants.ValidKVKeySegment(pendingService) {
 			slog.ErrorContext(ctx, "invalid pending service UID for index cleanup", "uid", uid, "service_uid", pendingService)
-			return false
+			return ack
 		}
 		if pendingService != list.ServiceUID {
 			oldIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, pendingService, uid)
 			if err := mappings.PutTombstone(ctx, oldIndexKey); err != nil {
-				return retrySubgroupIndexError(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
+				return subgroupIndexFailed(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
 			}
 		}
 		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
+			return subgroupIndexFailed(ctx, uid, pendingKey, "clear pending subgroup move", err)
 		}
 	}
 
-	return false
+	return ack
 }
 
-func retrySubgroupIndexError(ctx context.Context, uid, key, operation string, err error) bool {
-	if pkgerrors.IsTransient(err) {
-		slog.WarnContext(ctx, "subgroup service index failure, will retry", "uid", uid, "mapping_key", key, "operation", operation, "error", err)
-		return true
-	}
-	slog.ErrorContext(ctx, "permanent subgroup service index failure", "uid", uid, "mapping_key", key, "operation", operation, "error", err)
-	return false
+func subgroupIndexFailed(ctx context.Context, uid, key, operation string, err error) outcome {
+	return failed(ctx, "subgroup service index failure", err, "uid", uid, "mapping_key", key, "operation", operation)
 }
 
 // HandleDataStreamSubgroupDelete publishes a delete indexer message and tombstones the mapping.
 func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleSubgroupDelete(ctx, uid, publisher, mappings).requeue()
+}
+
+func handleSubgroupDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroup, uid)
 	parentKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupParent, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
-		if removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings) {
-			return true
+	entry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up subgroup mapping", err, "uid", uid, "mapping_key", mKey)
+	}
+	if entry.Tombstoned() {
+		if removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings) == nak {
+			return nak
 		}
 		slog.InfoContext(ctx, "subgroup already deleted, ACKing duplicate", "uid", uid)
-		return false
+		return ack
 	}
 
 	// If there is no mapping entry, this record was never indexed — nothing to delete.
-	if !mappings.IsMappingPresent(ctx, mKey) {
+	if !entry.Present() {
 		slog.InfoContext(ctx, "subgroup was never indexed, skipping OpenSearch delete", "uid", uid)
 		return removeSubgroupServiceIndex(ctx, uid, mKey, parentKey, mappings)
 	}
@@ -314,12 +319,11 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 	built, err := msg.Build(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build subgroup delete indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish subgroup delete indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish subgroup delete indexer message", err, "uid", uid)
 	}
 
 	deleteMsg := fgatypes.GenericFGAMessage{
@@ -336,47 +340,49 @@ func HandleDataStreamSubgroupDelete(ctx context.Context, uid string, publisher p
 
 // removeSubgroupServiceIndex clears the parent pointer before the forward mapping,
 // so redelivery can finish cleanup even after an intermediate failure.
-func removeSubgroupServiceIndex(ctx context.Context, uid, subgroupKey, parentKey string, mappings port.MappingReaderWriter) bool {
-	parentUID, present, err := mappings.GetMappingValueWithError(ctx, parentKey)
+func removeSubgroupServiceIndex(ctx context.Context, uid, subgroupKey, parentKey string, mappings port.MappingReaderWriter) outcome {
+	parentEntry, err := mappings.Lookup(ctx, parentKey)
 	if err != nil {
-		return retrySubgroupIndexError(ctx, uid, parentKey, "read subgroup parent for deletion", err)
+		return subgroupIndexFailed(ctx, uid, parentKey, "read subgroup parent for deletion", err)
 	}
-	if present {
+	if parentEntry.Present() {
+		parentUID := parentEntry.Value
 		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(parentUID) {
 			slog.ErrorContext(ctx, "invalid subgroup or parent UID for service index cleanup", "uid", uid, "parent_uid", parentUID)
-			return false
+			return ack
 		}
 		indexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, parentUID, uid)
 		if err := mappings.PutTombstone(ctx, indexKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, indexKey, "remove subgroup service index", err)
+			return subgroupIndexFailed(ctx, uid, indexKey, "remove subgroup service index", err)
 		}
 		if err := mappings.PutTombstone(ctx, parentKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, parentKey, "remove subgroup parent mapping", err)
+			return subgroupIndexFailed(ctx, uid, parentKey, "remove subgroup parent mapping", err)
 		}
 	}
 	pendingKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupPreviousService, uid)
-	pendingService, pending, err := mappings.GetMappingValueWithError(ctx, pendingKey)
+	pendingEntry, err := mappings.Lookup(ctx, pendingKey)
 	if err != nil {
-		return retrySubgroupIndexError(ctx, uid, pendingKey, "read pending subgroup move for deletion", err)
+		return subgroupIndexFailed(ctx, uid, pendingKey, "read pending subgroup move for deletion", err)
 	}
-	if pending {
+	if pendingEntry.Present() {
+		pendingService := pendingEntry.Value
 		if !constants.ValidKVKeySegment(uid) || !constants.ValidKVKeySegment(pendingService) {
 			slog.ErrorContext(ctx, "invalid pending service UID for index cleanup", "uid", uid, "service_uid", pendingService)
-			return false
+			return ack
 		}
 		oldIndexKey := fmt.Sprintf("%s.%s.%s", constants.KVMappingPrefixSubgroupByService, pendingService, uid)
 		if err := mappings.PutTombstone(ctx, oldIndexKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
+			return subgroupIndexFailed(ctx, uid, oldIndexKey, "remove previous service subgroup index", err)
 		}
 		if err := mappings.PutTombstone(ctx, pendingKey); err != nil {
-			return retrySubgroupIndexError(ctx, uid, pendingKey, "clear pending subgroup move", err)
+			return subgroupIndexFailed(ctx, uid, pendingKey, "clear pending subgroup move", err)
 		}
 	}
 	if err := mappings.PutTombstone(ctx, subgroupKey); err != nil {
 		slog.ErrorContext(ctx, "failed to put tombstone, will retry", "mapping_key", subgroupKey, "error", err)
-		return true
+		return nak
 	}
-	return false
+	return ack
 }
 
 // buildMailingListSettings constructs a GrpsIOMailingListSettings from v1 writers/auditors.
