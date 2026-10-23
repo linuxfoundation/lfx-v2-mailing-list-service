@@ -13,38 +13,48 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
 // HandleDataStreamMessageUpdate transforms a v1 message payload into a GroupsIOMessage and
 // publishes an indexer message. No FGA access control is published for messages.
 // Returns true to NAK when the parent subgroup mapping is absent (ordering guarantee)
-// or on transient errors.
+// or when a storage or publish step fails with anything not known to be permanent.
 func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleMessageUpdate(ctx, uid, data, publisher, mappings).requeue()
+}
+
+func handleMessageUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	groupID := mapconv.Int64Ptr(data, "group_id")
 	if groupID == nil {
 		slog.ErrorContext(ctx, "message has no group_id, cannot determine parent mailing list — ACKing", "uid", uid)
-		return false // ACK — malformed data, retrying won't help
+		return ack // malformed data, retrying won't help
 	}
 
 	// Resolve group_id → mailingListUID via the reverse index written by the subgroup handler.
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
-	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
-	if !ok {
+	gidEntry, err := mappings.Lookup(ctx, gidKey)
+	if err != nil {
+		return failed(ctx, "failed to look up parent subgroup mapping", err, "uid", uid, "group_id", *groupID)
+	}
+	if !gidEntry.Present() {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing message for retry",
 			"uid", uid, "group_id", *groupID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
+	mailingListUID := gidEntry.Value
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMessage, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
-		slog.InfoContext(ctx, "message mapping is tombstoned, skipping update", "uid", uid)
-		return false
+	mEntry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up message mapping", err, "uid", uid, "mapping_key", mKey)
 	}
-
-	action := mappings.ResolveAction(ctx, mKey)
+	if mEntry.Tombstoned() {
+		slog.InfoContext(ctx, "message mapping is tombstoned, skipping update", "uid", uid)
+		return ack
+	}
+	action := mEntry.Action()
 
 	msg := transformV1ToGroupsIOMessage(uid, mailingListUID, data)
 
@@ -68,38 +78,43 @@ func HandleDataStreamMessageUpdate(ctx context.Context, uid string, data map[str
 	built, err := indexMsg.BuildWithIndexingConfig(ctx, msg, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build message indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListMessageSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish message indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish message indexer message", err, "uid", uid)
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
-		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to put mapping key", err, "mapping_key", mKey)
 	}
 
-	return false
+	return ack
 }
 
 // HandleDataStreamMessageDelete publishes a delete indexer message and tombstones the mapping.
 func HandleDataStreamMessageDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleMessageDelete(ctx, uid, publisher, mappings).requeue()
+}
+
+func handleMessageDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMessage, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
+	entry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up message mapping", err, "uid", uid, "mapping_key", mKey)
+	}
+	if entry.Tombstoned() {
 		slog.InfoContext(ctx, "message already deleted, ACKing duplicate", "uid", uid)
-		return false
+		return ack
 	}
 
-	if !mappings.IsMappingPresent(ctx, mKey) {
+	if !entry.Present() {
 		slog.InfoContext(ctx, "message was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
-			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
-			return pkgerrors.IsTransient(err)
+			return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 		}
-		return false
+		return ack
 	}
 
 	isPublicBool := false
@@ -114,19 +129,17 @@ func HandleDataStreamMessageDelete(ctx context.Context, uid string, publisher po
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build message delete indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMailingListMessageSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish message delete indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish message delete indexer message", err, "uid", uid)
 	}
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 	}
-	return false
+	return ack
 }
 
 // transformV1ToGroupsIOMessage maps v1 DynamoDB fields to the GroupsIOMessage domain model.
