@@ -12,6 +12,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -108,7 +109,7 @@ func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Permanent_ACK(t *testi
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
 	mKey := fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact)
-	m.SimulatePutError(mKey, errors.New("internal server error"))
+	m.SimulatePutError(mKey, pkgerrors.MarkPermanent(errors.New("internal server error")))
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamArtifactUpdate(context.Background(), "art-1",
@@ -116,4 +117,48 @@ func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Permanent_ACK(t *testi
 		pub, m)
 
 	assert.False(t, nak, "permanent PutMapping failure should ACK (not retry)")
+}
+
+func TestHandleDataStreamArtifactUpdate_PutMappingFailure_Unclassified_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+	m.SimulatePutError(fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact), errors.New("internal server error"))
+
+	nak := HandleDataStreamArtifactUpdate(context.Background(), "art-1",
+		map[string]any{"group_id": float64(42)}, &mock.SpyMessagePublisher{}, m)
+
+	assert.True(t, nak, "an unclassified PutMapping failure should NAK rather than drop the event")
+}
+
+func TestHandleDataStreamArtifactUpdate_ReadError_NAK(t *testing.T) {
+	for _, key := range []string{
+		fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID),
+		fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact),
+	} {
+		t.Run(key, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+			m.SimulateGetError(key)
+			pub := &mock.SpyMessagePublisher{}
+
+			nak := HandleDataStreamArtifactUpdate(context.Background(), "art-1",
+				map[string]any{"group_id": float64(42)}, pub, m)
+
+			assert.True(t, nak)
+			assert.Empty(t, pub.IndexerCalls)
+		})
+	}
+}
+
+func TestHandleDataStreamArtifactDelete_ReadError_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	mKey := fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact)
+	m.Set(mKey, "art-1")
+	m.SimulateGetError(mKey)
+	pub := &mock.SpyMessagePublisher{}
+
+	nak := HandleDataStreamArtifactDelete(context.Background(), "art-1", pub, m)
+
+	assert.True(t, nak)
+	assert.Empty(t, pub.IndexerCalls, "no delete may be published when the prior state is unknown")
 }

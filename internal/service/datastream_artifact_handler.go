@@ -13,61 +13,77 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
 // HandleDataStreamArtifactUpdate transforms the v1 payload into a GroupsIOArtifact and publishes
 // an indexer message. No FGA access control is published for artifacts.
 // Returns true to NAK when the parent subgroup mapping is absent (ordering guarantee)
-// or on transient errors.
+// or when a storage or publish step fails with anything not known to be permanent.
 func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleArtifactUpdate(ctx, uid, data, publisher, mappings).requeue()
+}
+
+func handleArtifactUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	// Artifacts carry group_id (Groups.io numeric group ID). Resolve the parent
 	// subgroup UID via the reverse index written by the subgroup handler.
 	groupID := mapconv.Int64Ptr(data, "group_id")
 	if groupID == nil {
 		slog.ErrorContext(ctx, "artifact has no group_id, cannot determine parent mailing list — ACKing", "uid", uid)
-		return false // ACK — malformed data, retrying won't help
+		return ack // malformed data, retrying won't help
 	}
 
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
-	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
-	if !ok {
+	gidEntry, err := mappings.Lookup(ctx, gidKey)
+	if err != nil {
+		return failed(ctx, "failed to look up parent subgroup mapping", err, "uid", uid, "group_id", *groupID)
+	}
+	if !gidEntry.Present() {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing artifact for retry",
 			"uid", uid, "group_id", *groupID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
+	mailingListUID := gidEntry.Value
 
 	// Resolve v1 project SFID → v2 project UID. NAK if not yet available.
 	if projectSFID := mapconv.StringVal(data, "project_id"); projectSFID != "" {
-		projectUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
-		if !ok {
+		projectEntry, err := mappings.Lookup(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixProjectBySFID, projectSFID))
+		if err != nil {
+			return failed(ctx, "failed to look up project mapping", err, "uid", uid, "project_sfid", projectSFID)
+		}
+		if !projectEntry.Present() {
 			slog.WarnContext(ctx, "project mapping not yet available, NAKing artifact for retry",
 				"uid", uid, "project_sfid", projectSFID)
-			return true // NAK — retry with backoff
+			return nak // retry with backoff
 		}
-		data["project_id"] = projectUID
+		data["project_id"] = projectEntry.Value
 	}
 
 	// Resolve optional v1 committee SFID → v2 committee UID. NAK if specified but not yet synced.
 	if committeeSFID := mapconv.StringVal(data, "committee_id"); committeeSFID != "" {
-		committeeUID, ok := mappings.GetMappingValue(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID))
-		if !ok {
+		committeeEntry, err := mappings.Lookup(ctx, fmt.Sprintf("%s.%s", constants.KVMappingPrefixCommitteeBySFID, committeeSFID))
+		if err != nil {
+			return failed(ctx, "failed to look up committee mapping", err, "uid", uid, "committee_sfid", committeeSFID)
+		}
+		if !committeeEntry.Present() {
 			slog.WarnContext(ctx, "committee mapping not yet available, NAKing artifact for retry",
 				"uid", uid, "committee_sfid", committeeSFID)
-			return true // NAK — retry with backoff
+			return nak // retry with backoff
 		}
-		data["committee_id"] = committeeUID
+		data["committee_id"] = committeeEntry.Value
 	}
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixArtifact, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
-		slog.InfoContext(ctx, "artifact mapping is tombstoned, skipping update", "uid", uid)
-		return false
+	mEntry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up artifact mapping", err, "uid", uid, "mapping_key", mKey)
 	}
-
-	action := mappings.ResolveAction(ctx, mKey)
+	if mEntry.Tombstoned() {
+		slog.InfoContext(ctx, "artifact mapping is tombstoned, skipping update", "uid", uid)
+		return ack
+	}
+	action := mEntry.Action()
 
 	artifact := transformV1ToGroupsIOArtifact(uid, data)
 
@@ -91,42 +107,44 @@ func HandleDataStreamArtifactUpdate(ctx context.Context, uid string, data map[st
 	built, err := msg.BuildWithIndexingConfig(ctx, artifact, indexingConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build artifact indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOArtifactSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish artifact indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish artifact indexer message", err, "uid", uid)
 	}
 
 	if err := mappings.PutMapping(ctx, mKey, uid); err != nil {
-		if pkgerrors.IsTransient(err) {
-			slog.WarnContext(ctx, "failed to put mapping key, will retry", "mapping_key", mKey, "error", err)
-			return true
-		}
-		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
-		return false
+		return failed(ctx, "failed to put mapping key", err, "mapping_key", mKey)
 	}
 
-	return false
+	return ack
 }
 
 // HandleDataStreamArtifactDelete publishes a delete indexer message and tombstones the mapping.
 func HandleDataStreamArtifactDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleArtifactDelete(ctx, uid, publisher, mappings).requeue()
+}
+
+func handleArtifactDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixArtifact, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
+	entry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up artifact mapping", err, "uid", uid, "mapping_key", mKey)
+	}
+	if entry.Tombstoned() {
 		slog.InfoContext(ctx, "artifact already deleted, ACKing duplicate", "uid", uid)
-		return false
+		return ack
 	}
 
 	// If there is no mapping entry, this record was never indexed — nothing to delete.
-	if !mappings.IsMappingPresent(ctx, mKey) {
+	if !entry.Present() {
 		slog.InfoContext(ctx, "artifact was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
 			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
 		}
-		return false
+		return ack
 	}
 
 	// IndexingConfig is required — the indexer validates all five fields unconditionally in
@@ -144,18 +162,17 @@ func HandleDataStreamArtifactDelete(ctx context.Context, uid string, publisher p
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build artifact delete indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOArtifactSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish artifact delete indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish artifact delete indexer message", err, "uid", uid)
 	}
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
 		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
 	}
-	return false
+	return ack
 }
 
 // transformV1ToGroupsIOArtifact maps v1 DynamoDB fields to the GroupsIOArtifact domain model.
