@@ -13,7 +13,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	"github.com/nats-io/nats.go/jetstream"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -193,11 +193,24 @@ func TestHandleDataStreamServiceUpdate_PutMappingFailure_Transient_NAK(t *testin
 	assert.Len(t, pub.AccessCalls, 1, "access message was published before mapping write failed")
 }
 
-func TestHandleDataStreamServiceUpdate_PutMappingFailure_Permanent_ACK(t *testing.T) {
+func TestHandleDataStreamServiceUpdate_PutMappingFailure_Unclassified_NAK(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
 	m.SimulatePutError(mKey, errors.New("internal server error"))
+
+	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
+		map[string]any{"project_id": "sfid-proj"},
+		&mock.SpyMessagePublisher{}, m)
+
+	assert.True(t, nak, "an unclassified PutMapping failure should NAK rather than drop the event")
+}
+
+func TestHandleDataStreamServiceUpdate_PutMappingFailure_Permanent_ACK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
+	m.SimulatePutError(mKey, pkgerrors.MarkPermanent(errors.New("internal server error")))
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
@@ -211,7 +224,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_Permanent_ACK(t *tes
 	m := mock.NewFakeMappingStore()
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	domainKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain)
-	m.SimulatePutError(domainKey, jetstream.ErrInvalidKey)
+	m.SimulatePutError(domainKey, pkgerrors.MarkPermanent(errors.New("invalid mapping key")))
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
@@ -227,7 +240,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_StaleDomainCleared(t
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	domainKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain)
 	m.Set(domainKey, "old.example.org")
-	m.SimulatePutError(domainKey, jetstream.ErrInvalidKey)
+	m.SimulatePutError(domainKey, pkgerrors.MarkPermanent(errors.New("invalid mapping key")))
 
 	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
 		map[string]any{"project_id": "sfid-proj", "domain": "new.example.org"},
@@ -244,7 +257,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_UnverifiedDomain_NAK
 	m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
 	domainKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain)
 	m.Set(domainKey, "old.example.org")
-	m.SimulatePutError(domainKey, jetstream.ErrInvalidKey)
+	m.SimulatePutError(domainKey, pkgerrors.MarkPermanent(errors.New("invalid mapping key")))
 	m.SimulateTombstoneError(domainKey, errors.New("connection timeout"))
 
 	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
@@ -292,7 +305,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_ReadErrorHidesServic
 	domainKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixServiceDomain)
 	m.Set(serviceKey, "svc-1")
 	m.Set(domainKey, "old.example.org")
-	m.SimulatePutError(domainKey, jetstream.ErrInvalidKey)
+	m.SimulatePutError(domainKey, pkgerrors.MarkPermanent(errors.New("invalid mapping key")))
 	m.SimulateGetError(domainKey)
 
 	nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
@@ -301,4 +314,38 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_ReadErrorHidesServic
 
 	assert.True(t, nak)
 	assert.True(t, m.IsTombstoned(context.Background(), serviceKey), "unverified domain must not remain visible to subgroups")
+}
+
+func TestHandleDataStreamServiceUpdate_ReadError_NAK(t *testing.T) {
+	// A failed read of the service mapping must not be treated as "never seen".
+	for _, key := range []string{
+		fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID),
+		fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService),
+	} {
+		t.Run(key, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(fmt.Sprintf("%s.sfid-proj", constants.KVMappingPrefixProjectBySFID), "proj-uid")
+			m.SimulateGetError(key)
+			pub := &mock.SpyMessagePublisher{}
+
+			nak := HandleDataStreamServiceUpdate(context.Background(), "svc-1",
+				map[string]any{"project_id": "sfid-proj"}, pub, m)
+
+			assert.True(t, nak)
+			assert.Empty(t, pub.IndexerCalls)
+		})
+	}
+}
+
+func TestHandleDataStreamServiceDelete_ReadError_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
+	m.Set(mKey, "svc-1")
+	m.SimulateGetError(mKey)
+	pub := &mock.SpyMessagePublisher{}
+
+	nak := HandleDataStreamServiceDelete(context.Background(), "svc-1", pub, m)
+
+	assert.True(t, nak)
+	assert.Empty(t, pub.IndexerCalls, "no delete may be published when the prior state is unknown")
 }
