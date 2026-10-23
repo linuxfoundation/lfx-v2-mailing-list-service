@@ -82,9 +82,9 @@ func TestHandleDataStreamServiceUpdate_CreateVsUpdate_Action(t *testing.T) {
 	ctx := context.Background()
 	mKey := fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)
 
-	assert.Equal(t, model.ActionCreated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionCreated, mustLookup(t, m, mKey).Action())
 	HandleDataStreamServiceUpdate(ctx, "svc-1", data(), &mock.SpyMessagePublisher{}, m)
-	assert.Equal(t, model.ActionUpdated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionUpdated, mustLookup(t, m, mKey).Action())
 }
 
 func TestHandleDataStreamServiceDelete_DuplicateDelete_ACK(t *testing.T) {
@@ -232,7 +232,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_Permanent_ACK(t *tes
 		pub, m)
 
 	assert.False(t, nak, "a verified permanent error with no stale mapping should ACK")
-	assert.True(t, m.IsMappingPresent(context.Background(), fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+	assert.True(t, mustLookup(t, m, fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)).Present())
 }
 
 func TestHandleDataStreamServiceUpdate_DomainMappingFailure_StaleDomainCleared(t *testing.T) {
@@ -249,7 +249,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_StaleDomainCleared(t
 	assert.False(t, nak)
 	_, present := m.GetMappingValue(context.Background(), domainKey)
 	assert.False(t, present, "stale domain mapping should be tombstoned")
-	assert.True(t, m.IsMappingPresent(context.Background(), fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+	assert.True(t, mustLookup(t, m, fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)).Present())
 }
 
 func TestHandleDataStreamServiceUpdate_DomainMappingFailure_UnverifiedDomain_NAK(t *testing.T) {
@@ -265,7 +265,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_UnverifiedDomain_NAK
 		&mock.SpyMessagePublisher{}, m)
 
 	assert.True(t, nak, "failed stale-domain cleanup must retry")
-	assert.False(t, m.IsMappingPresent(context.Background(), fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+	assert.False(t, mustLookup(t, m, fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)).Present())
 }
 
 func TestHandleDataStreamServiceUpdate_DomainMappingFailure_Unknown_NAK(t *testing.T) {
@@ -295,7 +295,7 @@ func TestHandleDataStreamServiceUpdate_DomainMappingFailure_TransientClearsStale
 	assert.True(t, nak)
 	_, present := m.GetMappingValue(context.Background(), domainKey)
 	assert.False(t, present, "stale domain should be cleared before retrying the write")
-	assert.False(t, m.IsMappingPresent(context.Background(), fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)))
+	assert.False(t, mustLookup(t, m, fmt.Sprintf("%s.svc-1", constants.KVMappingPrefixService)).Present())
 }
 
 func TestHandleDataStreamServiceUpdate_DomainMappingFailure_ReadErrorHidesService(t *testing.T) {

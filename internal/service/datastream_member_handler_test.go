@@ -126,9 +126,9 @@ func TestHandleDataStreamMemberUpdate_CreateVsUpdate_Action(t *testing.T) {
 	ctx := context.Background()
 	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
 
-	assert.Equal(t, model.ActionCreated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionCreated, mustLookup(t, m, mKey).Action())
 	HandleDataStreamMemberUpdate(ctx, "mem-1", data(), &mock.SpyMessagePublisher{}, m, nil)
-	assert.Equal(t, model.ActionUpdated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionUpdated, mustLookup(t, m, mKey).Action())
 }
 
 // --- HandleDataStreamMemberDelete ---

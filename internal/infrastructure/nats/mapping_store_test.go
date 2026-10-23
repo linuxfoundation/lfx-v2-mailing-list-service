@@ -330,8 +330,8 @@ func TestMappingStoreRoutesServiceIndexToDedicatedBucket(t *testing.T) {
 	require.NoError(t, store.PutMapping(ctx, constants.KVMappingPrefixSubgroupByService+".svc-1.sg-1", "sg-1"))
 	assert.Equal(t, []string{constants.KVMappingPrefixSubgroup + ".sg-1"}, mappings.puts)
 	assert.Equal(t, []string{constants.KVMappingPrefixSubgroupParent + ".sg-1", constants.KVMappingPrefixSubgroupByService + ".svc-1.sg-1"}, index.puts)
-	parent, present, err := store.GetMappingValueWithError(ctx, constants.KVMappingPrefixSubgroupParent+".sg-1")
+	parent, err := store.Lookup(ctx, constants.KVMappingPrefixSubgroupParent+".sg-1")
 	require.NoError(t, err)
-	assert.True(t, present)
-	assert.Equal(t, "svc-1", parent)
+	assert.True(t, parent.Present())
+	assert.Equal(t, "svc-1", parent.Value)
 }

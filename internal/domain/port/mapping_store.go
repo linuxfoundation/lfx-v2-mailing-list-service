@@ -58,29 +58,6 @@ type MappingReader interface {
 	// state they could not verify. Implementations mark errors they know to be
 	// permanent with pkg/errors.MarkPermanent.
 	Lookup(ctx context.Context, key string) (MappingEntry, error)
-
-	// ResolveAction returns ActionCreated when the key is absent or tombstoned
-	// (entity never seen, or previously deleted and being re-created), and
-	// ActionUpdated when a live mapping already exists.
-	ResolveAction(ctx context.Context, key string) model.MessageAction
-
-	// IsMappingPresent returns true when the key exists and is not tombstoned.
-	// Used for parent-dependency checks (service before subgroup, subgroup before member).
-	IsMappingPresent(ctx context.Context, key string) bool
-
-	// IsTombstoned returns true when the key holds the deletion marker,
-	// so duplicate delete events can be skipped.
-	IsTombstoned(ctx context.Context, key string) bool
-
-	// GetMappingValue returns the stored value and true when the key exists and
-	// is not tombstoned. Used when the caller needs the actual value (e.g. the
-	// reverse group_id → subgroup UID index in the member handler).
-	GetMappingValue(ctx context.Context, key string) (string, bool)
-
-	// GetMappingValueWithError returns the stored value, whether it exists and is
-	// not tombstoned, and any storage read error. Callers can distinguish an
-	// absent optional mapping from a failed read that should be retried.
-	GetMappingValueWithError(ctx context.Context, key string) (string, bool, error)
 }
 
 // MappingWriter abstracts writes to v1-mappings and the subgroup service index bucket.

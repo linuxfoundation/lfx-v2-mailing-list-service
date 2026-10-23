@@ -7,10 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
@@ -82,61 +80,6 @@ func (m *natsMappingReaderWriter) Lookup(ctx context.Context, key string) (port.
 	return port.MappingEntry{State: port.MappingPresent, Value: val}, nil
 }
 
-func (m *natsMappingReaderWriter) ResolveAction(ctx context.Context, key string) model.MessageAction {
-	entry, err := m.bucketFor(key).Get(ctx, key)
-	if err != nil || entry == nil {
-		return model.ActionCreated
-	}
-	if string(entry.Value()) == constants.KVTombstoneMarker {
-		return model.ActionCreated
-	}
-	return model.ActionUpdated
-}
-
-func (m *natsMappingReaderWriter) IsMappingPresent(ctx context.Context, key string) bool {
-	entry, err := m.bucketFor(key).Get(ctx, key)
-	if err != nil || entry == nil {
-		slog.WarnContext(ctx, "mapping key not found", "mapping_key", key)
-		return false
-	}
-	return string(entry.Value()) != constants.KVTombstoneMarker
-}
-
-func (m *natsMappingReaderWriter) IsTombstoned(ctx context.Context, key string) bool {
-	entry, err := m.bucketFor(key).Get(ctx, key)
-	if err != nil || entry == nil {
-		slog.WarnContext(ctx, "mapping key not found - treating as not tombstoned", "mapping_key", key)
-		return false
-	}
-	return string(entry.Value()) == constants.KVTombstoneMarker
-}
-
-func (m *natsMappingReaderWriter) GetMappingValue(ctx context.Context, key string) (string, bool) {
-	value, present, err := m.GetMappingValueWithError(ctx, key)
-	if err != nil {
-		return "", false
-	}
-	return value, present
-}
-
-func (m *natsMappingReaderWriter) GetMappingValueWithError(ctx context.Context, key string) (string, bool, error) {
-	entry, err := m.bucketFor(key).Get(ctx, key)
-	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
-		return "", false, nil
-	}
-	if err != nil {
-		return "", false, err
-	}
-	if entry == nil {
-		return "", false, nil
-	}
-	val := string(entry.Value())
-	if val == constants.KVTombstoneMarker {
-		return "", false, nil
-	}
-	return val, true, nil
-}
-
 func (m *natsMappingReaderWriter) PutMapping(ctx context.Context, key, value string) error {
 	_, err := m.bucketFor(key).Put(ctx, key, []byte(value))
 	return classifyKVError(err)
@@ -202,24 +145,24 @@ func (m *natsMappingReaderWriter) ListSubgroupsByService(ctx context.Context, se
 		seen[uid] = true
 		// PutTombstone writes a value rather than deleting the key, so the
 		// listing can still contain an entry for a moved or deleted subgroup.
-		indexedUID, indexed, err := m.GetMappingValueWithError(ctx, key)
+		indexed, err := m.Lookup(ctx, key)
 		if err != nil {
 			return nil, err
 		}
-		if !indexed || indexedUID != uid {
+		if !indexed.Present() || indexed.Value != uid {
 			continue
 		}
 		// Listing can include duplicates and moves can leave old index keys
 		// until cleanup succeeds. Confirm the parent and subgroup are current.
-		parent, present, err := m.GetMappingValueWithError(ctx, constants.KVMappingPrefixSubgroupParent+"."+uid)
+		parent, err := m.Lookup(ctx, constants.KVMappingPrefixSubgroupParent+"."+uid)
 		if err != nil {
 			return nil, err
 		}
-		_, live, err := m.GetMappingValueWithError(ctx, constants.KVMappingPrefixSubgroup+"."+uid)
+		live, err := m.Lookup(ctx, constants.KVMappingPrefixSubgroup+"."+uid)
 		if err != nil {
 			return nil, err
 		}
-		if present && parent == serviceUID && live {
+		if parent.Present() && parent.Value == serviceUID && live.Present() {
 			uids = append(uids, uid)
 		}
 	}
