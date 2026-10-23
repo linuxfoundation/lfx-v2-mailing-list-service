@@ -189,8 +189,14 @@ func run() int {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
 	}
 
+	// Initialize access checker.
+	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
+		return 1
+	}
+
 	// Create the mailing list API service.
-	accessChecker := infraNATS.NewAccessChecker(natsClient, slog.Default())
 	mailingListSvc := service.NewMailingListAPI(
 		authSvc,
 		natsClient,

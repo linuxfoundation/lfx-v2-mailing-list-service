@@ -29,12 +29,13 @@ func (f *fakeAccessChecker) HasRelation(_ context.Context, _, _, _ string) (bool
 
 func TestAuthorizeAddGroupsioMember(t *testing.T) {
 	tests := []struct {
-		name        string
-		principal   any
-		callerEmail any
-		checker     *fakeAccessChecker
-		payload     *mailinglist.AddGroupsioMemberPayload
-		expectErr   bool
+		name                     string
+		principal                any
+		callerEmail              any
+		checker                  *fakeAccessChecker
+		payload                  *mailinglist.AddGroupsioMemberPayload
+		expectErr                bool
+		expectServiceUnavailable bool
 	}{
 		{
 			name:      "verified writer may add another member with privileged fields",
@@ -128,14 +129,15 @@ func TestAuthorizeAddGroupsioMember(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name:      "access check failure fails closed",
+			name:      "access check failure returns service unavailable",
 			principal: "user1",
 			checker:   &fakeAccessChecker{err: errors.New("fga-sync unavailable")},
 			payload: &mailinglist.AddGroupsioMemberPayload{
 				SubgroupID: "list-123",
 				Email:      strp("someone@example.com"),
 			},
-			expectErr: true,
+			expectErr:                true,
+			expectServiceUnavailable: true,
 		},
 	}
 
@@ -154,8 +156,13 @@ func TestAuthorizeAddGroupsioMember(t *testing.T) {
 
 			if tt.expectErr {
 				require.Error(t, err)
-				var unauthorized errs.Unauthorized
-				assert.ErrorAs(t, err, &unauthorized)
+				if tt.expectServiceUnavailable {
+					var serviceUnavailable errs.ServiceUnavailable
+					assert.ErrorAs(t, err, &serviceUnavailable)
+				} else {
+					var unauthorized errs.Unauthorized
+					assert.ErrorAs(t, err, &unauthorized)
+				}
 			} else {
 				assert.NoError(t, err)
 			}

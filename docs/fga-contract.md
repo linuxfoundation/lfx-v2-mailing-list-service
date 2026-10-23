@@ -161,6 +161,49 @@ On delete, a `delete_access` message is sent to `lfx.fga-sync.delete_access` wit
 
 ---
 
+## Access Checks
+
+In addition to the publish-only operations above, the mailing list API makes synchronous
+ad hoc relationship checks against fga-sync for authorization decisions it can't make from
+Heimdall's routing alone (e.g. distinguishing a verified writer from a public-branch caller
+in `authorizeAddGroupsioMember`, see `cmd/mailing-list-api/service/endpoint_member.go`).
+
+**Subject:** `lfx.access_check.request` (`pkg/constants.AccessCheckSubject`), NATS request/reply.
+
+**Request:** a single line `{object}#{relation}@{user}` (e.g.
+`groupsio_mailing_list:ml-1#writer@user:alice`), terminated with `\n`. `object`, `relation`,
+and `user` must each be non-empty and must not contain `#`, `@`, a tab, or a newline —
+`NATSAccessChecker.HasRelation` validates this before sending, since any of those characters
+appearing in a caller-supplied value (e.g. `object`'s subgroup ID) could split or alter the
+line fga-sync parses.
+
+**Reply:** the request line echoed back, followed by a tab and `true` or `false`.
+
+**Failure handling:** a request error, a malformed reply, or a timeout (5s) is treated as a
+service failure, not a denial — callers map it to `ServiceUnavailable` (HTTP 503), not
+`Unauthorized` (HTTP 403), so a transient fga-sync outage is distinguishable from a real
+access denial.
+
+**Local/dev:** `ACCESS_CHECK_SOURCE` selects the backend — `nats` (default) talks to
+fga-sync; `mock` always returns `true` and requires no live NATS reply subscriber, matching
+the `mock` option already available for `AUTH_SOURCE`, `TRANSLATOR_SOURCE`, and
+`REPOSITORY_SOURCE`.
+
+### `public` Relation
+
+The `public` relation (see `pkg/constants.RelationPublic`) marks an object as having
+public, self-service access, independent of `writer`/`auditor`. It is set via the `public`
+data field documented above and is never implied by `writer` or `auditor` — callers that
+need to gate a self-service action (e.g. self-subscription) on public access must check
+`public` directly via an access check rather than inferring it from the other relations.
+
+**Rollout note:** this relation is only published for a `groupsio_mailing_list` object when
+it is created or updated (see `internal/service/datastream_subgroup_handler.go`). Existing
+public mailing lists synced before the OpenFGA model gained the `public` relation (see
+`linuxfoundation/lfx-v2-helm#189`) do not get it retroactively — their access message must
+be republished after that model deploy. This is tracked for a `scripts/reindex_mailing_lists`
+extension; see `linuxfoundation/lfx-self-serve-ops#954` (issues are disabled on this repo).
+
 ## Triggers
 
 | Operation | Object Type | Subject | Notes |

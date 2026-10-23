@@ -30,10 +30,23 @@ func NewAccessChecker(nc Requester, logger *slog.Logger) *NATSAccessChecker {
 	return &NATSAccessChecker{nc: nc, logger: logger}
 }
 
+// requestLineDelimiters are the characters with meaning in the
+// "object#relation@user" request line format. A value containing any of
+// these (or a newline, which separates lines in a batched request) could
+// split or alter the line fga-sync parses, so each field is rejected if it
+// contains one rather than being interpolated unescaped.
+const requestLineDelimiters = "#@\t\n"
+
 // HasRelation reports whether user has relation on object, per fga-sync's
 // access-check reply format: the request line echoed back with a
 // tab-separated "true"/"false" result appended.
 func (c *NATSAccessChecker) HasRelation(ctx context.Context, user, relation, object string) (bool, error) {
+	for name, v := range map[string]string{"user": user, "relation": relation, "object": object} {
+		if v == "" || strings.ContainsAny(v, requestLineDelimiters) {
+			return false, fmt.Errorf("invalid access_check %s: must be non-empty and free of %q", name, requestLineDelimiters)
+		}
+	}
+
 	reqCtx, cancel := context.WithTimeout(ctx, accessCheckTimeout)
 	defer cancel()
 

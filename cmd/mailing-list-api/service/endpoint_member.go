@@ -49,9 +49,9 @@ func (s *mailingListAPI) authorizeAddGroupsioMember(ctx context.Context, p *mail
 	user := fmt.Sprintf("%s:%s", constants.ObjectTypeUser, principal)
 	isWriter, err := s.accessChecker.HasRelation(ctx, user, constants.RelationWriter, object)
 	if err != nil {
-		slog.ErrorContext(ctx, "access check failed for add-groupsio-member; failing closed",
+		slog.ErrorContext(ctx, "access check failed for add-groupsio-member",
 			"error", err, "object", object)
-		return errs.NewUnauthorized("unable to verify writer access")
+		return errs.NewServiceUnavailable("unable to verify writer access", err)
 	}
 	if isWriter {
 		// Verified writer: no field restrictions beyond what the payload
