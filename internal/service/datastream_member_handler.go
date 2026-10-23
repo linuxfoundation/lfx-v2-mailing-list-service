@@ -188,7 +188,7 @@ func handleMemberDelete(ctx context.Context, uid string, publisher port.MessageP
 	if !entry.Present() {
 		slog.InfoContext(ctx, "member was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
-			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+			return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 		}
 		return ack
 	}
@@ -222,7 +222,7 @@ func handleMemberDelete(ctx context.Context, uid string, publisher port.MessageP
 	}
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 	}
 	return ack
 }

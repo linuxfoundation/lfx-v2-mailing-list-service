@@ -142,7 +142,7 @@ func handleArtifactDelete(ctx context.Context, uid string, publisher port.Messag
 	if !entry.Present() {
 		slog.InfoContext(ctx, "artifact was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
-			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+			return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 		}
 		return ack
 	}
@@ -170,7 +170,7 @@ func handleArtifactDelete(ctx context.Context, uid string, publisher port.Messag
 	}
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 	}
 	return ack
 }

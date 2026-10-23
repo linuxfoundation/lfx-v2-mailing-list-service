@@ -162,3 +162,25 @@ func TestHandleDataStreamArtifactDelete_ReadError_NAK(t *testing.T) {
 	assert.True(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "no delete may be published when the prior state is unknown")
 }
+
+func TestHandleDataStreamArtifactDelete_TombstoneFailure_NAK(t *testing.T) {
+	mKey := fmt.Sprintf("%s.art-1", constants.KVMappingPrefixArtifact)
+	tests := []struct {
+		name  string
+		setup func(m *mock.FakeMappingStore)
+	}{
+		{name: "after a published delete", setup: func(m *mock.FakeMappingStore) { m.Set(mKey, "art-1") }},
+		{name: "never indexed", setup: func(*mock.FakeMappingStore) {}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			tt.setup(m)
+			m.SimulateTombstoneError(mKey, errors.New("boom"))
+
+			nak := HandleDataStreamArtifactDelete(context.Background(), "art-1", &mock.SpyMessagePublisher{}, m)
+
+			assert.True(t, nak, "an unwritten tombstone must be retried so a replayed PUT cannot re-index the artifact")
+		})
+	}
+}

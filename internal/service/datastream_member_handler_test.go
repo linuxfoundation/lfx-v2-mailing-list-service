@@ -442,3 +442,25 @@ func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *test
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
 }
+
+func TestHandleDataStreamMemberDelete_TombstoneFailure_NAK(t *testing.T) {
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	tests := []struct {
+		name  string
+		setup func(m *mock.FakeMappingStore)
+	}{
+		{name: "after a published delete", setup: func(m *mock.FakeMappingStore) { m.Set(mKey, "mem-1|alice@example.com|sg-1") }},
+		{name: "never indexed", setup: func(*mock.FakeMappingStore) {}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			tt.setup(m)
+			m.SimulateTombstoneError(mKey, errors.New("boom"))
+
+			nak := HandleDataStreamMemberDelete(context.Background(), "mem-1", &mock.SpyMessagePublisher{}, m)
+
+			assert.True(t, nak, "an unwritten tombstone must be retried so a replayed PUT cannot re-grant access")
+		})
+	}
+}

@@ -24,8 +24,9 @@ makes duplicate deletes no-ops and lets a later create re-index the entity.
 contract of `port.DataEventHandler` at the handler boundary (`true` = nak).
 
 **Permanent error** — an error an adapter has marked with `pkg/errors.MarkPermanent`, meaning a
-retry cannot succeed. Only permanent errors are acked; any other failure is naked and bounded by
-the consumer's `MaxDeliver`.
+retry cannot succeed. Storage and publish failures are ACKed only when marked permanent; any
+other failure is NAKed and bounded by the consumer's `MaxDeliver`. Malformed input is ACKed
+without retry.
 
 **Ordering NAK** — a nak issued because a parent mapping (project, service, subgroup, committee)
 has not been written yet. The v1 sync does not guarantee cross-entity ordering, so children wait
