@@ -12,6 +12,9 @@ const (
 	// PrincipalContextID is the context key for the principal
 	PrincipalContextID ContextKey = "principal"
 
+	// EmailContextID is the context key for the authenticated caller's email
+	EmailContextID ContextKey = "email"
+
 	// AuthorizationContextID is the context key for the authorization
 	AuthorizationContextID ContextKey = "authorization"
 

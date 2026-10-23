@@ -50,6 +50,9 @@ type environment struct {
 	// Repository / publisher backend
 	RepositorySource string
 
+	// Access checker backend
+	AccessCheckSource string
+
 	// LFID invite feature
 	InvitesEnabled   bool
 	SelfServeBaseURL string
@@ -130,6 +133,11 @@ func parseEnv() environment {
 		repoSource = "nats"
 	}
 
+	accessCheckSource := os.Getenv("ACCESS_CHECK_SOURCE")
+	if accessCheckSource == "" {
+		accessCheckSource = "nats"
+	}
+
 	invitesEnabled := strings.EqualFold(os.Getenv("INVITES_ENABLED"), "true") ||
 		strings.EqualFold(os.Getenv("INVITES_ENABLED"), "yes")
 
@@ -164,6 +172,7 @@ func parseEnv() environment {
 		ITXAuth0Domain:        os.Getenv("ITX_AUTH0_DOMAIN"),
 		ITXAudience:           os.Getenv("ITX_AUDIENCE"),
 		RepositorySource:      repoSource,
+		AccessCheckSource:     accessCheckSource,
 		InvitesEnabled:        invitesEnabled,
 		SelfServeBaseURL:      selfServeBaseURL,
 		EventingEnabled:       os.Getenv("EVENTING_ENABLED") == "true",

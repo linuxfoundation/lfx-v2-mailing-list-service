@@ -36,4 +36,11 @@ const (
 
 	// AuthEmailToUsernameSubject resolves a primary email address to an LFX username via the auth service.
 	AuthEmailToUsernameSubject = "lfx.auth-service.email_to_username"
+
+	// AccessCheckSubject is the request-reply subject fga-sync listens on for
+	// ad hoc OpenFGA relationship checks (see linuxfoundation/lfx-v2-fga-sync
+	// pkg/constants.AccessCheckSubject). The request body is a newline
+	// delineated list of `object#relation@user` lines; the reply is the same
+	// lines with a tab-separated "true"/"false" result appended.
+	AccessCheckSubject = "lfx.access_check.request"
 )

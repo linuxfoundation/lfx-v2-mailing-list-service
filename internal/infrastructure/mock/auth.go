@@ -17,19 +17,22 @@ import (
 type MockAuthService struct{}
 
 // ParsePrincipal parses and validates a JWT token, returning a mock principal
-func (m *MockAuthService) ParsePrincipal(ctx context.Context, _ string, logger *slog.Logger) (string, error) {
+// and email
+func (m *MockAuthService) ParsePrincipal(ctx context.Context, _ string, logger *slog.Logger) (string, string, error) {
 
 	principal := os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL")
 
 	if principal == "" {
-		return "", errors.NewValidation("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL environment variable not set")
+		return "", "", errors.NewValidation("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL environment variable not set")
 	}
+
+	email := os.Getenv("JWT_AUTH_DISABLED_MOCK_LOCAL_EMAIL")
 
 	logger.DebugContext(ctx, "parsed principal",
 		"user_id", principal,
 	)
 
-	return principal, nil
+	return principal, email, nil
 }
 
 // NewMockAuthService creates a new mock authentication service

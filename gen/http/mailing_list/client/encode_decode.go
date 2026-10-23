@@ -2196,6 +2196,7 @@ func EncodeAddGroupsioMemberRequest(encoder func(*http.Request) goahttp.Encoder)
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *mailinglist.UnauthorizedError): http.StatusForbidden
 //   - error: internal error
 func DecodeAddGroupsioMemberResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -2297,6 +2298,20 @@ func DecodeAddGroupsioMemberResponse(decoder func(*http.Response) goahttp.Decode
 				return nil, goahttp.ErrValidationError("mailing-list", "add-groupsio-member", err)
 			}
 			return nil, NewAddGroupsioMemberServiceUnavailable(&body)
+		case http.StatusForbidden:
+			var (
+				body AddGroupsioMemberUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "add-groupsio-member", err)
+			}
+			err = ValidateAddGroupsioMemberUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "add-groupsio-member", err)
+			}
+			return nil, NewAddGroupsioMemberUnauthorized(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("mailing-list", "add-groupsio-member", resp.StatusCode, string(body))
