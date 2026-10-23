@@ -78,4 +78,45 @@ func TestRequestBodyLimitMiddleware(t *testing.T) {
 		assert.NoError(t, readErr)
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})
+
+	t.Run("allows a webhook body at the webhook limit", func(t *testing.T) {
+		var called bool
+		var readErr error
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, groupsIOWebhookPath, strings.NewReader(strings.Repeat("a", int(webhookMaxRequestBodyBytes))))
+
+		RequestBodyLimitMiddleware(limit)(newHandler(&called, &readErr)).ServeHTTP(rec, req)
+
+		assert.True(t, called)
+		assert.NoError(t, readErr)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("rejects a declared webhook Content-Length over the webhook limit with 413", func(t *testing.T) {
+		var called bool
+		var readErr error
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, groupsIOWebhookPath, strings.NewReader("{}"))
+		req.ContentLength = webhookMaxRequestBodyBytes + 1
+
+		RequestBodyLimitMiddleware(limit)(newHandler(&called, &readErr)).ServeHTTP(rec, req)
+
+		assert.False(t, called)
+		assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code)
+	})
+
+	t.Run("stops reading a webhook body of unknown length at the webhook limit", func(t *testing.T) {
+		var called bool
+		var readErr error
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, groupsIOWebhookPath, io.NopCloser(strings.NewReader(strings.Repeat("a", int(webhookMaxRequestBodyBytes)+1))))
+		req.ContentLength = -1
+
+		RequestBodyLimitMiddleware(limit)(newHandler(&called, &readErr)).ServeHTTP(rec, req)
+
+		assert.True(t, called)
+		require.Error(t, readErr)
+		var mbe *http.MaxBytesError
+		assert.ErrorAs(t, readErr, &mbe)
+	})
 }

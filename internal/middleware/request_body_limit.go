@@ -13,8 +13,8 @@ const (
 	// Payloads are small JSON documents, so 1 MiB is generous.
 	DefaultMaxRequestBodyBytes int64 = 1 << 20
 
-	// webhookMaxRequestBodyBytes matches the cap applied by
-	// GrpsIOWebhookBodyCaptureMiddleware to the GroupsIO webhook route.
+	// webhookMaxRequestBodyBytes is the cap for the GroupsIO webhook route,
+	// shared with GrpsIOWebhookBodyCaptureMiddleware.
 	webhookMaxRequestBodyBytes int64 = 10 << 20
 
 	groupsIOWebhookPath = "/webhooks/groupsio"
