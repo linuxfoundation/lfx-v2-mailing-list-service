@@ -72,6 +72,14 @@ func TestNATSAccessChecker_HasRelation(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:      "client-credentials user with @ is allowed",
+			user:      "user:abc123@clients",
+			relation:  "writer",
+			object:    "groupsio_mailing_list:ml-1",
+			reply:     []byte("groupsio_mailing_list:ml-1#writer@user:abc123@clients\ttrue\n"),
+			wantAllow: true,
+		},
+		{
 			name:     "relation contains delimiter",
 			user:     "user:alice",
 			relation: "wri@ter",

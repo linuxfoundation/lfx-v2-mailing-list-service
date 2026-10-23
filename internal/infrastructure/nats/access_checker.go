@@ -33,18 +33,30 @@ func NewAccessChecker(nc Requester, logger *slog.Logger) *NATSAccessChecker {
 // requestLineDelimiters are the characters with meaning in the
 // "object#relation@user" request line format. A value containing any of
 // these (or a newline, which separates lines in a batched request) could
-// split or alter the line fga-sync parses, so each field is rejected if it
-// contains one rather than being interpolated unescaped.
+// split or alter the line fga-sync parses, so object and relation are
+// rejected if they contain one rather than being interpolated unescaped.
 const requestLineDelimiters = "#@\t\n"
+
+// userDelimiters are the characters with meaning in the "user" position of
+// the request line. fga-sync splits the line on the first "#" and then the
+// first "@", so only one "@" is structurally significant — everything after
+// it, including further "@" characters, is taken verbatim as the user
+// value. "@" is therefore allowed here (unlike requestLineDelimiters) so
+// that client-credentials principals such as Heimdall's
+// "user:<client_id>@clients" are not rejected before the request is sent.
+const userDelimiters = "#\t\n"
 
 // HasRelation reports whether user has relation on object, per fga-sync's
 // access-check reply format: the request line echoed back with a
 // tab-separated "true"/"false" result appended.
 func (c *NATSAccessChecker) HasRelation(ctx context.Context, user, relation, object string) (bool, error) {
-	for name, v := range map[string]string{"user": user, "relation": relation, "object": object} {
+	for name, v := range map[string]string{"relation": relation, "object": object} {
 		if v == "" || strings.ContainsAny(v, requestLineDelimiters) {
 			return false, fmt.Errorf("invalid access_check %s: must be non-empty and free of %q", name, requestLineDelimiters)
 		}
+	}
+	if user == "" || strings.ContainsAny(user, userDelimiters) {
+		return false, fmt.Errorf("invalid access_check user: must be non-empty and free of %q", userDelimiters)
 	}
 
 	reqCtx, cancel := context.WithTimeout(ctx, accessCheckTimeout)
