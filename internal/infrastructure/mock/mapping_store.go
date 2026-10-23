@@ -18,6 +18,7 @@ type FakeMappingStore struct {
 	values          map[string]string
 	tombstones      map[string]bool
 	getErrors       map[string]bool
+	getErrorValues  map[string]error
 	putErrors       map[string]error
 	tombstoneErrors map[string]error
 }
@@ -30,6 +31,7 @@ func NewFakeMappingStore() *FakeMappingStore {
 		values:          make(map[string]string),
 		tombstones:      make(map[string]bool),
 		getErrors:       make(map[string]bool),
+		getErrorValues:  make(map[string]error),
 		putErrors:       make(map[string]error),
 		tombstoneErrors: make(map[string]error),
 	}
@@ -41,6 +43,18 @@ func (f *FakeMappingStore) Set(key, value string) { f.values[key] = value }
 // SimulateGetError causes GetMappingValue to return ("", false) for the given key,
 // simulating a transient KV read error even when the key exists.
 func (f *FakeMappingStore) SimulateGetError(key string) { f.getErrors[key] = true }
+
+// SimulateGetErrorWith is like SimulateGetError but Lookup returns err, so tests
+// can inject a typed transient or permanent failure. Pass nil to clear it.
+func (f *FakeMappingStore) SimulateGetErrorWith(key string, err error) {
+	if err == nil {
+		delete(f.getErrors, key)
+		delete(f.getErrorValues, key)
+		return
+	}
+	f.getErrors[key] = true
+	f.getErrorValues[key] = err
+}
 
 // SimulatePutError causes PutMapping to return the given error for the given key.
 func (f *FakeMappingStore) SimulatePutError(key string, err error) {
@@ -59,6 +73,24 @@ func (f *FakeMappingStore) SimulateTombstoneError(key string, err error) {
 		return
 	}
 	f.tombstoneErrors[key] = err
+}
+
+// Lookup reports the state of key, or the error configured with SimulateGetError
+// or SimulateGetErrorWith.
+func (f *FakeMappingStore) Lookup(_ context.Context, key string) (port.MappingEntry, error) {
+	if f.getErrors[key] {
+		if err, ok := f.getErrorValues[key]; ok {
+			return port.MappingEntry{}, err
+		}
+		return port.MappingEntry{}, errors.New("simulated mapping read error")
+	}
+	if f.tombstones[key] || f.values[key] == constants.KVTombstoneMarker {
+		return port.MappingEntry{State: port.MappingTombstoned}, nil
+	}
+	if v, ok := f.values[key]; ok {
+		return port.MappingEntry{State: port.MappingPresent, Value: v}, nil
+	}
+	return port.MappingEntry{State: port.MappingAbsent}, nil
 }
 
 func (f *FakeMappingStore) ResolveAction(_ context.Context, key string) model.MessageAction {

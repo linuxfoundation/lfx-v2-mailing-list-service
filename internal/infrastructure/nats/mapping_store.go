@@ -13,6 +13,8 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -35,6 +37,49 @@ func (m *natsMappingReaderWriter) bucketFor(key string) jetstream.KeyValue {
 		return m.serviceIndex
 	}
 	return m.kv
+}
+
+// classifyKVError marks the KV errors this adapter recognises as permanent (a
+// retry cannot succeed) or transient (a retry may succeed). Anything else is
+// returned unmarked, which callers treat as retryable.
+func classifyKVError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, jetstream.ErrInvalidKey) {
+		return pkgerrors.MarkPermanent(err)
+	}
+	var apiErr *jetstream.APIError
+	if errors.As(err, &apiErr) {
+		switch {
+		case apiErr.Code == 408 || apiErr.Code == 429 || apiErr.Code >= 500:
+			return pkgerrors.MarkTransient(err)
+		case apiErr.Code >= 400:
+			return pkgerrors.MarkPermanent(err)
+		}
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, nats.ErrTimeout) {
+		return pkgerrors.MarkTransient(err)
+	}
+	return err
+}
+
+func (m *natsMappingReaderWriter) Lookup(ctx context.Context, key string) (port.MappingEntry, error) {
+	entry, err := m.bucketFor(key).Get(ctx, key)
+	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
+		return port.MappingEntry{State: port.MappingAbsent}, nil
+	}
+	if err != nil {
+		return port.MappingEntry{}, classifyKVError(err)
+	}
+	if entry == nil {
+		return port.MappingEntry{State: port.MappingAbsent}, nil
+	}
+	val := string(entry.Value())
+	if val == constants.KVTombstoneMarker {
+		return port.MappingEntry{State: port.MappingTombstoned}, nil
+	}
+	return port.MappingEntry{State: port.MappingPresent, Value: val}, nil
 }
 
 func (m *natsMappingReaderWriter) ResolveAction(ctx context.Context, key string) model.MessageAction {
@@ -94,7 +139,7 @@ func (m *natsMappingReaderWriter) GetMappingValueWithError(ctx context.Context, 
 
 func (m *natsMappingReaderWriter) PutMapping(ctx context.Context, key, value string) error {
 	_, err := m.bucketFor(key).Put(ctx, key, []byte(value))
-	return err
+	return classifyKVError(err)
 }
 
 func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value string) error {
@@ -102,16 +147,16 @@ func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value 
 	if errors.Is(err, jetstream.ErrKeyExists) {
 		return port.ErrMappingAlreadyExists
 	}
-	return err
+	return classifyKVError(err)
 }
 
 func (m *natsMappingReaderWriter) PurgeMapping(ctx context.Context, key string) error {
-	return m.bucketFor(key).Purge(ctx, key)
+	return classifyKVError(m.bucketFor(key).Purge(ctx, key))
 }
 
 func (m *natsMappingReaderWriter) PutTombstone(ctx context.Context, key string) error {
 	_, err := m.bucketFor(key).Put(ctx, key, []byte(constants.KVTombstoneMarker))
-	return err
+	return classifyKVError(err)
 }
 
 func (m *natsMappingReaderWriter) ListSubgroupsByService(ctx context.Context, serviceUID string) ([]string, error) {

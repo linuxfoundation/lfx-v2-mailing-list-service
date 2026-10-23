@@ -13,10 +13,52 @@ import (
 // ErrMappingAlreadyExists is returned by CreateMapping when the key already exists.
 var ErrMappingAlreadyExists = errors.New("mapping key already exists")
 
+// MappingState is the lifecycle state of a mapping key.
+type MappingState int
+
+const (
+	// MappingAbsent means the key was never written (or has been purged).
+	MappingAbsent MappingState = iota
+	// MappingPresent means the key holds a live value.
+	MappingPresent
+	// MappingTombstoned means the key holds the deletion marker.
+	MappingTombstoned
+)
+
+// MappingEntry is the result of a successful Lookup.
+type MappingEntry struct {
+	State MappingState
+	// Value is the stored value; it is only set when State is MappingPresent.
+	Value string
+}
+
+// Present reports whether the key holds a live value.
+func (e MappingEntry) Present() bool { return e.State == MappingPresent }
+
+// Tombstoned reports whether the key holds the deletion marker.
+func (e MappingEntry) Tombstoned() bool { return e.State == MappingTombstoned }
+
+// Action returns ActionUpdated when a live mapping exists, and ActionCreated when
+// the key is absent or tombstoned (entity never seen, or previously deleted and
+// being re-created).
+func (e MappingEntry) Action() model.MessageAction {
+	if e.Present() {
+		return model.ActionUpdated
+	}
+	return model.ActionCreated
+}
+
 // MappingReader abstracts reads from v1-mappings and the subgroup service index bucket.
 // Implementations hide storage-level details such as tombstone markers and
 // key-not-found semantics behind domain-meaningful operations, routing by key prefix.
 type MappingReader interface {
+	// Lookup reads a key once and reports whether it is absent, present (with its
+	// value), or tombstoned. A storage read failure is returned as an error and is
+	// never folded into MappingAbsent, so callers can retry instead of acting on a
+	// state they could not verify. Implementations mark errors they know to be
+	// permanent with pkg/errors.MarkPermanent.
+	Lookup(ctx context.Context, key string) (MappingEntry, error)
+
 	// ResolveAction returns ActionCreated when the key is absent or tombstoned
 	// (entity never seen, or previously deleted and being re-created), and
 	// ActionUpdated when a live mapping already exists.
