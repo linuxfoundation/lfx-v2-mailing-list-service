@@ -201,10 +201,13 @@ public, self-service access, independent of `writer`/`auditor`. It is set via
 `internal/service/datastream_subgroup_handler.go`), not by the `public` data field alone —
 that field is passed through separately and fga-sync uses it to create a wildcard `viewer`
 tuple, not a `public` tuple. The `public` relation is never implied by `writer` or
-`auditor` — callers that need to gate a self-service action (e.g. self-subscription) on
-public access must check `public` directly via an access check rather than inferring it
-from the other relations. A publisher that sets the `public` data field without also
-setting `relations.public` will leave self-subscription returning 403 on that list.
+`auditor`. Callers without a route-level public gate must check `public` directly via an
+access check rather than inferring it from the other relations. The
+`groupsio-mailing-list-member:create` Heimdall rule applies this gate with
+`openfga_or_check` for `writer` or `public`; `authorizeAddGroupsioMember` then checks
+`writer` to apply the non-writer field restrictions, not as a substitute for the public
+gate. A publisher that sets the `public` data field without also setting
+`relations.public` will leave self-subscription returning 403 on that list.
 
 **Rollout note:** this relation is only published for a `groupsio_mailing_list` object when
 it is created or updated (see `internal/service/datastream_subgroup_handler.go`). Existing
