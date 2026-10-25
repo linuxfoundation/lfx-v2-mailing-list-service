@@ -1,0 +1,11 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+
+# GO-2026-5932 flags the unmaintained golang.org/x/crypto/openpgp package in
+# every x/crypto version, so there is no fixed version to bump to. This module
+# does not import openpgp: x/crypto is only pulled in indirectly by nats.go and
+# nkeys (curve25519). Remove this entry if the advisory gains a fixed version
+# or if the module ever imports x/crypto/openpgp.
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "x/crypto/openpgp is not imported; x/crypto is an indirect dependency via nats.go/nkeys and no fixed version exists"
