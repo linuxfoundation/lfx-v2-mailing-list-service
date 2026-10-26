@@ -131,6 +131,21 @@ func NewCommitteeProjectLookup(ctx context.Context, source string, natsClient *n
 	}
 }
 
+// NewCommitteeMembershipLookup initializes the committee membership lookup implementation.
+// source controls the backend: "nats" (default) or "mock".
+func NewCommitteeMembershipLookup(ctx context.Context, source string, natsClient *nats.NATSClient) (port.CommitteeMembershipLookup, error) {
+	switch source {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock committee membership lookup")
+		return infrastructure.NewFakeCommitteeMembershipLookup(), nil
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS committee membership lookup")
+		return nats.NewNATSCommitteeMembershipLookup(natsClient), nil
+	default:
+		return nil, fmt.Errorf("unsupported committee membership lookup implementation: %s", source)
+	}
+}
+
 // NewCommitteeSyncSettingsStore initializes the committee sync settings store implementation.
 // source controls the backend: "nats" (default) or "mock".
 func NewCommitteeSyncSettingsStore(ctx context.Context, source string, natsClient *nats.NATSClient) (port.CommitteeSyncSettingsStore, error) {
