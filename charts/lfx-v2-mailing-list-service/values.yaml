@@ -117,6 +117,26 @@ nats:
     # compression determines whether KV bucket data is compressed.
     compression: true
 
+  # kv_bucket_committee_sync_settings stores each committee's automatic membership sync mode
+  # for its mailing list. This is v2-local state with no ITX or v1 equivalent.
+  kv_bucket_committee_sync_settings:
+    # Set creation to false if the bucket is managed separately.
+    creation: true
+    # Preserve sync mode settings when the chart is uninstalled.
+    keep: true
+    # replicas is the number of replicas for the KV bucket.
+    replicas: 1
+    # history is the number of history entries to keep per key.
+    history: 1
+    # storage is the storage type for the KV bucket.
+    storage: file
+    # maxValueSize is the maximum size of a value in the KV bucket.
+    maxValueSize: 1024
+    # maxBytes is the maximum number of bytes in the KV bucket.
+    maxBytes: 1073741824  # 1GB
+    # compression determines whether KV bucket data is compressed.
+    compression: true
+
 # openfga is the configuration for the OpenFGA server
 openfga:
   # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization

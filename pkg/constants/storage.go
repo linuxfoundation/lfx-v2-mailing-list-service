@@ -12,6 +12,10 @@ const (
 	KVBucketV1Objects = "v1-objects"
 	// KVBucketSubgroupServiceIndex stores the service-to-subgroup lookup and each subgroup's current parent.
 	KVBucketSubgroupServiceIndex = "groupsio-subgroup-service-index"
+	// KVBucketCommitteeSyncSettings stores per-committee auto-sync mode settings for mailing
+	// lists. This is v2-local state with no ITX or v1 DynamoDB equivalent, so it cannot live
+	// in v1-mappings or be proxied through ITX like the rest of the mailing list record.
+	KVBucketCommitteeSyncSettings = "groupsio-committee-sync-settings"
 
 	// KVTombstoneMarker marks deleted or superseded entries in v1-mappings and
 	// groupsio-subgroup-service-index.
@@ -57,4 +61,9 @@ const (
 	// KVMappingPrefixCommitteeBySFID is the v1-mappings forward index written by lfx-v1-sync-helper:
 	// committee.sfid.{sfid} → v2 committee UID. Used to resolve the v1 committee SFID to a v2 UID.
 	KVMappingPrefixCommitteeBySFID = "committee.sfid"
+
+	// KVSyncSettingsPrefixSyncMode is the groupsio-committee-sync-settings key prefix for a
+	// committee's sync_mode on a mailing list.
+	// Key: groupsio-committee-sync-mode.{mailingListUID}.{committeeUID} → sync mode value.
+	KVSyncSettingsPrefixSyncMode = "groupsio-committee-sync-mode"
 )

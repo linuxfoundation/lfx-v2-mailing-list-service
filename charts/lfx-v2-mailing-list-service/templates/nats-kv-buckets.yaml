@@ -22,3 +22,25 @@ spec:
   maxBytes: {{ .Values.nats.kv_bucket_subgroup_service_index.maxBytes }}
   compression: {{ .Values.nats.kv_bucket_subgroup_service_index.compression }}
 {{- end }}
+---
+{{- if .Values.nats.kv_bucket_committee_sync_settings.creation }}
+apiVersion: jetstream.nats.io/v1beta2
+kind: KeyValue
+metadata:
+  name: groupsio-committee-sync-settings
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.nats.kv_bucket_committee_sync_settings.keep }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+spec:
+  bucket: groupsio-committee-sync-settings
+  replicas: {{ .Values.nats.kv_bucket_committee_sync_settings.replicas }}
+  history: {{ .Values.nats.kv_bucket_committee_sync_settings.history }}
+  storage: {{ .Values.nats.kv_bucket_committee_sync_settings.storage }}
+  maxValueSize: {{ .Values.nats.kv_bucket_committee_sync_settings.maxValueSize }}
+  maxBytes: {{ .Values.nats.kv_bucket_committee_sync_settings.maxBytes }}
+  compression: {{ .Values.nats.kv_bucket_committee_sync_settings.compression }}
+{{- end }}

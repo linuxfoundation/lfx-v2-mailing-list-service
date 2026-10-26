@@ -133,6 +133,13 @@ func run() int {
 		return 1
 	}
 
+	// Initialize committee sync settings store.
+	syncSettingsStore, err := service.NewCommitteeSyncSettingsStore(ctx, env.RepositorySource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing committee sync settings store", "error", err)
+		return 1
+	}
+
 	// Build orchestrators.
 	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
 		orchestrator.WithServiceReader(proxyClient),
@@ -145,6 +152,7 @@ func run() int {
 	mailingListReaderOrchestrator := orchestrator.NewGroupsIOMailingListReaderOrchestrator(
 		orchestrator.WithMailingListReader(proxyClient),
 		orchestrator.WithMailingListReaderTranslator(translator),
+		orchestrator.WithMailingListReaderSyncSettingsStore(syncSettingsStore),
 	)
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
@@ -153,6 +161,7 @@ func run() int {
 		orchestrator.WithMailingListPublisher(publisher),
 		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
 		orchestrator.WithMailingListCommitteeProjectLookup(committeeLookup),
+		orchestrator.WithMailingListSyncSettingsStore(syncSettingsStore),
 	)
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
 		orchestrator.WithMemberReader(proxyClient),

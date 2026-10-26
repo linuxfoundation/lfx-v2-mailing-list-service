@@ -1703,6 +1703,14 @@ definitions:
                 type: string
                 description: Parent GroupsIO service ID
                 example: Sint illo ea doloribus.
+            sync_mode:
+                type: string
+                description: Automatic membership sync direction between the committee and this mailing list. Only meaningful when committee_uid is set.
+                example: manual
+                enum:
+                    - manual
+                    - auto_c_to_ml
+                    - auto_ml_to_c
             type:
                 type: string
                 description: Subgroup type
@@ -1722,6 +1730,7 @@ definitions:
             name: Ab et totam sapiente voluptatem ea.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             service_id: Sint illo ea doloribus.
+            sync_mode: manual
             type: Rerum et quasi perspiciatis.
             updated_at: Dolores odit et velit.
     GroupsioSubgroupList:
@@ -1743,6 +1752,7 @@ definitions:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -1754,6 +1764,7 @@ definitions:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -1765,6 +1776,7 @@ definitions:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -1776,6 +1788,7 @@ definitions:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
             total:
@@ -1795,6 +1808,7 @@ definitions:
                   name: Ab et totam sapiente voluptatem ea.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                   service_id: Sint illo ea doloribus.
+                  sync_mode: manual
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
                 - audience_access: Ipsum temporibus.
@@ -1806,6 +1820,7 @@ definitions:
                   name: Ab et totam sapiente voluptatem ea.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                   service_id: Sint illo ea doloribus.
+                  sync_mode: manual
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
                 - audience_access: Ipsum temporibus.
@@ -1817,6 +1832,7 @@ definitions:
                   name: Ab et totam sapiente voluptatem ea.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                   service_id: Sint illo ea doloribus.
+                  sync_mode: manual
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
                 - audience_access: Ipsum temporibus.
@@ -1828,6 +1844,7 @@ definitions:
                   name: Ab et totam sapiente voluptatem ea.
                   project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                   service_id: Sint illo ea doloribus.
+                  sync_mode: manual
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
             total: 2885963747865388981
@@ -1952,6 +1969,14 @@ definitions:
                 type: string
                 description: Parent GroupsIO service ID
                 example: Autem tempora at architecto consectetur voluptatum ullam.
+            sync_mode:
+                type: string
+                description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                example: manual
+                enum:
+                    - manual
+                    - auto_c_to_ml
+                    - auto_ml_to_c
             type:
                 type: string
                 description: Subgroup type
@@ -1964,6 +1989,7 @@ definitions:
             name: Totam aut voluptas architecto eum cupiditate et.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             service_id: Autem tempora at architecto consectetur voluptatum ullam.
+            sync_mode: manual
             type: Distinctio totam vero.
     MailingListCreateGroupsioServiceRequestBody:
         title: MailingListCreateGroupsioServiceRequestBody
@@ -2064,6 +2090,14 @@ definitions:
                 type: string
                 description: Parent GroupsIO service ID
                 example: Qui aut sunt modi.
+            sync_mode:
+                type: string
+                description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                example: manual
+                enum:
+                    - manual
+                    - auto_c_to_ml
+                    - auto_ml_to_c
             type:
                 type: string
                 description: Subgroup type
@@ -2076,6 +2110,7 @@ definitions:
             name: Sunt optio.
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             service_id: Qui aut sunt modi.
+            sync_mode: manual
             type: Blanditiis occaecati impedit.
     MailingListUpdateGroupsioMemberRequestBody:
         title: MailingListUpdateGroupsioMemberRequestBody

@@ -174,6 +174,19 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists"
 ```
 
+**Create a mailing list with automatic committee membership sync:**
+
+`sync_mode` requires `committee_uid` to also be set, and must be one of `manual` (default),
+`auto_c_to_ml`, or `auto_ml_to_c`. It is v2-local configuration (ITX has no concept of it) that
+a future sync-diff/sync-apply endpoint will read to decide how to reconcile membership.
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"project_uid":"<uuid>","committee_uid":"<committee-uuid>","group_name":"my-list","description":"My list","type":"private","audience_access":"member","sync_mode":"auto_c_to_ml"}' \
+  "$BASE/groupsio/mailing-lists"
+```
+
 **Update a mailing list:**
 ```bash
 curl -X PUT -H "Authorization: Bearer $TOKEN" \
