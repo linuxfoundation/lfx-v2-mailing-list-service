@@ -221,7 +221,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		o.notifyCommitteeRemoved(ctx, oldCUID, mailingListID)
 		o.notifyCommitteeAdded(ctx, newCUID)
 		if oldCUID != "" {
-			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID, oldSyncModeSnapshot)
+			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID, oldSyncModeSnapshot, true)
 		}
 	}
 
@@ -287,9 +287,32 @@ func (o *GroupsIOMailingListOrchestrator) snapshotSyncMode(ctx context.Context, 
 // silently deleted by this cleanup (see LFXV2-4029 review). Gating the delete on a
 // pre-mutation revision closes that window: a concurrent write bumps the revision past what was
 // snapshotted, so the delete is skipped instead of clobbering it.
-func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string, snapshot syncModeSnapshot) {
+//
+// That revision check alone does not close every ordering: a concurrent request can move the
+// association away from oldCUID and back again (B -> A -> B) without ever writing a new
+// sync_mode for oldCUID, leaving the revision unchanged while oldCUID has become the *current*
+// association again by the time this delayed cleanup runs. Re-checking the live association
+// immediately before the delete closes that specific case — if the mailing list has already
+// reverted to oldCUID, its setting is active again and must not be deleted, regardless of
+// revision. This added check still has its own (narrower) TOCTOU gap between the re-check and
+// the delete; closing that fully requires serializing association mutations per mailing list or
+// gating the delete on an association-generation value, which is a larger change tracked
+// separately (see LFXV2-4029 review, copilot-pull-request-reviewer).
+//
+// checkLiveAssociation gates that re-check and must be false when the mailing list itself was
+// just deleted (DeleteMailingList): there is no "current association" to revert to once the
+// record is gone, and a reader that still resolves the now-deleted record (a stale cache, a
+// lagging index) would otherwise cause this cleanup to skip forever, leaking the orphaned entry.
+func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string, snapshot syncModeSnapshot, checkLiveAssociation bool) {
 	if o.syncSettingsStore == nil || !snapshot.found {
 		return
+	}
+	if checkLiveAssociation {
+		if current := o.fetchCommitteeUID(ctx, mailingListID); current == oldCUID {
+			slog.InfoContext(ctx, "skipped cleaning up committee sync_mode: mailing list has already reverted to this committee",
+				"mailing_list_id", mailingListID, "committee_uid", oldCUID)
+			return
+		}
 	}
 	deleted, err := o.syncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListID, oldCUID, snapshot.revision)
 	if err != nil {
@@ -337,7 +360,7 @@ func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context,
 
 	o.notifyCommitteeRemoved(ctx, cUID, mailingListID)
 	if cUID != "" {
-		o.cleanupStaleSyncMode(ctx, mailingListID, cUID, syncModeSnap)
+		o.cleanupStaleSyncMode(ctx, mailingListID, cUID, syncModeSnap, false)
 	}
 	return nil
 }
