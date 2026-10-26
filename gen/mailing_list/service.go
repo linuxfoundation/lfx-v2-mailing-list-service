@@ -146,6 +146,9 @@ type CreateGroupsioMailingListPayload struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string
 }
 
 // CreateGroupsioServicePayload is the payload type of the mailing-list service
@@ -465,6 +468,9 @@ type GroupsioSubgroup struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string
 	// Creation timestamp
 	CreatedAt *string
 	// Last update timestamp
@@ -543,6 +549,9 @@ type UpdateGroupsioMailingListPayload struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string
 }
 
 // UpdateGroupsioMemberPayload is the payload type of the mailing-list service

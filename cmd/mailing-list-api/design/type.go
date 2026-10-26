@@ -124,6 +124,10 @@ var GroupsioSubgroupType = dsl.Type("groupsio-subgroup", func() {
 	dsl.Attribute("description", dsl.String, "Subgroup description")
 	dsl.Attribute("type", dsl.String, "Subgroup type")
 	dsl.Attribute("audience_access", dsl.String, "Audience access setting")
+	dsl.Attribute("sync_mode", dsl.String, "Automatic membership sync direction between the committee and this mailing list. Only meaningful when committee_uid is set.", func() {
+		dsl.Enum("manual", "auto_c_to_ml", "auto_ml_to_c")
+		dsl.Example("manual")
+	})
 	dsl.Attribute("created_at", dsl.String, "Creation timestamp")
 	dsl.Attribute("updated_at", dsl.String, "Last update timestamp")
 })
@@ -145,6 +149,10 @@ var GroupsioSubgroupRequestType = dsl.Type("groupsio-subgroup-request", func() {
 	dsl.Attribute("description", dsl.String, "Subgroup description")
 	dsl.Attribute("type", dsl.String, "Subgroup type")
 	dsl.Attribute("audience_access", dsl.String, "Audience access setting")
+	dsl.Attribute("sync_mode", dsl.String, "Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.", func() {
+		dsl.Enum("manual", "auto_c_to_ml", "auto_ml_to_c")
+		dsl.Example("manual")
+	})
 })
 
 // GroupsioSubgroupListType represents a list of GroupsIO subgroups.

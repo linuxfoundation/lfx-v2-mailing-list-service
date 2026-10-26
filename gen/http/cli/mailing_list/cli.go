@@ -642,7 +642,7 @@ func mailingListCreateGroupsioMailingListUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list create-groupsio-mailing-list --body '{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"type\": \"Distinctio totam vero.\"\n   }' --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list create-groupsio-mailing-list --body '{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Distinctio totam vero.\"\n   }' --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListGetGroupsioMailingListUsage() {
@@ -684,7 +684,7 @@ func mailingListUpdateGroupsioMailingListUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list update-groupsio-mailing-list --body '{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }' --subgroup-id \"Consequatur sed dolor.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list update-groupsio-mailing-list --body '{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }' --subgroup-id \"Consequatur sed dolor.\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListDeleteGroupsioMailingListUsage() {

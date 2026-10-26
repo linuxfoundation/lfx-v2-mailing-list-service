@@ -2620,6 +2620,7 @@ func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailing
 		Description:    v.Description,
 		Type:           v.Type,
 		AudienceAccess: v.AudienceAccess,
+		SyncMode:       v.SyncMode,
 		CreatedAt:      v.CreatedAt,
 		UpdatedAt:      v.UpdatedAt,
 	}

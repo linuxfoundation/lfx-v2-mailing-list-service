@@ -10,6 +10,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -673,4 +674,148 @@ func TestUpdateMailingList_CrossProjectCommittee_ReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.IsType(t, errs.Validation{}, err)
 	assert.Empty(t, spy.calls, "no event published on validation failure")
+}
+
+// ---- sync_mode validation ----
+
+func TestValidateCommitteeProject_SyncModeWithoutCommitteeUID_ReturnsValidationError(t *testing.T) {
+	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{SyncMode: "auto_c_to_ml"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_InvalidSyncMode_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: "bogus"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_ValidSyncMode_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
+// ---- sync_mode persistence ----
+
+func mlWithSync(committeeUID, syncMode string) *model.GroupsIOMailingList {
+	return &model.GroupsIOMailingList{
+		ServiceUID: "test-service",
+		Committees: []model.Committee{{UID: committeeUID, SyncMode: syncMode}},
+	}
+}
+
+func TestCreateMailingList_PersistsSyncMode(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	createResp := mlWith("committee-1")
+	createResp.UID = "ml-new"
+	writer := &stubMLWriter{createResp: createResp}
+	o := newTestOrchestrator(writer, nil, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	resp, err := o.CreateMailingList(context.Background(), mlWithSync("committee-1", "auto_c_to_ml"))
+	require.NoError(t, err)
+	assert.Equal(t, "auto_c_to_ml", resp.Committees[0].SyncMode)
+
+	mode, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
+	require.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, "auto_c_to_ml", mode)
+}
+
+func TestCreateMailingList_NoSyncMode_DoesNotPersist(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	createResp := mlWith("committee-1")
+	createResp.UID = "ml-new"
+	writer := &stubMLWriter{createResp: createResp}
+	o := newTestOrchestrator(writer, nil, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	_, err := o.CreateMailingList(context.Background(), mlWith("committee-1"))
+	require.NoError(t, err)
+
+	_, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
+	require.NoError(t, err)
+	assert.False(t, found)
+}
+
+func TestUpdateMailingList_PersistsSyncModeForCurrentCommittee(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	reader := &stubMLReader{ml: mlWith("committee-1")}
+	updateResp := mlWith("committee-1")
+	writer := &stubMLWriter{updateResp: updateResp}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWithSync("committee-1", "auto_ml_to_c"))
+	require.NoError(t, err)
+
+	mode, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-1")
+	require.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, "auto_ml_to_c", mode)
+}
+
+func TestUpdateMailingList_CommitteeSwap_CleansUpOldSyncMode(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
+
+	reader := &stubMLReader{ml: mlWith("old-committee")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+
+	_, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
+	require.NoError(t, err)
+	assert.False(t, found, "stale sync_mode for the old committee must be cleaned up")
+}
+
+func TestDeleteMailingList_CleansUpSyncMode(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "committee-del", "manual"))
+
+	reader := &stubMLReader{ml: mlWith("committee-del")}
+	writer := &stubMLWriter{}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	err := o.DeleteMailingList(context.Background(), "ml-1")
+	require.NoError(t, err)
+
+	_, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-del")
+	require.NoError(t, err)
+	assert.False(t, found)
+}
+
+func TestCreateMailingList_NilSyncSettingsStore_NoPanic(t *testing.T) {
+	createResp := mlWith("committee-1")
+	writer := &stubMLWriter{createResp: createResp}
+	o := newTestOrchestrator(writer, nil, &spyInternalPublisher{})
+
+	assert.NotPanics(t, func() {
+		_, err := o.CreateMailingList(context.Background(), mlWithSync("committee-1", "auto_c_to_ml"))
+		require.NoError(t, err)
+	})
 }

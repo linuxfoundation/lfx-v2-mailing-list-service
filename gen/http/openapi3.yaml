@@ -105,6 +105,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -116,6 +117,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -127,6 +129,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -138,6 +141,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                 total: 2885963747865388981
@@ -188,6 +192,7 @@ paths:
                             name: Totam aut voluptas architecto eum cupiditate et.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             service_id: Autem tempora at architecto consectetur voluptatum ullam.
+                            sync_mode: manual
                             type: Distinctio totam vero.
             responses:
                 "201":
@@ -206,6 +211,7 @@ paths:
                                 name: Enim cumque maiores expedita perspiciatis.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Ea officia molestiae quis molestiae at.
+                                sync_mode: manual
                                 type: Aliquam inventore corporis et.
                                 updated_at: Amet voluptas.
                 "400":
@@ -321,6 +327,7 @@ paths:
                                 name: Quasi architecto sit quo.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Facilis sit ut maxime laboriosam animi.
+                                sync_mode: manual
                                 type: Velit illo voluptatem consequatur rerum.
                                 updated_at: Aut officiis fuga.
                 "404":
@@ -380,6 +387,7 @@ paths:
                             name: Sunt optio.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             service_id: Qui aut sunt modi.
+                            sync_mode: manual
                             type: Blanditiis occaecati impedit.
             responses:
                 "200":
@@ -398,6 +406,7 @@ paths:
                                 name: Est voluptates quo exercitationem.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Iste et dolor dolor nulla.
+                                sync_mode: manual
                                 type: Dignissimos deserunt qui qui.
                                 updated_at: Sed sit corporis harum.
                 "400":
@@ -1819,6 +1828,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Autem tempora at architecto consectetur voluptatum ullam.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -1832,6 +1849,7 @@ components:
                 name: Totam aut voluptas architecto eum cupiditate et.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Autem tempora at architecto consectetur voluptatum ullam.
+                sync_mode: manual
                 type: Distinctio totam vero.
         CreateGroupsioServiceRequestBody:
             type: object
@@ -2462,6 +2480,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Sint illo ea doloribus.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Only meaningful when committee_uid is set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -2481,6 +2507,7 @@ components:
                 name: Ab et totam sapiente voluptatem ea.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Sint illo ea doloribus.
+                sync_mode: manual
                 type: Rerum et quasi perspiciatis.
                 updated_at: Dolores odit et velit.
         GroupsioSubgroupList:
@@ -2501,6 +2528,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2512,6 +2540,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2523,6 +2552,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2534,6 +2564,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                 total:
@@ -2553,6 +2584,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2564,6 +2596,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2575,6 +2608,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2586,6 +2620,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                 total: 2885963747865388981
@@ -2694,6 +2729,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Qui aut sunt modi.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -2707,6 +2750,7 @@ components:
                 name: Sunt optio.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Qui aut sunt modi.
+                sync_mode: manual
                 type: Blanditiis occaecati impedit.
         UpdateGroupsioServiceRequestBody:
             type: object

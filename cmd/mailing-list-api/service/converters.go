@@ -55,8 +55,10 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		return nil
 	}
 	committeeUID := ""
+	syncMode := ""
 	if len(ml.Committees) > 0 {
 		committeeUID = ml.Committees[0].UID
+		syncMode = ml.Committees[0].SyncMode
 	}
 	return &mailinglist.GroupsioSubgroup{
 		ID:             &ml.UID,
@@ -68,6 +70,7 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		Description:    &ml.Description,
 		Type:           &ml.Type,
 		AudienceAccess: &ml.AudienceAccess,
+		SyncMode:       converter.NonEmptyString(syncMode),
 		CreatedAt:      converter.NonEmptyString(formatTime(ml.CreatedAt)),
 		UpdatedAt:      converter.NonEmptyString(formatTime(ml.UpdatedAt)),
 	}

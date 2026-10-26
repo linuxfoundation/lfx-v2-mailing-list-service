@@ -24,6 +24,7 @@ type GroupsIOMailingListOrchestrator struct {
 	publisher              port.MessagePublisher
 	serviceReader          port.GroupsIOServiceReader
 	committeeProjectLookup port.CommitteeProjectLookup
+	syncSettingsStore      port.CommitteeSyncSettingsStore
 }
 
 // MailingListOrchestratorOption configures a GroupsIOMailingListOrchestrator.
@@ -72,13 +73,30 @@ func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) Mailin
 	}
 }
 
+// WithMailingListSyncSettingsStore sets the store used to persist each committee's sync_mode.
+// ITX has no concept of sync_mode, so it must be stored and merged in separately.
+func WithMailingListSyncSettingsStore(s port.CommitteeSyncSettingsStore) MailingListOrchestratorOption {
+	return func(o *GroupsIOMailingListOrchestrator) {
+		o.syncSettingsStore = s
+	}
+}
+
 // validateCommitteeProject checks that the supplied committee belongs to the same project as
 // the parent service. No-op when no committee is present. Returns ServiceUnavailable when
 // required dependencies are not configured. On success it sets ml.ProjectUID from the
 // authoritative service record.
 func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.Context, ml *model.GroupsIOMailingList) error {
-	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+	if len(ml.Committees) == 0 {
 		return nil
+	}
+	if ml.Committees[0].UID == "" {
+		if ml.Committees[0].SyncMode != "" {
+			return errs.NewValidation("sync_mode requires committee_uid")
+		}
+		return nil
+	}
+	if syncMode := ml.Committees[0].SyncMode; syncMode != "" && !isValidSyncMode(syncMode) {
+		return errs.NewValidation("invalid sync_mode")
 	}
 	if o.serviceReader == nil || o.committeeProjectLookup == nil {
 		return errs.NewServiceUnavailable("committee project validation is not configured")
@@ -117,6 +135,11 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 		return nil, err
 	}
 
+	requestedSyncMode := ""
+	if len(ml.Committees) > 0 {
+		requestedSyncMode = ml.Committees[0].SyncMode
+	}
+
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
 		return nil, err
@@ -132,7 +155,13 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	o.notifyCommitteeAdded(ctx, committeeUID(mapped))
+	cUID := committeeUID(mapped)
+	o.persistSyncMode(ctx, mapped.UID, cUID, requestedSyncMode)
+	if requestedSyncMode != "" && len(mapped.Committees) > 0 {
+		mapped.Committees[0].SyncMode = requestedSyncMode
+	}
+
+	o.notifyCommitteeAdded(ctx, cUID)
 	return mapped, nil
 }
 
@@ -159,6 +188,11 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	// Snapshot the current committee association before the update so we can detect changes.
 	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
 
+	requestedSyncMode := ""
+	if len(ml.Committees) > 0 {
+		requestedSyncMode = ml.Committees[0].SyncMode
+	}
+
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
 		return nil, err
@@ -179,6 +213,19 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	if oldCUID != newCUID {
 		o.notifyCommitteeRemoved(ctx, oldCUID, mailingListID)
 		o.notifyCommitteeAdded(ctx, newCUID)
+		if oldCUID != "" && o.syncSettingsStore != nil {
+			if err := o.syncSettingsStore.DeleteSyncMode(ctx, mailingListID, oldCUID); err != nil {
+				slog.ErrorContext(ctx, "failed to clean up stale committee sync_mode",
+					"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
+			}
+		}
+	}
+
+	if requestedSyncMode != "" {
+		o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
+		if len(mapped.Committees) > 0 {
+			mapped.Committees[0].SyncMode = requestedSyncMode
+		}
 	}
 
 	return mapped, nil
@@ -196,6 +243,12 @@ func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context,
 	}
 
 	o.notifyCommitteeRemoved(ctx, cUID, mailingListID)
+	if cUID != "" && o.syncSettingsStore != nil {
+		if err := o.syncSettingsStore.DeleteSyncMode(ctx, mailingListID, cUID); err != nil {
+			slog.ErrorContext(ctx, "failed to clean up committee sync_mode after mailing list delete",
+				"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
+		}
+	}
 	return nil
 }
 
@@ -283,6 +336,34 @@ func committeeUID(ml *model.GroupsIOMailingList) string {
 		return ml.Committees[0].UID
 	}
 	return ""
+}
+
+// isValidSyncMode reports whether syncMode is one of model.ValidSyncModes.
+func isValidSyncMode(syncMode string) bool {
+	for _, valid := range model.ValidSyncModes {
+		if syncMode == valid {
+			return true
+		}
+	}
+	return false
+}
+
+// persistSyncMode stores the requested sync_mode for mailingListID+cUID, best-effort logged on
+// failure (ITX has already committed the rest of the mutation, so we don't fail the request).
+// No-op when no sync_mode was requested, no committee is attached, or the store isn't configured.
+func (o *GroupsIOMailingListOrchestrator) persistSyncMode(ctx context.Context, mailingListID, cUID, syncMode string) {
+	if cUID == "" || syncMode == "" {
+		return
+	}
+	if o.syncSettingsStore == nil {
+		slog.WarnContext(ctx, "sync_mode requested but no sync settings store is configured; value will not persist",
+			"mailing_list_id", mailingListID, "committee_uid", cUID)
+		return
+	}
+	if err := o.syncSettingsStore.PutSyncMode(ctx, mailingListID, cUID, syncMode); err != nil {
+		slog.ErrorContext(ctx, "failed to persist committee sync_mode",
+			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
+	}
 }
 
 // ---- ID mapping helpers ----

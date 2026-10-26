@@ -66,6 +66,9 @@ type CreateGroupsioMailingListRequestBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 }
 
 // UpdateGroupsioMailingListRequestBody is the type of the "mailing-list"
@@ -87,6 +90,9 @@ type UpdateGroupsioMailingListRequestBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 }
 
 // AddGroupsioMemberRequestBody is the type of the "mailing-list" service
@@ -281,6 +287,9 @@ type CreateGroupsioMailingListResponseBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -308,6 +317,9 @@ type GetGroupsioMailingListResponseBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -335,6 +347,9 @@ type UpdateGroupsioMailingListResponseBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1199,6 +1214,9 @@ type GroupsioSubgroupResponseBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Audience access setting
 	AudienceAccess *string `form:"audience_access,omitempty" json:"audience_access,omitempty" xml:"audience_access,omitempty"`
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1391,6 +1409,7 @@ func NewCreateGroupsioMailingListResponseBody(res *mailinglist.GroupsioSubgroup)
 		Description:    res.Description,
 		Type:           res.Type,
 		AudienceAccess: res.AudienceAccess,
+		SyncMode:       res.SyncMode,
 		CreatedAt:      res.CreatedAt,
 		UpdatedAt:      res.UpdatedAt,
 	}
@@ -1411,6 +1430,7 @@ func NewGetGroupsioMailingListResponseBody(res *mailinglist.GroupsioSubgroup) *G
 		Description:    res.Description,
 		Type:           res.Type,
 		AudienceAccess: res.AudienceAccess,
+		SyncMode:       res.SyncMode,
 		CreatedAt:      res.CreatedAt,
 		UpdatedAt:      res.UpdatedAt,
 	}
@@ -1431,6 +1451,7 @@ func NewUpdateGroupsioMailingListResponseBody(res *mailinglist.GroupsioSubgroup)
 		Description:    res.Description,
 		Type:           res.Type,
 		AudienceAccess: res.AudienceAccess,
+		SyncMode:       res.SyncMode,
 		CreatedAt:      res.CreatedAt,
 		UpdatedAt:      res.UpdatedAt,
 	}
@@ -2498,6 +2519,7 @@ func NewCreateGroupsioMailingListPayload(body *CreateGroupsioMailingListRequestB
 		Description:    body.Description,
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
+		SyncMode:       body.SyncMode,
 	}
 	v.BearerToken = bearerToken
 
@@ -2526,6 +2548,7 @@ func NewUpdateGroupsioMailingListPayload(body *UpdateGroupsioMailingListRequestB
 		Description:    body.Description,
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
+		SyncMode:       body.SyncMode,
 	}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
@@ -2717,6 +2740,11 @@ func ValidateCreateGroupsioMailingListRequestBody(body *CreateGroupsioMailingLis
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
+	if body.SyncMode != nil {
+		if !(*body.SyncMode == "manual" || *body.SyncMode == "auto_c_to_ml" || *body.SyncMode == "auto_ml_to_c") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"manual", "auto_c_to_ml", "auto_ml_to_c"}))
+		}
+	}
 	return
 }
 
@@ -2728,6 +2756,11 @@ func ValidateUpdateGroupsioMailingListRequestBody(body *UpdateGroupsioMailingLis
 	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+	}
+	if body.SyncMode != nil {
+		if !(*body.SyncMode == "manual" || *body.SyncMode == "auto_c_to_ml" || *body.SyncMode == "auto_ml_to_c") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"manual", "auto_c_to_ml", "auto_ml_to_c"}))
+		}
 	}
 	return
 }
