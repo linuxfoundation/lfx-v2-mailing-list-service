@@ -156,8 +156,8 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 	}
 
 	cUID := committeeUID(mapped)
-	o.persistSyncMode(ctx, mapped.UID, cUID, requestedSyncMode)
-	if requestedSyncMode != "" && len(mapped.Committees) > 0 {
+	persisted := o.persistSyncMode(ctx, mapped.UID, cUID, requestedSyncMode)
+	if persisted && requestedSyncMode != "" && len(mapped.Committees) > 0 {
 		mapped.Committees[0].SyncMode = requestedSyncMode
 	}
 
@@ -213,22 +213,73 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	if oldCUID != newCUID {
 		o.notifyCommitteeRemoved(ctx, oldCUID, mailingListID)
 		o.notifyCommitteeAdded(ctx, newCUID)
-		if oldCUID != "" && o.syncSettingsStore != nil {
-			if err := o.syncSettingsStore.DeleteSyncMode(ctx, mailingListID, oldCUID); err != nil {
-				slog.ErrorContext(ctx, "failed to clean up stale committee sync_mode",
-					"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
-			}
+		if oldCUID != "" {
+			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID)
 		}
 	}
 
+	persisted := true
 	if requestedSyncMode != "" {
-		o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
-		if len(mapped.Committees) > 0 {
-			mapped.Committees[0].SyncMode = requestedSyncMode
-		}
+		persisted = o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
+	}
+	if persisted && requestedSyncMode != "" && len(mapped.Committees) > 0 {
+		mapped.Committees[0].SyncMode = requestedSyncMode
+	} else if len(mapped.Committees) > 0 {
+		// The request either omitted sync_mode (preserving whatever is stored) or the
+		// persist above failed — either way, echo back the store's actual current value
+		// rather than a value that may not match what's actually persisted.
+		o.hydrateSyncModeFromStore(ctx, mailingListID, newCUID, mapped)
 	}
 
 	return mapped, nil
+}
+
+// cleanupStaleSyncMode removes the sync_mode previously stored for mailingListID+oldCUID after
+// the mailing list's committee association has changed. Uses a revision-gated delete so a
+// concurrent request that has already written a newer mode for the same pair is never clobbered
+// (see LFXV2-4029 review: cleanup must not race a concurrent re-association back to oldCUID).
+func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string) {
+	if o.syncSettingsStore == nil {
+		return
+	}
+	_, revision, ok, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, oldCUID)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to read stale committee sync_mode before cleanup",
+			"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
+		return
+	}
+	if !ok {
+		return
+	}
+	deleted, err := o.syncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListID, oldCUID, revision)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to clean up stale committee sync_mode",
+			"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
+		return
+	}
+	if !deleted {
+		slog.InfoContext(ctx, "skipped cleaning up committee sync_mode: a newer value was written concurrently",
+			"mailing_list_id", mailingListID, "committee_uid", oldCUID)
+	}
+}
+
+// hydrateSyncModeFromStore sets mapped.Committees[0].SyncMode from the store's current value for
+// mailingListID+cUID, if any. Used whenever the response field must reflect the stored state
+// rather than a possibly-unapplied request value (sync_mode omitted from the request, or a
+// persist failure above).
+func (o *GroupsIOMailingListOrchestrator) hydrateSyncModeFromStore(ctx context.Context, mailingListID, cUID string, mapped *model.GroupsIOMailingList) {
+	if cUID == "" || o.syncSettingsStore == nil {
+		return
+	}
+	mode, _, ok, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, cUID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to hydrate committee sync_mode into response",
+			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
+		return
+	}
+	if ok {
+		mapped.Committees[0].SyncMode = mode
+	}
 }
 
 // DeleteMailingList deletes a mailing list and notifies the associated committee
@@ -243,11 +294,8 @@ func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context,
 	}
 
 	o.notifyCommitteeRemoved(ctx, cUID, mailingListID)
-	if cUID != "" && o.syncSettingsStore != nil {
-		if err := o.syncSettingsStore.DeleteSyncMode(ctx, mailingListID, cUID); err != nil {
-			slog.ErrorContext(ctx, "failed to clean up committee sync_mode after mailing list delete",
-				"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
-		}
+	if cUID != "" {
+		o.cleanupStaleSyncMode(ctx, mailingListID, cUID)
 	}
 	return nil
 }
@@ -350,20 +398,24 @@ func isValidSyncMode(syncMode string) bool {
 
 // persistSyncMode stores the requested sync_mode for mailingListID+cUID, best-effort logged on
 // failure (ITX has already committed the rest of the mutation, so we don't fail the request).
-// No-op when no sync_mode was requested, no committee is attached, or the store isn't configured.
-func (o *GroupsIOMailingListOrchestrator) persistSyncMode(ctx context.Context, mailingListID, cUID, syncMode string) {
+// Returns whether the value was actually persisted, so callers can avoid echoing a mode that
+// isn't really stored. No-op (returns false) when no sync_mode was requested, no committee is
+// attached, or the store isn't configured.
+func (o *GroupsIOMailingListOrchestrator) persistSyncMode(ctx context.Context, mailingListID, cUID, syncMode string) bool {
 	if cUID == "" || syncMode == "" {
-		return
+		return false
 	}
 	if o.syncSettingsStore == nil {
 		slog.WarnContext(ctx, "sync_mode requested but no sync settings store is configured; value will not persist",
 			"mailing_list_id", mailingListID, "committee_uid", cUID)
-		return
+		return false
 	}
 	if err := o.syncSettingsStore.PutSyncMode(ctx, mailingListID, cUID, syncMode); err != nil {
 		slog.ErrorContext(ctx, "failed to persist committee sync_mode",
 			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
+		return false
 	}
+	return true
 }
 
 // ---- ID mapping helpers ----
