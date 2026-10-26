@@ -134,7 +134,7 @@ func (o *GroupsIOMailingListReaderOrchestrator) hydrateSyncMode(ctx context.Cont
 	if o.syncSettingsStore == nil || ml == nil || len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
 		return
 	}
-	syncMode, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, ml.Committees[0].UID)
+	syncMode, _, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, ml.Committees[0].UID)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to load committee sync_mode; defaulting to manual",
 			"mailing_list_id", ml.UID, "committee_uid", ml.Committees[0].UID, "error", err)

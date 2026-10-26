@@ -29,22 +29,22 @@ func syncModeKey(mailingListUID, committeeUID string) (string, error) {
 	return constants.KVSyncSettingsPrefixSyncMode + "." + mailingListUID + "." + committeeUID, nil
 }
 
-func (s *natsCommitteeSyncSettingsStore) GetSyncMode(ctx context.Context, mailingListUID, committeeUID string) (string, bool, error) {
+func (s *natsCommitteeSyncSettingsStore) GetSyncMode(ctx context.Context, mailingListUID, committeeUID string) (string, uint64, bool, error) {
 	key, err := syncModeKey(mailingListUID, committeeUID)
 	if err != nil {
-		return "", false, err
+		return "", 0, false, err
 	}
 	entry, err := s.kv.Get(ctx, key)
 	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
-		return "", false, nil
+		return "", 0, false, nil
 	}
 	if err != nil {
-		return "", false, err
+		return "", 0, false, err
 	}
 	if entry == nil {
-		return "", false, nil
+		return "", 0, false, nil
 	}
-	return string(entry.Value()), true, nil
+	return string(entry.Value()), entry.Revision(), true, nil
 }
 
 func (s *natsCommitteeSyncSettingsStore) PutSyncMode(ctx context.Context, mailingListUID, committeeUID, syncMode string) error {
@@ -56,14 +56,26 @@ func (s *natsCommitteeSyncSettingsStore) PutSyncMode(ctx context.Context, mailin
 	return err
 }
 
-func (s *natsCommitteeSyncSettingsStore) DeleteSyncMode(ctx context.Context, mailingListUID, committeeUID string) error {
+func (s *natsCommitteeSyncSettingsStore) DeleteSyncModeIfUnchanged(ctx context.Context, mailingListUID, committeeUID string, expectedRevision uint64) (bool, error) {
+	if expectedRevision == 0 {
+		// Nothing was stored when the caller last read this pair. Deleting now
+		// would risk purging a value written by someone else since then, so
+		// there is nothing safe to do but report it as already absent.
+		return true, nil
+	}
 	key, err := syncModeKey(mailingListUID, committeeUID)
 	if err != nil {
-		return err
+		return false, err
 	}
-	err = s.kv.Purge(ctx, key)
+	err = s.kv.Purge(ctx, key, jetstream.LastRevision(expectedRevision))
 	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
-		return nil
+		return true, nil
 	}
-	return err
+	if errors.Is(err, jetstream.ErrKeyRevisionMismatch) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

@@ -736,7 +736,7 @@ func TestCreateMailingList_PersistsSyncMode(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "auto_c_to_ml", resp.Committees[0].SyncMode)
 
-	mode, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
 	require.NoError(t, err)
 	assert.True(t, found)
 	assert.Equal(t, "auto_c_to_ml", mode)
@@ -753,7 +753,7 @@ func TestCreateMailingList_NoSyncMode_DoesNotPersist(t *testing.T) {
 	_, err := o.CreateMailingList(context.Background(), mlWith("committee-1"))
 	require.NoError(t, err)
 
-	_, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
+	_, _, found, err := store.GetSyncMode(context.Background(), "ml-new", "committee-1")
 	require.NoError(t, err)
 	assert.False(t, found)
 }
@@ -769,7 +769,7 @@ func TestUpdateMailingList_PersistsSyncModeForCurrentCommittee(t *testing.T) {
 	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWithSync("committee-1", "auto_ml_to_c"))
 	require.NoError(t, err)
 
-	mode, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-1")
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-1")
 	require.NoError(t, err)
 	assert.True(t, found)
 	assert.Equal(t, "auto_ml_to_c", mode)
@@ -787,7 +787,7 @@ func TestUpdateMailingList_CommitteeSwap_CleansUpOldSyncMode(t *testing.T) {
 	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
 	require.NoError(t, err)
 
-	_, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
+	_, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
 	require.NoError(t, err)
 	assert.False(t, found, "stale sync_mode for the old committee must be cleaned up")
 }
@@ -804,7 +804,7 @@ func TestDeleteMailingList_CleansUpSyncMode(t *testing.T) {
 	err := o.DeleteMailingList(context.Background(), "ml-1")
 	require.NoError(t, err)
 
-	_, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-del")
+	_, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "committee-del")
 	require.NoError(t, err)
 	assert.False(t, found)
 }
@@ -818,4 +818,77 @@ func TestCreateMailingList_NilSyncSettingsStore_NoPanic(t *testing.T) {
 		_, err := o.CreateMailingList(context.Background(), mlWithSync("committee-1", "auto_c_to_ml"))
 		require.NoError(t, err)
 	})
+}
+
+func TestCreateMailingList_PutSyncModeFails_StillSucceedsWithoutEchoingSyncMode(t *testing.T) {
+	createResp := mlWith("committee-1")
+	createResp.UID = "ml-new"
+	writer := &stubMLWriter{createResp: createResp}
+	o := newTestOrchestrator(writer, nil, &spyInternalPublisher{})
+	o.syncSettingsStore = &stubSyncSettingsStore{putErr: errors.New("kv down")}
+
+	resp, err := o.CreateMailingList(context.Background(), mlWithSync("committee-1", "auto_c_to_ml"))
+	require.NoError(t, err, "a sync_mode persistence failure must not fail the overall create")
+	assert.Empty(t, resp.Committees[0].SyncMode, "must not echo a sync_mode that failed to persist")
+}
+
+func TestUpdateMailingList_PutSyncModeFails_HydratesActualStoredValue(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "committee-1", "manual"))
+
+	reader := &stubMLReader{ml: mlWith("committee-1")}
+	writer := &stubMLWriter{updateResp: mlWith("committee-1")}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = &failingPutSyncSettingsStore{CommitteeSyncSettingsStore: store}
+
+	resp, err := o.UpdateMailingList(context.Background(), "ml-1", mlWithSync("committee-1", "auto_ml_to_c"))
+	require.NoError(t, err, "a sync_mode persistence failure must not fail the overall update")
+	assert.Equal(t, "manual", resp.Committees[0].SyncMode, "must echo the store's actual current value, not the unpersisted request value")
+}
+
+func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenNewerValueWrittenConcurrently(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
+	// Simulate a concurrent request re-writing a newer value for the same (ml, old-committee)
+	// pair between cleanupStaleSyncMode's read and its delete, by bumping the revision via
+	// another Put right before the update runs.
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "manual"))
+
+	reader := &stubMLReader{ml: mlWith("old-committee")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = &staleRevisionSyncSettingsStore{CommitteeSyncSettingsStore: store}
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
+	require.NoError(t, err)
+	require.True(t, found, "the newer concurrent value must survive cleanup")
+	assert.Equal(t, "manual", mode)
+}
+
+// failingPutSyncSettingsStore wraps a working store but forces PutSyncMode to fail, so
+// Get/Delete still behave realistically while simulating a write-path failure.
+type failingPutSyncSettingsStore struct {
+	port.CommitteeSyncSettingsStore
+}
+
+func (f *failingPutSyncSettingsStore) PutSyncMode(_ context.Context, _, _, _ string) error {
+	return errors.New("kv down")
+}
+
+// staleRevisionSyncSettingsStore wraps a working store but reports a stale revision from
+// GetSyncMode, simulating a TOCTOU race where a newer value was written between the caller's
+// read and its revision-gated delete.
+type staleRevisionSyncSettingsStore struct {
+	port.CommitteeSyncSettingsStore
+}
+
+func (s *staleRevisionSyncSettingsStore) GetSyncMode(ctx context.Context, mailingListUID, committeeUID string) (string, uint64, bool, error) {
+	mode, revision, ok, err := s.CommitteeSyncSettingsStore.GetSyncMode(ctx, mailingListUID, committeeUID)
+	if ok {
+		revision--
+	}
+	return mode, revision, ok, err
 }

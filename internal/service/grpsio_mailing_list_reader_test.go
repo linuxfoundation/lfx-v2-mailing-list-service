@@ -18,18 +18,22 @@ import (
 // stubSyncSettingsStore returns configured responses/errors for each method, independent of
 // the mock package's in-memory implementation — used to simulate store failures.
 type stubSyncSettingsStore struct {
-	getMode  string
-	getFound bool
-	getErr   error
-	putErr   error
-	delErr   error
+	getMode     string
+	getRevision uint64
+	getFound    bool
+	getErr      error
+	putErr      error
+	deleteOK    bool
+	deleteErr   error
 }
 
-func (s *stubSyncSettingsStore) GetSyncMode(_ context.Context, _, _ string) (string, bool, error) {
-	return s.getMode, s.getFound, s.getErr
+func (s *stubSyncSettingsStore) GetSyncMode(_ context.Context, _, _ string) (string, uint64, bool, error) {
+	return s.getMode, s.getRevision, s.getFound, s.getErr
 }
 func (s *stubSyncSettingsStore) PutSyncMode(_ context.Context, _, _, _ string) error { return s.putErr }
-func (s *stubSyncSettingsStore) DeleteSyncMode(_ context.Context, _, _ string) error { return s.delErr }
+func (s *stubSyncSettingsStore) DeleteSyncModeIfUnchanged(_ context.Context, _, _ string, _ uint64) (bool, error) {
+	return s.deleteOK, s.deleteErr
+}
 
 var _ port.CommitteeSyncSettingsStore = (*stubSyncSettingsStore)(nil)
 
