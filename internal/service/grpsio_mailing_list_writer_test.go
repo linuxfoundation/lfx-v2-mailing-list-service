@@ -788,6 +788,13 @@ func TestUpdateMailingList_CommitteeSwap_CleansUpOldSyncMode(t *testing.T) {
 
 	reader := &stubMLReader{ml: mlWith("old-committee")}
 	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	// cleanupStaleSyncMode re-checks the mailing list's live committee association immediately
+	// before deleting, so the reader must reflect this request's own successful swap by the time
+	// that check runs — mirroring ITX, whose GET after a successful PUT reports the committee this
+	// request just set, absent a further concurrent change.
+	writer.onUpdate = func() {
+		reader.ml = mlWith("new-committee")
+	}
 	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
 	o.syncSettingsStore = store
 
@@ -877,6 +884,34 @@ func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenNewerValueWrittenCon
 	require.NoError(t, err)
 	require.True(t, found, "the newer concurrent value must survive cleanup")
 	assert.Equal(t, "manual", mode)
+}
+
+func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenAssociationRevertedConcurrently(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
+
+	reader := &stubMLReader{ml: mlWith("old-committee")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	// Simulate a concurrent request that completes a full new-committee -> old-committee swap
+	// (with sync_mode omitted, so it never writes a new value for old-committee) while this
+	// update's writer call is in flight. old-committee's stored revision is therefore unchanged
+	// from what the pre-mutation snapshot captured — a revision check alone would not catch
+	// this — but by the time this request's delayed cleanup runs, the mailing list has already
+	// reverted to old-committee and its setting is active again. The live re-check immediately
+	// before the delete must see that reversion and skip.
+	writer.onUpdate = func() {
+		reader.ml = mlWith("old-committee")
+	}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
+	require.NoError(t, err)
+	require.True(t, found, "old-committee's sync_mode must survive cleanup since the mailing list has reverted to it")
+	assert.Equal(t, "auto_c_to_ml", mode)
 }
 
 // failingPutSyncSettingsStore wraps a working store but forces PutSyncMode to fail, so

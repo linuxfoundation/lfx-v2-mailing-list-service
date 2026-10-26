@@ -56,6 +56,42 @@ func TestDecodeCommitteeMembers(t *testing.T) {
 			},
 		},
 		{
+			// The actual wire message produced by lfx-v2-committee-service's GetBase ->
+			// rewrapWithUID for a missing committee (committee_reader.go wrapping
+			// storage.go's "committee not found" NotFound).
+			name: "wire-accurate committee not found message",
+			data: []byte(`{"error":"committee \"abc-123\": committee not found: committee UID: abc-123"}`),
+			assertErr: func(t *testing.T, err error) {
+				require.Error(t, err)
+				var notFound errs.NotFound
+				assert.True(t, errors.As(err, &notFound), "expected NotFound, got %T: %v", err, err)
+			},
+		},
+		{
+			// A different not-found-shaped failure that does not contain the literal
+			// "committee not found" phrase must not be misclassified as a terminal
+			// NotFound — it is a distinct failure mode upstream.
+			name: "committee settings not found does not classify as committee NotFound",
+			data: []byte(`{"error":"committee settings not found: committee UID: abc-123"}`),
+			assertErr: func(t *testing.T, err error) {
+				require.Error(t, err)
+				var unavailable errs.ServiceUnavailable
+				assert.True(t, errors.As(err, &unavailable), "expected ServiceUnavailable, got %T: %v", err, err)
+			},
+		},
+		{
+			// A JSON `null` reply unmarshals into a nil slice without error — the success
+			// contract requires an array (including [] for no members), so this must be
+			// rejected rather than silently reported as zero members.
+			name: "null reply is rejected, not treated as empty success",
+			data: []byte(`null`),
+			assertErr: func(t *testing.T, err error) {
+				require.Error(t, err)
+				var unavailable errs.ServiceUnavailable
+				assert.True(t, errors.As(err, &unavailable), "expected ServiceUnavailable, got %T: %v", err, err)
+			},
+		},
+		{
 			name: "invalid committee uid error",
 			data: []byte(`{"error":"invalid committee UID in list_members request: invalid UUID length: 3"}`),
 			assertErr: func(t *testing.T, err error) {
