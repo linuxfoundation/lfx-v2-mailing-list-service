@@ -42,7 +42,7 @@ Base URL (local): `http://localhost:8080`
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/members` | JWT | List members of a mailing list |
-| `POST` | `/groupsio/mailing-lists/{subgroup_id}/members` | JWT | Add a member to a mailing list |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/members` | JWT (writer) or JWT (self, public list only) | Add a member to a mailing list — see "Add a member" under GroupsIO Members below for the writer-vs-self-service distinction |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/members/{member_id}` | JWT | Get a member by ID |
 | `PUT` | `/groupsio/mailing-lists/{subgroup_id}/members/{member_id}` | JWT | Update a member |
 | `DELETE` | `/groupsio/mailing-lists/{subgroup_id}/members/{member_id}` | JWT | Remove a member |
@@ -204,11 +204,34 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```
 
 **Add a member:**
+
+This endpoint is reachable two ways, and the caller's permissions differ accordingly (see
+`authorizeAddGroupsioMember` in `cmd/mailing-list-api/service/endpoint_member.go` and the
+`public` relation notes in [`docs/fga-contract.md`](fga-contract.md#public-relation)):
+
+- **Verified writer** — a caller holding the `writer` relation on the list can add any
+  email, with any `member_type`/`mod_status`, on any list (public or private).
+- **Self-service on a public list** — a caller who is not a writer is only admitted via the
+  list's `public` relation, and may only add **their own authenticated email**, with no
+  `member_type` or `mod_status` set (both must be empty or their non-privileged default). Any
+  mismatch returns `403 Unauthorized`.
+
+A caller that is neither a verified writer nor matches the self-service conditions above gets
+`403 Unauthorized`; an fga-sync access-check failure (e.g. a timeout) returns
+`503 Service Unavailable` instead, since that's a transient outage, not a denial.
+
 ```bash
+# Writer adding another member with privileged fields
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","member_type":"committee"}' \
   "$BASE/groupsio/mailing-lists/<subgroup-id>/members"
+
+# Self-service subscription to a public list (caller's own email, no privileged fields)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@example.com"}' \
+  "$BASE/groupsio/mailing-lists/<public-subgroup-id>/members"
 ```
 
 **Update a member:**

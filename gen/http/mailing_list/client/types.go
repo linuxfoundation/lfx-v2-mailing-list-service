@@ -965,6 +965,14 @@ type AddGroupsioMemberServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// AddGroupsioMemberUnauthorizedResponseBody is the type of the "mailing-list"
+// service "add-groupsio-member" endpoint HTTP response body for the
+// "Unauthorized" error.
+type AddGroupsioMemberUnauthorizedResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // GetGroupsioMemberInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "get-groupsio-member" endpoint HTTP response body for
 // the "InternalServerError" error.
@@ -2175,6 +2183,16 @@ func NewAddGroupsioMemberServiceUnavailable(body *AddGroupsioMemberServiceUnavai
 	return v
 }
 
+// NewAddGroupsioMemberUnauthorized builds a mailing-list service
+// add-groupsio-member endpoint Unauthorized error.
+func NewAddGroupsioMemberUnauthorized(body *AddGroupsioMemberUnauthorizedResponseBody) *mailinglist.UnauthorizedError {
+	v := &mailinglist.UnauthorizedError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewGetGroupsioMemberGroupsioMemberOK builds a "mailing-list" service
 // "get-groupsio-member" endpoint result from a HTTP "OK" response.
 func NewGetGroupsioMemberGroupsioMemberOK(body *GetGroupsioMemberResponseBody) *mailinglist.GroupsioMember {
@@ -3204,6 +3222,15 @@ func ValidateAddGroupsioMemberNotFoundResponseBody(body *AddGroupsioMemberNotFou
 // ValidateAddGroupsioMemberServiceUnavailableResponseBody runs the validations
 // defined on add-groupsio-member_ServiceUnavailable_response_body
 func ValidateAddGroupsioMemberServiceUnavailableResponseBody(body *AddGroupsioMemberServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateAddGroupsioMemberUnauthorizedResponseBody runs the validations
+// defined on add-groupsio-member_Unauthorized_response_body
+func ValidateAddGroupsioMemberUnauthorizedResponseBody(body *AddGroupsioMemberUnauthorizedResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

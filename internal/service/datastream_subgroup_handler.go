@@ -189,6 +189,9 @@ func handleSubgroupUpdate(ctx context.Context, uid string, data map[string]any, 
 			relations[constants.RelationAuditor] = auditors
 		}
 	}
+	if list.Public {
+		relations[constants.RelationPublic] = []string{constants.UserWildcard}
+	}
 	accessData := fgatypes.GenericAccessData{
 		UID:        uid,
 		Public:     list.Public,

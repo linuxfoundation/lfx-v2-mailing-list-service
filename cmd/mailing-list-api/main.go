@@ -189,6 +189,13 @@ func run() int {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
 	}
 
+	// Initialize access checker.
+	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
+		return 1
+	}
+
 	// Create the mailing list API service.
 	mailingListSvc := service.NewMailingListAPI(
 		authSvc,
@@ -200,6 +207,7 @@ func run() int {
 		memberReaderOrchestrator,
 		memberWriterOrchestrator,
 		artifactReaderOrchestrator,
+		accessChecker,
 	)
 
 	// Wrap the service in GOA endpoints.

@@ -965,6 +965,14 @@ type AddGroupsioMemberServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// AddGroupsioMemberUnauthorizedResponseBody is the type of the "mailing-list"
+// service "add-groupsio-member" endpoint HTTP response body for the
+// "Unauthorized" error.
+type AddGroupsioMemberUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetGroupsioMemberInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "get-groupsio-member" endpoint HTTP response body for
 // the "InternalServerError" error.
@@ -2140,6 +2148,16 @@ func NewAddGroupsioMemberNotFoundResponseBody(res *mailinglist.NotFoundError) *A
 // "mailing-list" service.
 func NewAddGroupsioMemberServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *AddGroupsioMemberServiceUnavailableResponseBody {
 	body := &AddGroupsioMemberServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewAddGroupsioMemberUnauthorizedResponseBody builds the HTTP response body
+// from the result of the "add-groupsio-member" endpoint of the "mailing-list"
+// service.
+func NewAddGroupsioMemberUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *AddGroupsioMemberUnauthorizedResponseBody {
+	body := &AddGroupsioMemberUnauthorizedResponseBody{
 		Message: res.Message,
 	}
 	return body
