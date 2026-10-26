@@ -14,6 +14,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -125,9 +126,9 @@ func TestHandleDataStreamMemberUpdate_CreateVsUpdate_Action(t *testing.T) {
 	ctx := context.Background()
 	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
 
-	assert.Equal(t, model.ActionCreated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionCreated, mustLookup(t, m, mKey).Action())
 	HandleDataStreamMemberUpdate(ctx, "mem-1", data(), &mock.SpyMessagePublisher{}, m, nil)
-	assert.Equal(t, model.ActionUpdated, m.ResolveAction(ctx, mKey))
+	assert.Equal(t, model.ActionUpdated, mustLookup(t, m, mKey).Action())
 }
 
 // --- HandleDataStreamMemberDelete ---
@@ -295,11 +296,9 @@ func TestHandleDataStreamMemberUpdate_UsernameChanged_RemovesOldAndAddsNew(t *te
 	assert.Equal(t, "bob@example.com", putData.Data.(fgatypes.GenericMemberData).Username)
 }
 
-func TestHandleDataStreamMemberUpdate_MappingReadError_TreatedAsCreate(t *testing.T) {
-	// When GetMappingValue returns false (including on transient KV error), the handler cannot
-	// distinguish "not found" from "error" — it treats the event as ActionCreated and skips
-	// any stale-tuple removal. This is an accepted limitation pending an interface change that
-	// exposes the raw error.
+func TestHandleDataStreamMemberUpdate_MappingReadError_NAK(t *testing.T) {
+	// A failed read of the member mapping must not be treated as "never seen":
+	// that would index an update as a create and skip stale FGA tuple removal.
 	m := mock.NewFakeMappingStore()
 	ctx := context.Background()
 	m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
@@ -313,11 +312,71 @@ func TestHandleDataStreamMemberUpdate_MappingReadError_TreatedAsCreate(t *testin
 		map[string]any{"group_id": float64(42), "username": "bob@example.com"},
 		pub, m, nil)
 
-	// ACKed — no NAK since we can't distinguish transient from not-found without interface change.
-	assert.False(t, nak)
-	// No remove: oldUsername is unknown, so we cannot revoke the stale tuple.
-	assert.Equal(t, 1, len(pub.AccessCalls), "only member_put should be published — no remove since old username is unknown")
-	assert.Equal(t, fgaconstants.GenericMemberPutSubject, pub.AccessCalls[0].Subject)
+	assert.True(t, nak, "unreadable member mapping should NAK for retry")
+	assert.Empty(t, pub.IndexerCalls, "nothing may be published when the prior state is unknown")
+	assert.Empty(t, pub.AccessCalls, "nothing may be published when the prior state is unknown")
+}
+
+func TestHandleDataStreamMemberUpdate_ReadError_PermanentACKsUnknownNAKs(t *testing.T) {
+	tests := []struct {
+		name    string
+		readErr error
+		wantNAK bool
+	}{
+		{name: "unclassified error retries", readErr: errors.New("boom"), wantNAK: true},
+		{name: "transient error retries", readErr: pkgerrors.MarkTransient(errors.New("boom")), wantNAK: true},
+		{name: "permanent error is dropped", readErr: pkgerrors.MarkPermanent(errors.New("boom")), wantNAK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			gidKey := fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID)
+			m.SimulateGetErrorWith(gidKey, tt.readErr)
+
+			got := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+				map[string]any{"group_id": float64(42)}, &mock.SpyMessagePublisher{}, m, nil)
+
+			assert.Equal(t, tt.wantNAK, got)
+		})
+	}
+}
+
+func TestHandleDataStreamMemberUpdate_PublishFailure_PermanentACKsUnknownNAKs(t *testing.T) {
+	tests := []struct {
+		name    string
+		pubErr  error
+		wantNAK bool
+	}{
+		{name: "unclassified error retries", pubErr: errors.New("boom"), wantNAK: true},
+		{name: "permanent error is dropped", pubErr: pkgerrors.MarkPermanent(errors.New("boom")), wantNAK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "sg-1")
+			setProjectMapping(m, "sg-1", "proj-uid", "my-project")
+
+			got := HandleDataStreamMemberUpdate(context.Background(), "mem-1",
+				map[string]any{"group_id": float64(42)}, &mock.SpyMessagePublisher{IndexerError: tt.pubErr}, m, nil)
+
+			assert.Equal(t, tt.wantNAK, got)
+		})
+	}
+}
+
+func TestHandleDataStreamMemberDelete_MappingReadError_NAK(t *testing.T) {
+	// A failed read must not be mistaken for "never indexed" — that would tombstone
+	// the member and leave its OpenSearch document and FGA tuple behind.
+	m := mock.NewFakeMappingStore()
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	m.Set(mKey, "mem-1|alice@example.com|sg-1")
+	m.SimulateGetError(mKey)
+
+	pub := &mock.SpyMessagePublisher{}
+	nak := HandleDataStreamMemberDelete(context.Background(), "mem-1", pub, m)
+
+	assert.True(t, nak)
+	assert.Empty(t, pub.IndexerCalls, "no delete may be published when the prior state is unknown")
 }
 
 func TestHandleDataStreamMemberUpdate_MemberPutFailure_Transient_NAK(t *testing.T) {
@@ -355,7 +414,6 @@ func TestHandleDataStreamMemberUpdate_PutMappingFailure_Transient_NAK(t *testing
 	assert.Len(t, pub.AccessCalls, 1, "member_put was published before the mapping write failed")
 }
 
-
 func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *testing.T) {
 	m := mock.NewFakeMappingStore()
 	ctx := context.Background()
@@ -383,4 +441,26 @@ func TestHandleDataStreamMemberDelete_WithUsername_PublishesMemberRemove(t *test
 	assert.Empty(t, data.Relations)
 
 	assert.True(t, m.IsTombstoned(ctx, mKey))
+}
+
+func TestHandleDataStreamMemberDelete_TombstoneFailure_NAK(t *testing.T) {
+	mKey := fmt.Sprintf("%s.mem-1", constants.KVMappingPrefixMember)
+	tests := []struct {
+		name  string
+		setup func(m *mock.FakeMappingStore)
+	}{
+		{name: "after a published delete", setup: func(m *mock.FakeMappingStore) { m.Set(mKey, "mem-1|alice@example.com|sg-1") }},
+		{name: "never indexed", setup: func(*mock.FakeMappingStore) {}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			tt.setup(m)
+			m.SimulateTombstoneError(mKey, errors.New("boom"))
+
+			nak := HandleDataStreamMemberDelete(context.Background(), "mem-1", &mock.SpyMessagePublisher{}, m)
+
+			assert.True(t, nak, "an unwritten tombstone must be retried so a replayed PUT cannot re-grant access")
+		})
+	}
 }

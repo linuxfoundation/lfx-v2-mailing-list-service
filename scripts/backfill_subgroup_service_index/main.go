@@ -117,11 +117,11 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 	}
 	forwardKey := constants.KVMappingPrefixSubgroup + "." + uid
 	store := infraNATS.NewMappingReaderWriter(mappings, serviceIndex)
-	forward, present, err := store.GetMappingValueWithError(ctx, forwardKey)
+	forward, err := store.Lookup(ctx, forwardKey)
 	if err != nil {
 		return false, fmt.Errorf("read mapping %s: %w", forwardKey, err)
 	}
-	if !present || forward != uid {
+	if !forward.Present() || forward.Value != uid {
 		return false, nil // not indexed (or deleted) by the service
 	}
 	entry, err := objects.Get(ctx, key)
@@ -146,15 +146,17 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 		return false, fmt.Errorf("invalid parent_id %q", serviceUID)
 	}
 	parentKey := constants.KVMappingPrefixSubgroupParent + "." + uid
-	previousParent, present, err := store.GetMappingValueWithError(ctx, parentKey)
+	parentEntry, err := store.Lookup(ctx, parentKey)
 	if err != nil {
 		return false, err
 	}
+	previousParent, present := parentEntry.Value, parentEntry.Present()
 	pendingKey := constants.KVMappingPrefixSubgroupPreviousService + "." + uid
-	pendingService, pending, err := store.GetMappingValueWithError(ctx, pendingKey)
+	pendingEntry, err := store.Lookup(ctx, pendingKey)
 	if err != nil {
 		return false, err
 	}
+	pendingService, pending := pendingEntry.Value, pendingEntry.Present()
 	if present && previousParent != serviceUID && (!pending || pendingService != previousParent) {
 		return false, fmt.Errorf("existing parent %q differs from object parent %q", previousParent, serviceUID)
 	}
@@ -162,12 +164,13 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 		return false, fmt.Errorf("invalid pending service UID %q", pendingService)
 	}
 	indexKey := constants.KVMappingPrefixSubgroupByService + "." + serviceUID + "." + uid
-	indexedUID, indexed, err := store.GetMappingValueWithError(ctx, indexKey)
+	indexEntry, err := store.Lookup(ctx, indexKey)
 	if err != nil {
 		return false, err
 	}
-	if indexed && indexedUID != uid {
-		return false, fmt.Errorf("service index %s has unexpected UID %q", indexKey, indexedUID)
+	indexed := indexEntry.Present()
+	if indexed && indexEntry.Value != uid {
+		return false, fmt.Errorf("service index %s has unexpected UID %q", indexKey, indexEntry.Value)
 	}
 	if present && previousParent == serviceUID && indexed && !pending {
 		return false, nil

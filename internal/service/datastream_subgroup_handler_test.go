@@ -13,6 +13,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -335,7 +336,7 @@ func TestSubgroupServiceIndex_PermanentFailureACK(t *testing.T) {
 	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
 	pl := mock.NewFakeProjectLookup()
 	pl.Slugs["proj-uid"] = "my-project"
-	m.SimulatePutError(constants.KVMappingPrefixSubgroupByService+".svc-1.sg-1", errors.New("invalid key"))
+	m.SimulatePutError(constants.KVMappingPrefixSubgroupByService+".svc-1.sg-1", pkgerrors.MarkPermanent(errors.New("invalid key")))
 	assert.False(t, HandleDataStreamSubgroupUpdate(context.Background(), "sg-1", map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"}, &mock.SpyMessagePublisher{}, m, pl))
 }
 
@@ -429,7 +430,7 @@ func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Permanent_ACK(t *testi
 	pl.Slugs["proj-uid"] = "my-project"
 
 	mKey := fmt.Sprintf("%s.sg-1", constants.KVMappingPrefixSubgroup)
-	m.SimulatePutError(mKey, errors.New("internal server error"))
+	m.SimulatePutError(mKey, pkgerrors.MarkPermanent(errors.New("internal server error")))
 
 	pub := &mock.SpyMessagePublisher{}
 	nak := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
@@ -440,6 +441,65 @@ func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Permanent_ACK(t *testi
 		pub, m, pl)
 
 	assert.False(t, nak, "permanent PutMapping failure should ACK (not retry)")
+}
+
+func TestHandleDataStreamSubgroupUpdate_ReadError_NAK(t *testing.T) {
+	// A failed read of any mapping the handler depends on must NAK, never be
+	// folded into "absent" (which would index an update as a create or skip a check).
+	keys := []string{
+		constants.KVMappingPrefixProjectBySFID + ".sfid-proj",
+		constants.KVMappingPrefixService + ".svc-1",
+		constants.KVMappingPrefixServiceDomain + ".svc-1",
+		constants.KVMappingPrefixSubgroup + ".sg-1",
+		constants.KVMappingPrefixSubgroupParent + ".sg-1",
+		constants.KVMappingPrefixSubgroupPreviousService + ".sg-1",
+	}
+	for _, key := range keys {
+		t.Run(key, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+			m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+			pl := mock.NewFakeProjectLookup()
+			pl.Slugs["proj-uid"] = "my-project"
+			m.SimulateGetError(key)
+
+			got := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+				map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"},
+				&mock.SpyMessagePublisher{}, m, pl)
+
+			assert.True(t, got)
+		})
+	}
+}
+
+func TestHandleDataStreamSubgroupUpdate_PutMappingFailure_Unclassified_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	m.Set(constants.KVMappingPrefixProjectBySFID+".sfid-proj", "proj-uid")
+	m.Set(constants.KVMappingPrefixService+".svc-1", "svc-1")
+	pl := mock.NewFakeProjectLookup()
+	pl.Slugs["proj-uid"] = "my-project"
+	m.SimulatePutError(constants.KVMappingPrefixSubgroup+".sg-1", errors.New("internal server error"))
+
+	got := HandleDataStreamSubgroupUpdate(context.Background(), "sg-1",
+		map[string]any{"project_id": "sfid-proj", "parent_id": "svc-1"},
+		&mock.SpyMessagePublisher{}, m, pl)
+
+	assert.True(t, got, "an unclassified PutMapping failure should NAK rather than drop the event")
+}
+
+func TestHandleDataStreamSubgroupDelete_ReadError_NAK(t *testing.T) {
+	// A failed read must not be mistaken for "never indexed", which would skip the
+	// OpenSearch delete and tombstone a subgroup that is still indexed.
+	m := mock.NewFakeMappingStore()
+	mKey := constants.KVMappingPrefixSubgroup + ".sg-1"
+	m.Set(mKey, "sg-1")
+	m.SimulateGetError(mKey)
+	pub := &mock.SpyMessagePublisher{}
+
+	got := HandleDataStreamSubgroupDelete(context.Background(), "sg-1", pub, m)
+
+	assert.True(t, got)
+	assert.Empty(t, pub.IndexerCalls)
 }
 
 func TestHandleDataStreamSubgroupDelete_HappyPath_ACKAndTombstones(t *testing.T) {
