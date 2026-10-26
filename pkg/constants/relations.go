@@ -32,7 +32,16 @@ const (
 
 	// RelationAuditor defines the auditor permission level
 	RelationAuditor = "auditor"
+
+	// RelationPublic defines the public relation, kept separate from viewer so
+	// callers can check "is this list public" in isolation from a user's other
+	// relations to the list (e.g. to gate self-subscription on public lists
+	// without granting it to writers/auditors of private lists).
+	RelationPublic = "public"
 )
+
+// UserWildcard is the OpenFGA wildcard principal, granting a relation to all users.
+const UserWildcard = "*"
 
 // OpenFGA object type constants
 const (

@@ -338,6 +338,7 @@ func (c *Client) ListGroupsioMembers(ctx context.Context, p *ListGroupsioMembers
 // "mailing-list" service.
 // AddGroupsioMember may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Self-service subscription not permitted
 //   - "NotFound" (type *NotFoundError): Subgroup not found
 //   - "Conflict" (type *ConflictError): Member already exists
 //   - "InternalServerError" (type *InternalServerError): Internal server error

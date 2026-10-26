@@ -59,6 +59,21 @@ func NewTranslator(ctx context.Context, source, mappingsFile string, natsClient 
 	}
 }
 
+// NewAccessChecker initializes and returns the access checker implementation.
+// source controls the backend: "nats" (default) or "mock".
+func NewAccessChecker(ctx context.Context, source string, natsClient *nats.NATSClient) (port.AccessChecker, error) {
+	switch source {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock access checker")
+		return infrastructure.NewMockAccessChecker(), nil
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS access checker")
+		return nats.NewAccessChecker(natsClient, slog.Default()), nil
+	default:
+		return nil, fmt.Errorf("unsupported access checker implementation: %s", source)
+	}
+}
+
 // NewITXProxyConfig builds the ITX proxy configuration from the provided values.
 // privateKey is base64-decoded transparently if necessary.
 func NewITXProxyConfig(baseURL, clientID, privateKey, auth0Domain, audience string) proxy.Config {

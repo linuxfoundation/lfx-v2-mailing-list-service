@@ -530,6 +530,12 @@ paths:
                         $ref: '#/definitions/BadRequestError'
                         required:
                             - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
                 "404":
                     description: Not Found response.
                     schema:
@@ -2190,6 +2196,19 @@ definitions:
         description: Service unavailable
         example:
             message: The service is unavailable.
+        required:
+            - message
+    UnauthorizedError:
+        title: UnauthorizedError
+        type: object
+        properties:
+            message:
+                type: string
+                description: Error message
+                example: Unauthorized access.
+        description: Self-service subscription not permitted
+        example:
+            message: Unauthorized access.
         required:
             - message
 securityDefinitions:

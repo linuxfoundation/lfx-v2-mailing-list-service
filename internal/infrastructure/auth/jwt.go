@@ -35,6 +35,8 @@ type JWTAuthConfig struct {
 	Audience string
 	// MockLocalPrincipal is used for local development to bypass JWT validation
 	MockLocalPrincipal string
+	// MockLocalEmail is used for local development to bypass JWT validation
+	MockLocalEmail string
 }
 
 var (
@@ -66,19 +68,20 @@ type JWTAuth struct {
 	config    JWTAuthConfig
 }
 
-// ParsePrincipal extracts the principal from the JWT claims.
-func (j *JWTAuth) ParsePrincipal(ctx context.Context, token string, logger *slog.Logger) (string, error) {
+// ParsePrincipal extracts the principal and email from the JWT claims. Email
+// is returned empty if the token carries no email claim.
+func (j *JWTAuth) ParsePrincipal(ctx context.Context, token string, logger *slog.Logger) (string, string, error) {
 	// To avoid having to use a valid JWT token for local development, we can use the
 	// MockLocalPrincipal configuration parameter.
 	if j.config.MockLocalPrincipal != "" {
 		logger.InfoContext(ctx, "JWT authentication is disabled, returning mock principal",
 			"principal", j.config.MockLocalPrincipal,
 		)
-		return j.config.MockLocalPrincipal, nil
+		return j.config.MockLocalPrincipal, j.config.MockLocalEmail, nil
 	}
 
 	if j.validator == nil {
-		return "", errors.New("JWT validator is not set up")
+		return "", "", errors.New("JWT validator is not set up")
 	}
 
 	parsedJWT, err := j.validator.ValidateToken(ctx, token)
@@ -101,22 +104,22 @@ func (j *JWTAuth) ParsePrincipal(ctx context.Context, token string, logger *slog
 				errString = errString[:firstColon+secondColon+1]
 			}
 		}
-		return "", errors.New(errString)
+		return "", "", errors.New(errString)
 	}
 
 	claims, ok := parsedJWT.(*validator.ValidatedClaims)
 	if !ok {
 		// This should never happen.
-		return "", errors.New("failed to get validated authorization claims")
+		return "", "", errors.New("failed to get validated authorization claims")
 	}
 
 	customClaims, ok := claims.CustomClaims.(*HeimdallClaims)
 	if !ok {
 		// This should never happen.
-		return "", errors.New("failed to get custom authorization claims")
+		return "", "", errors.New("failed to get custom authorization claims")
 	}
 
-	return customClaims.Principal, nil
+	return customClaims.Principal, customClaims.Email, nil
 }
 
 // NewJWTAuth creates a new JWT authentication service

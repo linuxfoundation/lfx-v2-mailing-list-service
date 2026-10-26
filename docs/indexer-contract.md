@@ -210,11 +210,14 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | Field | Value |
 |---|---|
 | `object_type` | `groupsio_mailing_list` |
-| `public` | value of `GroupsIOMailingList.Public` |
+| `public` | value of `GroupsIOMailingList.Public` — passed through directly; fga-sync uses it to create a wildcard `viewer` tuple, not the `public` relation itself |
+| `relations.public` | `["*"]` — only set when `GroupsIOMailingList.Public` is `true` |
 | `references.groupsio_service` | `[service_uid]` |
 | `references.committee` | committee UIDs (one per associated committee) |
 | `references.writer` | usernames from writers (when settings present) |
 | `references.auditor` | usernames from auditors (when settings present) |
+
+> The `public` data field and the `relations.public` wildcard tuple are independent: the authorization gate for self-service member creation (see [`docs/fga-contract.md`](fga-contract.md#public-relation)) checks the `public` *relation*, which is only set via `relations.public`, not inferred from the `public` field alone.
 
 ### Search Behavior (IndexingConfig)
 
