@@ -53,16 +53,33 @@ func (c *natsCommitteeMembershipLookup) GetCommitteeMembers(ctx context.Context,
 		return nil, errs.NewServiceUnavailable("committee membership lookup failed", err)
 	}
 
+	return decodeCommitteeMembers(msg.Data)
+}
+
+// decodeCommitteeMembers decodes a lfx-v2-committee-service list_members reply: either a
+// JSON array of committee members, or a {"error":"<msg>"} envelope. It classifies the
+// envelope's message into the port error type callers use to decide retry behavior:
+//   - "not found"                             -> NotFound (the committee doesn't exist)
+//   - "invalid committee uid in list_members request" -> Validation (the known malformed-UID
+//     response from committee_member_handler.go's uuid.Parse check)
+//   - anything else                           -> ServiceUnavailable (storage/internal failures
+//     inside committee-service use the same envelope; treat unrecognized messages as a
+//     transient upstream failure, not a client-input error, so retry/backoff logic applies)
+func decodeCommitteeMembers(data []byte) ([]port.CommitteeMember, error) {
 	var errResp committeeMembershipLookupErrorResponse
-	if err := json.Unmarshal(msg.Data, &errResp); err == nil && errResp.Error != "" {
-		if strings.Contains(strings.ToLower(errResp.Error), "not found") {
+	if err := json.Unmarshal(data, &errResp); err == nil && errResp.Error != "" {
+		switch msg := strings.ToLower(errResp.Error); {
+		case strings.Contains(msg, "not found"):
 			return nil, errs.NewNotFound(errResp.Error)
+		case strings.Contains(msg, "invalid committee uid in list_members request"):
+			return nil, errs.NewValidation(errResp.Error)
+		default:
+			return nil, errs.NewServiceUnavailable("committee membership lookup failed: " + errResp.Error)
 		}
-		return nil, errs.NewValidation(errResp.Error)
 	}
 
 	var members []port.CommitteeMember
-	if err := json.Unmarshal(msg.Data, &members); err != nil {
+	if err := json.Unmarshal(data, &members); err != nil {
 		return nil, errs.NewServiceUnavailable("failed to parse committee membership lookup response", err)
 	}
 
