@@ -46,6 +46,10 @@ type stubMLWriter struct {
 	createErr  error
 	updateErr  error
 	deleteErr  error
+	// onUpdate, when set, is invoked during UpdateMailingList — used to simulate a concurrent
+	// write landing in the window between the orchestrator's pre-mutation snapshot and this
+	// call returning.
+	onUpdate func()
 }
 
 func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
@@ -56,6 +60,9 @@ func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMa
 }
 
 func (w *stubMLWriter) UpdateMailingList(_ context.Context, _ string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	if w.onUpdate != nil {
+		w.onUpdate()
+	}
 	if w.updateResp != nil {
 		return w.updateResp, w.updateErr
 	}
@@ -849,15 +856,19 @@ func TestUpdateMailingList_PutSyncModeFails_HydratesActualStoredValue(t *testing
 func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenNewerValueWrittenConcurrently(t *testing.T) {
 	store := mock.NewMockCommitteeSyncSettingsStore()
 	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
-	// Simulate a concurrent request re-writing a newer value for the same (ml, old-committee)
-	// pair between cleanupStaleSyncMode's read and its delete, by bumping the revision via
-	// another Put right before the update runs.
-	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "manual"))
 
 	reader := &stubMLReader{ml: mlWith("old-committee")}
 	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	// Simulate a concurrent request that re-associates the mailing list back to old-committee
+	// and writes a newer sync_mode for that pair while this update's writer call is in flight —
+	// i.e. after the orchestrator has taken its pre-mutation snapshot but before the mutation
+	// (o.writer.UpdateMailingList) returns. The fix must have captured the snapshot before this
+	// point, so the later gated delete sees a revision mismatch and skips.
+	writer.onUpdate = func() {
+		require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "manual"))
+	}
 	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
-	o.syncSettingsStore = &staleRevisionSyncSettingsStore{CommitteeSyncSettingsStore: store}
+	o.syncSettingsStore = store
 
 	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
 	require.NoError(t, err)
@@ -876,19 +887,4 @@ type failingPutSyncSettingsStore struct {
 
 func (f *failingPutSyncSettingsStore) PutSyncMode(_ context.Context, _, _, _ string) error {
 	return errors.New("kv down")
-}
-
-// staleRevisionSyncSettingsStore wraps a working store but reports a stale revision from
-// GetSyncMode, simulating a TOCTOU race where a newer value was written between the caller's
-// read and its revision-gated delete.
-type staleRevisionSyncSettingsStore struct {
-	port.CommitteeSyncSettingsStore
-}
-
-func (s *staleRevisionSyncSettingsStore) GetSyncMode(ctx context.Context, mailingListUID, committeeUID string) (string, uint64, bool, error) {
-	mode, revision, ok, err := s.CommitteeSyncSettingsStore.GetSyncMode(ctx, mailingListUID, committeeUID)
-	if ok {
-		revision--
-	}
-	return mode, revision, ok, err
 }

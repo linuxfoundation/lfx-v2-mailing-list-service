@@ -185,8 +185,13 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	// Snapshot the current committee association before the update so we can detect changes.
+	// Snapshot the current committee association, and the revision of its stored sync_mode,
+	// before the update runs. The revision must be captured here — not later, at cleanup time
+	// — so a concurrent request that re-associates the mailing list back to oldCUID and writes
+	// a newer sync_mode while this update is in flight is detected by the gated delete below
+	// instead of racing past it (see LFXV2-4029 review).
 	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
+	oldSyncModeSnapshot := o.snapshotSyncMode(ctx, mailingListID, oldCUID)
 
 	requestedSyncMode := ""
 	if len(ml.Committees) > 0 {
@@ -214,7 +219,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		o.notifyCommitteeRemoved(ctx, oldCUID, mailingListID)
 		o.notifyCommitteeAdded(ctx, newCUID)
 		if oldCUID != "" {
-			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID)
+			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID, oldSyncModeSnapshot)
 		}
 	}
 
@@ -234,24 +239,45 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	return mapped, nil
 }
 
-// cleanupStaleSyncMode removes the sync_mode previously stored for mailingListID+oldCUID after
-// the mailing list's committee association has changed. Uses a revision-gated delete so a
-// concurrent request that has already written a newer mode for the same pair is never clobbered
-// (see LFXV2-4029 review: cleanup must not race a concurrent re-association back to oldCUID).
-func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string) {
-	if o.syncSettingsStore == nil {
-		return
+// syncModeSnapshot captures whether a sync_mode was stored for a (mailing list, committee)
+// pair, and at what revision, at a specific point in time — so a later gated delete can tell
+// whether a concurrent write has superseded it since.
+type syncModeSnapshot struct {
+	revision uint64
+	found    bool
+}
+
+// snapshotSyncMode reads the current revision of the sync_mode stored for mailingListID+cUID,
+// if any. Must be called before the mutation that may change the mailing list's committee
+// association, not after — see cleanupStaleSyncMode. A lookup failure here is non-fatal to the
+// caller's request: it yields a not-found snapshot, which simply skips cleanup rather than
+// risking an incorrect delete.
+func (o *GroupsIOMailingListOrchestrator) snapshotSyncMode(ctx context.Context, mailingListID, cUID string) syncModeSnapshot {
+	if cUID == "" || o.syncSettingsStore == nil {
+		return syncModeSnapshot{}
 	}
-	_, revision, ok, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, oldCUID)
+	_, revision, found, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, cUID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to read stale committee sync_mode before cleanup",
-			"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
+		slog.WarnContext(ctx, "failed to snapshot committee sync_mode revision before mutation",
+			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
+		return syncModeSnapshot{}
+	}
+	return syncModeSnapshot{revision: revision, found: found}
+}
+
+// cleanupStaleSyncMode removes the sync_mode previously stored for mailingListID+oldCUID after
+// the mailing list's committee association has changed. snapshot must have been captured by
+// snapshotSyncMode before the mutation that changed the association ran — reading the revision
+// here, after the mutation, would leave a window where a concurrent request that re-associates
+// the mailing list back to oldCUID and writes a newer sync_mode in between gets its write
+// silently deleted by this cleanup (see LFXV2-4029 review). Gating the delete on a
+// pre-mutation revision closes that window: a concurrent write bumps the revision past what was
+// snapshotted, so the delete is skipped instead of clobbering it.
+func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string, snapshot syncModeSnapshot) {
+	if o.syncSettingsStore == nil || !snapshot.found {
 		return
 	}
-	if !ok {
-		return
-	}
-	deleted, err := o.syncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListID, oldCUID, revision)
+	deleted, err := o.syncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListID, oldCUID, snapshot.revision)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to clean up stale committee sync_mode",
 			"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
@@ -286,8 +312,10 @@ func (o *GroupsIOMailingListOrchestrator) hydrateSyncModeFromStore(ctx context.C
 // that a mailing list was removed. Only publishes has_mailing_list=false if no other
 // mailing lists reference the committee.
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	// Fetch current state before delete so we know which committee to notify.
+	// Fetch current state, and snapshot its stored sync_mode revision, before delete runs —
+	// see cleanupStaleSyncMode for why the snapshot must be taken before the mutation.
 	cUID := o.fetchCommitteeUID(ctx, mailingListID)
+	syncModeSnap := o.snapshotSyncMode(ctx, mailingListID, cUID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
 		return err
@@ -295,7 +323,7 @@ func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context,
 
 	o.notifyCommitteeRemoved(ctx, cUID, mailingListID)
 	if cUID != "" {
-		o.cleanupStaleSyncMode(ctx, mailingListID, cUID)
+		o.cleanupStaleSyncMode(ctx, mailingListID, cUID, syncModeSnap)
 	}
 	return nil
 }
