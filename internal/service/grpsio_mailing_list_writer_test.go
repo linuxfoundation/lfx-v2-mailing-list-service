@@ -888,3 +888,63 @@ type failingPutSyncSettingsStore struct {
 func (f *failingPutSyncSettingsStore) PutSyncMode(_ context.Context, _, _, _ string) error {
 	return errors.New("kv down")
 }
+
+func TestUpdateMailingList_ReturnedCommitteeMismatch_SkipsPersistAndHydratesStore(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "returned-committee", "manual"))
+
+	reader := &stubMLReader{ml: mlWith("requested-committee")}
+	// ITX's PUT returns 204 No Content and UpdateMailingList issues a separate GET to fetch the
+	// updated resource (see itx.go). Simulate a concurrent update to this mailing list landing
+	// between that PUT and GET: the response reflects a different committee than the one this
+	// request validated and asked to set sync_mode for.
+	writer := &stubMLWriter{updateResp: mlWith("returned-committee")}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	resp, err := o.UpdateMailingList(context.Background(), "ml-1", mlWithSync("requested-committee", "auto_c_to_ml"))
+	require.NoError(t, err)
+
+	assert.Equal(t, "manual", resp.Committees[0].SyncMode,
+		"must hydrate the returned committee's actual stored value, not the requested committee's sync_mode")
+
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "returned-committee")
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "manual", mode,
+		"the returned committee's stored sync_mode must not be overwritten by a request meant for a different committee")
+}
+
+// erroringGetSyncSettingsStore wraps a working store but forces GetSyncMode to fail, and
+// records whether DeleteSyncModeIfUnchanged was ever called — used to verify that a failed
+// pre-mutation snapshot read causes cleanup to be skipped entirely, rather than falling back to
+// an unsafe delete that would reopen the race the snapshot closes.
+type erroringGetSyncSettingsStore struct {
+	port.CommitteeSyncSettingsStore
+	deleteCalled bool
+}
+
+func (e *erroringGetSyncSettingsStore) GetSyncMode(_ context.Context, _, _ string) (string, uint64, bool, error) {
+	return "", 0, false, errors.New("kv unavailable")
+}
+
+func (e *erroringGetSyncSettingsStore) DeleteSyncModeIfUnchanged(ctx context.Context, mailingListUID, committeeUID string, expectedRevision uint64) (bool, error) {
+	e.deleteCalled = true
+	return e.CommitteeSyncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListUID, committeeUID, expectedRevision)
+}
+
+func TestUpdateMailingList_CommitteeSwap_SnapshotReadFails_SkipsCleanup(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
+	wrapped := &erroringGetSyncSettingsStore{CommitteeSyncSettingsStore: store}
+
+	reader := &stubMLReader{ml: mlWith("old-committee")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = wrapped
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err, "a pre-mutation snapshot read failure must not fail the overall update")
+	assert.False(t, wrapped.deleteCalled,
+		"cleanup must skip the delete entirely when the pre-mutation snapshot read fails, not fall back to an unsafe delete")
+}

@@ -194,8 +194,10 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	oldSyncModeSnapshot := o.snapshotSyncMode(ctx, mailingListID, oldCUID)
 
 	requestedSyncMode := ""
+	requestedCUID := ""
 	if len(ml.Committees) > 0 {
 		requestedSyncMode = ml.Committees[0].SyncMode
+		requestedCUID = ml.Committees[0].UID
 	}
 
 	toSend, err := o.mapMailingListRequest(ctx, ml)
@@ -225,7 +227,19 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 
 	persisted := true
 	if requestedSyncMode != "" {
-		persisted = o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
+		if newCUID == requestedCUID {
+			persisted = o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
+		} else {
+			// ITX's PUT returns 204 No Content, and the writer issues a separate GET to fetch
+			// the updated resource (see itx.go UpdateMailingList). A concurrent update to this
+			// same mailing list can land between that PUT and GET, so the committee reflected
+			// in resp/mapped may not be the one this request validated and asked to set
+			// sync_mode for. Applying requestedSyncMode to newCUID in that case would silently
+			// overwrite a different, unrelated committee's stored setting (see LFXV2-4029 review).
+			slog.WarnContext(ctx, "returned committee does not match requested committee; skipping sync_mode persist",
+				"mailing_list_id", mailingListID, "requested_committee_uid", requestedCUID, "returned_committee_uid", newCUID)
+			persisted = false
+		}
 	}
 	if persisted && requestedSyncMode != "" && len(mapped.Committees) > 0 {
 		mapped.Committees[0].SyncMode = requestedSyncMode
