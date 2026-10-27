@@ -63,7 +63,7 @@ func fromWireSubgroup(w *subgroupWire) *model.GroupsIOMailingList {
 		UpdatedAt:      updatedAt,
 	}
 	if w.CommitteeID != "" {
-		ml.Committees = []model.Committee{{UID: w.CommitteeID}}
+		ml.Committees = []model.Committee{{UID: w.CommitteeID, AllowedVotingStatuses: w.CommitteeFilters}}
 	}
 	return ml
 }

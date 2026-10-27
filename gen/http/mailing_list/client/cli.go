@@ -407,6 +407,26 @@ func BuildGetGroupsioMailingListMemberCountPayload(mailingListGetGroupsioMailing
 	return v, nil
 }
 
+// BuildGetGroupsioMailingListSyncDiffPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-sync-diff endpoint from CLI flags.
+func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingListSyncDiffSubgroupID string, mailingListGetGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+	var subgroupID string
+	{
+		subgroupID = mailingListGetGroupsioMailingListSyncDiffSubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGroupsioMailingListSyncDiffBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListSyncDiffBearerToken
+		}
+	}
+	v := &mailinglist.GetGroupsioMailingListSyncDiffPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
 // BuildListGroupsioMembersPayload builds the payload for the mailing-list
 // list-groupsio-members endpoint from CLI flags.
 func BuildListGroupsioMembersPayload(mailingListListGroupsioMembersSubgroupID string, mailingListListGroupsioMembersBearerToken string) (*mailinglist.ListGroupsioMembersPayload, error) {
