@@ -871,8 +871,15 @@ func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenNewerValueWrittenCon
 	// i.e. after the orchestrator has taken its pre-mutation snapshot but before the mutation
 	// (o.writer.UpdateMailingList) returns. The fix must have captured the snapshot before this
 	// point, so the later gated delete sees a revision mismatch and skips.
+	//
+	// reader.ml must also move to new-committee here, mirroring this request's own successful
+	// swap (as in TestUpdateMailingList_CommitteeSwap_CleansUpOldSyncMode): otherwise the live
+	// re-check in cleanupStaleSyncMode sees old-committee as still current and short-circuits
+	// before the revision-gated delete ever runs, and this test stops exercising the revision
+	// gate despite its name (see LFXV2-4029 review, copilot-pull-request-reviewer).
 	writer.onUpdate = func() {
 		require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "manual"))
+		reader.ml = mlWith("new-committee")
 	}
 	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
 	o.syncSettingsStore = store
