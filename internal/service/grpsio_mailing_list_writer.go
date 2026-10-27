@@ -414,8 +414,6 @@ func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx
 	}
 }
 
-// fetchCommitteeUID reads the current committee UID for a mailing list.
-// Returns "" if the reader is not configured or the fetch fails (non-fatal).
 // fetchCommitteeUID reads the current committee UID for a mailing list. ok is false when the
 // reader is unavailable or the read failed — callers that treat "" as "no committee" (safe to
 // no-op on) must not treat a failed read the same way when "" vs "unknown" changes behavior,
@@ -426,7 +424,7 @@ func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context,
 	}
 	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to fetch mailing list before mutation — committee event may be skipped",
+		slog.WarnContext(ctx, "failed to fetch mailing list for committee UID lookup — committee event may be skipped",
 			"mailing_list_id", mailingListID, "error", err)
 		return "", false
 	}
