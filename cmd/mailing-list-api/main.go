@@ -183,6 +183,7 @@ func run() int {
 		orchestrator.WithSyncDiffMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncDiffMemberReader(memberReaderOrchestrator),
 		orchestrator.WithSyncDiffCommitteeMembershipLookup(committeeMembershipLookup),
+		orchestrator.WithSyncDiffSyncSettingsStore(syncSettingsStore),
 	)
 
 	// ---- LFID invite feature ----

@@ -46,10 +46,13 @@ func (l *stubCommitteeMembershipLookup) GetCommitteeMembers(_ context.Context, _
 
 var _ port.CommitteeMembershipLookup = (*stubCommitteeMembershipLookup)(nil)
 
-func mlWithSyncMode(committeeUID, syncMode string) *model.GroupsIOMailingList {
+// stubSyncSettingsStore (defined in grpsio_mailing_list_reader_test.go) is reused here to
+// configure GetSyncMode responses/errors for SyncDiffOrchestrator tests.
+
+func mlWithCommittee(committeeUID string) *model.GroupsIOMailingList {
 	return &model.GroupsIOMailingList{
 		UID:        "ml-1",
-		Committees: []model.Committee{{UID: committeeUID, SyncMode: syncMode}},
+		Committees: []model.Committee{{UID: committeeUID}},
 	}
 }
 
@@ -65,7 +68,8 @@ func TestComputeSyncDiff_NoLinkedCommittee(t *testing.T) {
 
 func TestComputeSyncDiff_ManualSyncMode(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeManual)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeManual, getFound: true}),
 	)
 	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
 	require.Error(t, err)
@@ -75,7 +79,8 @@ func TestComputeSyncDiff_ManualSyncMode(t *testing.T) {
 
 func TestComputeSyncDiff_EmptySyncModeTreatedAsManual(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", "")}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getFound: false}),
 	)
 	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
 	require.Error(t, err)
@@ -83,9 +88,21 @@ func TestComputeSyncDiff_EmptySyncModeTreatedAsManual(t *testing.T) {
 	assert.True(t, errors.As(err, &validation))
 }
 
+func TestComputeSyncDiff_SyncSettingsStoreError(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getErr: errors.New("kv unavailable")}),
+	)
+	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	require.Error(t, err)
+	var unavailable errs.ServiceUnavailable
+	assert.True(t, errors.As(err, &unavailable))
+}
+
 func TestComputeSyncDiff_AutoMLToCommittee_NotYetSupported(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeAutoMailingListToCommittee, getFound: true}),
 	)
 	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
 	require.Error(t, err)
@@ -104,7 +121,8 @@ func TestComputeSyncDiff_MailingListReaderError(t *testing.T) {
 
 func TestComputeSyncDiff_CommitteeLookupError(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true}),
 		WithSyncDiffCommitteeMembershipLookup(&stubCommitteeMembershipLookup{err: errs.NewNotFound("committee not found")}),
 	)
 	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
@@ -115,7 +133,8 @@ func TestComputeSyncDiff_CommitteeLookupError(t *testing.T) {
 
 func TestComputeSyncDiff_MemberReaderError(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true}),
 		WithSyncDiffCommitteeMembershipLookup(&stubCommitteeMembershipLookup{}),
 		WithSyncDiffMemberReader(&stubMemberReader{err: errors.New("itx down")}),
 	)
@@ -124,22 +143,27 @@ func TestComputeSyncDiff_MemberReaderError(t *testing.T) {
 }
 
 // TestComputeSyncDiff_Reconciliation pins the full happy-path reconciliation: a committee member
-// missing from the list is an add, a committee-sourced list member no longer on the committee is
-// a remove, a directly-added list member sharing a departed committee member's email is left
+// missing from the list is an add (with the stored email trimmed), a duplicate committee record
+// for the same email produces only one add, a committee-sourced list member no longer on the
+// committee is a remove, a committee-sourced list member with a blank email is never flagged for
+// removal, a directly-added list member sharing a departed committee member's email is left
 // alone, and matching is case/whitespace-insensitive by email.
 func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 	committeeMembers := []port.CommitteeMember{
 		{UID: "cm-1", Email: "Alice@Example.com"},  // already on the list (case-insensitive match) -> no add
-		{UID: "cm-2", Email: " bob@example.com  "}, // missing from the list -> add
+		{UID: "cm-2", Email: " bob@example.com  "}, // missing from the list -> add (trimmed)
+		{UID: "cm-3", Email: "Bob@Example.com"},    // duplicate of cm-2's normalized email -> no second add
 	}
 	mlMembers := []*model.GrpsIOMember{
 		{UID: "mlm-1", Email: "alice@example.com", MemberType: "committee"},
 		{UID: "mlm-2", Email: "carol@example.com", MemberType: "committee"}, // no longer on committee -> remove
 		{UID: "mlm-3", Email: "carol@example.com", MemberType: "direct"},    // direct member, same email -> left alone
+		{UID: "mlm-4", Email: "", MemberType: "committee"},                  // blank email -> never flagged for removal
 	}
 
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true}),
 		WithSyncDiffCommitteeMembershipLookup(&stubCommitteeMembershipLookup{members: committeeMembers}),
 		WithSyncDiffMemberReader(&stubMemberReader{members: mlMembers}),
 	)
@@ -148,7 +172,7 @@ func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, diff.Adds, 1)
-	assert.Equal(t, " bob@example.com  ", diff.Adds[0].Email)
+	assert.Equal(t, "bob@example.com", diff.Adds[0].Email)
 	assert.Equal(t, "cm-2", diff.Adds[0].CommitteeMemberUID)
 
 	require.Len(t, diff.Removes, 1)
@@ -162,7 +186,8 @@ func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 
 func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
-		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
+		WithSyncDiffSyncSettingsStore(&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true}),
 		WithSyncDiffCommitteeMembershipLookup(&stubCommitteeMembershipLookup{
 			members: []port.CommitteeMember{{UID: "cm-1", Email: "alice@example.com"}},
 		}),

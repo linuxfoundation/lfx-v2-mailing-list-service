@@ -24,6 +24,7 @@ type SyncDiffOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
 	memberReader      port.GroupsIOMailingListMemberReader
 	committeeLookup   port.CommitteeMembershipLookup
+	syncSettingsStore port.CommitteeSyncSettingsStore
 }
 
 // SyncDiffOrchestratorOption configures a SyncDiffOrchestrator.
@@ -52,6 +53,15 @@ func WithSyncDiffCommitteeMembershipLookup(l port.CommitteeMembershipLookup) Syn
 	}
 }
 
+// WithSyncDiffSyncSettingsStore sets the store used to resolve the linked committee's configured
+// sync_mode directly, so a genuine storage failure can be reported as such instead of being
+// masked by the mailing-list reader's best-effort hydration (see ComputeSyncDiff).
+func WithSyncDiffSyncSettingsStore(s port.CommitteeSyncSettingsStore) SyncDiffOrchestratorOption {
+	return func(o *SyncDiffOrchestrator) {
+		o.syncSettingsStore = s
+	}
+}
+
 // NewSyncDiffOrchestrator creates a SyncDiffOrchestrator with the given options.
 func NewSyncDiffOrchestrator(opts ...SyncDiffOrchestratorOption) port.SyncDiffComputer {
 	o := &SyncDiffOrchestrator{}
@@ -68,6 +78,12 @@ func NewSyncDiffOrchestrator(opts ...SyncDiffOrchestratorOption) port.SyncDiffCo
 // membership, and this service has no committee-write capability (CommitteeMembershipLookup is
 // read-only; committee-service exposes member writes over HTTP only, requiring org/role data
 // this service does not have) — see LFXV2-4029.
+//
+// sync_mode is looked up directly from syncSettingsStore rather than through
+// mailingListReader's GetMailingList response: that response's Committees[0].SyncMode is filled
+// in by the reader's best-effort hydration, which swallows a storage error and leaves SyncMode
+// empty — indistinguishable here from a genuinely manual list. A direct lookup lets a real
+// storage failure surface as ServiceUnavailable instead of an incorrect Validation error.
 func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListID string) (*model.SyncDiff, error) {
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
@@ -78,7 +94,15 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	}
 	committeeUID := ml.Committees[0].UID
 
-	switch ml.Committees[0].SyncMode {
+	syncMode, _, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, committeeUID)
+	if err != nil {
+		return nil, errs.NewServiceUnavailable("failed to load committee sync_mode", err)
+	}
+	if !found {
+		syncMode = model.SyncModeManual
+	}
+
+	switch syncMode {
 	case model.SyncModeAutoCommitteeToMailingList:
 		// supported, proceed below
 	case "", model.SyncModeManual:
@@ -86,7 +110,7 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	case model.SyncModeAutoMailingListToCommittee:
 		return nil, errs.NewValidation("sync_mode auto_ml_to_c is not yet supported for sync-diff")
 	default:
-		return nil, errs.NewValidation("mailing list has an unrecognized sync_mode: " + ml.Committees[0].SyncMode)
+		return nil, errs.NewValidation("mailing list has an unrecognized sync_mode: " + syncMode)
 	}
 
 	committeeMembers, err := o.committeeLookup.GetCommitteeMembers(ctx, committeeUID)
@@ -130,9 +154,12 @@ func computeCommitteeToMailingListDiff(
 		if key == "" {
 			continue
 		}
+		if _, seen := committeeEmails[key]; seen {
+			continue
+		}
 		committeeEmails[key] = struct{}{}
 		if _, onList := mlEmails[key]; !onList {
-			adds = append(adds, model.SyncDiffAdd{Email: cm.Email, CommitteeMemberUID: cm.UID})
+			adds = append(adds, model.SyncDiffAdd{Email: strings.TrimSpace(cm.Email), CommitteeMemberUID: cm.UID})
 		}
 	}
 
@@ -141,7 +168,11 @@ func computeCommitteeToMailingListDiff(
 		if m.MemberType != committeeMemberType {
 			continue
 		}
-		if _, stillOnCommittee := committeeEmails[normalizeEmail(m.Email)]; !stillOnCommittee {
+		key := normalizeEmail(m.Email)
+		if key == "" {
+			continue
+		}
+		if _, stillOnCommittee := committeeEmails[key]; !stillOnCommittee {
 			removes = append(removes, model.SyncDiffRemove{Email: m.Email, MailingListMemberID: m.UID})
 		}
 	}
