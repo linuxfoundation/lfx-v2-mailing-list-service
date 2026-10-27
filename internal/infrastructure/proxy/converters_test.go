@@ -209,6 +209,12 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			expectCommittees: nil,
 		},
 		{
+			name:             "CommitteeFilters populates AllowedVotingStatuses",
+			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", CommitteeFilters: []string{"Voting Rep"}},
+			expectUID:        "1",
+			expectCommittees: []model.Committee{{UID: "committee-uuid", AllowedVotingStatuses: []string{"Voting Rep"}}},
+		},
+		{
 			name:            "valid RFC3339 timestamps are parsed",
 			input:           &subgroupWire{GroupID: 1, CreatedAt: "2024-01-01T00:00:00Z", UpdatedAt: "2024-06-01T12:00:00Z"},
 			expectUID:       "1",

@@ -35,17 +35,18 @@ type serviceListResponseWire struct {
 
 // subgroupWire represents a GroupsIO subgroup (mailing list) as returned by the ITX API.
 type subgroupWire struct {
-	ID             string `json:"id,omitempty"`
-	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
-	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
-	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
-	GroupID        int64  `json:"group_id,omitempty"`
-	Name           string `json:"group_name,omitempty"`
-	Description    string `json:"description,omitempty"`
-	Type           string `json:"type,omitempty"`
-	AudienceAccess string `json:"visibility,omitempty"`
-	CreatedAt      string `json:"created_at,omitempty"`
-	UpdatedAt      string `json:"last_modified_at,omitempty"`
+	ID               string   `json:"id,omitempty"`
+	ProjectID        string   `json:"project_id,omitempty"`        // v1 SFID
+	CommitteeID      string   `json:"committee,omitempty"`         // v1 UUID
+	CommitteeFilters []string `json:"committee_filters,omitempty"` // allowed voting statuses, if the committee link is filtered
+	ParentID         string   `json:"parent_id,omitempty"`         // v1 Service ID
+	GroupID          int64    `json:"group_id,omitempty"`
+	Name             string   `json:"group_name,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	Type             string   `json:"type,omitempty"`
+	AudienceAccess   string   `json:"visibility,omitempty"`
+	CreatedAt        string   `json:"created_at,omitempty"`
+	UpdatedAt        string   `json:"last_modified_at,omitempty"`
 }
 
 // subgroupRequestWire represents a create/update request for a GroupsIO subgroup.
