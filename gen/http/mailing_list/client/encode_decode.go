@@ -2004,6 +2004,155 @@ func DecodeGetGroupsioMailingListMemberCountResponse(decoder func(*http.Response
 	}
 }
 
+// BuildGetGroupsioMailingListSyncDiffRequest instantiates a HTTP request
+// object with method and path set to call the "mailing-list" service
+// "get-groupsio-mailing-list-sync-diff" endpoint
+func (c *Client) BuildGetGroupsioMailingListSyncDiffRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		subgroupID string
+	)
+	{
+		p, ok := v.(*mailinglist.GetGroupsioMailingListSyncDiffPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list-sync-diff", "*mailinglist.GetGroupsioMailingListSyncDiffPayload", v)
+		}
+		subgroupID = p.SubgroupID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetGroupsioMailingListSyncDiffMailingListPath(subgroupID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("mailing-list", "get-groupsio-mailing-list-sync-diff", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetGroupsioMailingListSyncDiffRequest returns an encoder for requests
+// sent to the mailing-list get-groupsio-mailing-list-sync-diff server.
+func EncodeGetGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*mailinglist.GetGroupsioMailingListSyncDiffPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("mailing-list", "get-groupsio-mailing-list-sync-diff", "*mailinglist.GetGroupsioMailingListSyncDiffPayload", v)
+		}
+		if p.BearerToken != nil {
+			head := *p.BearerToken
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
+}
+
+// DecodeGetGroupsioMailingListSyncDiffResponse returns a decoder for responses
+// returned by the mailing-list get-groupsio-mailing-list-sync-diff endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeGetGroupsioMailingListSyncDiffResponse may return the following errors:
+//   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+//   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - error: internal error
+func DecodeGetGroupsioMailingListSyncDiffResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetGroupsioMailingListSyncDiffResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			res := NewGetGroupsioMailingListSyncDiffGroupsioSyncDiffOK(&body)
+			return res, nil
+		case http.StatusBadRequest:
+			var (
+				body GetGroupsioMailingListSyncDiffBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffBadRequest(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body GetGroupsioMailingListSyncDiffNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffServiceUnavailable(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-mailing-list-sync-diff", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildListGroupsioMembersRequest instantiates a HTTP request object with
 // method and path set to call the "mailing-list" service
 // "list-groupsio-members" endpoint
@@ -3305,6 +3454,30 @@ func unmarshalGroupsioSubgroupResponseBodyToMailinglistGroupsioSubgroup(v *Group
 		SyncMode:       v.SyncMode,
 		CreatedAt:      v.CreatedAt,
 		UpdatedAt:      v.UpdatedAt,
+	}
+
+	return res
+}
+
+// unmarshalGroupsioSyncDiffAddResponseBodyToMailinglistGroupsioSyncDiffAdd
+// builds a value of type *mailinglist.GroupsioSyncDiffAdd from a value of type
+// *GroupsioSyncDiffAddResponseBody.
+func unmarshalGroupsioSyncDiffAddResponseBodyToMailinglistGroupsioSyncDiffAdd(v *GroupsioSyncDiffAddResponseBody) *mailinglist.GroupsioSyncDiffAdd {
+	res := &mailinglist.GroupsioSyncDiffAdd{
+		Email:              *v.Email,
+		CommitteeMemberUID: *v.CommitteeMemberUID,
+	}
+
+	return res
+}
+
+// unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRemove
+// builds a value of type *mailinglist.GroupsioSyncDiffRemove from a value of
+// type *GroupsioSyncDiffRemoveResponseBody.
+func unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRemove(v *GroupsioSyncDiffRemoveResponseBody) *mailinglist.GroupsioSyncDiffRemove {
+	res := &mailinglist.GroupsioSyncDiffRemove{
+		Email:               *v.Email,
+		MailingListMemberID: *v.MailingListMemberID,
 	}
 
 	return res

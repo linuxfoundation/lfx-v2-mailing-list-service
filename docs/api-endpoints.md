@@ -36,6 +36,7 @@ Base URL (local): `http://localhost:8080`
 | `DELETE` | `/groupsio/mailing-lists/{subgroup_id}` | JWT | Delete a mailing list |
 | `GET` | `/groupsio/mailing-lists/count?project_uid=<uuid>` | JWT | Get mailing list count for a project |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/member_count` | JWT | Get member count for a mailing list |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` only) |
 
 ### GroupsIO Members
 
@@ -178,7 +179,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 `sync_mode` requires `committee_uid` to also be set, and must be one of `manual` (default),
 `auto_c_to_ml`, or `auto_ml_to_c`. It is v2-local configuration (ITX has no concept of it) that
-a future sync-diff/sync-apply endpoint will read to decide how to reconcile membership.
+the sync-diff endpoint below (and a future sync-apply endpoint) reads to decide how to reconcile
+membership.
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -200,6 +202,33 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" \
 curl -X DELETE -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists/<subgroup-id>"
 # 204 No Content
+```
+
+**Compute the sync-diff for a mailing list linked to a committee:**
+
+Only supported for mailing lists configured with `sync_mode: auto_c_to_ml`. Returns the committee
+members missing from the mailing list (`adds`) and the committee-sync-sourced mailing list members
+no longer on the committee (`removes`); directly-added members are never included in `removes`.
+Returns `400 Bad Request` if the mailing list has no linked committee, or its `sync_mode` is
+`manual` or `auto_ml_to_c` (not yet supported).
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff"
+```
+
+```json
+{
+  "mailing_list_id": "<subgroup-id>",
+  "committee_uid": "<committee-uuid>",
+  "sync_mode": "auto_c_to_ml",
+  "adds": [
+    {"email": "new-member@example.com", "committee_member_uid": "<committee-member-uuid>"}
+  ],
+  "removes": [
+    {"email": "departed-member@example.com", "mailing_list_member_id": "<mailing-list-member-id>"}
+  ]
+}
 ```
 
 ### GroupsIO Members

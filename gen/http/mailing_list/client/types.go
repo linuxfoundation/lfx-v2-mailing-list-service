@@ -371,6 +371,21 @@ type GetGroupsioMailingListMemberCountResponseBody struct {
 	Count *int `form:"count,omitempty" json:"count,omitempty" xml:"count,omitempty"`
 }
 
+// GetGroupsioMailingListSyncDiffResponseBody is the type of the "mailing-list"
+// service "get-groupsio-mailing-list-sync-diff" endpoint HTTP response body.
+type GetGroupsioMailingListSyncDiffResponseBody struct {
+	// Mailing list (subgroup) ID
+	MailingListID *string `form:"mailing_list_id,omitempty" json:"mailing_list_id,omitempty" xml:"mailing_list_id,omitempty"`
+	// LFX v2 committee UID
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Sync direction this diff was computed for
+	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee members to add to the mailing list
+	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
+	// Mailing list members to remove
+	Removes []*GroupsioSyncDiffRemoveResponseBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
+}
+
 // ListGroupsioMembersResponseBody is the type of the "mailing-list" service
 // "list-groupsio-members" endpoint HTTP response body.
 type ListGroupsioMembersResponseBody struct {
@@ -916,6 +931,38 @@ type GetGroupsioMailingListMemberCountServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// GetGroupsioMailingListSyncDiffBadRequestResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "BadRequest" error.
+type GetGroupsioMailingListSyncDiffBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint
+// HTTP response body for the "InternalServerError" error.
+type GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListSyncDiffNotFoundResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "NotFound" error.
+type GetGroupsioMailingListSyncDiffNotFoundResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint
+// HTTP response body for the "ServiceUnavailable" error.
+type GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // ListGroupsioMembersInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "list-groupsio-members" endpoint HTTP response body
 // for the "InternalServerError" error.
@@ -1221,6 +1268,24 @@ type GroupsioSubgroupResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+}
+
+// GroupsioSyncDiffAddResponseBody is used to define fields on response body
+// types.
+type GroupsioSyncDiffAddResponseBody struct {
+	// Committee member's email address
+	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	// LFX v2 committee member UID
+	CommitteeMemberUID *string `form:"committee_member_uid,omitempty" json:"committee_member_uid,omitempty" xml:"committee_member_uid,omitempty"`
+}
+
+// GroupsioSyncDiffRemoveResponseBody is used to define fields on response body
+// types.
+type GroupsioSyncDiffRemoveResponseBody struct {
+	// Mailing list member's email address
+	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
+	// Mailing list member's ID
+	MailingListMemberID *string `form:"mailing_list_member_id,omitempty" json:"mailing_list_member_id,omitempty" xml:"mailing_list_member_id,omitempty"`
 }
 
 // GroupsioMemberResponseBody is used to define fields on response body types.
@@ -2083,6 +2148,77 @@ func NewGetGroupsioMailingListMemberCountServiceUnavailable(body *GetGroupsioMai
 	return v
 }
 
+// NewGetGroupsioMailingListSyncDiffGroupsioSyncDiffOK builds a "mailing-list"
+// service "get-groupsio-mailing-list-sync-diff" endpoint result from a HTTP
+// "OK" response.
+func NewGetGroupsioMailingListSyncDiffGroupsioSyncDiffOK(body *GetGroupsioMailingListSyncDiffResponseBody) *mailinglist.GroupsioSyncDiff {
+	v := &mailinglist.GroupsioSyncDiff{
+		MailingListID: *body.MailingListID,
+		CommitteeUID:  *body.CommitteeUID,
+		SyncMode:      *body.SyncMode,
+	}
+	v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
+	for i, val := range body.Adds {
+		if val == nil {
+			v.Adds[i] = nil
+			continue
+		}
+		v.Adds[i] = unmarshalGroupsioSyncDiffAddResponseBodyToMailinglistGroupsioSyncDiffAdd(val)
+	}
+	v.Removes = make([]*mailinglist.GroupsioSyncDiffRemove, len(body.Removes))
+	for i, val := range body.Removes {
+		if val == nil {
+			v.Removes[i] = nil
+			continue
+		}
+		v.Removes[i] = unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRemove(val)
+	}
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncDiffBadRequest builds a mailing-list service
+// get-groupsio-mailing-list-sync-diff endpoint BadRequest error.
+func NewGetGroupsioMailingListSyncDiffBadRequest(body *GetGroupsioMailingListSyncDiffBadRequestResponseBody) *mailinglist.BadRequestError {
+	v := &mailinglist.BadRequestError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncDiffInternalServerError builds a mailing-list
+// service get-groupsio-mailing-list-sync-diff endpoint InternalServerError
+// error.
+func NewGetGroupsioMailingListSyncDiffInternalServerError(body *GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody) *mailinglist.InternalServerError {
+	v := &mailinglist.InternalServerError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncDiffNotFound builds a mailing-list service
+// get-groupsio-mailing-list-sync-diff endpoint NotFound error.
+func NewGetGroupsioMailingListSyncDiffNotFound(body *GetGroupsioMailingListSyncDiffNotFoundResponseBody) *mailinglist.NotFoundError {
+	v := &mailinglist.NotFoundError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncDiffServiceUnavailable builds a mailing-list
+// service get-groupsio-mailing-list-sync-diff endpoint ServiceUnavailable
+// error.
+func NewGetGroupsioMailingListSyncDiffServiceUnavailable(body *GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
+	v := &mailinglist.ServiceUnavailableError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewListGroupsioMembersGroupsioMemberListOK builds a "mailing-list" service
 // "list-groupsio-members" endpoint result from a HTTP "OK" response.
 func NewListGroupsioMembersGroupsioMemberListOK(body *ListGroupsioMembersResponseBody) *mailinglist.GroupsioMemberList {
@@ -2684,6 +2820,49 @@ func ValidateGetGroupsioMailingListMemberCountResponseBody(body *GetGroupsioMail
 	return
 }
 
+// ValidateGetGroupsioMailingListSyncDiffResponseBody runs the validations
+// defined on Get-Groupsio-Mailing-List-Sync-DiffResponseBody
+func ValidateGetGroupsioMailingListSyncDiffResponseBody(body *GetGroupsioMailingListSyncDiffResponseBody) (err error) {
+	if body.MailingListID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_id", "body"))
+	}
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.SyncMode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("sync_mode", "body"))
+	}
+	if body.Adds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
+	}
+	if body.Removes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+	}
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+	}
+	if body.SyncMode != nil {
+		if !(*body.SyncMode == "auto_c_to_ml") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"auto_c_to_ml"}))
+		}
+	}
+	for _, e := range body.Adds {
+		if e != nil {
+			if err2 := ValidateGroupsioSyncDiffAddResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Removes {
+		if e != nil {
+			if err2 := ValidateGroupsioSyncDiffRemoveResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
 // ValidateListGroupsioMembersResponseBody runs the validations defined on
 // List-Groupsio-MembersResponseBody
 func ValidateListGroupsioMembersResponseBody(body *ListGroupsioMembersResponseBody) (err error) {
@@ -3193,6 +3372,46 @@ func ValidateGetGroupsioMailingListMemberCountServiceUnavailableResponseBody(bod
 	return
 }
 
+// ValidateGetGroupsioMailingListSyncDiffBadRequestResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-sync-diff_BadRequest_response_body
+func ValidateGetGroupsioMailingListSyncDiffBadRequestResponseBody(body *GetGroupsioMailingListSyncDiffBadRequestResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody runs
+// the validations defined on
+// get-groupsio-mailing-list-sync-diff_InternalServerError_response_body
+func ValidateGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody(body *GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListSyncDiffNotFoundResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-sync-diff_NotFound_response_body
+func ValidateGetGroupsioMailingListSyncDiffNotFoundResponseBody(body *GetGroupsioMailingListSyncDiffNotFoundResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody runs
+// the validations defined on
+// get-groupsio-mailing-list-sync-diff_ServiceUnavailable_response_body
+func ValidateGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(body *GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateListGroupsioMembersInternalServerErrorResponseBody runs the
 // validations defined on
 // list-groupsio-members_InternalServerError_response_body
@@ -3515,6 +3734,36 @@ func ValidateGroupsioSubgroupResponseBody(body *GroupsioSubgroupResponseBody) (e
 		if !(*body.SyncMode == "manual" || *body.SyncMode == "auto_c_to_ml" || *body.SyncMode == "auto_ml_to_c") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"manual", "auto_c_to_ml", "auto_ml_to_c"}))
 		}
+	}
+	return
+}
+
+// ValidateGroupsioSyncDiffAddResponseBody runs the validations defined on
+// groupsio-sync-diff-addResponseBody
+func ValidateGroupsioSyncDiffAddResponseBody(body *GroupsioSyncDiffAddResponseBody) (err error) {
+	if body.Email == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
+	}
+	if body.CommitteeMemberUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_member_uid", "body"))
+	}
+	if body.Email != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	return
+}
+
+// ValidateGroupsioSyncDiffRemoveResponseBody runs the validations defined on
+// groupsio-sync-diff-removeResponseBody
+func ValidateGroupsioSyncDiffRemoveResponseBody(body *GroupsioSyncDiffRemoveResponseBody) (err error) {
+	if body.Email == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
+	}
+	if body.MailingListMemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_member_id", "body"))
+	}
+	if body.Email != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
 	}
 	return
 }

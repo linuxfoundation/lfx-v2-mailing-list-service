@@ -11,6 +11,25 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
 )
 
+// convertSyncDiff converts a domain sync diff into its Goa result type.
+func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
+	adds := make([]*mailinglist.GroupsioSyncDiffAdd, len(d.Adds))
+	for i, a := range d.Adds {
+		adds[i] = &mailinglist.GroupsioSyncDiffAdd{Email: a.Email, CommitteeMemberUID: a.CommitteeMemberUID}
+	}
+	removes := make([]*mailinglist.GroupsioSyncDiffRemove, len(d.Removes))
+	for i, r := range d.Removes {
+		removes[i] = &mailinglist.GroupsioSyncDiffRemove{Email: r.Email, MailingListMemberID: r.MailingListMemberID}
+	}
+	return &mailinglist.GroupsioSyncDiff{
+		MailingListID: d.MailingListID,
+		CommitteeUID:  d.CommitteeUID,
+		SyncMode:      d.SyncMode,
+		Adds:          adds,
+		Removes:       removes,
+	}
+}
+
 // formatTime returns t formatted as RFC3339, or "" if t is zero.
 func formatTime(t time.Time) string {
 	if t.IsZero() {
