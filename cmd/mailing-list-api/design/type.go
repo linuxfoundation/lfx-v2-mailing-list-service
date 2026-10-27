@@ -169,6 +169,44 @@ var GroupsioCountType = dsl.Type("groupsio-count", func() {
 	dsl.Required("count")
 })
 
+// GroupsioSyncDiffAddType represents a committee member who should be added to the mailing list.
+var GroupsioSyncDiffAddType = dsl.Type("groupsio-sync-diff-add", func() {
+	dsl.Description("A committee member missing from the mailing list")
+	dsl.Attribute("email", dsl.String, "Committee member's email address", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("committee_member_uid", dsl.String, "LFX v2 committee member UID")
+	dsl.Required("email", "committee_member_uid")
+})
+
+// GroupsioSyncDiffRemoveType represents a mailing list member who should be removed because they
+// are no longer on the linked committee.
+var GroupsioSyncDiffRemoveType = dsl.Type("groupsio-sync-diff-remove", func() {
+	dsl.Description("A mailing list member no longer on the linked committee")
+	dsl.Attribute("email", dsl.String, "Mailing list member's email address", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("mailing_list_member_id", dsl.String, "Mailing list member's ID")
+	dsl.Required("email", "mailing_list_member_id")
+})
+
+// GroupsioSyncDiffType represents the reconciliation diff between a mailing list and its linked
+// committee's membership.
+var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
+	dsl.Description("Membership reconciliation diff between a mailing list and its linked committee")
+	dsl.Attribute("mailing_list_id", dsl.String, "Mailing list (subgroup) ID")
+	dsl.Attribute("committee_uid", dsl.String, "LFX v2 committee UID", func() {
+		dsl.Format(dsl.FormatUUID)
+	})
+	dsl.Attribute("sync_mode", dsl.String, "Sync direction this diff was computed for", func() {
+		dsl.Enum("auto_c_to_ml")
+		dsl.Example("auto_c_to_ml")
+	})
+	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Committee members to add to the mailing list")
+	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Mailing list members to remove")
+	dsl.Required("mailing_list_id", "committee_uid", "sync_mode", "adds", "removes")
+})
+
 // GroupsioMemberType represents an ITX GroupsIO member.
 var GroupsioMemberType = dsl.Type("groupsio-member", func() {
 	dsl.Description("A member of a GroupsIO subgroup")

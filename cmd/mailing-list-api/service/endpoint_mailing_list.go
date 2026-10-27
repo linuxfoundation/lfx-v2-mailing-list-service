@@ -90,3 +90,11 @@ func (s *mailingListAPI) GetGroupsioMailingListMemberCount(ctx context.Context, 
 	}
 	return &mailinglist.GroupsioCount{Count: count}, nil
 }
+
+func (s *mailingListAPI) GetGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncDiff, error) {
+	diff, err := s.syncDiffComputer.ComputeSyncDiff(ctx, p.SubgroupID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncDiff(diff), nil
+}

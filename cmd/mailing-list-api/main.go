@@ -140,6 +140,13 @@ func run() int {
 		return 1
 	}
 
+	// Initialize committee membership lookup.
+	committeeMembershipLookup, err := service.NewCommitteeMembershipLookup(ctx, env.RepositorySource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing committee membership lookup", "error", err)
+		return 1
+	}
+
 	// Build orchestrators.
 	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
 		orchestrator.WithServiceReader(proxyClient),
@@ -171,6 +178,11 @@ func run() int {
 	)
 	artifactReaderOrchestrator := orchestrator.NewGroupsIOArtifactReaderOrchestrator(
 		orchestrator.WithArtifactReader(proxyClient),
+	)
+	syncDiffOrchestrator := orchestrator.NewSyncDiffOrchestrator(
+		orchestrator.WithSyncDiffMailingListReader(mailingListReaderOrchestrator),
+		orchestrator.WithSyncDiffMemberReader(memberReaderOrchestrator),
+		orchestrator.WithSyncDiffCommitteeMembershipLookup(committeeMembershipLookup),
 	)
 
 	// ---- LFID invite feature ----
@@ -217,6 +229,7 @@ func run() int {
 		memberWriterOrchestrator,
 		artifactReaderOrchestrator,
 		accessChecker,
+		syncDiffOrchestrator,
 	)
 
 	// Wrap the service in GOA endpoints.

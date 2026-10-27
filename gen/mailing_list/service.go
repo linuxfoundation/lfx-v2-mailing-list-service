@@ -49,6 +49,9 @@ type Service interface {
 	GetGroupsioMailingListCount(context.Context, *GetGroupsioMailingListCountPayload) (res *GroupsioCount, err error)
 	// Get count of members in a GroupsIO subgroup
 	GetGroupsioMailingListMemberCount(context.Context, *GetGroupsioMailingListMemberCountPayload) (res *GroupsioCount, err error)
+	// Compute the membership reconciliation diff between a GroupsIO subgroup and
+	// its linked committee
+	GetGroupsioMailingListSyncDiff(context.Context, *GetGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncDiff, err error)
 	// List members of a GroupsIO subgroup
 	ListGroupsioMembers(context.Context, *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error)
 	// Add a member to a GroupsIO subgroup
@@ -89,7 +92,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [25]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
+var MethodNames = [26]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -251,6 +254,15 @@ type GetGroupsioMailingListMemberCountPayload struct {
 // GetGroupsioMailingListPayload is the payload type of the mailing-list
 // service get-groupsio-mailing-list method.
 type GetGroupsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+}
+
+// GetGroupsioMailingListSyncDiffPayload is the payload type of the
+// mailing-list service get-groupsio-mailing-list-sync-diff method.
+type GetGroupsioMailingListSyncDiffPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Subgroup ID
@@ -484,6 +496,37 @@ type GroupsioSubgroupList struct {
 	Items []*GroupsioSubgroup
 	// Total count
 	Total *int
+}
+
+// GroupsioSyncDiff is the result type of the mailing-list service
+// get-groupsio-mailing-list-sync-diff method.
+type GroupsioSyncDiff struct {
+	// Mailing list (subgroup) ID
+	MailingListID string
+	// LFX v2 committee UID
+	CommitteeUID string
+	// Sync direction this diff was computed for
+	SyncMode string
+	// Committee members to add to the mailing list
+	Adds []*GroupsioSyncDiffAdd
+	// Mailing list members to remove
+	Removes []*GroupsioSyncDiffRemove
+}
+
+// A committee member missing from the mailing list
+type GroupsioSyncDiffAdd struct {
+	// Committee member's email address
+	Email string
+	// LFX v2 committee member UID
+	CommitteeMemberUID string
+}
+
+// A mailing list member no longer on the linked committee
+type GroupsioSyncDiffRemove struct {
+	// Mailing list member's email address
+	Email string
+	// Mailing list member's ID
+	MailingListMemberID string
 }
 
 // InviteGroupsioMembersPayload is the payload type of the mailing-list service

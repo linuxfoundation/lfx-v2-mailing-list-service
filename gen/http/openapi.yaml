@@ -706,6 +706,58 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-diff:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-sync-diff mailing-list
+            description: Compute the membership reconciliation diff between a GroupsIO subgroup and its linked committee
+            operationId: mailing-list#get-groupsio-mailing-list-sync-diff
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncDiff'
+                        required:
+                            - mailing_list_id
+                            - committee_uid
+                            - sync_mode
+                            - adds
+                            - removes
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/mailing-lists/count:
         get:
             tags:
@@ -1848,6 +1900,114 @@ definitions:
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
             total: 2885963747865388981
+    GroupsioSyncDiff:
+        title: GroupsioSyncDiff
+        type: object
+        properties:
+            adds:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffAdd'
+                description: Committee members to add to the mailing list
+                example:
+                    - committee_member_uid: Cum illo ut nihil.
+                      email: fannie.wuckert@lockman.biz
+                    - committee_member_uid: Cum illo ut nihil.
+                      email: fannie.wuckert@lockman.biz
+            committee_uid:
+                type: string
+                description: LFX v2 committee UID
+                example: e3ae8475-1077-414c-a576-249778ae6d10
+                format: uuid
+            mailing_list_id:
+                type: string
+                description: Mailing list (subgroup) ID
+                example: Culpa dolores.
+            removes:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffRemove'
+                description: Mailing list members to remove
+                example:
+                    - email: dax_heaney@sporer.net
+                      mailing_list_member_id: Sunt laudantium porro.
+                    - email: dax_heaney@sporer.net
+                      mailing_list_member_id: Sunt laudantium porro.
+                    - email: dax_heaney@sporer.net
+                      mailing_list_member_id: Sunt laudantium porro.
+                    - email: dax_heaney@sporer.net
+                      mailing_list_member_id: Sunt laudantium porro.
+            sync_mode:
+                type: string
+                description: Sync direction this diff was computed for
+                example: auto_c_to_ml
+                enum:
+                    - auto_c_to_ml
+        description: Membership reconciliation diff between a mailing list and its linked committee
+        example:
+            adds:
+                - committee_member_uid: Cum illo ut nihil.
+                  email: fannie.wuckert@lockman.biz
+                - committee_member_uid: Cum illo ut nihil.
+                  email: fannie.wuckert@lockman.biz
+            committee_uid: e3ae8475-1077-414c-a576-249778ae6d10
+            mailing_list_id: Culpa dolores.
+            removes:
+                - email: dax_heaney@sporer.net
+                  mailing_list_member_id: Sunt laudantium porro.
+                - email: dax_heaney@sporer.net
+                  mailing_list_member_id: Sunt laudantium porro.
+                - email: dax_heaney@sporer.net
+                  mailing_list_member_id: Sunt laudantium porro.
+                - email: dax_heaney@sporer.net
+                  mailing_list_member_id: Sunt laudantium porro.
+            sync_mode: auto_c_to_ml
+        required:
+            - mailing_list_id
+            - committee_uid
+            - sync_mode
+            - adds
+            - removes
+    GroupsioSyncDiffAdd:
+        title: GroupsioSyncDiffAdd
+        type: object
+        properties:
+            committee_member_uid:
+                type: string
+                description: LFX v2 committee member UID
+                example: Cum illo ut nihil.
+            email:
+                type: string
+                description: Committee member's email address
+                example: fannie.wuckert@lockman.biz
+                format: email
+        description: A committee member missing from the mailing list
+        example:
+            committee_member_uid: Cum illo ut nihil.
+            email: fannie.wuckert@lockman.biz
+        required:
+            - email
+            - committee_member_uid
+    GroupsioSyncDiffRemove:
+        title: GroupsioSyncDiffRemove
+        type: object
+        properties:
+            email:
+                type: string
+                description: Mailing list member's email address
+                example: dax_heaney@sporer.net
+                format: email
+            mailing_list_member_id:
+                type: string
+                description: Mailing list member's ID
+                example: Sunt laudantium porro.
+        description: A mailing list member no longer on the linked committee
+        example:
+            email: dax_heaney@sporer.net
+            mailing_list_member_id: Sunt laudantium porro.
+        required:
+            - email
+            - mailing_list_member_id
     InternalServerError:
         title: InternalServerError
         type: object

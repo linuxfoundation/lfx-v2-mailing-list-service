@@ -1572,6 +1572,116 @@ func EncodeGetGroupsioMailingListMemberCountError(encoder func(context.Context, 
 	}
 }
 
+// EncodeGetGroupsioMailingListSyncDiffResponse returns an encoder for
+// responses returned by the mailing-list get-groupsio-mailing-list-sync-diff
+// endpoint.
+func EncodeGetGroupsioMailingListSyncDiffResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*mailinglist.GroupsioSyncDiff)
+		enc := encoder(ctx, w)
+		body := NewGetGroupsioMailingListSyncDiffResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetGroupsioMailingListSyncDiffRequest returns a decoder for requests
+// sent to the mailing-list get-groupsio-mailing-list-sync-diff endpoint.
+func DecodeGetGroupsioMailingListSyncDiffRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+	return func(r *http.Request) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+		var payload *mailinglist.GetGroupsioMailingListSyncDiffPayload
+		var (
+			subgroupID  string
+			bearerToken *string
+
+			params = mux.Vars(r)
+		)
+		subgroupID = params["subgroup_id"]
+		bearerTokenRaw := r.Header.Get("Authorization")
+		if bearerTokenRaw != "" {
+			bearerToken = &bearerTokenRaw
+		}
+		payload = NewGetGroupsioMailingListSyncDiffPayload(subgroupID, bearerToken)
+		if payload.BearerToken != nil {
+			if strings.Contains(*payload.BearerToken, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.BearerToken, " ", 2)[1]
+				payload.BearerToken = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetGroupsioMailingListSyncDiffError returns an encoder for errors
+// returned by the get-groupsio-mailing-list-sync-diff mailing-list endpoint.
+func EncodeGetGroupsioMailingListSyncDiffError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioMailingListSyncDiffBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *mailinglist.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *mailinglist.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioMailingListSyncDiffNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *mailinglist.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeListGroupsioMembersResponse returns an encoder for responses returned
 // by the mailing-list list-groupsio-members endpoint.
 func EncodeListGroupsioMembersResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -2623,6 +2733,30 @@ func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailing
 		SyncMode:       v.SyncMode,
 		CreatedAt:      v.CreatedAt,
 		UpdatedAt:      v.UpdatedAt,
+	}
+
+	return res
+}
+
+// marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddResponseBody
+// builds a value of type *GroupsioSyncDiffAddResponseBody from a value of type
+// *mailinglist.GroupsioSyncDiffAdd.
+func marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddResponseBody(v *mailinglist.GroupsioSyncDiffAdd) *GroupsioSyncDiffAddResponseBody {
+	res := &GroupsioSyncDiffAddResponseBody{
+		Email:              v.Email,
+		CommitteeMemberUID: v.CommitteeMemberUID,
+	}
+
+	return res
+}
+
+// marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveResponseBody
+// builds a value of type *GroupsioSyncDiffRemoveResponseBody from a value of
+// type *mailinglist.GroupsioSyncDiffRemove.
+func marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveResponseBody(v *mailinglist.GroupsioSyncDiffRemove) *GroupsioSyncDiffRemoveResponseBody {
+	res := &GroupsioSyncDiffRemoveResponseBody{
+		Email:               v.Email,
+		MailingListMemberID: v.MailingListMemberID,
 	}
 
 	return res
