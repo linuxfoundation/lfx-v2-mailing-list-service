@@ -15,7 +15,11 @@ import (
 func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
 	adds := make([]*mailinglist.GroupsioSyncDiffAdd, len(d.Adds))
 	for i, a := range d.Adds {
-		adds[i] = &mailinglist.GroupsioSyncDiffAdd{Email: a.Email, CommitteeMemberUID: a.CommitteeMemberUID}
+		adds[i] = &mailinglist.GroupsioSyncDiffAdd{
+			Email:              a.Email,
+			CommitteeMemberUID: a.CommitteeMemberUID,
+			Name:               converter.NonEmptyString(a.Name),
+		}
 	}
 	removes := make([]*mailinglist.GroupsioSyncDiffRemove, len(d.Removes))
 	for i, r := range d.Removes {
@@ -28,6 +32,60 @@ func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
 		Adds:          adds,
 		Removes:       removes,
 	}
+}
+
+// convertSyncApplyResult converts a domain sync-apply result into its Goa result type.
+func convertSyncApplyResult(r *model.SyncApplyResult) *mailinglist.GroupsioSyncApplyResult {
+	added := make([]*mailinglist.GroupsioSyncApplyAddResult, len(r.Added))
+	for i, a := range r.Added {
+		added[i] = &mailinglist.GroupsioSyncApplyAddResult{
+			Email:              a.Email,
+			CommitteeMemberUID: a.CommitteeMemberUID,
+			Outcome:            string(a.Outcome),
+			NameHint:           converter.NonEmptyString(a.NameHint),
+			Error:              converter.NonEmptyString(a.Error),
+		}
+	}
+	removed := make([]*mailinglist.GroupsioSyncApplyRemoveResult, len(r.Removed))
+	for i, rm := range r.Removed {
+		removed[i] = &mailinglist.GroupsioSyncApplyRemoveResult{
+			Email:               rm.Email,
+			MailingListMemberID: rm.MailingListMemberID,
+			Outcome:             string(rm.Outcome),
+			Error:               converter.NonEmptyString(rm.Error),
+		}
+	}
+	return &mailinglist.GroupsioSyncApplyResult{
+		MailingListID: r.MailingListID,
+		CommitteeUID:  r.CommitteeUID,
+		Added:         added,
+		Removed:       removed,
+	}
+}
+
+// convertSyncApplyAddPayload converts Goa sync-apply add payload entries into domain adds.
+func convertSyncApplyAddPayload(adds []*mailinglist.GroupsioSyncDiffAdd) []model.SyncDiffAdd {
+	result := make([]model.SyncDiffAdd, len(adds))
+	for i, a := range adds {
+		result[i] = model.SyncDiffAdd{
+			Email:              a.Email,
+			CommitteeMemberUID: a.CommitteeMemberUID,
+			Name:               converter.StringVal(a.Name),
+		}
+	}
+	return result
+}
+
+// convertSyncApplyRemovePayload converts Goa sync-apply remove payload entries into domain removes.
+func convertSyncApplyRemovePayload(removes []*mailinglist.GroupsioSyncDiffRemove) []model.SyncDiffRemove {
+	result := make([]model.SyncDiffRemove, len(removes))
+	for i, r := range removes {
+		result[i] = model.SyncDiffRemove{
+			Email:               r.Email,
+			MailingListMemberID: r.MailingListMemberID,
+		}
+	}
+	return result
 }
 
 // formatTime returns t formatted as RFC3339, or "" if t is zero.

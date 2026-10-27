@@ -176,6 +176,7 @@ var GroupsioSyncDiffAddType = dsl.Type("groupsio-sync-diff-add", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
 	dsl.Attribute("committee_member_uid", dsl.String, "LFX v2 committee member UID")
+	dsl.Attribute("name", dsl.String, "Committee member's display name, when known")
 	dsl.Required("email", "committee_member_uid")
 })
 
@@ -205,6 +206,58 @@ var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
 	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Committee members to add to the mailing list")
 	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Mailing list members to remove")
 	dsl.Required("mailing_list_id", "committee_uid", "sync_mode", "adds", "removes")
+})
+
+// GroupsioSyncApplyRequestType is the request body for applying an admin-approved subset of a
+// previously computed sync-diff. Callers pass back the exact add/remove entries that
+// get-groupsio-mailing-list-sync-diff returned for the ones they want applied now.
+var GroupsioSyncApplyRequestType = dsl.Type("groupsio-sync-apply-request", func() {
+	dsl.Description("Admin-approved subset of a sync-diff to apply")
+	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Committee members to add, as returned by sync-diff")
+	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Mailing list members to remove, as returned by sync-diff")
+	dsl.Required("adds", "removes")
+})
+
+// GroupsioSyncApplyAddResultType reports what happened applying one approved add.
+var GroupsioSyncApplyAddResultType = dsl.Type("groupsio-sync-apply-add-result", func() {
+	dsl.Description("Outcome of applying one approved committee-member add")
+	dsl.Attribute("email", dsl.String, "Committee member's email address", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("committee_member_uid", dsl.String, "LFX v2 committee member UID")
+	dsl.Attribute("outcome", dsl.String, "What happened", func() {
+		dsl.Enum("added", "invited", "failed")
+	})
+	dsl.Attribute("name_hint", dsl.String, "Committee member's display name, present only when outcome is 'invited' "+
+		"— not a resolved identity match, just the name already known from the committee roster")
+	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
+	dsl.Required("email", "committee_member_uid", "outcome")
+})
+
+// GroupsioSyncApplyRemoveResultType reports what happened applying one approved remove.
+var GroupsioSyncApplyRemoveResultType = dsl.Type("groupsio-sync-apply-remove-result", func() {
+	dsl.Description("Outcome of applying one approved mailing-list-member remove")
+	dsl.Attribute("email", dsl.String, "Mailing list member's email address", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("mailing_list_member_id", dsl.String, "Mailing list member's ID")
+	dsl.Attribute("outcome", dsl.String, "What happened", func() {
+		dsl.Enum("removed", "skipped_cross_list", "failed")
+	})
+	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
+	dsl.Required("email", "mailing_list_member_id", "outcome")
+})
+
+// GroupsioSyncApplyResultType is the result of applying an admin-approved subset of a sync-diff.
+var GroupsioSyncApplyResultType = dsl.Type("groupsio-sync-apply-result", func() {
+	dsl.Description("Result of applying an admin-approved subset of a sync-diff")
+	dsl.Attribute("mailing_list_id", dsl.String, "Mailing list (subgroup) ID")
+	dsl.Attribute("committee_uid", dsl.String, "LFX v2 committee UID", func() {
+		dsl.Format(dsl.FormatUUID)
+	})
+	dsl.Attribute("added", dsl.ArrayOf(GroupsioSyncApplyAddResultType), "Outcome of each approved add")
+	dsl.Attribute("removed", dsl.ArrayOf(GroupsioSyncApplyRemoveResultType), "Outcome of each approved remove")
+	dsl.Required("mailing_list_id", "committee_uid", "added", "removed")
 })
 
 // GroupsioMemberType represents an ITX GroupsIO member.

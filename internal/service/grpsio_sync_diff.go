@@ -169,7 +169,11 @@ func computeCommitteeToMailingListDiff(
 		}
 		committeeEmails[key] = struct{}{}
 		if _, onList := mlEmails[key]; !onList {
-			adds = append(adds, model.SyncDiffAdd{Email: strings.TrimSpace(cm.Email), CommitteeMemberUID: cm.UID})
+			adds = append(adds, model.SyncDiffAdd{
+				Email:              strings.TrimSpace(cm.Email),
+				CommitteeMemberUID: cm.UID,
+				Name:               cm.Name,
+			})
 		}
 	}
 

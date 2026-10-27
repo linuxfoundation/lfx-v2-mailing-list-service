@@ -706,6 +706,65 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-apply:
+        post:
+            tags:
+                - mailing-list
+            summary: apply-groupsio-mailing-list-sync-diff mailing-list
+            description: 'Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee'
+            operationId: mailing-list#apply-groupsio-mailing-list-sync-diff
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Apply-Groupsio-Mailing-List-Sync-DiffRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListApplyGroupsioMailingListSyncDiffRequestBody'
+                    required:
+                        - adds
+                        - removes
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncApplyResult'
+                        required:
+                            - mailing_list_id
+                            - committee_uid
+                            - added
+                            - removed
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/mailing-lists/{subgroup_id}/sync-diff:
         get:
             tags:
@@ -1900,6 +1959,153 @@ definitions:
                   type: Rerum et quasi perspiciatis.
                   updated_at: Dolores odit et velit.
             total: 2885963747865388981
+    GroupsioSyncApplyAddResult:
+        title: GroupsioSyncApplyAddResult
+        type: object
+        properties:
+            committee_member_uid:
+                type: string
+                description: LFX v2 committee member UID
+                example: Qui sed repellendus quam in.
+            email:
+                type: string
+                description: Committee member's email address
+                example: susie.lubowitz@graham.net
+                format: email
+            error:
+                type: string
+                description: Failure detail, present only when outcome is 'failed'
+                example: Libero expedita assumenda voluptas omnis et.
+            name_hint:
+                type: string
+                description: Committee member's display name, present only when outcome is 'invited' — not a resolved identity match, just the name already known from the committee roster
+                example: Pariatur adipisci eveniet.
+            outcome:
+                type: string
+                description: What happened
+                example: failed
+                enum:
+                    - added
+                    - invited
+                    - failed
+        description: Outcome of applying one approved committee-member add
+        example:
+            committee_member_uid: Qui sed repellendus quam in.
+            email: susie.lubowitz@graham.net
+            error: Libero expedita assumenda voluptas omnis et.
+            name_hint: Pariatur adipisci eveniet.
+            outcome: failed
+        required:
+            - email
+            - committee_member_uid
+            - outcome
+    GroupsioSyncApplyRemoveResult:
+        title: GroupsioSyncApplyRemoveResult
+        type: object
+        properties:
+            email:
+                type: string
+                description: Mailing list member's email address
+                example: irma.rolfson@quigley.net
+                format: email
+            error:
+                type: string
+                description: Failure detail, present only when outcome is 'failed'
+                example: Sit id optio.
+            mailing_list_member_id:
+                type: string
+                description: Mailing list member's ID
+                example: Incidunt et consequatur iste.
+            outcome:
+                type: string
+                description: What happened
+                example: removed
+                enum:
+                    - removed
+                    - skipped_cross_list
+                    - failed
+        description: Outcome of applying one approved mailing-list-member remove
+        example:
+            email: irma.rolfson@quigley.net
+            error: Sit id optio.
+            mailing_list_member_id: Incidunt et consequatur iste.
+            outcome: removed
+        required:
+            - email
+            - mailing_list_member_id
+            - outcome
+    GroupsioSyncApplyResult:
+        title: GroupsioSyncApplyResult
+        type: object
+        properties:
+            added:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncApplyAddResult'
+                description: Outcome of each approved add
+                example:
+                    - committee_member_uid: Qui sed repellendus quam in.
+                      email: susie.lubowitz@graham.net
+                      error: Libero expedita assumenda voluptas omnis et.
+                      name_hint: Pariatur adipisci eveniet.
+                      outcome: failed
+                    - committee_member_uid: Qui sed repellendus quam in.
+                      email: susie.lubowitz@graham.net
+                      error: Libero expedita assumenda voluptas omnis et.
+                      name_hint: Pariatur adipisci eveniet.
+                      outcome: failed
+            committee_uid:
+                type: string
+                description: LFX v2 committee UID
+                example: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
+                format: uuid
+            mailing_list_id:
+                type: string
+                description: Mailing list (subgroup) ID
+                example: Distinctio consectetur soluta quia est omnis.
+            removed:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncApplyRemoveResult'
+                description: Outcome of each approved remove
+                example:
+                    - email: irma.rolfson@quigley.net
+                      error: Sit id optio.
+                      mailing_list_member_id: Incidunt et consequatur iste.
+                      outcome: removed
+                    - email: irma.rolfson@quigley.net
+                      error: Sit id optio.
+                      mailing_list_member_id: Incidunt et consequatur iste.
+                      outcome: removed
+        description: Result of applying an admin-approved subset of a sync-diff
+        example:
+            added:
+                - committee_member_uid: Qui sed repellendus quam in.
+                  email: susie.lubowitz@graham.net
+                  error: Libero expedita assumenda voluptas omnis et.
+                  name_hint: Pariatur adipisci eveniet.
+                  outcome: failed
+                - committee_member_uid: Qui sed repellendus quam in.
+                  email: susie.lubowitz@graham.net
+                  error: Libero expedita assumenda voluptas omnis et.
+                  name_hint: Pariatur adipisci eveniet.
+                  outcome: failed
+            committee_uid: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
+            mailing_list_id: Distinctio consectetur soluta quia est omnis.
+            removed:
+                - email: irma.rolfson@quigley.net
+                  error: Sit id optio.
+                  mailing_list_member_id: Incidunt et consequatur iste.
+                  outcome: removed
+                - email: irma.rolfson@quigley.net
+                  error: Sit id optio.
+                  mailing_list_member_id: Incidunt et consequatur iste.
+                  outcome: removed
+        required:
+            - mailing_list_id
+            - committee_uid
+            - added
+            - removed
     GroupsioSyncDiff:
         title: GroupsioSyncDiff
         type: object
@@ -1912,8 +2118,10 @@ definitions:
                 example:
                     - committee_member_uid: Cum illo ut nihil.
                       email: fannie.wuckert@lockman.biz
+                      name: Corrupti tempore optio animi corrupti.
                     - committee_member_uid: Cum illo ut nihil.
                       email: fannie.wuckert@lockman.biz
+                      name: Corrupti tempore optio animi corrupti.
             committee_uid:
                 type: string
                 description: LFX v2 committee UID
@@ -1948,8 +2156,10 @@ definitions:
             adds:
                 - committee_member_uid: Cum illo ut nihil.
                   email: fannie.wuckert@lockman.biz
+                  name: Corrupti tempore optio animi corrupti.
                 - committee_member_uid: Cum illo ut nihil.
                   email: fannie.wuckert@lockman.biz
+                  name: Corrupti tempore optio animi corrupti.
             committee_uid: e3ae8475-1077-414c-a576-249778ae6d10
             mailing_list_id: Culpa dolores.
             removes:
@@ -1981,10 +2191,15 @@ definitions:
                 description: Committee member's email address
                 example: fannie.wuckert@lockman.biz
                 format: email
+            name:
+                type: string
+                description: Committee member's display name, when known
+                example: Corrupti tempore optio animi corrupti.
         description: A committee member missing from the mailing list
         example:
             committee_member_uid: Cum illo ut nihil.
             email: fannie.wuckert@lockman.biz
+            name: Corrupti tempore optio animi corrupti.
         required:
             - email
             - committee_member_uid
@@ -2075,6 +2290,54 @@ definitions:
             mod_status: owner
             name: Odit et nemo rem aliquid vel sed.
             organization: Qui itaque.
+    MailingListApplyGroupsioMailingListSyncDiffRequestBody:
+        title: MailingListApplyGroupsioMailingListSyncDiffRequestBody
+        type: object
+        properties:
+            adds:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffAdd'
+                description: Committee members to add, as returned by sync-diff
+                example:
+                    - committee_member_uid: Fugiat libero.
+                      email: jane_metz@olson.info
+                      name: Debitis neque labore autem.
+                    - committee_member_uid: Fugiat libero.
+                      email: jane_metz@olson.info
+                      name: Debitis neque labore autem.
+                    - committee_member_uid: Fugiat libero.
+                      email: jane_metz@olson.info
+                      name: Debitis neque labore autem.
+            removes:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffRemove'
+                description: Mailing list members to remove, as returned by sync-diff
+                example:
+                    - email: cory.dubuque@haag.net
+                      mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                    - email: cory.dubuque@haag.net
+                      mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+        example:
+            adds:
+                - committee_member_uid: Fugiat libero.
+                  email: jane_metz@olson.info
+                  name: Debitis neque labore autem.
+                - committee_member_uid: Fugiat libero.
+                  email: jane_metz@olson.info
+                  name: Debitis neque labore autem.
+                - committee_member_uid: Fugiat libero.
+                  email: jane_metz@olson.info
+                  name: Debitis neque labore autem.
+            removes:
+                - email: cory.dubuque@haag.net
+                  mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                - email: cory.dubuque@haag.net
+                  mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+        required:
+            - adds
+            - removes
     MailingListCheckGroupsioSubscriberRequestBody:
         title: MailingListCheckGroupsioSubscriberRequestBody
         type: object
