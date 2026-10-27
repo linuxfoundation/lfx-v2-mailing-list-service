@@ -190,7 +190,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	// — so a concurrent request that re-associates the mailing list back to oldCUID and writes
 	// a newer sync_mode while this update is in flight is detected by the gated delete below
 	// instead of racing past it (see LFXV2-4029 review).
-	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
+	oldCUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
 	oldSyncModeSnapshot := o.snapshotSyncMode(ctx, mailingListID, oldCUID)
 
 	requestedSyncMode := ""
@@ -309,7 +309,13 @@ func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Conte
 		return
 	}
 	if checkLiveAssociation {
-		if current := o.fetchCommitteeUID(ctx, mailingListID); current == oldCUID {
+		current, ok := o.fetchCommitteeUID(ctx, mailingListID)
+		if !ok {
+			slog.WarnContext(ctx, "skipped cleaning up committee sync_mode: could not verify live association",
+				"mailing_list_id", mailingListID, "committee_uid", oldCUID)
+			return
+		}
+		if current == oldCUID {
 			slog.InfoContext(ctx, "skipped cleaning up committee sync_mode: mailing list has already reverted to this committee",
 				"mailing_list_id", mailingListID, "committee_uid", oldCUID)
 			return
@@ -352,7 +358,7 @@ func (o *GroupsIOMailingListOrchestrator) hydrateSyncModeFromStore(ctx context.C
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
 	// Fetch current state, and snapshot its stored sync_mode revision, before delete runs —
 	// see cleanupStaleSyncMode for why the snapshot must be taken before the mutation.
-	cUID := o.fetchCommitteeUID(ctx, mailingListID)
+	cUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
 	syncModeSnap := o.snapshotSyncMode(ctx, mailingListID, cUID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
@@ -410,17 +416,21 @@ func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx
 
 // fetchCommitteeUID reads the current committee UID for a mailing list.
 // Returns "" if the reader is not configured or the fetch fails (non-fatal).
-func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) string {
+// fetchCommitteeUID reads the current committee UID for a mailing list. ok is false when the
+// reader is unavailable or the read failed — callers that treat "" as "no committee" (safe to
+// no-op on) must not treat a failed read the same way when "" vs "unknown" changes behavior,
+// e.g. cleanupStaleSyncMode's live-association re-check.
+func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) (string, bool) {
 	if o.reader == nil {
-		return ""
+		return "", false
 	}
 	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to fetch mailing list before mutation — committee event may be skipped",
 			"mailing_list_id", mailingListID, "error", err)
-		return ""
+		return "", false
 	}
-	return committeeUID(ml)
+	return committeeUID(ml), true
 }
 
 // committeeHasRemainingMailingLists checks whether the committee still has other mailing lists
