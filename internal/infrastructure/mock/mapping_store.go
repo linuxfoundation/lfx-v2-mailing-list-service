@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
@@ -18,6 +17,7 @@ type FakeMappingStore struct {
 	values          map[string]string
 	tombstones      map[string]bool
 	getErrors       map[string]bool
+	getErrorValues  map[string]error
 	putErrors       map[string]error
 	tombstoneErrors map[string]error
 }
@@ -30,6 +30,7 @@ func NewFakeMappingStore() *FakeMappingStore {
 		values:          make(map[string]string),
 		tombstones:      make(map[string]bool),
 		getErrors:       make(map[string]bool),
+		getErrorValues:  make(map[string]error),
 		putErrors:       make(map[string]error),
 		tombstoneErrors: make(map[string]error),
 	}
@@ -38,9 +39,21 @@ func NewFakeMappingStore() *FakeMappingStore {
 // Set pre-populates a key/value pair (helper for test setup).
 func (f *FakeMappingStore) Set(key, value string) { f.values[key] = value }
 
-// SimulateGetError causes GetMappingValue to return ("", false) for the given key,
-// simulating a transient KV read error even when the key exists.
+// SimulateGetError causes Lookup to return an error for the given key, simulating
+// a KV read failure even when the key exists.
 func (f *FakeMappingStore) SimulateGetError(key string) { f.getErrors[key] = true }
+
+// SimulateGetErrorWith is like SimulateGetError but Lookup returns err, so tests
+// can inject a typed transient or permanent failure. Pass nil to clear it.
+func (f *FakeMappingStore) SimulateGetErrorWith(key string, err error) {
+	if err == nil {
+		delete(f.getErrors, key)
+		delete(f.getErrorValues, key)
+		return
+	}
+	f.getErrors[key] = true
+	f.getErrorValues[key] = err
+}
 
 // SimulatePutError causes PutMapping to return the given error for the given key.
 func (f *FakeMappingStore) SimulatePutError(key string, err error) {
@@ -61,39 +74,38 @@ func (f *FakeMappingStore) SimulateTombstoneError(key string, err error) {
 	f.tombstoneErrors[key] = err
 }
 
-func (f *FakeMappingStore) ResolveAction(_ context.Context, key string) model.MessageAction {
-	if value, ok := f.values[key]; ok && value != constants.KVTombstoneMarker {
-		return model.ActionUpdated
+// Lookup reports the state of key, or the error configured with SimulateGetError
+// or SimulateGetErrorWith.
+func (f *FakeMappingStore) Lookup(_ context.Context, key string) (port.MappingEntry, error) {
+	if f.getErrors[key] {
+		if err, ok := f.getErrorValues[key]; ok {
+			return port.MappingEntry{}, err
+		}
+		return port.MappingEntry{}, errors.New("simulated mapping read error")
 	}
-	return model.ActionCreated
+	if f.tombstones[key] || f.values[key] == constants.KVTombstoneMarker {
+		return port.MappingEntry{State: port.MappingTombstoned}, nil
+	}
+	if v, ok := f.values[key]; ok {
+		return port.MappingEntry{State: port.MappingPresent, Value: v}, nil
+	}
+	return port.MappingEntry{State: port.MappingAbsent}, nil
 }
 
-func (f *FakeMappingStore) IsMappingPresent(_ context.Context, key string) bool {
-	value, ok := f.values[key]
-	return ok && value != constants.KVTombstoneMarker
-}
-
-func (f *FakeMappingStore) IsTombstoned(_ context.Context, key string) bool {
-	return f.tombstones[key] || f.values[key] == constants.KVTombstoneMarker
-}
-
+// GetMappingValue returns the stored value and true when key holds a live value.
+// It is a test inspection helper and is not part of port.MappingReader.
 func (f *FakeMappingStore) GetMappingValue(ctx context.Context, key string) (string, bool) {
-	value, present, err := f.GetMappingValueWithError(ctx, key)
+	entry, err := f.Lookup(ctx, key)
 	if err != nil {
 		return "", false
 	}
-	return value, present
+	return entry.Value, entry.Present()
 }
 
-func (f *FakeMappingStore) GetMappingValueWithError(_ context.Context, key string) (string, bool, error) {
-	if f.tombstones[key] || f.getErrors[key] || f.values[key] == constants.KVTombstoneMarker {
-		if f.getErrors[key] {
-			return "", false, errors.New("simulated mapping read error")
-		}
-		return "", false, nil
-	}
-	v, ok := f.values[key]
-	return v, ok, nil
+// IsTombstoned reports whether key holds the deletion marker. It is a test
+// inspection helper and is not part of port.MappingReader.
+func (f *FakeMappingStore) IsTombstoned(_ context.Context, key string) bool {
+	return f.tombstones[key] || f.values[key] == constants.KVTombstoneMarker
 }
 
 func (f *FakeMappingStore) PutMapping(_ context.Context, key, value string) error {
@@ -138,15 +150,15 @@ func (f *FakeMappingStore) ListSubgroupsByService(ctx context.Context, serviceUI
 		if uid == "" || indexedUID != uid {
 			continue
 		}
-		parent, present, err := f.GetMappingValueWithError(ctx, constants.KVMappingPrefixSubgroupParent+"."+uid)
+		parent, err := f.Lookup(ctx, constants.KVMappingPrefixSubgroupParent+"."+uid)
 		if err != nil {
 			return nil, err
 		}
-		_, live, err := f.GetMappingValueWithError(ctx, constants.KVMappingPrefixSubgroup+"."+uid)
+		live, err := f.Lookup(ctx, constants.KVMappingPrefixSubgroup+"."+uid)
 		if err != nil {
 			return nil, err
 		}
-		if present && parent == serviceUID && live {
+		if parent.Present() && parent.Value == serviceUID && live.Present() {
 			uids = append(uids, uid)
 		}
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
-	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
 )
 
@@ -25,33 +24,45 @@ import (
 // When inviteHandler is non-nil and the member was just created without a username, it
 // also sends a best-effort LFID invite.
 // Returns true to NAK when the parent subgroup mapping is absent (ordering guarantee)
-// or on transient errors.
+// or when a storage or publish step fails with anything not known to be permanent.
 func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, inviteHandler *MemberInviteHandler) bool {
+	return handleMemberUpdate(ctx, uid, data, publisher, mappings, inviteHandler).requeue()
+}
+
+func handleMemberUpdate(ctx context.Context, uid string, data map[string]any, publisher port.MessagePublisher, mappings port.MappingReaderWriter, inviteHandler *MemberInviteHandler) outcome {
 	// Members carry group_id (Groups.io numeric ID) rather than a direct mailing_list_uid.
 	// Resolve the parent subgroup UID via the reverse index written by the subgroup handler.
 	groupID := mapconv.Int64Ptr(data, "group_id")
 	if groupID == nil {
 		slog.ErrorContext(ctx, "member has no group_id, cannot determine parent mailing list — ACKing", "uid", uid)
-		return false
+		return ack
 	}
 
 	gidKey := fmt.Sprintf("%s.%d", constants.KVMappingPrefixSubgroupByGroupID, *groupID)
-	mailingListUID, ok := mappings.GetMappingValue(ctx, gidKey)
-	if !ok || mailingListUID == "" {
+	gidEntry, err := mappings.Lookup(ctx, gidKey)
+	if err != nil {
+		return failed(ctx, "failed to look up parent subgroup mapping", err, "uid", uid, "group_id", *groupID)
+	}
+	mailingListUID := gidEntry.Value
+	if !gidEntry.Present() || mailingListUID == "" {
 		slog.WarnContext(ctx, "parent subgroup not yet processed, NAKing member for retry",
 			"uid", uid, "group_id", *groupID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
 
 	// Resolve project UID and slug from the subgroup's project mapping written by the subgroup handler.
 	// NAK if absent — the subgroup must be fully processed (including slug lookup) before the member.
 	projectKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixSubgroupProject, mailingListUID)
-	projectMapping, ok := mappings.GetMappingValue(ctx, projectKey)
-	if !ok {
+	projectEntry, err := mappings.Lookup(ctx, projectKey)
+	if err != nil {
+		return failed(ctx, "failed to look up project mapping", err, "uid", uid, "mailing_list_uid", mailingListUID)
+	}
+	if !projectEntry.Present() {
 		slog.WarnContext(ctx, "project mapping not yet available, NAKing member for retry",
 			"uid", uid, "mailing_list_uid", mailingListUID)
-		return true // NAK — retry with backoff
+		return nak // retry with backoff
 	}
+	projectMapping := projectEntry.Value
 	var projectUID, projectSlug string
 	if parts := strings.SplitN(projectMapping, "|", 2); len(parts) == 2 {
 		projectUID, projectSlug = parts[0], parts[1]
@@ -61,23 +72,20 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
-		slog.InfoContext(ctx, "member mapping is tombstoned, skipping update", "uid", uid)
-		return false
+	// Single read: tombstone check, action and old state come from one lookup. A failed
+	// read NAKs rather than being treated as a create, which would skip stale-tuple removal.
+	mEntry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up member mapping", err, "uid", uid, "mapping_key", mKey)
 	}
-
-	// Single read: determine action and capture old state in one call.
-	// ResolveAction also calls kv.Get internally and converts any error into ActionCreated,
-	// which would silently bypass stale-tuple removal. Using GetMappingValue directly avoids
-	// that hidden failure path. The interface cannot yet distinguish "key not found" from a
-	// transient storage error — both return false — so a transient failure here still
-	// produces ActionCreated. A proper NAK requires adding error return to MappingReader
-	// (tracked as a follow-up interface change).
-	action := model.ActionCreated
+	if mEntry.Tombstoned() {
+		slog.InfoContext(ctx, "member mapping is tombstoned, skipping update", "uid", uid)
+		return ack
+	}
+	action := mEntry.Action()
 	oldUsername := ""
-	if storedValue, ok := mappings.GetMappingValue(ctx, mKey); ok {
-		action = model.ActionUpdated
-		_, oldUsername, _ = parseMemberMappingValue(storedValue)
+	if mEntry.Present() {
+		_, oldUsername, _ = parseMemberMappingValue(mEntry.Value)
 	}
 
 	member := transformV1ToGrpsIOMember(uid, mailingListUID, projectUID, projectSlug, data)
@@ -100,12 +108,11 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 	built, err := msg.BuildWithIndexingConfig(ctx, member, memberConfig)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build member indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish member indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish member indexer message", err, "uid", uid)
 	}
 
 	// Revoke the old FGA tuple before granting the new one when the username changes or
@@ -124,8 +131,7 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 			},
 		}
 		if err := publisher.Access(ctx, fgaconstants.GenericMemberRemoveSubject, removeMsg); err != nil {
-			slog.WarnContext(ctx, "failed to publish member FGA remove for old username", "uid", uid, "error", err)
-			return pkgerrors.IsTransient(err)
+			return failed(ctx, "failed to publish member FGA remove for old username", err, "uid", uid)
 		}
 	}
 
@@ -140,15 +146,13 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 			},
 		}
 		if err := publisher.Access(ctx, fgaconstants.GenericMemberPutSubject, accessMsg); err != nil {
-			slog.WarnContext(ctx, "failed to publish member FGA put message", "uid", uid, "error", err)
-			return pkgerrors.IsTransient(err)
+			return failed(ctx, "failed to publish member FGA put message", err, "uid", uid)
 		}
 	}
 
 	mappingValue := buildMemberMappingValue(uid, member.Username, mailingListUID)
 	if err := mappings.PutMapping(ctx, mKey, mappingValue); err != nil {
-		slog.ErrorContext(ctx, "failed to put mapping key", "mapping_key", mKey, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to put mapping key", err, "mapping_key", mKey)
 	}
 
 	// Best-effort: send an LFID invite for newly-created members without a username.
@@ -159,39 +163,46 @@ func HandleDataStreamMemberUpdate(ctx context.Context, uid string, data map[stri
 		inviteHandler.MaybeSendInvite(ctx, funcLogger, member)
 	}
 
-	return false
+	return ack
 }
 
 // HandleDataStreamMemberDelete publishes a delete indexer message, an FGA remove_member message
 // (when the stored mapping contains a username), and tombstones the mapping.
 func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) bool {
+	return handleMemberDelete(ctx, uid, publisher, mappings).requeue()
+}
+
+func handleMemberDelete(ctx context.Context, uid string, publisher port.MessagePublisher, mappings port.MappingReaderWriter) outcome {
 	mKey := fmt.Sprintf("%s.%s", constants.KVMappingPrefixMember, uid)
 
-	if mappings.IsTombstoned(ctx, mKey) {
+	entry, err := mappings.Lookup(ctx, mKey)
+	if err != nil {
+		return failed(ctx, "failed to look up member mapping", err, "uid", uid, "mapping_key", mKey)
+	}
+	if entry.Tombstoned() {
 		slog.InfoContext(ctx, "member already deleted, ACKing duplicate", "uid", uid)
-		return false
+		return ack
 	}
 
 	// If there is no mapping entry, this record was never indexed — nothing to delete.
-	storedValue, ok := mappings.GetMappingValue(ctx, mKey)
-	if !ok {
+	if !entry.Present() {
 		slog.InfoContext(ctx, "member was never indexed, skipping OpenSearch delete", "uid", uid)
 		if err := mappings.PutTombstone(ctx, mKey); err != nil {
-			slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+			return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 		}
-		return false
+		return ack
 	}
+	storedValue := entry.Value
 
 	msg := &model.IndexerMessage{Action: model.ActionDeleted}
 	built, err := msg.Build(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build member delete indexer message", "uid", uid, "error", err)
-		return false
+		return ack
 	}
 
 	if err := publisher.Indexer(ctx, constants.IndexGroupsIOMemberSubject, built); err != nil {
-		slog.ErrorContext(ctx, "failed to publish member delete indexer message", "uid", uid, "error", err)
-		return pkgerrors.IsTransient(err)
+		return failed(ctx, "failed to publish member delete indexer message", err, "uid", uid)
 	}
 
 	_, username, mailingListUID := parseMemberMappingValue(storedValue)
@@ -211,9 +222,9 @@ func HandleDataStreamMemberDelete(ctx context.Context, uid string, publisher por
 	}
 
 	if err := mappings.PutTombstone(ctx, mKey); err != nil {
-		slog.ErrorContext(ctx, "failed to put tombstone", "mapping_key", mKey, "error", err)
+		return failed(ctx, "failed to put tombstone", err, "mapping_key", mKey)
 	}
-	return false
+	return ack
 }
 
 // transformV1ToGrpsIOMember maps v1 DynamoDB fields to the GrpsIOMember domain model.

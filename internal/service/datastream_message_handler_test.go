@@ -5,12 +5,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	pkgerrors "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,4 +118,60 @@ func TestHandleDataStreamMessageDelete_AlreadyTombstoned_ACK(t *testing.T) {
 
 	assert.False(t, nak)
 	assert.Empty(t, pub.IndexerCalls, "duplicate delete should ACK without publishing")
+}
+
+func TestHandleDataStreamMessageUpdate_ReadError_NAK(t *testing.T) {
+	for _, key := range []string{
+		fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID),
+		fmt.Sprintf("%s.msg-1", constants.KVMappingPrefixMessage),
+	} {
+		t.Run(key, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+			m.SimulateGetError(key)
+			pub := &mock.SpyMessagePublisher{}
+
+			nak := HandleDataStreamMessageUpdate(context.Background(), "msg-1",
+				map[string]any{"group_id": float64(42)}, pub, m)
+
+			assert.True(t, nak)
+			assert.Empty(t, pub.IndexerCalls)
+		})
+	}
+}
+
+func TestHandleDataStreamMessageUpdate_PutMappingFailure_PermanentACKsUnknownNAKs(t *testing.T) {
+	tests := []struct {
+		name    string
+		putErr  error
+		wantNAK bool
+	}{
+		{name: "unclassified error retries", putErr: errors.New("boom"), wantNAK: true},
+		{name: "permanent error is dropped", putErr: pkgerrors.MarkPermanent(errors.New("boom")), wantNAK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mock.NewFakeMappingStore()
+			m.Set(fmt.Sprintf("%s.42", constants.KVMappingPrefixSubgroupByGroupID), "ml-uid-1")
+			m.SimulatePutError(fmt.Sprintf("%s.msg-1", constants.KVMappingPrefixMessage), tt.putErr)
+
+			nak := HandleDataStreamMessageUpdate(context.Background(), "msg-1",
+				map[string]any{"group_id": float64(42)}, &mock.SpyMessagePublisher{}, m)
+
+			assert.Equal(t, tt.wantNAK, nak)
+		})
+	}
+}
+
+func TestHandleDataStreamMessageDelete_ReadError_NAK(t *testing.T) {
+	m := mock.NewFakeMappingStore()
+	mKey := fmt.Sprintf("%s.msg-1", constants.KVMappingPrefixMessage)
+	m.Set(mKey, "msg-1")
+	m.SimulateGetError(mKey)
+	pub := &mock.SpyMessagePublisher{}
+
+	nak := HandleDataStreamMessageDelete(context.Background(), "msg-1", pub, m)
+
+	assert.True(t, nak)
+	assert.Empty(t, pub.IndexerCalls, "no delete may be published when the prior state is unknown")
 }
