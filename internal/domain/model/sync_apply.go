@@ -33,7 +33,7 @@ type SyncApplyAddResult struct {
 	// NameHint is the committee member's display name, surfaced for SyncApplyOutcomeInvited so
 	// an admin reviewing the result can tell who this is. It is not a fuzzy name match — that
 	// requires a user-search-by-name capability this service's upstreams do not yet expose (see
-	// linuxfoundation/lfx-self-serve#4339) — just the name already known from the committee
+	// linuxfoundation/lfx-self-serve#4364) — just the name already known from the committee
 	// roster.
 	NameHint string `json:"name_hint,omitempty"`
 	Error    string `json:"error,omitempty"`

@@ -13,7 +13,7 @@ type CommitteeMember struct {
 	// Name is the committee member's display name, when lfx-v2-committee-service's response
 	// includes one. It is only a label for human review — no search-by-name capability exists
 	// upstream to turn it into a real identity-match fallback (see
-	// linuxfoundation/lfx-self-serve#4339).
+	// linuxfoundation/lfx-self-serve#4364).
 	Name string `json:"name,omitempty"`
 }
 
