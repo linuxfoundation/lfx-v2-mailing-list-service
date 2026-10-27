@@ -6,6 +6,7 @@ package nats
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -47,7 +48,7 @@ func (c *natsCommitteeMembershipLookup) GetCommitteeMembers(ctx context.Context,
 
 	msg, err := requestWithSpan(reqCtx, c.conn, constants.CommitteeListMembersSubject, []byte(committeeUID))
 	if err != nil {
-		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, nats.ErrTimeout) {
 			return nil, errs.NewServiceUnavailable("committee membership lookup timed out", err)
 		}
 		return nil, errs.NewServiceUnavailable("committee membership lookup failed", err)

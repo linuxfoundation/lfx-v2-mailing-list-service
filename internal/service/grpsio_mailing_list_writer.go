@@ -297,7 +297,8 @@ func (o *GroupsIOMailingListOrchestrator) snapshotSyncMode(ctx context.Context, 
 // revision. This added check still has its own (narrower) TOCTOU gap between the re-check and
 // the delete; closing that fully requires serializing association mutations per mailing list or
 // gating the delete on an association-generation value, which is a larger change tracked
-// separately (see LFXV2-4029 review, copilot-pull-request-reviewer).
+// separately in linuxfoundation/lfx-self-serve#4338 (see LFXV2-4029 review,
+// copilot-pull-request-reviewer).
 //
 // checkLiveAssociation gates that re-check and must be false when the mailing list itself was
 // just deleted (DeleteMailingList): there is no "current association" to revert to once the
