@@ -80,15 +80,14 @@ func TestDecodeCommitteeMembers(t *testing.T) {
 			},
 		},
 		{
-			// A JSON `null` reply unmarshals into a nil slice without error — the success
-			// contract requires an array (including [] for no members), so this must be
-			// rejected rather than silently reported as zero members.
-			name: "null reply is rejected, not treated as empty success",
-			data: []byte(`null`),
+			// lfx-v2-committee-service's ListMembersByCommittee returns a nil slice for a
+			// committee with zero members, which marshals to JSON `null` over the wire — a
+			// legitimately empty roster, not a malformed reply. Must normalize to [].
+			name:        "null reply is normalized to an empty roster",
+			data:        []byte(`null`),
+			wantMembers: []port.CommitteeMember{},
 			assertErr: func(t *testing.T, err error) {
-				require.Error(t, err)
-				var unavailable errs.ServiceUnavailable
-				assert.True(t, errors.As(err, &unavailable), "expected ServiceUnavailable, got %T: %v", err, err)
+				require.NoError(t, err)
 			},
 		},
 		{

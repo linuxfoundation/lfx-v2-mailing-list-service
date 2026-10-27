@@ -95,12 +95,12 @@ func decodeCommitteeMembers(data []byte) ([]port.CommitteeMember, error) {
 	if err := json.Unmarshal(data, &members); err != nil {
 		return nil, errs.NewServiceUnavailable("failed to parse committee membership lookup response", err)
 	}
-	// The success contract is always a JSON array, using [] for no members. A JSON `null`
-	// unmarshals into a nil slice without error, which would otherwise look identical to a
-	// legitimate empty result — reject it so a malformed/unexpected reply surfaces as a
-	// lookup failure instead of silently reporting zero members.
+	// lfx-v2-committee-service's ListMembersByCommittee returns a nil slice for a committee with
+	// zero members, and HandleCommitteeListMembers marshals it unchanged — so a legitimately
+	// empty roster arrives over the wire as JSON `null`, not `[]`. Normalize it to an empty slice
+	// rather than treating it as a malformed reply.
 	if members == nil {
-		return nil, errs.NewServiceUnavailable("committee membership lookup returned null instead of an array")
+		members = []port.CommitteeMember{}
 	}
 
 	return members, nil

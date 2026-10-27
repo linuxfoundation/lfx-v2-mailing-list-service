@@ -228,31 +228,35 @@ func TestPublishCommitteeMailingListChanged_ValidUID_PublishesFalse(t *testing.T
 
 // ---- fetchCommitteeUID ----
 
-func TestFetchCommitteeUID_NilReader_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_NilReader_ReturnsEmptyNotOK(t *testing.T) {
 	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_ReaderError_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_ReaderError_ReturnsEmptyNotOK(t *testing.T) {
 	reader := &stubMLReader{err: errors.New("not found")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_NoCommittees_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_NoCommittees_ReturnsEmptyOK(t *testing.T) {
 	reader := &stubMLReader{ml: &model.GroupsIOMailingList{}}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.True(t, ok)
 }
 
 func TestFetchCommitteeUID_WithCommittee_ReturnsUID(t *testing.T) {
 	reader := &stubMLReader{ml: mlWith("committee-abc")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Equal(t, "committee-abc", uid)
+	assert.True(t, ok)
 }
 
 // ---- CreateMailingList ----
@@ -918,6 +922,31 @@ func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenAssociationRevertedC
 	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
 	require.NoError(t, err)
 	require.True(t, found, "old-committee's sync_mode must survive cleanup since the mailing list has reverted to it")
+	assert.Equal(t, "auto_c_to_ml", mode)
+}
+
+func TestUpdateMailingList_CommitteeSwap_CleanupSkipped_WhenLiveAssociationCheckFails(t *testing.T) {
+	store := mock.NewMockCommitteeSyncSettingsStore()
+	require.NoError(t, store.PutSyncMode(context.Background(), "ml-1", "old-committee", "auto_c_to_ml"))
+
+	reader := &stubMLReader{ml: mlWith("old-committee")}
+	writer := &stubMLWriter{updateResp: mlWith("new-committee")}
+	// Simulate the mailing list reader becoming unavailable by the time cleanup's live-association
+	// re-check runs (after the pre-mutation snapshot succeeded). fetchCommitteeUID must report this
+	// as a failed read, not as "no committee" — so cleanup skips the delete instead of treating a
+	// read failure as proof the association moved on and purging a setting it could not verify.
+	writer.onUpdate = func() {
+		reader.err = errors.New("ITX unavailable")
+	}
+	o := newTestOrchestrator(writer, reader, &spyInternalPublisher{})
+	o.syncSettingsStore = store
+
+	_, err := o.UpdateMailingList(context.Background(), "ml-1", mlWith("new-committee"))
+	require.NoError(t, err)
+
+	mode, _, found, err := store.GetSyncMode(context.Background(), "ml-1", "old-committee")
+	require.NoError(t, err)
+	require.True(t, found, "old-committee's sync_mode must survive cleanup when the live association cannot be verified")
 	assert.Equal(t, "auto_c_to_ml", mode)
 }
 
