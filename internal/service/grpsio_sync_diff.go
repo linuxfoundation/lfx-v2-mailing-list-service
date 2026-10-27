@@ -94,6 +94,16 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	}
 	committeeUID := ml.Committees[0].UID
 
+	// port.CommitteeMember only carries {UID, Email} — CommitteeMembershipLookup has no way to
+	// report a member's voting status, so a filtered link's AllowedVotingStatuses cannot be
+	// applied here. Computing the diff against the full roster would incorrectly propose
+	// filtered-out members as adds and miss removals for members who no longer satisfy the
+	// filter. Reject rather than silently reconcile against the wrong membership set until the
+	// lookup contract carries voting status (tracked in linuxfoundation/lfx-self-serve#4339).
+	if len(ml.Committees[0].AllowedVotingStatuses) > 0 {
+		return nil, errs.NewValidation("sync-diff does not yet support committees with voting-status filters")
+	}
+
 	syncMode, _, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, committeeUID)
 	if err != nil {
 		return nil, errs.NewServiceUnavailable("failed to load committee sync_mode", err)
@@ -173,7 +183,7 @@ func computeCommitteeToMailingListDiff(
 			continue
 		}
 		if _, stillOnCommittee := committeeEmails[key]; !stillOnCommittee {
-			removes = append(removes, model.SyncDiffRemove{Email: m.Email, MailingListMemberID: m.UID})
+			removes = append(removes, model.SyncDiffRemove{Email: strings.TrimSpace(m.Email), MailingListMemberID: m.UID})
 		}
 	}
 
