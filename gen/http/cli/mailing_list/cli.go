@@ -24,7 +24,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download)",
+		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|apply-groupsio-mailing-list-sync-diff|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download)",
 	}
 }
 
@@ -112,6 +112,11 @@ func ParseEndpoint(
 		mailingListGetGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListGetGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
 		mailingListGetGroupsioMailingListSyncDiffBearerTokenFlag = mailingListGetGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
 
+		mailingListApplyGroupsioMailingListSyncDiffFlags           = flag.NewFlagSet("apply-groupsio-mailing-list-sync-diff", flag.ExitOnError)
+		mailingListApplyGroupsioMailingListSyncDiffBodyFlag        = mailingListApplyGroupsioMailingListSyncDiffFlags.String("body", "REQUIRED", "")
+		mailingListApplyGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListApplyGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListApplyGroupsioMailingListSyncDiffBearerTokenFlag = mailingListApplyGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
+
 		mailingListListGroupsioMembersFlags           = flag.NewFlagSet("list-groupsio-members", flag.ExitOnError)
 		mailingListListGroupsioMembersSubgroupIDFlag  = mailingListListGroupsioMembersFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
 		mailingListListGroupsioMembersBearerTokenFlag = mailingListListGroupsioMembersFlags.String("bearer-token", "", "")
@@ -174,6 +179,7 @@ func ParseEndpoint(
 	mailingListGetGroupsioMailingListCountFlags.Usage = mailingListGetGroupsioMailingListCountUsage
 	mailingListGetGroupsioMailingListMemberCountFlags.Usage = mailingListGetGroupsioMailingListMemberCountUsage
 	mailingListGetGroupsioMailingListSyncDiffFlags.Usage = mailingListGetGroupsioMailingListSyncDiffUsage
+	mailingListApplyGroupsioMailingListSyncDiffFlags.Usage = mailingListApplyGroupsioMailingListSyncDiffUsage
 	mailingListListGroupsioMembersFlags.Usage = mailingListListGroupsioMembersUsage
 	mailingListAddGroupsioMemberFlags.Usage = mailingListAddGroupsioMemberUsage
 	mailingListGetGroupsioMemberFlags.Usage = mailingListGetGroupsioMemberUsage
@@ -268,6 +274,9 @@ func ParseEndpoint(
 
 			case "get-groupsio-mailing-list-sync-diff":
 				epf = mailingListGetGroupsioMailingListSyncDiffFlags
+
+			case "apply-groupsio-mailing-list-sync-diff":
+				epf = mailingListApplyGroupsioMailingListSyncDiffFlags
 
 			case "list-groupsio-members":
 				epf = mailingListListGroupsioMembersFlags
@@ -370,6 +379,9 @@ func ParseEndpoint(
 			case "get-groupsio-mailing-list-sync-diff":
 				endpoint = c.GetGroupsioMailingListSyncDiff()
 				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffPayload(*mailingListGetGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffBearerTokenFlag)
+			case "apply-groupsio-mailing-list-sync-diff":
+				endpoint = c.ApplyGroupsioMailingListSyncDiff()
+				data, err = mailinglistc.BuildApplyGroupsioMailingListSyncDiffPayload(*mailingListApplyGroupsioMailingListSyncDiffBodyFlag, *mailingListApplyGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListApplyGroupsioMailingListSyncDiffBearerTokenFlag)
 			case "list-groupsio-members":
 				endpoint = c.ListGroupsioMembers()
 				data, err = mailinglistc.BuildListGroupsioMembersPayload(*mailingListListGroupsioMembersSubgroupIDFlag, *mailingListListGroupsioMembersBearerTokenFlag)
@@ -430,6 +442,7 @@ func mailingListUsage() {
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-count: Get count of GroupsIO subgroups for a project`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-member-count: Get count of members in a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-sync-diff: Compute the membership reconciliation diff between a GroupsIO subgroup and its linked committee`)
+	fmt.Fprintln(os.Stderr, `    apply-groupsio-mailing-list-sync-diff: Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee`)
 	fmt.Fprintln(os.Stderr, `    list-groupsio-members: List members of a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    add-groupsio-member: Add a member to a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-member: Get a member of a GroupsIO subgroup by ID`)
@@ -777,6 +790,28 @@ func mailingListGetGroupsioMailingListSyncDiffUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff --subgroup-id \"Est nemo at minima reprehenderit laudantium.\" --bearer-token \"eyJhbGci...\"")
+}
+
+func mailingListApplyGroupsioMailingListSyncDiffUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list apply-groupsio-mailing-list-sync-diff", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list apply-groupsio-mailing-list-sync-diff --body '{\n      \"adds\": [\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"mailing_list_member_id\": \"Aut voluptatibus beatae quia qui excepturi autem.\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"mailing_list_member_id\": \"Aut voluptatibus beatae quia qui excepturi autem.\"\n         }\n      ]\n   }' --subgroup-id \"Commodi ea ut reprehenderit blanditiis.\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListListGroupsioMembersUsage() {

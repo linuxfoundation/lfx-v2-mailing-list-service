@@ -31,6 +31,7 @@ type mailingListAPI struct {
 	artifactReader    port.GroupsIOArtifactReader
 	accessChecker     port.AccessChecker
 	syncDiffComputer  port.SyncDiffComputer
+	syncApplier       port.SyncApplier
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -46,6 +47,7 @@ func NewMailingListAPI(
 	artifactReader port.GroupsIOArtifactReader,
 	accessChecker port.AccessChecker,
 	syncDiffComputer port.SyncDiffComputer,
+	syncApplier port.SyncApplier,
 ) mailinglist.Service {
 	return &mailingListAPI{
 		auth:              auth,
@@ -59,6 +61,7 @@ func NewMailingListAPI(
 		artifactReader:    artifactReader,
 		accessChecker:     accessChecker,
 		syncDiffComputer:  syncDiffComputer,
+		syncApplier:       syncApplier,
 	}
 }
 

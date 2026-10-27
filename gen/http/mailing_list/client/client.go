@@ -84,6 +84,10 @@ type Client struct {
 	// to the get-groupsio-mailing-list-sync-diff endpoint.
 	GetGroupsioMailingListSyncDiffDoer goahttp.Doer
 
+	// ApplyGroupsioMailingListSyncDiff Doer is the HTTP client used to make
+	// requests to the apply-groupsio-mailing-list-sync-diff endpoint.
+	ApplyGroupsioMailingListSyncDiffDoer goahttp.Doer
+
 	// ListGroupsioMembers Doer is the HTTP client used to make requests to the
 	// list-groupsio-members endpoint.
 	ListGroupsioMembersDoer goahttp.Doer
@@ -157,6 +161,7 @@ func NewClient(
 		GetGroupsioMailingListCountDoer:       doer,
 		GetGroupsioMailingListMemberCountDoer: doer,
 		GetGroupsioMailingListSyncDiffDoer:    doer,
+		ApplyGroupsioMailingListSyncDiffDoer:  doer,
 		ListGroupsioMembersDoer:               doer,
 		AddGroupsioMemberDoer:                 doer,
 		GetGroupsioMemberDoer:                 doer,
@@ -568,6 +573,31 @@ func (c *Client) GetGroupsioMailingListSyncDiff() goa.Endpoint {
 		resp, err := c.GetGroupsioMailingListSyncDiffDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ApplyGroupsioMailingListSyncDiff returns an endpoint that makes HTTP
+// requests to the mailing-list service apply-groupsio-mailing-list-sync-diff
+// server.
+func (c *Client) ApplyGroupsioMailingListSyncDiff() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeApplyGroupsioMailingListSyncDiffRequest(c.encoder)
+		decodeResponse = DecodeApplyGroupsioMailingListSyncDiffResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildApplyGroupsioMailingListSyncDiffRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ApplyGroupsioMailingListSyncDiffDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
 		}
 		return decodeResponse(resp)
 	}

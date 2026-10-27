@@ -34,6 +34,7 @@ type Endpoints struct {
 	GetGroupsioMailingListCount       goa.Endpoint
 	GetGroupsioMailingListMemberCount goa.Endpoint
 	GetGroupsioMailingListSyncDiff    goa.Endpoint
+	ApplyGroupsioMailingListSyncDiff  goa.Endpoint
 	ListGroupsioMembers               goa.Endpoint
 	AddGroupsioMember                 goa.Endpoint
 	GetGroupsioMember                 goa.Endpoint
@@ -67,6 +68,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetGroupsioMailingListCount:       NewGetGroupsioMailingListCountEndpoint(s, a.JWTAuth),
 		GetGroupsioMailingListMemberCount: NewGetGroupsioMailingListMemberCountEndpoint(s, a.JWTAuth),
 		GetGroupsioMailingListSyncDiff:    NewGetGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
+		ApplyGroupsioMailingListSyncDiff:  NewApplyGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
 		ListGroupsioMembers:               NewListGroupsioMembersEndpoint(s, a.JWTAuth),
 		AddGroupsioMember:                 NewAddGroupsioMemberEndpoint(s, a.JWTAuth),
 		GetGroupsioMember:                 NewGetGroupsioMemberEndpoint(s, a.JWTAuth),
@@ -98,6 +100,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetGroupsioMailingListCount = m(e.GetGroupsioMailingListCount)
 	e.GetGroupsioMailingListMemberCount = m(e.GetGroupsioMailingListMemberCount)
 	e.GetGroupsioMailingListSyncDiff = m(e.GetGroupsioMailingListSyncDiff)
+	e.ApplyGroupsioMailingListSyncDiff = m(e.ApplyGroupsioMailingListSyncDiff)
 	e.ListGroupsioMembers = m(e.ListGroupsioMembers)
 	e.AddGroupsioMember = m(e.AddGroupsioMember)
 	e.GetGroupsioMember = m(e.GetGroupsioMember)
@@ -469,6 +472,30 @@ func NewGetGroupsioMailingListSyncDiffEndpoint(s Service, authJWTFn security.Aut
 			return nil, err
 		}
 		return s.GetGroupsioMailingListSyncDiff(ctx, p)
+	}
+}
+
+// NewApplyGroupsioMailingListSyncDiffEndpoint returns an endpoint function
+// that calls the method "apply-groupsio-mailing-list-sync-diff" of service
+// "mailing-list".
+func NewApplyGroupsioMailingListSyncDiffEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ApplyGroupsioMailingListSyncDiffPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.ApplyGroupsioMailingListSyncDiff(ctx, p)
 	}
 }
 

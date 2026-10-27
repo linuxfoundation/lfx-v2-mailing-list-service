@@ -98,3 +98,16 @@ func (s *mailingListAPI) GetGroupsioMailingListSyncDiff(ctx context.Context, p *
 	}
 	return convertSyncDiff(diff), nil
 }
+
+func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.ApplyGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncApplyResult, error) {
+	result, err := s.syncApplier.ApplySyncDiff(
+		ctx,
+		p.SubgroupID,
+		convertSyncApplyAddPayload(p.Adds),
+		convertSyncApplyRemovePayload(p.Removes),
+	)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncApplyResult(result), nil
+}

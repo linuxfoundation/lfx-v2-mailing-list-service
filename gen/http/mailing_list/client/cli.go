@@ -427,6 +427,81 @@ func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingLis
 	return v, nil
 }
 
+// BuildApplyGroupsioMailingListSyncDiffPayload builds the payload for the
+// mailing-list apply-groupsio-mailing-list-sync-diff endpoint from CLI flags.
+func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailingListSyncDiffBody string, mailingListApplyGroupsioMailingListSyncDiffSubgroupID string, mailingListApplyGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.ApplyGroupsioMailingListSyncDiffPayload, error) {
+	var err error
+	var body ApplyGroupsioMailingListSyncDiffRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListApplyGroupsioMailingListSyncDiffBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"committee_member_uid\": \"Fugiat libero.\",\n            \"email\": \"jane_metz@olson.info\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"mailing_list_member_id\": \"Aut voluptatibus beatae quia qui excepturi autem.\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"mailing_list_member_id\": \"Aut voluptatibus beatae quia qui excepturi autem.\"\n         }\n      ]\n   }'")
+		}
+		if body.Adds == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
+		}
+		if body.Removes == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+		}
+		for _, e := range body.Adds {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffAddRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Removes {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffRemoveRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var subgroupID string
+	{
+		subgroupID = mailingListApplyGroupsioMailingListSyncDiffSubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListApplyGroupsioMailingListSyncDiffBearerToken != "" {
+			bearerToken = &mailingListApplyGroupsioMailingListSyncDiffBearerToken
+		}
+	}
+	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{}
+	if body.Adds != nil {
+		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
+		for i, val := range body.Adds {
+			if val == nil {
+				v.Adds[i] = nil
+				continue
+			}
+			v.Adds[i] = marshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(val)
+		}
+	} else {
+		v.Adds = []*mailinglist.GroupsioSyncDiffAdd{}
+	}
+	if body.Removes != nil {
+		v.Removes = make([]*mailinglist.GroupsioSyncDiffRemove, len(body.Removes))
+		for i, val := range body.Removes {
+			if val == nil {
+				v.Removes[i] = nil
+				continue
+			}
+			v.Removes[i] = marshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(val)
+		}
+	} else {
+		v.Removes = []*mailinglist.GroupsioSyncDiffRemove{}
+	}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
 // BuildListGroupsioMembersPayload builds the payload for the mailing-list
 // list-groupsio-members endpoint from CLI flags.
 func BuildListGroupsioMembersPayload(mailingListListGroupsioMembersSubgroupID string, mailingListListGroupsioMembersBearerToken string) (*mailinglist.ListGroupsioMembersPayload, error) {

@@ -186,18 +186,29 @@ func run() int {
 		orchestrator.WithSyncDiffSyncSettingsStore(syncSettingsStore),
 	)
 
+	// userReader resolves an LFX account by email. It is independent of the InvitesEnabled flag
+	// below (it wraps the auth-service email_to_username NATS subject, not the invite flow) and
+	// is needed unconditionally by syncApplyOrchestrator.
+	userReader := infraNATS.NewUserReader(natsClient, slog.Default())
+
+	syncApplyOrchestrator := orchestrator.NewSyncApplyOrchestrator(
+		orchestrator.WithSyncApplyMailingListReader(mailingListReaderOrchestrator),
+		orchestrator.WithSyncApplyMemberReader(memberReaderOrchestrator),
+		orchestrator.WithSyncApplyMemberWriter(memberWriterOrchestrator),
+		orchestrator.WithSyncApplySyncSettingsStore(syncSettingsStore),
+		orchestrator.WithSyncApplyUserReader(userReader),
+	)
+
 	// ---- LFID invite feature ----
 	// Initialise invite deps when InvitesEnabled=true.  The acceptance subscriber
 	// starts independently of EventingEnabled so that enrichment works even when
 	// the data stream consumer is not running on this replica.
 	var (
 		inviteSender *infraNATS.NATSInviteSender
-		userReader   *infraNATS.NATSUserReader
 		inviteAccSub *eventing.InviteAcceptedSubscriber
 	)
 	if env.InvitesEnabled {
 		inviteSender = infraNATS.NewInviteSender(natsClient, slog.Default())
-		userReader = infraNATS.NewUserReader(natsClient, slog.Default())
 
 		inviteAccSub = eventing.NewInviteAcceptedSubscriber(natsClient, proxyClient, slog.Default())
 		if err := inviteAccSub.Start(ctx); err != nil {
@@ -231,6 +242,7 @@ func run() int {
 		artifactReaderOrchestrator,
 		accessChecker,
 		syncDiffOrchestrator,
+		syncApplyOrchestrator,
 	)
 
 	// Wrap the service in GOA endpoints.

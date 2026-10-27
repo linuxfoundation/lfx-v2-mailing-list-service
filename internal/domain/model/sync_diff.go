@@ -8,6 +8,9 @@ package model
 type SyncDiffAdd struct {
 	Email              string `json:"email"`
 	CommitteeMemberUID string `json:"committee_member_uid"`
+	// Name is the committee member's display name, carried through for sync-apply so a failed
+	// email resolution can still show an admin who this is, even without a fuzzy name match.
+	Name string `json:"name,omitempty"`
 }
 
 // SyncDiffRemove is a mailing list member, originally added by committee sync, who should be

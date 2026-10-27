@@ -429,6 +429,34 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	dsl.Method("apply-groupsio-mailing-list-sync-diff", func() {
+		dsl.Description("Apply an admin-approved subset of a previously computed sync-diff: add resolved " +
+			"committee members and remove members who dropped off the linked committee")
+		dsl.Security(JWTAuth)
+		dsl.Payload(func() {
+			BearerTokenAttribute()
+			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
+			dsl.Extend(GroupsioSyncApplyRequestType)
+			dsl.Required("subgroup_id", "adds", "removes")
+			dsl.Token("bearer_token", dsl.String)
+		})
+		dsl.Result(GroupsioSyncApplyResultType)
+		dsl.Error("NotFound", NotFoundError, "Subgroup or linked committee not found")
+		dsl.Error("BadRequest", BadRequestError, "Subgroup has no linked committee, or its sync_mode does not support sync-apply")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
+		dsl.HTTP(func() {
+			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/sync-apply")
+			dsl.Param("subgroup_id")
+			dsl.Header("bearer_token:Authorization")
+			dsl.Response(dsl.StatusOK)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
+		})
+	})
+
 	// ---- GroupsIO Member endpoints ----
 
 	dsl.Method("list-groupsio-members", func() {
