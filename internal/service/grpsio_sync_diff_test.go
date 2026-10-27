@@ -66,6 +66,21 @@ func TestComputeSyncDiff_NoLinkedCommittee(t *testing.T) {
 	assert.True(t, errors.As(err, &validation))
 }
 
+func TestComputeSyncDiff_VotingStatusFilter_NotYetSupported(t *testing.T) {
+	ml := &model.GroupsIOMailingList{
+		UID:        "ml-1",
+		Committees: []model.Committee{{UID: "committee-1", AllowedVotingStatuses: []string{"Voting Rep"}}},
+	}
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: ml}),
+	)
+	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	require.Error(t, err)
+	var validation errs.Validation
+	require.True(t, errors.As(err, &validation))
+	assert.Contains(t, validation.Error(), "voting-status")
+}
+
 func TestComputeSyncDiff_ManualSyncMode(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
