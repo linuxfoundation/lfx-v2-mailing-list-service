@@ -78,6 +78,15 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, errs.NewServiceUnavailable("ITX sync-diff job failed: " + job.ErrorMessage)
 	}
 
+	// Re-resolve the mailing list's linked committee after the (potentially long-running) ITX job
+	// completes, rather than trusting the committeeUID resolved before the job started: narrows
+	// the window in which the result is mislabeled with a stale committee if the mailing list gets
+	// reassociated to a different committee while the job was in flight.
+	if refreshedML, refreshErr := o.mailingListReader.GetMailingList(ctx, mailingListID); refreshErr == nil &&
+		len(refreshedML.Committees) > 0 && refreshedML.Committees[0].UID != "" {
+		committeeUID = refreshedML.Committees[0].UID
+	}
+
 	return fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, direction, job), nil
 }
 
@@ -85,10 +94,7 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 // which roster each of ToAdd/ToRemove's IDs belongs to: for auto_c_to_ml, ToAdd holds committee
 // members and ToRemove holds mailing-list members; for auto_ml_to_c it is the reverse.
 func fromSyncDiffJob(mailingListID, committeeUID, syncMode, direction string, job *port.SyncDiffJob) *model.SyncDiff {
-	addMemberType, removeMemberType := model.MemberTypeCommitteeMember, model.MemberTypeMailingListMember
-	if direction == port.SyncJobDirectionMailingListToCommittee {
-		addMemberType, removeMemberType = model.MemberTypeMailingListMember, model.MemberTypeCommitteeMember
-	}
+	addMemberType, removeMemberType := memberTypesForDirection(direction)
 
 	adds := make([]model.SyncDiffAdd, len(job.ToAdd))
 	for i, m := range job.ToAdd {

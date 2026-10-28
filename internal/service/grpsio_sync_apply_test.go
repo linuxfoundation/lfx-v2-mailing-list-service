@@ -72,18 +72,19 @@ func TestApplySyncDiff_JobFailed(t *testing.T) {
 }
 
 func TestApplySyncDiff_AddSuccess(t *testing.T) {
-	o := newApplyOrchestrator(
-		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
-		&stubITXSyncClient{
-			postApplyJobID: "apply-1",
-			applyJob: &port.SyncApplyJob{
-				ID:     "apply-1",
-				Status: port.SyncJobStatusCompleted,
-				Results: []port.SyncApplyJobResult{
-					{Email: "alice@example.com", Action: "add", Status: "success"},
-				},
+	stub := &stubITXSyncClient{
+		postApplyJobID: "apply-1",
+		applyJob: &port.SyncApplyJob{
+			ID:     "apply-1",
+			Status: port.SyncJobStatusCompleted,
+			Results: []port.SyncApplyJobResult{
+				{Email: "alice@example.com", Action: "add", Status: "success"},
 			},
 		},
+	}
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		stub,
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember, Name: "Alice Example"},
@@ -95,6 +96,8 @@ func TestApplySyncDiff_AddSuccess(t *testing.T) {
 	assert.Equal(t, model.MemberTypeCommitteeMember, result.Added[0].MemberType)
 	assert.Equal(t, "Alice Example", result.Added[0].NameHint)
 	assert.Empty(t, result.Added[0].Error)
+	assert.Equal(t, []string{"alice@example.com"}, stub.postApplyAdds)
+	assert.Empty(t, stub.postApplyRemoves)
 }
 
 func TestApplySyncDiff_AddFailure_ReportedAsFailed(t *testing.T) {
@@ -121,18 +124,19 @@ func TestApplySyncDiff_AddFailure_ReportedAsFailed(t *testing.T) {
 }
 
 func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
-	o := newApplyOrchestrator(
-		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
-		&stubITXSyncClient{
-			postApplyJobID: "apply-1",
-			applyJob: &port.SyncApplyJob{
-				ID:     "apply-1",
-				Status: port.SyncJobStatusCompleted,
-				Results: []port.SyncApplyJobResult{
-					{Email: "carol@example.com", Action: "remove", Status: "success"},
-				},
+	stub := &stubITXSyncClient{
+		postApplyJobID: "apply-1",
+		applyJob: &port.SyncApplyJob{
+			ID:     "apply-1",
+			Status: port.SyncJobStatusCompleted,
+			Results: []port.SyncApplyJobResult{
+				{Email: "carol@example.com", Action: "remove", Status: "success"},
 			},
 		},
+	}
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		stub,
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
@@ -143,6 +147,8 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 	assert.Equal(t, "mlm-1", result.Removed[0].MemberID)
 	assert.Equal(t, model.MemberTypeMailingListMember, result.Removed[0].MemberType)
 	assert.Empty(t, result.Removed[0].Error)
+	assert.Equal(t, []string{"mlm-1"}, stub.postApplyRemoves)
+	assert.Empty(t, stub.postApplyAdds)
 }
 
 // TestApplySyncDiff_MailingListToCommitteeDirection pins that auto_ml_to_c mailing lists are
@@ -193,4 +199,87 @@ func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Removed[0].Outcome)
 	assert.Equal(t, "boom", result.Removed[0].Error)
+}
+
+// TestApplySyncDiff_AddMemberTypeMismatch pins that an approved add whose MemberType doesn't
+// match the roster the mailing list's *current* sync_mode direction expects is rejected up front,
+// rather than silently applied as if it were for the direction it was actually approved under.
+func TestApplySyncDiff_AddMemberTypeMismatch(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
+	}, nil)
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+func TestApplySyncDiff_RemoveMemberTypeMismatch(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
+		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
+	})
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+// TestApplySyncDiff_UnmatchedResultEmail pins that an ITX result whose email doesn't normalize-
+// match any approved add/remove is reported as an explicit failure rather than silently emitting
+// a zero-value MemberID/MemberType, which would otherwise look like a real (if empty) result.
+func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			postApplyJobID: "apply-1",
+			applyJob: &port.SyncApplyJob{
+				ID:     "apply-1",
+				Status: port.SyncJobStatusCompleted,
+				Results: []port.SyncApplyJobResult{
+					{Email: "unexpected@example.com", Action: "add", Status: "success"},
+				},
+			},
+		},
+	)
+	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.NoError(t, err)
+	require.Len(t, result.Added, 1)
+	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Added[0].Outcome)
+	assert.Empty(t, result.Added[0].MemberID)
+	assert.Contains(t, result.Added[0].Error, "unexpected@example.com")
+}
+
+// TestApplySyncDiff_CommitteeUIDRefreshedAfterJobCompletes pins that the result's CommitteeUID
+// reflects the mailing list's committee link as of job completion, not as of the initial read
+// before the (potentially long-running) ITX job was submitted.
+func TestApplySyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{
+			ml:             mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList),
+			mlOnSecondCall: mlWithCommitteeSyncMode("committee-2", model.SyncModeAutoCommitteeToMailingList),
+		},
+		&stubITXSyncClient{
+			postApplyJobID: "apply-1",
+			applyJob: &port.SyncApplyJob{
+				ID:     "apply-1",
+				Status: port.SyncJobStatusCompleted,
+				Results: []port.SyncApplyJobResult{
+					{Email: "alice@example.com", Action: "add", Status: "success"},
+				},
+			},
+		},
+	)
+	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "committee-2", result.CommitteeUID)
 }
