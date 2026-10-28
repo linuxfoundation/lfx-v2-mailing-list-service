@@ -16,13 +16,20 @@ import (
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-// stubMemberReader returns configured responses for ListMembers.
+// stubMemberReader returns configured responses for ListMembers. membersByID, when set, returns
+// a different roster per mailing list ID (needed by sync-apply tests that query more than one
+// list); otherwise every call returns the single members slice regardless of list ID.
 type stubMemberReader struct {
-	members []*model.GrpsIOMember
-	err     error
+	members     []*model.GrpsIOMember
+	membersByID map[string][]*model.GrpsIOMember
+	err         error
 }
 
-func (r *stubMemberReader) ListMembers(_ context.Context, _ string) ([]*model.GrpsIOMember, int, error) {
+func (r *stubMemberReader) ListMembers(_ context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error) {
+	if r.membersByID != nil {
+		members := r.membersByID[mailingListID]
+		return members, len(members), r.err
+	}
 	return r.members, len(r.members), r.err
 }
 func (r *stubMemberReader) GetMember(_ context.Context, _, _ string) (*model.GrpsIOMember, error) {

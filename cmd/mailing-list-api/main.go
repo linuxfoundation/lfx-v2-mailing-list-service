@@ -197,6 +197,7 @@ func run() int {
 		orchestrator.WithSyncApplyMemberWriter(memberWriterOrchestrator),
 		orchestrator.WithSyncApplySyncSettingsStore(syncSettingsStore),
 		orchestrator.WithSyncApplyUserReader(userReader),
+		orchestrator.WithSyncApplyCommitteeMembershipLookup(committeeMembershipLookup),
 	)
 
 	// ---- LFID invite feature ----

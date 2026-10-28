@@ -84,6 +84,7 @@ func newApplyOrchestrator(
 	memberWriter port.GroupsIOMailingListMemberWriter,
 	store port.CommitteeSyncSettingsStore,
 	userReader port.UserReader,
+	committeeLookup port.CommitteeMembershipLookup,
 ) port.SyncApplier {
 	return NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(mlReader),
@@ -91,6 +92,7 @@ func newApplyOrchestrator(
 		WithSyncApplyMemberWriter(memberWriter),
 		WithSyncApplySyncSettingsStore(store),
 		WithSyncApplyUserReader(userReader),
+		WithSyncApplyCommitteeMembershipLookup(committeeLookup),
 	)
 }
 
@@ -98,6 +100,7 @@ func TestApplySyncDiff_NoLinkedCommittee(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubMemberReader{}, &stubMemberWriter{}, &stubSyncSettingsStore{}, &stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
 	)
 	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
 	require.Error(t, err)
@@ -111,6 +114,7 @@ func TestApplySyncDiff_ManualSyncMode(t *testing.T) {
 		&stubMemberReader{}, &stubMemberWriter{},
 		&stubSyncSettingsStore{getMode: model.SyncModeManual, getFound: true},
 		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
 	)
 	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
 	require.Error(t, err)
@@ -125,6 +129,7 @@ func TestApplySyncDiff_AddResolvedUser_AddsDirectly(t *testing.T) {
 		&stubMemberReader{}, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{usernameByEmail: map[string]string{"alice@example.com": "alice"}},
+		&stubCommitteeMembershipLookup{members: []port.CommitteeMember{{UID: "cm-1", Email: "alice@example.com", Name: "Alice Example"}}},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", CommitteeMemberUID: "cm-1", Name: "Alice Example"},
@@ -145,6 +150,7 @@ func TestApplySyncDiff_AddUnresolvedUser_FallsBackToInvite(t *testing.T) {
 		&stubMemberReader{}, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{members: []port.CommitteeMember{{UID: "cm-2", Email: "bob@example.com", Name: "Bob Example"}}},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "bob@example.com", CommitteeMemberUID: "cm-2", Name: "Bob Example"},
@@ -163,6 +169,7 @@ func TestApplySyncDiff_AddWriterFailure_ReportedAsFailed(t *testing.T) {
 		&stubMemberReader{}, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{usernameByEmail: map[string]string{"alice@example.com": "alice"}},
+		&stubCommitteeMembershipLookup{members: []port.CommitteeMember{{UID: "cm-1", Email: "alice@example.com"}}},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", CommitteeMemberUID: "cm-1"},
@@ -170,7 +177,27 @@ func TestApplySyncDiff_AddWriterFailure_ReportedAsFailed(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, result.Added, 1)
 	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Added[0].Outcome)
-	assert.Equal(t, "boom", result.Added[0].Error)
+	assert.Equal(t, "failed to add member to mailing list", result.Added[0].Error)
+}
+
+func TestApplySyncDiff_AddNoLongerInCurrentDiff_ReportedAsFailed(t *testing.T) {
+	writer := &stubMemberWriter{}
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommittee("committee-1")},
+		&stubMemberReader{}, writer,
+		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
+		&stubSyncApplyUserReader{usernameByEmail: map[string]string{"alice@example.com": "alice"}},
+		// alice is no longer a committee member by apply time — the current diff has no adds.
+		&stubCommitteeMembershipLookup{members: nil},
+	)
+	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", CommitteeMemberUID: "cm-1"},
+	}, nil)
+	require.NoError(t, err)
+	require.Len(t, result.Added, 1)
+	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Added[0].Outcome)
+	assert.Contains(t, result.Added[0].Error, "no longer reflects the current committee roster")
+	assert.Empty(t, writer.added)
 }
 
 func TestApplySyncDiff_Remove_NotOnSiblingList_RemovesDirectly(t *testing.T) {
@@ -179,11 +206,17 @@ func TestApplySyncDiff_Remove_NotOnSiblingList_RemovesDirectly(t *testing.T) {
 		ml:      mlWithCommittee("committee-1"),
 		listMLs: []*model.GroupsIOMailingList{{UID: "ml-1"}, {UID: "ml-2"}},
 	}
-	memberReader := &stubMemberReader{members: []*model.GrpsIOMember{{Email: "other@example.com"}}}
+	// carol is a current committee-sourced member of the target list (ml-1); the sibling list
+	// (ml-2) has an unrelated member, so carol is not reachable cross-list.
+	memberReader := &stubMemberReader{membersByID: map[string][]*model.GrpsIOMember{
+		"ml-1": {{Email: "carol@example.com", UID: "mlm-1", MemberType: committeeMemberType}},
+		"ml-2": {{Email: "other@example.com"}},
+	}}
 	o := newApplyOrchestrator(
 		mlReader, memberReader, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
@@ -200,13 +233,17 @@ func TestApplySyncDiff_Remove_StillOnSiblingList_SkipsCrossList(t *testing.T) {
 		ml:      mlWithCommittee("committee-1"),
 		listMLs: []*model.GroupsIOMailingList{{UID: "ml-1"}, {UID: "ml-2"}},
 	}
-	// memberReader.ListMembers is used both for the target list (not consulted here, since the
-	// guard only calls it for sibling lists) and for ml-2's roster.
-	memberReader := &stubMemberReader{members: []*model.GrpsIOMember{{Email: "Carol@Example.com"}}}
+	// carol is a current committee-sourced member of the target list (ml-1), so her remove is
+	// still valid against the current diff; ml-2 also reports her, making her cross-list reachable.
+	memberReader := &stubMemberReader{membersByID: map[string][]*model.GrpsIOMember{
+		"ml-1": {{Email: "carol@example.com", UID: "mlm-1", MemberType: committeeMemberType}},
+		"ml-2": {{Email: "Carol@Example.com"}},
+	}}
 	o := newApplyOrchestrator(
 		mlReader, memberReader, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
@@ -220,10 +257,14 @@ func TestApplySyncDiff_Remove_StillOnSiblingList_SkipsCrossList(t *testing.T) {
 func TestApplySyncDiff_Remove_WriterFailure_ReportedAsFailed(t *testing.T) {
 	writer := &stubMemberWriter{deleteErrByID: map[string]error{"mlm-1": errors.New("boom")}}
 	mlReader := &stubMLReader{ml: mlWithCommittee("committee-1")}
+	memberReader := &stubMemberReader{members: []*model.GrpsIOMember{
+		{Email: "carol@example.com", UID: "mlm-1", MemberType: committeeMemberType},
+	}}
 	o := newApplyOrchestrator(
-		mlReader, &stubMemberReader{}, writer,
+		mlReader, memberReader, writer,
 		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
 		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
@@ -231,5 +272,27 @@ func TestApplySyncDiff_Remove_WriterFailure_ReportedAsFailed(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Removed[0].Outcome)
-	assert.Equal(t, "boom", result.Removed[0].Error)
+	assert.Equal(t, "failed to remove member from mailing list", result.Removed[0].Error)
+}
+
+func TestApplySyncDiff_RemoveNoLongerInCurrentDiff_ReportedAsFailed(t *testing.T) {
+	writer := &stubMemberWriter{}
+	mlReader := &stubMLReader{ml: mlWithCommittee("committee-1")}
+	// carol is no longer a committee-sourced member of the target list by apply time (e.g.
+	// already removed by a prior apply) — the current diff has no removes for mlm-1.
+	memberReader := &stubMemberReader{}
+	o := newApplyOrchestrator(
+		mlReader, memberReader, writer,
+		&stubSyncSettingsStore{getMode: model.SyncModeAutoCommitteeToMailingList, getFound: true},
+		&stubSyncApplyUserReader{},
+		&stubCommitteeMembershipLookup{},
+	)
+	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
+		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Removed, 1)
+	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Removed[0].Outcome)
+	assert.Contains(t, result.Removed[0].Error, "no longer reflects the current committee roster")
+	assert.Empty(t, writer.deletedIDs)
 }
