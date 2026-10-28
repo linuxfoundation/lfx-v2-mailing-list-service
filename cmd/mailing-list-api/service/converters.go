@@ -63,27 +63,36 @@ func convertSyncApplyResult(r *model.SyncApplyResult) *mailinglist.GroupsioSyncA
 	}
 }
 
-// convertSyncApplyAddPayload converts Goa sync-apply add payload entries into domain adds.
+// convertSyncApplyAddPayload converts Goa sync-apply add payload entries into domain adds. Nil
+// entries (Goa's generated validator allows an array element of {"adds":[null]} through) are
+// skipped rather than dereferenced.
 func convertSyncApplyAddPayload(adds []*mailinglist.GroupsioSyncDiffAdd) []model.SyncDiffAdd {
-	result := make([]model.SyncDiffAdd, len(adds))
-	for i, a := range adds {
-		result[i] = model.SyncDiffAdd{
+	result := make([]model.SyncDiffAdd, 0, len(adds))
+	for _, a := range adds {
+		if a == nil {
+			continue
+		}
+		result = append(result, model.SyncDiffAdd{
 			Email:              a.Email,
 			CommitteeMemberUID: a.CommitteeMemberUID,
 			Name:               converter.StringVal(a.Name),
-		}
+		})
 	}
 	return result
 }
 
-// convertSyncApplyRemovePayload converts Goa sync-apply remove payload entries into domain removes.
+// convertSyncApplyRemovePayload converts Goa sync-apply remove payload entries into domain
+// removes. Nil entries are skipped, for the same reason as convertSyncApplyAddPayload.
 func convertSyncApplyRemovePayload(removes []*mailinglist.GroupsioSyncDiffRemove) []model.SyncDiffRemove {
-	result := make([]model.SyncDiffRemove, len(removes))
-	for i, r := range removes {
-		result[i] = model.SyncDiffRemove{
+	result := make([]model.SyncDiffRemove, 0, len(removes))
+	for _, r := range removes {
+		if r == nil {
+			continue
+		}
+		result = append(result, model.SyncDiffRemove{
 			Email:               r.Email,
 			MailingListMemberID: r.MailingListMemberID,
-		}
+		})
 	}
 	return result
 }

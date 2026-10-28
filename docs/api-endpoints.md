@@ -36,7 +36,8 @@ Base URL (local): `http://localhost:8080`
 | `DELETE` | `/groupsio/mailing-lists/{subgroup_id}` | JWT | Delete a mailing list |
 | `GET` | `/groupsio/mailing-lists/count?project_uid=<uuid>` | JWT | Get mailing list count for a project |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/member_count` | JWT | Get member count for a mailing list |
-| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` only) |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT (writer) | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` only) |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply` | JWT (writer) | Apply an admin-approved subset of a sync-diff's adds/removes (`auto_c_to_ml` only) |
 
 ### GroupsIO Members
 
@@ -179,8 +180,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 `sync_mode` requires `committee_uid` to also be set, and must be one of `manual` (default),
 `auto_c_to_ml`, or `auto_ml_to_c`. It is v2-local configuration (ITX has no concept of it) that
-the sync-diff endpoint below (and a future sync-apply endpoint) reads to decide how to reconcile
-membership.
+the sync-diff and sync-apply endpoints below read to decide how to reconcile membership.
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -227,6 +227,34 @@ curl -H "Authorization: Bearer $TOKEN" \
   ],
   "removes": [
     {"email": "departed-member@example.com", "mailing_list_member_id": "<mailing-list-member-id>"}
+  ]
+}
+```
+
+**Apply an admin-approved subset of a sync-diff:**
+
+Takes the `adds`/`removes` an admin chose to apply from a prior sync-diff response. Each entry is
+re-validated against a freshly computed diff before being applied — an entry that no longer
+reflects the current committee roster (the roster changed since the diff was computed) is reported
+as `failed` with an explanatory error rather than applied or silently dropped. Same `sync_mode`
+and committee-link requirements as sync-diff.
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"adds":[{"email":"new-member@example.com","committee_member_uid":"<committee-member-uuid>"}],"removes":[{"email":"departed-member@example.com","mailing_list_member_id":"<mailing-list-member-id>"}]}' \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply"
+```
+
+```json
+{
+  "mailing_list_id": "<subgroup-id>",
+  "committee_uid": "<committee-uuid>",
+  "added": [
+    {"email": "new-member@example.com", "committee_member_uid": "<committee-member-uuid>", "outcome": "added"}
+  ],
+  "removed": [
+    {"email": "departed-member@example.com", "mailing_list_member_id": "<mailing-list-member-id>", "outcome": "removed"}
   ]
 }
 ```

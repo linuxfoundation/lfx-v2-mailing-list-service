@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -22,6 +23,7 @@ type SyncApplyOrchestrator struct {
 	memberWriter      port.GroupsIOMailingListMemberWriter
 	syncSettingsStore port.CommitteeSyncSettingsStore
 	userReader        port.UserReader
+	committeeLookup   port.CommitteeMembershipLookup
 }
 
 // SyncApplyOrchestratorOption configures a SyncApplyOrchestrator.
@@ -56,6 +58,14 @@ func WithSyncApplyUserReader(r port.UserReader) SyncApplyOrchestratorOption {
 	return func(o *SyncApplyOrchestrator) { o.userReader = r }
 }
 
+// WithSyncApplyCommitteeMembershipLookup sets the lookup used to recompute the committee's
+// current members at apply time, so approvedAdds/approvedRemoves can be re-validated against the
+// current sync-diff rather than blindly trusted (they may have been computed, and approved by an
+// admin, against a roster that has since changed).
+func WithSyncApplyCommitteeMembershipLookup(l port.CommitteeMembershipLookup) SyncApplyOrchestratorOption {
+	return func(o *SyncApplyOrchestrator) { o.committeeLookup = l }
+}
+
 // NewSyncApplyOrchestrator creates a SyncApplyOrchestrator with the given options.
 func NewSyncApplyOrchestrator(opts ...SyncApplyOrchestratorOption) port.SyncApplier {
 	o := &SyncApplyOrchestrator{}
@@ -86,6 +96,13 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 	committeeUID := ml.Committees[0].UID
 
+	// Mirrors the guard in SyncDiffOrchestrator.ComputeSyncDiff: a filtered committee link cannot
+	// be reconciled correctly against the full roster (see grpsio_sync_diff.go), so an apply
+	// against such a link must be rejected the same way a diff computation would be.
+	if len(ml.Committees[0].AllowedVotingStatuses) > 0 {
+		return nil, errs.NewValidation("sync-apply does not yet support committees with voting-status filters")
+	}
+
 	syncMode, _, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, committeeUID)
 	if err != nil {
 		return nil, errs.NewServiceUnavailable("failed to load committee sync_mode", err)
@@ -104,6 +121,33 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		return nil, errs.NewValidation("mailing list has an unrecognized sync_mode: " + syncMode)
 	}
 
+	// Re-validate approvedAdds/approvedRemoves against a freshly computed diff: the caller's
+	// request was built from a sync-diff response that may be stale by the time this apply runs
+	// (the committee roster, or the committee link itself, may have changed in between). Entries
+	// that no longer reflect the current diff are reported as failed rather than applied — an
+	// admin who approved a stale entry needs to know it was not what they thought it was, not
+	// have it silently applied or silently dropped.
+	currentCommitteeMembers, err := o.committeeLookup.GetCommitteeMembers(ctx, committeeUID)
+	if err != nil {
+		return nil, err
+	}
+	currentMlMembers, _, err := o.memberReader.ListMembers(ctx, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+	currentDiff := computeCommitteeToMailingListDiff(mailingListID, committeeUID, currentCommitteeMembers, currentMlMembers)
+
+	currentAddEmails := make(map[string]struct{}, len(currentDiff.Adds))
+	for _, a := range currentDiff.Adds {
+		currentAddEmails[normalizeEmail(a.Email)] = struct{}{}
+	}
+	currentRemoveIDs := make(map[string]struct{}, len(currentDiff.Removes))
+	for _, r := range currentDiff.Removes {
+		currentRemoveIDs[r.MailingListMemberID] = struct{}{}
+	}
+
+	const staleEntryError = "entry no longer reflects the current committee roster; please re-run sync-diff"
+
 	result := &model.SyncApplyResult{
 		MailingListID: mailingListID,
 		CommitteeUID:  committeeUID,
@@ -111,18 +155,38 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		Removed:       make([]model.SyncApplyRemoveResult, 0, len(approvedRemoves)),
 	}
 
+	// Look up sibling-linked-list emails before applying any adds or removes, so a failure here
+	// surfaces as a clean error instead of discarding already-completed adds (previously this ran
+	// only when there were removes to apply, and only after the adds loop had already run).
+	siblingEmails, err := o.siblingLinkedListEmails(ctx, committeeUID, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, add := range approvedAdds {
+		if _, stillCurrent := currentAddEmails[normalizeEmail(add.Email)]; !stillCurrent {
+			result.Added = append(result.Added, model.SyncApplyAddResult{
+				Email:              add.Email,
+				CommitteeMemberUID: add.CommitteeMemberUID,
+				Outcome:            model.SyncApplyOutcomeFailed,
+				Error:              staleEntryError,
+			})
+			continue
+		}
 		result.Added = append(result.Added, o.applyAdd(ctx, mailingListID, add))
 	}
 
-	if len(approvedRemoves) > 0 {
-		siblingEmails, err := o.siblingLinkedListEmails(ctx, committeeUID, mailingListID)
-		if err != nil {
-			return nil, err
+	for _, remove := range approvedRemoves {
+		if _, stillCurrent := currentRemoveIDs[remove.MailingListMemberID]; !stillCurrent {
+			result.Removed = append(result.Removed, model.SyncApplyRemoveResult{
+				Email:               remove.Email,
+				MailingListMemberID: remove.MailingListMemberID,
+				Outcome:             model.SyncApplyOutcomeFailed,
+				Error:               staleEntryError,
+			})
+			continue
 		}
-		for _, remove := range approvedRemoves {
-			result.Removed = append(result.Removed, o.applyRemove(ctx, mailingListID, remove, siblingEmails))
-		}
+		result.Removed = append(result.Removed, o.applyRemove(ctx, mailingListID, remove, siblingEmails))
 	}
 
 	return result, nil
@@ -143,8 +207,9 @@ func (o *SyncApplyOrchestrator) applyAdd(ctx context.Context, mailingListID stri
 			MemberType: committeeMemberType,
 		}
 		if _, addErr := o.memberWriter.AddMember(ctx, mailingListID, member); addErr != nil {
+			slog.ErrorContext(ctx, "sync-apply: failed to add member", "mailing_list_id", mailingListID, "email", add.Email, "error", addErr)
 			res.Outcome = model.SyncApplyOutcomeFailed
-			res.Error = addErr.Error()
+			res.Error = "failed to add member to mailing list"
 			return res
 		}
 		res.Outcome = model.SyncApplyOutcomeAdded
@@ -152,8 +217,9 @@ func (o *SyncApplyOrchestrator) applyAdd(ctx context.Context, mailingListID stri
 
 	case errors.Is(err, port.ErrUserNotFound):
 		if inviteErr := o.memberWriter.InviteMembers(ctx, mailingListID, []string{add.Email}); inviteErr != nil {
+			slog.ErrorContext(ctx, "sync-apply: failed to invite member", "mailing_list_id", mailingListID, "email", add.Email, "error", inviteErr)
 			res.Outcome = model.SyncApplyOutcomeFailed
-			res.Error = inviteErr.Error()
+			res.Error = "failed to invite member to mailing list"
 			return res
 		}
 		res.Outcome = model.SyncApplyOutcomeInvited
@@ -161,8 +227,9 @@ func (o *SyncApplyOrchestrator) applyAdd(ctx context.Context, mailingListID stri
 		return res
 
 	default:
+		slog.ErrorContext(ctx, "sync-apply: failed to resolve LFX account for email", "mailing_list_id", mailingListID, "email", add.Email, "error", err)
 		res.Outcome = model.SyncApplyOutcomeFailed
-		res.Error = err.Error()
+		res.Error = "failed to resolve LFX account for email"
 		return res
 	}
 }
@@ -185,8 +252,9 @@ func (o *SyncApplyOrchestrator) applyRemove(
 	}
 
 	if err := o.memberWriter.DeleteMember(ctx, mailingListID, remove.MailingListMemberID); err != nil {
+		slog.ErrorContext(ctx, "sync-apply: failed to remove member", "mailing_list_id", mailingListID, "mailing_list_member_id", remove.MailingListMemberID, "error", err)
 		res.Outcome = model.SyncApplyOutcomeFailed
-		res.Error = err.Error()
+		res.Error = "failed to remove member from mailing list"
 		return res
 	}
 	res.Outcome = model.SyncApplyOutcomeRemoved
