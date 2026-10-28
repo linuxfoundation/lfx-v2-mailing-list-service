@@ -131,40 +131,6 @@ func NewCommitteeProjectLookup(ctx context.Context, source string, natsClient *n
 	}
 }
 
-// NewCommitteeMembershipLookup initializes the committee membership lookup implementation.
-// source controls the backend: "nats" (default) or "mock".
-func NewCommitteeMembershipLookup(ctx context.Context, source string, natsClient *nats.NATSClient) (port.CommitteeMembershipLookup, error) {
-	switch source {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock committee membership lookup")
-		return infrastructure.NewFakeCommitteeMembershipLookup(), nil
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS committee membership lookup")
-		return nats.NewNATSCommitteeMembershipLookup(natsClient), nil
-	default:
-		return nil, fmt.Errorf("unsupported committee membership lookup implementation: %s", source)
-	}
-}
-
-// NewCommitteeSyncSettingsStore initializes the committee sync settings store implementation.
-// source controls the backend: "nats" (default) or "mock".
-func NewCommitteeSyncSettingsStore(ctx context.Context, source string, natsClient *nats.NATSClient) (port.CommitteeSyncSettingsStore, error) {
-	switch source {
-	case "mock":
-		slog.InfoContext(ctx, "initializing mock committee sync settings store")
-		return infrastructure.NewMockCommitteeSyncSettingsStore(), nil
-	case "nats":
-		slog.InfoContext(ctx, "initializing NATS committee sync settings store")
-		kv, err := natsClient.KeyValue(ctx, constants.KVBucketCommitteeSyncSettings)
-		if err != nil {
-			return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketCommitteeSyncSettings, err)
-		}
-		return nats.NewCommitteeSyncSettingsStore(kv), nil
-	default:
-		return nil, fmt.Errorf("unsupported committee sync settings store implementation: %s", source)
-	}
-}
-
 // decodePrivateKey returns the raw PEM key, base64-decoding it first if needed.
 // Secrets stored in AWS Secrets Manager (and injected via External Secrets Operator)
 // are sometimes base64-encoded before storage; this handles both cases transparently.

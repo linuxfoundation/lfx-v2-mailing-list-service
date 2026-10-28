@@ -19,9 +19,8 @@ type Committee struct {
 
 	// SyncMode controls the direction of automatic membership synchronization between this
 	// committee and the mailing list it's attached to. One of the SyncMode* constants below;
-	// empty is treated the same as SyncModeManual. This is v2-local state: ITX has no concept
-	// of it, so it is persisted separately (see port.CommitteeSyncSettingsStore) and merged
-	// into this struct on read.
+	// empty is treated the same as SyncModeManual. ITX is the system of record for this value;
+	// it is proxied through on the wire, not persisted locally.
 	SyncMode string `json:"sync_mode,omitempty"`
 }
 

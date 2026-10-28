@@ -133,20 +133,6 @@ func run() int {
 		return 1
 	}
 
-	// Initialize committee sync settings store.
-	syncSettingsStore, err := service.NewCommitteeSyncSettingsStore(ctx, env.RepositorySource, natsClient)
-	if err != nil {
-		slog.ErrorContext(ctx, "error initializing committee sync settings store", "error", err)
-		return 1
-	}
-
-	// Initialize committee membership lookup.
-	committeeMembershipLookup, err := service.NewCommitteeMembershipLookup(ctx, env.RepositorySource, natsClient)
-	if err != nil {
-		slog.ErrorContext(ctx, "error initializing committee membership lookup", "error", err)
-		return 1
-	}
-
 	// Build orchestrators.
 	serviceReaderOrchestrator := orchestrator.NewGroupsIOServiceReaderOrchestrator(
 		orchestrator.WithServiceReader(proxyClient),
@@ -159,7 +145,6 @@ func run() int {
 	mailingListReaderOrchestrator := orchestrator.NewGroupsIOMailingListReaderOrchestrator(
 		orchestrator.WithMailingListReader(proxyClient),
 		orchestrator.WithMailingListReaderTranslator(translator),
-		orchestrator.WithMailingListReaderSyncSettingsStore(syncSettingsStore),
 	)
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
@@ -168,7 +153,6 @@ func run() int {
 		orchestrator.WithMailingListPublisher(publisher),
 		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
 		orchestrator.WithMailingListCommitteeProjectLookup(committeeLookup),
-		orchestrator.WithMailingListSyncSettingsStore(syncSettingsStore),
 	)
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
 		orchestrator.WithMemberReader(proxyClient),
@@ -181,24 +165,16 @@ func run() int {
 	)
 	syncDiffOrchestrator := orchestrator.NewSyncDiffOrchestrator(
 		orchestrator.WithSyncDiffMailingListReader(mailingListReaderOrchestrator),
-		orchestrator.WithSyncDiffMemberReader(memberReaderOrchestrator),
-		orchestrator.WithSyncDiffCommitteeMembershipLookup(committeeMembershipLookup),
-		orchestrator.WithSyncDiffSyncSettingsStore(syncSettingsStore),
+		orchestrator.WithSyncDiffITXSyncClient(proxyClient),
 	)
-
-	// userReader resolves an LFX account by email. It is independent of the InvitesEnabled flag
-	// below (it wraps the auth-service email_to_username NATS subject, not the invite flow) and
-	// is needed unconditionally by syncApplyOrchestrator.
-	userReader := infraNATS.NewUserReader(natsClient, slog.Default())
 
 	syncApplyOrchestrator := orchestrator.NewSyncApplyOrchestrator(
 		orchestrator.WithSyncApplyMailingListReader(mailingListReaderOrchestrator),
-		orchestrator.WithSyncApplyMemberReader(memberReaderOrchestrator),
-		orchestrator.WithSyncApplyMemberWriter(memberWriterOrchestrator),
-		orchestrator.WithSyncApplySyncSettingsStore(syncSettingsStore),
-		orchestrator.WithSyncApplyUserReader(userReader),
-		orchestrator.WithSyncApplyCommitteeMembershipLookup(committeeMembershipLookup),
+		orchestrator.WithSyncApplyITXSyncClient(proxyClient),
 	)
+
+	// userReader resolves an LFX account by email for the invite-acceptance data stream handler.
+	userReader := infraNATS.NewUserReader(natsClient, slog.Default())
 
 	// ---- LFID invite feature ----
 	// Initialise invite deps when InvitesEnabled=true.  The acceptance subscriber

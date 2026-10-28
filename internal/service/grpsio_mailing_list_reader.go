@@ -5,7 +5,6 @@ package service
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -15,9 +14,8 @@ import (
 // GroupsIOMailingListReaderOrchestrator implements port.GroupsIOMailingListReader by wrapping an inner
 // GroupsIOMailingListReader and translating v2 UUIDs to v1 SFIDs before forwarding requests.
 type GroupsIOMailingListReaderOrchestrator struct {
-	reader            port.GroupsIOMailingListReader
-	translator        port.Translator
-	syncSettingsStore port.CommitteeSyncSettingsStore
+	reader     port.GroupsIOMailingListReader
+	translator port.Translator
 }
 
 // MailingListReaderOrchestratorOption configures a GroupsIOMailingListReaderOrchestrator.
@@ -34,14 +32,6 @@ func WithMailingListReader(r port.GroupsIOMailingListReader) MailingListReaderOr
 func WithMailingListReaderTranslator(t port.Translator) MailingListReaderOrchestratorOption {
 	return func(o *GroupsIOMailingListReaderOrchestrator) {
 		o.translator = t
-	}
-}
-
-// WithMailingListReaderSyncSettingsStore sets the store used to hydrate each committee's
-// sync_mode on read. ITX has no concept of sync_mode, so it must be merged in separately.
-func WithMailingListReaderSyncSettingsStore(s port.CommitteeSyncSettingsStore) MailingListReaderOrchestratorOption {
-	return func(o *GroupsIOMailingListReaderOrchestrator) {
-		o.syncSettingsStore = s
 	}
 }
 
@@ -123,26 +113,7 @@ func (o *GroupsIOMailingListReaderOrchestrator) translateMailingListResponse(ctx
 		ml.Committees[0].UID = v2UID
 	}
 
-	o.hydrateSyncMode(ctx, ml)
 	return nil
-}
-
-// hydrateSyncMode fills in Committees[0].SyncMode from the sync settings store (ITX has no
-// concept of sync_mode). Best-effort: logs and leaves SyncMode empty (treated as manual) on
-// any failure, since this is supplementary v2-local metadata, not the mailing list record itself.
-func (o *GroupsIOMailingListReaderOrchestrator) hydrateSyncMode(ctx context.Context, ml *model.GroupsIOMailingList) {
-	if o.syncSettingsStore == nil || ml == nil || len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
-		return
-	}
-	syncMode, _, found, err := o.syncSettingsStore.GetSyncMode(ctx, ml.UID, ml.Committees[0].UID)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to load committee sync_mode; defaulting to manual",
-			"mailing_list_id", ml.UID, "committee_uid", ml.Committees[0].UID, "error", err)
-		return
-	}
-	if found {
-		ml.Committees[0].SyncMode = syncMode
-	}
 }
 
 // NewGroupsIOMailingListReaderOrchestrator creates a new reader orchestrator with the given options.
