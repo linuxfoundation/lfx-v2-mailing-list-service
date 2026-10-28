@@ -143,6 +143,33 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 	assert.Empty(t, result.Removed[0].Error)
 }
 
+// TestApplySyncDiff_MailingListToCommitteeDirection pins that auto_ml_to_c mailing lists are
+// fully supported (not blocked) for apply, and that the reverse direction is sent to ITX.
+func TestApplySyncDiff_MailingListToCommitteeDirection(t *testing.T) {
+	stub := &stubITXSyncClient{
+		postApplyJobID: "apply-1",
+		applyJob: &port.SyncApplyJob{
+			ID:     "apply-1",
+			Status: port.SyncJobStatusCompleted,
+			Results: []port.SyncApplyJobResult{
+				{Email: "dana@example.com", Action: "add", Status: "success"},
+			},
+		},
+	}
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)},
+		stub,
+	)
+
+	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+		{Email: "dana@example.com", CommitteeMemberUID: "cm-1"},
+	}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, stub.postApplyDirection)
+	require.Len(t, result.Added, 1)
+	assert.Equal(t, model.SyncApplyOutcomeAdded, result.Added[0].Outcome)
+}
+
 func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
