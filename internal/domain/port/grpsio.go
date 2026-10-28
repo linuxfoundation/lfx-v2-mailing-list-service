@@ -14,4 +14,5 @@ type GroupsIOReaderWriter interface {
 	GroupsIOMailingListMemberWriter
 	GroupsIOArtifactReader
 	InviteAcceptanceClient
+	ITXSyncClient
 }

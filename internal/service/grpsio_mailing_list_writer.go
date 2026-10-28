@@ -24,7 +24,6 @@ type GroupsIOMailingListOrchestrator struct {
 	publisher              port.MessagePublisher
 	serviceReader          port.GroupsIOServiceReader
 	committeeProjectLookup port.CommitteeProjectLookup
-	syncSettingsStore      port.CommitteeSyncSettingsStore
 }
 
 // MailingListOrchestratorOption configures a GroupsIOMailingListOrchestrator.
@@ -70,14 +69,6 @@ func WithMailingListServiceReader(r port.GroupsIOServiceReader) MailingListOrche
 func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) MailingListOrchestratorOption {
 	return func(o *GroupsIOMailingListOrchestrator) {
 		o.committeeProjectLookup = l
-	}
-}
-
-// WithMailingListSyncSettingsStore sets the store used to persist each committee's sync_mode.
-// ITX has no concept of sync_mode, so it must be stored and merged in separately.
-func WithMailingListSyncSettingsStore(s port.CommitteeSyncSettingsStore) MailingListOrchestratorOption {
-	return func(o *GroupsIOMailingListOrchestrator) {
-		o.syncSettingsStore = s
 	}
 }
 
@@ -135,11 +126,6 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	requestedSyncMode := ""
-	if len(ml.Committees) > 0 {
-		requestedSyncMode = ml.Committees[0].SyncMode
-	}
-
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
 		return nil, err
@@ -155,13 +141,7 @@ func (o *GroupsIOMailingListOrchestrator) CreateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	cUID := committeeUID(mapped)
-	persisted := o.persistSyncMode(ctx, mapped.UID, cUID, requestedSyncMode)
-	if persisted && requestedSyncMode != "" && len(mapped.Committees) > 0 {
-		mapped.Committees[0].SyncMode = requestedSyncMode
-	}
-
-	o.notifyCommitteeAdded(ctx, cUID)
+	o.notifyCommitteeAdded(ctx, committeeUID(mapped))
 	return mapped, nil
 }
 
@@ -185,20 +165,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	// Snapshot the current committee association, and the revision of its stored sync_mode,
-	// before the update runs. The revision must be captured here — not later, at cleanup time
-	// — so a concurrent request that re-associates the mailing list back to oldCUID and writes
-	// a newer sync_mode while this update is in flight is detected by the gated delete below
-	// instead of racing past it (see LFXV2-4029 review).
 	oldCUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
-	oldSyncModeSnapshot := o.snapshotSyncMode(ctx, mailingListID, oldCUID)
-
-	requestedSyncMode := ""
-	requestedCUID := ""
-	if len(ml.Committees) > 0 {
-		requestedSyncMode = ml.Committees[0].SyncMode
-		requestedCUID = ml.Committees[0].UID
-	}
 
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
@@ -220,155 +187,22 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 	if oldCUID != newCUID {
 		o.notifyCommitteeRemoved(ctx, oldCUID, mailingListID)
 		o.notifyCommitteeAdded(ctx, newCUID)
-		if oldCUID != "" {
-			o.cleanupStaleSyncMode(ctx, mailingListID, oldCUID, oldSyncModeSnapshot, true)
-		}
-	}
-
-	persisted := true
-	if requestedSyncMode != "" {
-		if newCUID == requestedCUID {
-			persisted = o.persistSyncMode(ctx, mailingListID, newCUID, requestedSyncMode)
-		} else {
-			// ITX's PUT returns 204 No Content, and the writer issues a separate GET to fetch
-			// the updated resource (see itx.go UpdateMailingList). A concurrent update to this
-			// same mailing list can land between that PUT and GET, so the committee reflected
-			// in resp/mapped may not be the one this request validated and asked to set
-			// sync_mode for. Applying requestedSyncMode to newCUID in that case would silently
-			// overwrite a different, unrelated committee's stored setting (see LFXV2-4029 review).
-			slog.WarnContext(ctx, "returned committee does not match requested committee; skipping sync_mode persist",
-				"mailing_list_id", mailingListID, "requested_committee_uid", requestedCUID, "returned_committee_uid", newCUID)
-			persisted = false
-		}
-	}
-	if persisted && requestedSyncMode != "" && len(mapped.Committees) > 0 {
-		mapped.Committees[0].SyncMode = requestedSyncMode
-	} else if len(mapped.Committees) > 0 {
-		// The request either omitted sync_mode (preserving whatever is stored) or the
-		// persist above failed — either way, echo back the store's actual current value
-		// rather than a value that may not match what's actually persisted.
-		o.hydrateSyncModeFromStore(ctx, mailingListID, newCUID, mapped)
 	}
 
 	return mapped, nil
-}
-
-// syncModeSnapshot captures whether a sync_mode was stored for a (mailing list, committee)
-// pair, and at what revision, at a specific point in time — so a later gated delete can tell
-// whether a concurrent write has superseded it since.
-type syncModeSnapshot struct {
-	revision uint64
-	found    bool
-}
-
-// snapshotSyncMode reads the current revision of the sync_mode stored for mailingListID+cUID,
-// if any. Must be called before the mutation that may change the mailing list's committee
-// association, not after — see cleanupStaleSyncMode. A lookup failure here is non-fatal to the
-// caller's request: it yields a not-found snapshot, which simply skips cleanup rather than
-// risking an incorrect delete.
-func (o *GroupsIOMailingListOrchestrator) snapshotSyncMode(ctx context.Context, mailingListID, cUID string) syncModeSnapshot {
-	if cUID == "" || o.syncSettingsStore == nil {
-		return syncModeSnapshot{}
-	}
-	_, revision, found, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, cUID)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to snapshot committee sync_mode revision before mutation",
-			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
-		return syncModeSnapshot{}
-	}
-	return syncModeSnapshot{revision: revision, found: found}
-}
-
-// cleanupStaleSyncMode removes the sync_mode previously stored for mailingListID+oldCUID after
-// the mailing list's committee association has changed. snapshot must have been captured by
-// snapshotSyncMode before the mutation that changed the association ran — reading the revision
-// here, after the mutation, would leave a window where a concurrent request that re-associates
-// the mailing list back to oldCUID and writes a newer sync_mode in between gets its write
-// silently deleted by this cleanup (see LFXV2-4029 review). Gating the delete on a
-// pre-mutation revision closes that window: a concurrent write bumps the revision past what was
-// snapshotted, so the delete is skipped instead of clobbering it.
-//
-// That revision check alone does not close every ordering: a concurrent request can move the
-// association away from oldCUID and back again (B -> A -> B) without ever writing a new
-// sync_mode for oldCUID, leaving the revision unchanged while oldCUID has become the *current*
-// association again by the time this delayed cleanup runs. Re-checking the live association
-// immediately before the delete closes that specific case — if the mailing list has already
-// reverted to oldCUID, its setting is active again and must not be deleted, regardless of
-// revision. This added check still has its own (narrower) TOCTOU gap between the re-check and
-// the delete; closing that fully requires serializing association mutations per mailing list or
-// gating the delete on an association-generation value, which is a larger change tracked
-// separately in linuxfoundation/lfx-self-serve#4338 (see LFXV2-4029 review,
-// copilot-pull-request-reviewer).
-//
-// checkLiveAssociation gates that re-check and must be false when the mailing list itself was
-// just deleted (DeleteMailingList): there is no "current association" to revert to once the
-// record is gone, and a reader that still resolves the now-deleted record (a stale cache, a
-// lagging index) would otherwise cause this cleanup to skip forever, leaking the orphaned entry.
-func (o *GroupsIOMailingListOrchestrator) cleanupStaleSyncMode(ctx context.Context, mailingListID, oldCUID string, snapshot syncModeSnapshot, checkLiveAssociation bool) {
-	if o.syncSettingsStore == nil || !snapshot.found {
-		return
-	}
-	if checkLiveAssociation {
-		current, ok := o.fetchCommitteeUID(ctx, mailingListID)
-		if !ok {
-			slog.WarnContext(ctx, "skipped cleaning up committee sync_mode: could not verify live association",
-				"mailing_list_id", mailingListID, "committee_uid", oldCUID)
-			return
-		}
-		if current == oldCUID {
-			slog.InfoContext(ctx, "skipped cleaning up committee sync_mode: mailing list has already reverted to this committee",
-				"mailing_list_id", mailingListID, "committee_uid", oldCUID)
-			return
-		}
-	}
-	deleted, err := o.syncSettingsStore.DeleteSyncModeIfUnchanged(ctx, mailingListID, oldCUID, snapshot.revision)
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to clean up stale committee sync_mode",
-			"mailing_list_id", mailingListID, "committee_uid", oldCUID, "error", err)
-		return
-	}
-	if !deleted {
-		slog.InfoContext(ctx, "skipped cleaning up committee sync_mode: a newer value was written concurrently",
-			"mailing_list_id", mailingListID, "committee_uid", oldCUID)
-	}
-}
-
-// hydrateSyncModeFromStore sets mapped.Committees[0].SyncMode from the store's current value for
-// mailingListID+cUID, if any. Used whenever the response field must reflect the stored state
-// rather than a possibly-unapplied request value (sync_mode omitted from the request, or a
-// persist failure above).
-func (o *GroupsIOMailingListOrchestrator) hydrateSyncModeFromStore(ctx context.Context, mailingListID, cUID string, mapped *model.GroupsIOMailingList) {
-	if cUID == "" || o.syncSettingsStore == nil {
-		return
-	}
-	mode, _, ok, err := o.syncSettingsStore.GetSyncMode(ctx, mailingListID, cUID)
-	if err != nil {
-		slog.WarnContext(ctx, "failed to hydrate committee sync_mode into response",
-			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
-		return
-	}
-	if ok {
-		mapped.Committees[0].SyncMode = mode
-	}
 }
 
 // DeleteMailingList deletes a mailing list and notifies the associated committee
 // that a mailing list was removed. Only publishes has_mailing_list=false if no other
 // mailing lists reference the committee.
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	// Fetch current state, and snapshot its stored sync_mode revision, before delete runs —
-	// see cleanupStaleSyncMode for why the snapshot must be taken before the mutation.
 	cUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
-	syncModeSnap := o.snapshotSyncMode(ctx, mailingListID, cUID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
 		return err
 	}
 
 	o.notifyCommitteeRemoved(ctx, cUID, mailingListID)
-	if cUID != "" {
-		o.cleanupStaleSyncMode(ctx, mailingListID, cUID, syncModeSnap, false)
-	}
 	return nil
 }
 
@@ -468,28 +302,6 @@ func isValidSyncMode(syncMode string) bool {
 		}
 	}
 	return false
-}
-
-// persistSyncMode stores the requested sync_mode for mailingListID+cUID, best-effort logged on
-// failure (ITX has already committed the rest of the mutation, so we don't fail the request).
-// Returns whether the value was actually persisted, so callers can avoid echoing a mode that
-// isn't really stored. No-op (returns false) when no sync_mode was requested, no committee is
-// attached, or the store isn't configured.
-func (o *GroupsIOMailingListOrchestrator) persistSyncMode(ctx context.Context, mailingListID, cUID, syncMode string) bool {
-	if cUID == "" || syncMode == "" {
-		return false
-	}
-	if o.syncSettingsStore == nil {
-		slog.WarnContext(ctx, "sync_mode requested but no sync settings store is configured; value will not persist",
-			"mailing_list_id", mailingListID, "committee_uid", cUID)
-		return false
-	}
-	if err := o.syncSettingsStore.PutSyncMode(ctx, mailingListID, cUID, syncMode); err != nil {
-		slog.ErrorContext(ctx, "failed to persist committee sync_mode",
-			"mailing_list_id", mailingListID, "committee_uid", cUID, "error", err)
-		return false
-	}
-	return true
 }
 
 // ---- ID mapping helpers ----

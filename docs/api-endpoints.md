@@ -179,8 +179,9 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 **Create a mailing list with automatic committee membership sync:**
 
 `sync_mode` requires `committee_uid` to also be set, and must be one of `manual` (default),
-`auto_c_to_ml`, or `auto_ml_to_c`. It is v2-local configuration (ITX has no concept of it) that
-the sync-diff and sync-apply endpoints below read to decide how to reconcile membership.
+`auto_c_to_ml`, or `auto_ml_to_c`. ITX is the system of record for this value — it is proxied
+through on the wire, not persisted locally — and the sync-diff and sync-apply endpoints below use
+it to decide how to reconcile membership.
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -206,11 +207,13 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Compute the sync-diff for a mailing list linked to a committee:**
 
-Only supported for mailing lists configured with `sync_mode: auto_c_to_ml`. Returns the committee
-members missing from the mailing list (`adds`) and the committee-sync-sourced mailing list members
-no longer on the committee (`removes`); directly-added members are never included in `removes`.
+Only supported for mailing lists configured with `sync_mode: auto_c_to_ml`. Delegates to ITX's
+sync-diff job (ITX computes and owns the reconciliation logic; this endpoint posts the job, polls
+it to completion, and translates the result) and returns the committee members missing from the
+mailing list (`adds`) and the mailing list members no longer on the committee (`removes`).
 Returns `400 Bad Request` if the mailing list has no linked committee, or its `sync_mode` is
-`manual` or `auto_ml_to_c` (not yet supported).
+`manual` or `auto_ml_to_c` (not yet supported). Returns `503 Service Unavailable` if the
+underlying ITX job fails.
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
@@ -233,11 +236,10 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 **Apply an admin-approved subset of a sync-diff:**
 
-Takes the `adds`/`removes` an admin chose to apply from a prior sync-diff response. Each entry is
-re-validated against a freshly computed diff before being applied — an entry that no longer
-reflects the current committee roster (the roster changed since the diff was computed) is reported
-as `failed` with an explanatory error rather than applied or silently dropped. Same `sync_mode`
-and committee-link requirements as sync-diff.
+Takes the `adds`/`removes` an admin chose to apply from a prior sync-diff response and delegates
+to ITX's sync-apply job (this endpoint posts the job, polls it to completion, and translates the
+per-entry results). An entry ITX could not apply is reported as `failed` with ITX's error message
+rather than silently dropped. Same `sync_mode` and committee-link requirements as sync-diff.
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
