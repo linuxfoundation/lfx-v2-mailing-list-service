@@ -19,12 +19,14 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-// Polling cadence for ITX's async sync-diff/sync-apply jobs. ITX processes these jobs quickly
-// (a single Groups.io subgroup's membership), so a short interval and bound keep the synchronous
-// ComputeSyncDiff/ApplySyncDiff calls responsive without hammering ITX.
+// Polling cadence for ITX's async sync-diff/sync-apply jobs. PCC's own ITX client (which exercises
+// this same job API) polls indefinitely at a 2s interval rather than enforcing a hard deadline, to
+// tolerate large committees/mailing lists; since ComputeSyncDiff/ApplySyncDiff are synchronous
+// calls here, a bound is still needed to avoid blocking a request forever, so it is set generously
+// rather than removed.
 const (
 	syncJobPollInterval = 500 * time.Millisecond
-	syncJobPollTimeout  = 60 * time.Second
+	syncJobPollTimeout  = 5 * time.Minute
 )
 
 // pollSyncDiffJob polls GetSyncDiffJob until it reaches a terminal status (completed or failed),
