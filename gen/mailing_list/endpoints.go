@@ -44,6 +44,7 @@ type Endpoints struct {
 	CheckGroupsioSubscriber           goa.Endpoint
 	GetGroupsioArtifact               goa.Endpoint
 	GetGroupsioArtifactDownload       goa.Endpoint
+	ReceiveGroupsioWebhook            goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -78,6 +79,7 @@ func NewEndpoints(s Service) *Endpoints {
 		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
 		GetGroupsioArtifact:               NewGetGroupsioArtifactEndpoint(s, a.JWTAuth),
 		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadEndpoint(s, a.JWTAuth),
+		ReceiveGroupsioWebhook:            NewReceiveGroupsioWebhookEndpoint(s),
 	}
 }
 
@@ -110,6 +112,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CheckGroupsioSubscriber = m(e.CheckGroupsioSubscriber)
 	e.GetGroupsioArtifact = m(e.GetGroupsioArtifact)
 	e.GetGroupsioArtifactDownload = m(e.GetGroupsioArtifactDownload)
+	e.ReceiveGroupsioWebhook = m(e.ReceiveGroupsioWebhook)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -703,5 +706,14 @@ func NewGetGroupsioArtifactDownloadEndpoint(s Service, authJWTFn security.AuthJW
 			return nil, err
 		}
 		return s.GetGroupsioArtifactDownload(ctx, p)
+	}
+}
+
+// NewReceiveGroupsioWebhookEndpoint returns an endpoint function that calls
+// the method "receive-groupsio-webhook" of service "mailing-list".
+func NewReceiveGroupsioWebhookEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ReceiveGroupsioWebhookPayload)
+		return nil, s.ReceiveGroupsioWebhook(ctx, p)
 	}
 }

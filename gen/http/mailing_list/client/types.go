@@ -1277,6 +1277,14 @@ type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// ReceiveGroupsioWebhookBadRequestResponseBody is the type of the
+// "mailing-list" service "receive-groupsio-webhook" endpoint HTTP response
+// body for the "BadRequest" error.
+type ReceiveGroupsioWebhookBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // GroupsioServiceResponseBody is used to define fields on response body types.
 type GroupsioServiceResponseBody struct {
 	// Service ID
@@ -2931,6 +2939,16 @@ func NewGetGroupsioArtifactDownloadServiceUnavailable(body *GetGroupsioArtifactD
 	return v
 }
 
+// NewReceiveGroupsioWebhookBadRequest builds a mailing-list service
+// receive-groupsio-webhook endpoint BadRequest error.
+func NewReceiveGroupsioWebhookBadRequest(body *ReceiveGroupsioWebhookBadRequestResponseBody) *mailinglist.BadRequestError {
+	v := &mailinglist.BadRequestError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // ValidateListGroupsioServicesResponseBody runs the validations defined on
 // List-Groupsio-ServicesResponseBody
 func ValidateListGroupsioServicesResponseBody(body *ListGroupsioServicesResponseBody) (err error) {
@@ -4033,6 +4051,15 @@ func ValidateGetGroupsioArtifactDownloadNotFoundResponseBody(body *GetGroupsioAr
 // validations defined on
 // get-groupsio-artifact-download_ServiceUnavailable_response_body
 func ValidateGetGroupsioArtifactDownloadServiceUnavailableResponseBody(body *GetGroupsioArtifactDownloadServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateReceiveGroupsioWebhookBadRequestResponseBody runs the validations
+// defined on receive-groupsio-webhook_BadRequest_response_body
+func ValidateReceiveGroupsioWebhookBadRequestResponseBody(body *ReceiveGroupsioWebhookBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

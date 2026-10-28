@@ -1189,6 +1189,37 @@ paths:
                             - message
             schemes:
                 - http
+    /webhooks/groupsio:
+        post:
+            tags:
+                - mailing-list
+            summary: receive-groupsio-webhook mailing-list
+            description: 'Receive a Groups.io webhook event (subgroup member added/removed). The raw request body is HMAC-verified against a shared secret rather than JWT-authenticated (see ruleset.yaml''s allow_all rule for this path); for a mailing list configured with sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership reconciliation (issue #4023).'
+            operationId: mailing-list#receive-groupsio-webhook
+            parameters:
+                - name: X-Groupsio-Signature
+                  in: header
+                  description: HMAC-SHA256 signature of the raw request body, from the Groups.io webhook request's signature header
+                  required: false
+                  type: string
+                - name: bytes
+                  in: body
+                  description: Raw JSON webhook payload
+                  required: true
+                  schema:
+                    type: string
+                    format: byte
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+            schemes:
+                - http
 definitions:
     BadRequestError:
         title: BadRequestError

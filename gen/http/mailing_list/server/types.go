@@ -1277,6 +1277,14 @@ type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// ReceiveGroupsioWebhookBadRequestResponseBody is the type of the
+// "mailing-list" service "receive-groupsio-webhook" endpoint HTTP response
+// body for the "BadRequest" error.
+type ReceiveGroupsioWebhookBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GroupsioServiceResponseBody is used to define fields on response body types.
 type GroupsioServiceResponseBody struct {
 	// Service ID
@@ -2776,6 +2784,16 @@ func NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody(res *mailingli
 	return body
 }
 
+// NewReceiveGroupsioWebhookBadRequestResponseBody builds the HTTP response
+// body from the result of the "receive-groupsio-webhook" endpoint of the
+// "mailing-list" service.
+func NewReceiveGroupsioWebhookBadRequestResponseBody(res *mailinglist.BadRequestError) *ReceiveGroupsioWebhookBadRequestResponseBody {
+	body := &ReceiveGroupsioWebhookBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewListGroupsioServicesPayload builds a mailing-list service
 // list-groupsio-services endpoint payload.
 func NewListGroupsioServicesPayload(projectUID *string, bearerToken *string) *mailinglist.ListGroupsioServicesPayload {
@@ -3099,6 +3117,18 @@ func NewGetGroupsioArtifactDownloadPayload(subgroupID string, artifactID string,
 	v.BearerToken = bearerToken
 
 	return v
+}
+
+// NewReceiveGroupsioWebhookPayload builds a mailing-list service
+// receive-groupsio-webhook endpoint payload.
+func NewReceiveGroupsioWebhookPayload(body []byte, signature *string) *mailinglist.ReceiveGroupsioWebhookPayload {
+	v := body
+	res := &mailinglist.ReceiveGroupsioWebhookPayload{
+		Body: v,
+	}
+	res.Signature = signature
+
+	return res
 }
 
 // ValidateCreateGroupsioServiceRequestBody runs the validations defined on

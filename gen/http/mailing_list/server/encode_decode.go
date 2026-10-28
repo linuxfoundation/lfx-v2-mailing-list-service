@@ -2821,6 +2821,78 @@ func EncodeGetGroupsioArtifactDownloadError(encoder func(context.Context, http.R
 	}
 }
 
+// EncodeReceiveGroupsioWebhookResponse returns an encoder for responses
+// returned by the mailing-list receive-groupsio-webhook endpoint.
+func EncodeReceiveGroupsioWebhookResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
+}
+
+// DecodeReceiveGroupsioWebhookRequest returns a decoder for requests sent to
+// the mailing-list receive-groupsio-webhook endpoint.
+func DecodeReceiveGroupsioWebhookRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*mailinglist.ReceiveGroupsioWebhookPayload, error) {
+	return func(r *http.Request) (*mailinglist.ReceiveGroupsioWebhookPayload, error) {
+		var payload *mailinglist.ReceiveGroupsioWebhookPayload
+		var (
+			body []byte
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return payload, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return payload, gerr
+			}
+			return payload, goa.DecodePayloadError(err.Error())
+		}
+
+		var (
+			signature *string
+		)
+		signatureRaw := r.Header.Get("X-Groupsio-Signature")
+		if signatureRaw != "" {
+			signature = &signatureRaw
+		}
+		payload = NewReceiveGroupsioWebhookPayload(body, signature)
+
+		return payload, nil
+	}
+}
+
+// EncodeReceiveGroupsioWebhookError returns an encoder for errors returned by
+// the receive-groupsio-webhook mailing-list endpoint.
+func EncodeReceiveGroupsioWebhookError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewReceiveGroupsioWebhookBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalMailinglistGroupsioServiceToGroupsioServiceResponseBody builds a
 // value of type *GroupsioServiceResponseBody from a value of type
 // *mailinglist.GroupsioService.

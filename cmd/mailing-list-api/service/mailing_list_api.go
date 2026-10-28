@@ -20,18 +20,20 @@ import (
 
 // mailingListAPI implements the generated mailinglist.Service interface.
 type mailingListAPI struct {
-	auth              port.Authenticator
-	natsClient        *infraNATS.NATSClient
-	serviceReader     port.GroupsIOServiceReader
-	serviceWriter     port.GroupsIOServiceWriter
-	mailingListReader port.GroupsIOMailingListReader
-	mailingListWriter port.GroupsIOMailingListWriter
-	memberReader      port.GroupsIOMailingListMemberReader
-	memberWriter      port.GroupsIOMailingListMemberWriter
-	artifactReader    port.GroupsIOArtifactReader
-	accessChecker     port.AccessChecker
-	syncDiffComputer  port.SyncDiffComputer
-	syncApplier       port.SyncApplier
+	auth               port.Authenticator
+	natsClient         *infraNATS.NATSClient
+	serviceReader      port.GroupsIOServiceReader
+	serviceWriter      port.GroupsIOServiceWriter
+	mailingListReader  port.GroupsIOMailingListReader
+	mailingListWriter  port.GroupsIOMailingListWriter
+	memberReader       port.GroupsIOMailingListMemberReader
+	memberWriter       port.GroupsIOMailingListMemberWriter
+	artifactReader     port.GroupsIOArtifactReader
+	accessChecker      port.AccessChecker
+	syncDiffComputer   port.SyncDiffComputer
+	syncApplier        port.SyncApplier
+	realtimeAutoSyncer port.RealtimeAutoSyncer
+	webhookSecret      string
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -48,20 +50,24 @@ func NewMailingListAPI(
 	accessChecker port.AccessChecker,
 	syncDiffComputer port.SyncDiffComputer,
 	syncApplier port.SyncApplier,
+	realtimeAutoSyncer port.RealtimeAutoSyncer,
+	webhookSecret string,
 ) mailinglist.Service {
 	return &mailingListAPI{
-		auth:              auth,
-		natsClient:        natsClient,
-		serviceReader:     serviceReader,
-		serviceWriter:     serviceWriter,
-		mailingListReader: mailingListReader,
-		mailingListWriter: mailingListWriter,
-		memberReader:      memberReader,
-		memberWriter:      memberWriter,
-		artifactReader:    artifactReader,
-		accessChecker:     accessChecker,
-		syncDiffComputer:  syncDiffComputer,
-		syncApplier:       syncApplier,
+		auth:               auth,
+		natsClient:         natsClient,
+		serviceReader:      serviceReader,
+		serviceWriter:      serviceWriter,
+		mailingListReader:  mailingListReader,
+		mailingListWriter:  mailingListWriter,
+		memberReader:       memberReader,
+		memberWriter:       memberWriter,
+		artifactReader:     artifactReader,
+		accessChecker:      accessChecker,
+		syncDiffComputer:   syncDiffComputer,
+		syncApplier:        syncApplier,
+		realtimeAutoSyncer: realtimeAutoSyncer,
+		webhookSecret:      webhookSecret,
 	}
 }
 

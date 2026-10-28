@@ -812,3 +812,25 @@ func BuildGetGroupsioArtifactDownloadPayload(mailingListGetGroupsioArtifactDownl
 
 	return v, nil
 }
+
+// BuildReceiveGroupsioWebhookPayload builds the payload for the mailing-list
+// receive-groupsio-webhook endpoint from CLI flags.
+func BuildReceiveGroupsioWebhookPayload(mailingListReceiveGroupsioWebhookBody string, mailingListReceiveGroupsioWebhookSignature string) (*mailinglist.ReceiveGroupsioWebhookPayload, error) {
+	var body []byte
+	{
+		body = []byte(mailingListReceiveGroupsioWebhookBody)
+	}
+	var signature *string
+	{
+		if mailingListReceiveGroupsioWebhookSignature != "" {
+			signature = &mailingListReceiveGroupsioWebhookSignature
+		}
+	}
+	v := body
+	res := &mailinglist.ReceiveGroupsioWebhookPayload{
+		Body: v,
+	}
+	res.Signature = signature
+
+	return res, nil
+}

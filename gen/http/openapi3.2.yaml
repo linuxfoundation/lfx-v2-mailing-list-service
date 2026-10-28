@@ -1900,6 +1900,108 @@ paths:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
                                 message: The service is unavailable.
+    /webhooks/groupsio:
+        post:
+            tags:
+                - mailing-list
+            summary: receive-groupsio-webhook mailing-list
+            description: 'Receive a Groups.io webhook event (subgroup member added/removed). The raw request body is HMAC-verified against a shared secret rather than JWT-authenticated (see ruleset.yaml''s allow_all rule for this path); for a mailing list configured with sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership reconciliation (issue #4023).'
+            operationId: mailing-list#receive-groupsio-webhook
+            parameters:
+                - name: X-Groupsio-Signature
+                  in: header
+                  description: HMAC-SHA256 signature of the raw request body, from the Groups.io webhook request's signature header
+                  schema:
+                    type: string
+                    description: HMAC-SHA256 signature of the raw request body, from the Groups.io webhook request's signature header
+                    example: Dolores quod maxime.
+                  example: Corporis amet non.
+            requestBody:
+                description: Raw JSON webhook payload
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: string
+                            description: Raw JSON webhook payload
+                            example:
+                                - 80
+                                - 108
+                                - 97
+                                - 99
+                                - 101
+                                - 97
+                                - 116
+                                - 32
+                                - 118
+                                - 111
+                                - 108
+                                - 117
+                                - 112
+                                - 116
+                                - 97
+                                - 116
+                                - 101
+                                - 32
+                                - 97
+                                - 115
+                                - 115
+                                - 117
+                                - 109
+                                - 101
+                                - 110
+                                - 100
+                                - 97
+                                - 32
+                                - 115
+                                - 105
+                                - 116
+                                - 46
+                            format: binary
+                        example:
+                            - 80
+                            - 108
+                            - 97
+                            - 99
+                            - 101
+                            - 97
+                            - 116
+                            - 32
+                            - 118
+                            - 111
+                            - 108
+                            - 117
+                            - 112
+                            - 116
+                            - 97
+                            - 116
+                            - 101
+                            - 32
+                            - 97
+                            - 115
+                            - 115
+                            - 117
+                            - 109
+                            - 101
+                            - 110
+                            - 100
+                            - 97
+                            - 32
+                            - 115
+                            - 105
+                            - 116
+                            - 46
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Missing/invalid signature, or malformed payload'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
 components:
     schemas:
         AddGroupsioMemberRequestBody:

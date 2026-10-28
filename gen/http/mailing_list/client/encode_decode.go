@@ -3567,6 +3567,86 @@ func DecodeGetGroupsioArtifactDownloadResponse(decoder func(*http.Response) goah
 	}
 }
 
+// BuildReceiveGroupsioWebhookRequest instantiates a HTTP request object with
+// method and path set to call the "mailing-list" service
+// "receive-groupsio-webhook" endpoint
+func (c *Client) BuildReceiveGroupsioWebhookRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ReceiveGroupsioWebhookMailingListPath()}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("mailing-list", "receive-groupsio-webhook", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeReceiveGroupsioWebhookRequest returns an encoder for requests sent to
+// the mailing-list receive-groupsio-webhook server.
+func EncodeReceiveGroupsioWebhookRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*mailinglist.ReceiveGroupsioWebhookPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("mailing-list", "receive-groupsio-webhook", "*mailinglist.ReceiveGroupsioWebhookPayload", v)
+		}
+		if p.Signature != nil {
+			head := *p.Signature
+			req.Header.Set("X-Groupsio-Signature", head)
+		}
+		body := p.Body
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("mailing-list", "receive-groupsio-webhook", err)
+		}
+		return nil
+	}
+}
+
+// DecodeReceiveGroupsioWebhookResponse returns a decoder for responses
+// returned by the mailing-list receive-groupsio-webhook endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeReceiveGroupsioWebhookResponse may return the following errors:
+//   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+//   - error: internal error
+func DecodeReceiveGroupsioWebhookResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusNoContent:
+			return nil, nil
+		case http.StatusBadRequest:
+			var (
+				body ReceiveGroupsioWebhookBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "receive-groupsio-webhook", err)
+			}
+			err = ValidateReceiveGroupsioWebhookBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "receive-groupsio-webhook", err)
+			}
+			return nil, NewReceiveGroupsioWebhookBadRequest(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "receive-groupsio-webhook", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalGroupsioServiceResponseBodyToMailinglistGroupsioService builds a
 // value of type *mailinglist.GroupsioService from a value of type
 // *GroupsioServiceResponseBody.

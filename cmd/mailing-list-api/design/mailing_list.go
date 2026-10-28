@@ -699,6 +699,30 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
+	// ---- GroupsIO webhook ingestion ----
+
+	dsl.Method("receive-groupsio-webhook", func() {
+		dsl.Description("Receive a Groups.io webhook event (subgroup member added/removed). The " +
+			"raw request body is HMAC-verified against a shared secret rather than JWT-authenticated " +
+			"(see ruleset.yaml's allow_all rule for this path); for a mailing list configured with " +
+			"sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership " +
+			"reconciliation (issue #4023).")
+		dsl.Payload(func() {
+			dsl.Attribute("signature", dsl.String, "HMAC-SHA256 signature of the raw request body, "+
+				"from the Groups.io webhook request's signature header")
+			dsl.Attribute("body", dsl.Bytes, "Raw JSON webhook payload")
+			dsl.Required("body")
+		})
+		dsl.Error("BadRequest", BadRequestError, "Missing/invalid signature, or malformed payload")
+		dsl.HTTP(func() {
+			dsl.POST("/webhooks/groupsio")
+			dsl.Header("signature:X-Groupsio-Signature")
+			dsl.Body("body")
+			dsl.Response(dsl.StatusNoContent)
+			dsl.Response("BadRequest", dsl.StatusBadRequest)
+		})
+	})
+
 	// Serve OpenAPI spec files under the /_groupsio/ prefix to match the httproute and ruleset.
 	dsl.Files("/_groupsio/openapi.json", "gen/http/openapi.json", func() {
 		dsl.Meta("swagger:generate", "false")
