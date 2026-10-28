@@ -99,9 +99,9 @@ type UpdateGroupsioMailingListRequestBody struct {
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // request body.
 type ApplyGroupsioMailingListSyncDiffRequestBody struct {
-	// Committee members to add, as returned by sync-diff
+	// Members to add, as returned by sync-diff
 	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds" json:"adds" xml:"adds"`
-	// Mailing list members to remove, as returned by sync-diff
+	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes" json:"removes" xml:"removes"`
 }
 
@@ -390,10 +390,12 @@ type GetGroupsioMailingListSyncDiffResponseBody struct {
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Sync direction this diff was computed for
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
-	// Committee members to add to the mailing list
+	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
-	// Mailing list members to remove
+	// Members to remove, to reconcile the target roster
 	Removes []*GroupsioSyncDiffRemoveResponseBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
+	// Email collisions ITX could not resolve into an add or remove
+	Conflicts []*GroupsioSyncDiffConflictResponseBody `form:"conflicts,omitempty" json:"conflicts,omitempty" xml:"conflicts,omitempty"`
 }
 
 // ApplyGroupsioMailingListSyncDiffResponseBody is the type of the
@@ -1329,55 +1331,75 @@ type GroupsioSubgroupResponseBody struct {
 // GroupsioSyncDiffAddResponseBody is used to define fields on response body
 // types.
 type GroupsioSyncDiffAddResponseBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID *string `form:"committee_member_uid,omitempty" json:"committee_member_uid,omitempty" xml:"committee_member_uid,omitempty"`
-	// Committee member's display name, when known
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
+	// Member's display name, when known
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncDiffRemoveResponseBody is used to define fields on response body
 // types.
 type GroupsioSyncDiffRemoveResponseBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// Mailing list member's ID
-	MailingListMemberID *string `form:"mailing_list_member_id,omitempty" json:"mailing_list_member_id,omitempty" xml:"mailing_list_member_id,omitempty"`
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
+}
+
+// GroupsioSyncDiffConflictResponseBody is used to define fields on response
+// body types.
+type GroupsioSyncDiffConflictResponseBody struct {
+	// Email as it appears on the committee roster
+	CommitteeEmail *string `form:"committee_email,omitempty" json:"committee_email,omitempty" xml:"committee_email,omitempty"`
+	// Email as it appears on the mailing list roster
+	MailingListEmail *string `form:"mailing_list_email,omitempty" json:"mailing_list_email,omitempty" xml:"mailing_list_email,omitempty"`
+	// Display name, when known
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncDiffAddRequestBody is used to define fields on request body
 // types.
 type GroupsioSyncDiffAddRequestBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID string `form:"committee_member_uid" json:"committee_member_uid" xml:"committee_member_uid"`
-	// Committee member's display name, when known
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
+	// Member's display name, when known
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncDiffRemoveRequestBody is used to define fields on request body
 // types.
 type GroupsioSyncDiffRemoveRequestBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// Mailing list member's ID
-	MailingListMemberID string `form:"mailing_list_member_id" json:"mailing_list_member_id" xml:"mailing_list_member_id"`
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
 }
 
 // GroupsioSyncApplyAddResultResponseBody is used to define fields on response
 // body types.
 type GroupsioSyncApplyAddResultResponseBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID *string `form:"committee_member_uid,omitempty" json:"committee_member_uid,omitempty" xml:"committee_member_uid,omitempty"`
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// What happened
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty" xml:"outcome,omitempty"`
-	// Committee member's display name, present only when outcome is 'invited' —
-	// not a resolved identity match, just the name already known from the
-	// committee roster
+	// Member's display name, present only when outcome is 'invited' — not a
+	// resolved identity match, just the name already known from the source roster
 	NameHint *string `form:"name_hint,omitempty" json:"name_hint,omitempty" xml:"name_hint,omitempty"`
 	// Failure detail, present only when outcome is 'failed'
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
@@ -1386,10 +1408,12 @@ type GroupsioSyncApplyAddResultResponseBody struct {
 // GroupsioSyncApplyRemoveResultResponseBody is used to define fields on
 // response body types.
 type GroupsioSyncApplyRemoveResultResponseBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// Mailing list member's ID
-	MailingListMemberID *string `form:"mailing_list_member_id,omitempty" json:"mailing_list_member_id,omitempty" xml:"mailing_list_member_id,omitempty"`
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// What happened
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty" xml:"outcome,omitempty"`
 	// Failure detail, present only when outcome is 'failed'
@@ -2313,6 +2337,14 @@ func NewGetGroupsioMailingListSyncDiffGroupsioSyncDiffOK(body *GetGroupsioMailin
 		}
 		v.Removes[i] = unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRemove(val)
 	}
+	v.Conflicts = make([]*mailinglist.GroupsioSyncDiffConflict, len(body.Conflicts))
+	for i, val := range body.Conflicts {
+		if val == nil {
+			v.Conflicts[i] = nil
+			continue
+		}
+		v.Conflicts[i] = unmarshalGroupsioSyncDiffConflictResponseBodyToMailinglistGroupsioSyncDiffConflict(val)
+	}
 
 	return v
 }
@@ -3048,12 +3080,15 @@ func ValidateGetGroupsioMailingListSyncDiffResponseBody(body *GetGroupsioMailing
 	if body.Removes == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
 	}
+	if body.Conflicts == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("conflicts", "body"))
+	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
 	if body.SyncMode != nil {
-		if !(*body.SyncMode == "auto_c_to_ml") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"auto_c_to_ml"}))
+		if !(*body.SyncMode == "auto_c_to_ml" || *body.SyncMode == "auto_ml_to_c") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"auto_c_to_ml", "auto_ml_to_c"}))
 		}
 	}
 	for _, e := range body.Adds {
@@ -3066,6 +3101,13 @@ func ValidateGetGroupsioMailingListSyncDiffResponseBody(body *GetGroupsioMailing
 	for _, e := range body.Removes {
 		if e != nil {
 			if err2 := ValidateGroupsioSyncDiffRemoveResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Conflicts {
+		if e != nil {
+			if err2 := ValidateGroupsioSyncDiffConflictResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4029,11 +4071,19 @@ func ValidateGroupsioSyncDiffAddResponseBody(body *GroupsioSyncDiffAddResponseBo
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.CommitteeMemberUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("committee_member_uid", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
 	}
 	return
 }
@@ -4044,11 +4094,37 @@ func ValidateGroupsioSyncDiffRemoveResponseBody(body *GroupsioSyncDiffRemoveResp
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.MailingListMemberID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_member_id", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
+	}
+	return
+}
+
+// ValidateGroupsioSyncDiffConflictResponseBody runs the validations defined on
+// groupsio-sync-diff-conflictResponseBody
+func ValidateGroupsioSyncDiffConflictResponseBody(body *GroupsioSyncDiffConflictResponseBody) (err error) {
+	if body.CommitteeEmail == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_email", "body"))
+	}
+	if body.MailingListEmail == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_email", "body"))
+	}
+	if body.CommitteeEmail != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_email", *body.CommitteeEmail, goa.FormatEmail))
+	}
+	if body.MailingListEmail != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.mailing_list_email", *body.MailingListEmail, goa.FormatEmail))
 	}
 	return
 }
@@ -4057,6 +4133,9 @@ func ValidateGroupsioSyncDiffRemoveResponseBody(body *GroupsioSyncDiffRemoveResp
 // groupsio-sync-diff-addRequestBody
 func ValidateGroupsioSyncDiffAddRequestBody(body *GroupsioSyncDiffAddRequestBody) (err error) {
 	err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
+	if !(body.MemberType == "committee_member" || body.MemberType == "mailing_list_member") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", body.MemberType, []any{"committee_member", "mailing_list_member"}))
+	}
 	return
 }
 
@@ -4064,6 +4143,9 @@ func ValidateGroupsioSyncDiffAddRequestBody(body *GroupsioSyncDiffAddRequestBody
 // groupsio-sync-diff-removeRequestBody
 func ValidateGroupsioSyncDiffRemoveRequestBody(body *GroupsioSyncDiffRemoveRequestBody) (err error) {
 	err = goa.MergeErrors(err, goa.ValidateFormat("body.email", body.Email, goa.FormatEmail))
+	if !(body.MemberType == "committee_member" || body.MemberType == "mailing_list_member") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", body.MemberType, []any{"committee_member", "mailing_list_member"}))
+	}
 	return
 }
 
@@ -4073,14 +4155,22 @@ func ValidateGroupsioSyncApplyAddResultResponseBody(body *GroupsioSyncApplyAddRe
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.CommitteeMemberUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("committee_member_uid", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Outcome == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("outcome", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
 	}
 	if body.Outcome != nil {
 		if !(*body.Outcome == "added" || *body.Outcome == "invited" || *body.Outcome == "failed") {
@@ -4096,14 +4186,22 @@ func ValidateGroupsioSyncApplyRemoveResultResponseBody(body *GroupsioSyncApplyRe
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.MailingListMemberID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_member_id", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Outcome == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("outcome", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
 	}
 	if body.Outcome != nil {
 		if !(*body.Outcome == "removed" || *body.Outcome == "skipped_cross_list" || *body.Outcome == "failed") {

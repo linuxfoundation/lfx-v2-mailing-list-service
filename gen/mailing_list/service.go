@@ -128,9 +128,9 @@ type ApplyGroupsioMailingListSyncDiffPayload struct {
 	BearerToken *string
 	// Subgroup ID
 	SubgroupID string
-	// Committee members to add, as returned by sync-diff
+	// Members to add, as returned by sync-diff
 	Adds []*GroupsioSyncDiffAdd
-	// Mailing list members to remove, as returned by sync-diff
+	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemove
 }
 
@@ -515,28 +515,31 @@ type GroupsioSubgroupList struct {
 	Total *int
 }
 
-// Outcome of applying one approved committee-member add
+// Outcome of applying one approved add
 type GroupsioSyncApplyAddResult struct {
-	// Committee member's email address
+	// Member's email address
 	Email string
-	// LFX v2 committee member UID
-	CommitteeMemberUID string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
 	// What happened
 	Outcome string
-	// Committee member's display name, present only when outcome is 'invited' —
-	// not a resolved identity match, just the name already known from the
-	// committee roster
+	// Member's display name, present only when outcome is 'invited' — not a
+	// resolved identity match, just the name already known from the source roster
 	NameHint *string
 	// Failure detail, present only when outcome is 'failed'
 	Error *string
 }
 
-// Outcome of applying one approved mailing-list-member remove
+// Outcome of applying one approved remove
 type GroupsioSyncApplyRemoveResult struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email string
-	// Mailing list member's ID
-	MailingListMemberID string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
 	// What happened
 	Outcome string
 	// Failure detail, present only when outcome is 'failed'
@@ -565,28 +568,44 @@ type GroupsioSyncDiff struct {
 	CommitteeUID string
 	// Sync direction this diff was computed for
 	SyncMode string
-	// Committee members to add to the mailing list
+	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAdd
-	// Mailing list members to remove
+	// Members to remove, to reconcile the target roster
 	Removes []*GroupsioSyncDiffRemove
+	// Email collisions ITX could not resolve into an add or remove
+	Conflicts []*GroupsioSyncDiffConflict
 }
 
-// A committee member missing from the mailing list
+// A member missing from the target roster, who should be added to reconcile it
 type GroupsioSyncDiffAdd struct {
-	// Committee member's email address
+	// Member's email address
 	Email string
-	// LFX v2 committee member UID
-	CommitteeMemberUID string
-	// Committee member's display name, when known
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
+	// Member's display name, when known
 	Name *string
 }
 
-// A mailing list member no longer on the linked committee
+// An email collision between the committee roster and the mailing list roster
+type GroupsioSyncDiffConflict struct {
+	// Email as it appears on the committee roster
+	CommitteeEmail string
+	// Email as it appears on the mailing list roster
+	MailingListEmail string
+	// Display name, when known
+	Name *string
+}
+
+// A member who should be removed from the roster member_type identifies
 type GroupsioSyncDiffRemove struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email string
-	// Mailing list member's ID
-	MailingListMemberID string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
 }
 
 // InviteGroupsioMembersPayload is the payload type of the mailing-list service

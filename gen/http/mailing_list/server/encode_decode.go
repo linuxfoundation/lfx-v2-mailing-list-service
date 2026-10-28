@@ -2873,9 +2873,10 @@ func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailing
 // *mailinglist.GroupsioSyncDiffAdd.
 func marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddResponseBody(v *mailinglist.GroupsioSyncDiffAdd) *GroupsioSyncDiffAddResponseBody {
 	res := &GroupsioSyncDiffAddResponseBody{
-		Email:              v.Email,
-		CommitteeMemberUID: v.CommitteeMemberUID,
-		Name:               v.Name,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+		Name:       v.Name,
 	}
 
 	return res
@@ -2886,8 +2887,22 @@ func marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddResponseBody(v *m
 // type *mailinglist.GroupsioSyncDiffRemove.
 func marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveResponseBody(v *mailinglist.GroupsioSyncDiffRemove) *GroupsioSyncDiffRemoveResponseBody {
 	res := &GroupsioSyncDiffRemoveResponseBody{
-		Email:               v.Email,
-		MailingListMemberID: v.MailingListMemberID,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+	}
+
+	return res
+}
+
+// marshalMailinglistGroupsioSyncDiffConflictToGroupsioSyncDiffConflictResponseBody
+// builds a value of type *GroupsioSyncDiffConflictResponseBody from a value of
+// type *mailinglist.GroupsioSyncDiffConflict.
+func marshalMailinglistGroupsioSyncDiffConflictToGroupsioSyncDiffConflictResponseBody(v *mailinglist.GroupsioSyncDiffConflict) *GroupsioSyncDiffConflictResponseBody {
+	res := &GroupsioSyncDiffConflictResponseBody{
+		CommitteeEmail:   v.CommitteeEmail,
+		MailingListEmail: v.MailingListEmail,
+		Name:             v.Name,
 	}
 
 	return res
@@ -2898,9 +2913,10 @@ func marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveResponseBod
 // *GroupsioSyncDiffAddRequestBody.
 func unmarshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(v *GroupsioSyncDiffAddRequestBody) *mailinglist.GroupsioSyncDiffAdd {
 	res := &mailinglist.GroupsioSyncDiffAdd{
-		Email:              *v.Email,
-		CommitteeMemberUID: *v.CommitteeMemberUID,
-		Name:               v.Name,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
+		Name:       v.Name,
 	}
 
 	return res
@@ -2911,8 +2927,9 @@ func unmarshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(v *
 // type *GroupsioSyncDiffRemoveRequestBody.
 func unmarshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(v *GroupsioSyncDiffRemoveRequestBody) *mailinglist.GroupsioSyncDiffRemove {
 	res := &mailinglist.GroupsioSyncDiffRemove{
-		Email:               *v.Email,
-		MailingListMemberID: *v.MailingListMemberID,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
 	}
 
 	return res
@@ -2923,11 +2940,12 @@ func unmarshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemo
 // of type *mailinglist.GroupsioSyncApplyAddResult.
 func marshalMailinglistGroupsioSyncApplyAddResultToGroupsioSyncApplyAddResultResponseBody(v *mailinglist.GroupsioSyncApplyAddResult) *GroupsioSyncApplyAddResultResponseBody {
 	res := &GroupsioSyncApplyAddResultResponseBody{
-		Email:              v.Email,
-		CommitteeMemberUID: v.CommitteeMemberUID,
-		Outcome:            v.Outcome,
-		NameHint:           v.NameHint,
-		Error:              v.Error,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+		Outcome:    v.Outcome,
+		NameHint:   v.NameHint,
+		Error:      v.Error,
 	}
 
 	return res
@@ -2938,10 +2956,11 @@ func marshalMailinglistGroupsioSyncApplyAddResultToGroupsioSyncApplyAddResultRes
 // value of type *mailinglist.GroupsioSyncApplyRemoveResult.
 func marshalMailinglistGroupsioSyncApplyRemoveResultToGroupsioSyncApplyRemoveResultResponseBody(v *mailinglist.GroupsioSyncApplyRemoveResult) *GroupsioSyncApplyRemoveResultResponseBody {
 	res := &GroupsioSyncApplyRemoveResultResponseBody{
-		Email:               v.Email,
-		MailingListMemberID: v.MailingListMemberID,
-		Outcome:             v.Outcome,
-		Error:               v.Error,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+		Outcome:    v.Outcome,
+		Error:      v.Error,
 	}
 
 	return res

@@ -45,8 +45,8 @@ func NewSyncApplyOrchestrator(opts ...SyncApplyOrchestratorOption) port.SyncAppl
 }
 
 // ApplySyncDiff resolves mailingListID's linked committee and sync_mode, starts an ITX
-// sync-apply job applying approvedAdds (by email) and approvedRemoves (by mailing-list member
-// ID), and waits for it to complete.
+// sync-apply job applying approvedAdds (by email) and approvedRemoves (by member ID), and waits
+// for it to complete.
 func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	ctx context.Context,
 	mailingListID string,
@@ -74,11 +74,11 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		addEmailByNormalized[normalizeEmail(add.Email)] = add
 	}
 
-	removeByMemberID := make(map[string]model.SyncDiffRemove, len(approvedRemoves))
+	removeByNormalized := make(map[string]model.SyncDiffRemove, len(approvedRemoves))
 	approvedRemoveIDs := make([]string, 0, len(approvedRemoves))
 	for _, remove := range approvedRemoves {
-		approvedRemoveIDs = append(approvedRemoveIDs, remove.MailingListMemberID)
-		removeByMemberID[remove.MailingListMemberID] = remove
+		approvedRemoveIDs = append(approvedRemoveIDs, remove.MemberID)
+		removeByNormalized[normalizeEmail(remove.Email)] = remove
 	}
 
 	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, direction, approvedAddEmails, approvedRemoveIDs, "")
@@ -94,19 +94,21 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		return nil, errs.NewServiceUnavailable("ITX sync-apply job failed: " + job.ErrorMessage)
 	}
 
-	return fromSyncApplyJob(mailingListID, committeeUID, job, addEmailByNormalized, removeByMemberID), nil
+	return fromSyncApplyJob(mailingListID, committeeUID, job, addEmailByNormalized, removeByNormalized), nil
 }
 
 // fromSyncApplyJob translates a completed ITX sync-apply job's flat action/status results back
 // into model.SyncApplyResult's richer per-kind outcome. ITX has no "invited" concept (it manages
 // Groups.io subscriptions directly, without LFX-account resolution) and no "skipped_cross_list"
 // concept (its own sync-mode conflict validation differs from this service's former bespoke
-// guard) — those outcomes never appear here, only added/removed/failed.
+// guard) — those outcomes never appear here, only added/removed/failed. ITX's results only carry
+// email, not the member ID/type that was approved, so both are recovered from the original
+// request by (normalized) email.
 func fromSyncApplyJob(
 	mailingListID, committeeUID string,
 	job *port.SyncApplyJob,
-	addEmailByNormalized map[string]model.SyncDiffAdd,
-	removeByMemberID map[string]model.SyncDiffRemove,
+	addByNormalized map[string]model.SyncDiffAdd,
+	removeByNormalized map[string]model.SyncDiffRemove,
 ) *model.SyncApplyResult {
 	result := &model.SyncApplyResult{
 		MailingListID: mailingListID,
@@ -122,32 +124,26 @@ func fromSyncApplyJob(
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeAdded
 			}
-			add := addEmailByNormalized[normalizeEmail(r.Email)]
+			add := addByNormalized[normalizeEmail(r.Email)]
 			result.Added = append(result.Added, model.SyncApplyAddResult{
-				Email:              r.Email,
-				CommitteeMemberUID: add.CommitteeMemberUID,
-				Outcome:            outcome,
-				NameHint:           add.Name,
-				Error:              r.Error,
+				Email:      r.Email,
+				MemberID:   add.MemberID,
+				MemberType: add.MemberType,
+				Outcome:    outcome,
+				NameHint:   add.Name,
+				Error:      r.Error,
 			})
 		case "remove":
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeRemoved
 			}
-			// ITX's sync-apply results only carry email, not the mailing-list member ID that was
-			// approved for removal; recover it from the original request by email.
-			var memberID string
-			for id, remove := range removeByMemberID {
-				if normalizeEmail(remove.Email) == normalizeEmail(r.Email) {
-					memberID = id
-					break
-				}
-			}
+			remove := removeByNormalized[normalizeEmail(r.Email)]
 			result.Removed = append(result.Removed, model.SyncApplyRemoveResult{
-				Email:               r.Email,
-				MailingListMemberID: memberID,
-				Outcome:             outcome,
-				Error:               r.Error,
+				Email:      r.Email,
+				MemberID:   remove.MemberID,
+				MemberType: remove.MemberType,
+				Outcome:    outcome,
+				Error:      r.Error,
 			})
 		}
 	}

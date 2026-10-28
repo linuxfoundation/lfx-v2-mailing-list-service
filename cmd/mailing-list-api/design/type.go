@@ -169,26 +169,51 @@ var GroupsioCountType = dsl.Type("groupsio-count", func() {
 	dsl.Required("count")
 })
 
-// GroupsioSyncDiffAddType represents a committee member who should be added to the mailing list.
+// GroupsioSyncDiffAddType represents a member present on one roster but missing from the other,
+// who should be added to reconcile them. member_type says which roster member_id belongs to:
+// for auto_c_to_ml this is a committee member being added to the mailing list; for auto_ml_to_c
+// it is a mailing-list member being added to the committee.
 var GroupsioSyncDiffAddType = dsl.Type("groupsio-sync-diff-add", func() {
-	dsl.Description("A committee member missing from the mailing list")
-	dsl.Attribute("email", dsl.String, "Committee member's email address", func() {
+	dsl.Description("A member missing from the target roster, who should be added to reconcile it")
+	dsl.Attribute("email", dsl.String, "Member's email address", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
-	dsl.Attribute("committee_member_uid", dsl.String, "LFX v2 committee member UID")
-	dsl.Attribute("name", dsl.String, "Committee member's display name, when known")
-	dsl.Required("email", "committee_member_uid")
+	dsl.Attribute("member_id", dsl.String, "Member's ID in the roster identified by member_type")
+	dsl.Attribute("member_type", dsl.String, "Which roster member_id identifies", func() {
+		dsl.Enum("committee_member", "mailing_list_member")
+		dsl.Example("committee_member")
+	})
+	dsl.Attribute("name", dsl.String, "Member's display name, when known")
+	dsl.Required("email", "member_id", "member_type")
 })
 
-// GroupsioSyncDiffRemoveType represents a mailing list member who should be removed because they
-// are no longer on the linked committee.
+// GroupsioSyncDiffRemoveType represents a member who should be removed from the roster
+// member_type identifies, because they no longer belong there.
 var GroupsioSyncDiffRemoveType = dsl.Type("groupsio-sync-diff-remove", func() {
-	dsl.Description("A mailing list member no longer on the linked committee")
-	dsl.Attribute("email", dsl.String, "Mailing list member's email address", func() {
+	dsl.Description("A member who should be removed from the roster member_type identifies")
+	dsl.Attribute("email", dsl.String, "Member's email address", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
-	dsl.Attribute("mailing_list_member_id", dsl.String, "Mailing list member's ID")
-	dsl.Required("email", "mailing_list_member_id")
+	dsl.Attribute("member_id", dsl.String, "Member's ID in the roster identified by member_type")
+	dsl.Attribute("member_type", dsl.String, "Which roster member_id identifies", func() {
+		dsl.Enum("committee_member", "mailing_list_member")
+		dsl.Example("mailing_list_member")
+	})
+	dsl.Required("email", "member_id", "member_type")
+})
+
+// GroupsioSyncDiffConflictType represents an email collision between the committee roster and the
+// mailing list roster that ITX could not confidently resolve into an add or remove.
+var GroupsioSyncDiffConflictType = dsl.Type("groupsio-sync-diff-conflict", func() {
+	dsl.Description("An email collision between the committee roster and the mailing list roster")
+	dsl.Attribute("committee_email", dsl.String, "Email as it appears on the committee roster", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("mailing_list_email", dsl.String, "Email as it appears on the mailing list roster", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("name", dsl.String, "Display name, when known")
+	dsl.Required("committee_email", "mailing_list_email")
 })
 
 // GroupsioSyncDiffType represents the reconciliation diff between a mailing list and its linked
@@ -200,12 +225,13 @@ var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
 		dsl.Format(dsl.FormatUUID)
 	})
 	dsl.Attribute("sync_mode", dsl.String, "Sync direction this diff was computed for", func() {
-		dsl.Enum("auto_c_to_ml")
+		dsl.Enum("auto_c_to_ml", "auto_ml_to_c")
 		dsl.Example("auto_c_to_ml")
 	})
-	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Committee members to add to the mailing list")
-	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Mailing list members to remove")
-	dsl.Required("mailing_list_id", "committee_uid", "sync_mode", "adds", "removes")
+	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Members to add, to reconcile the target roster")
+	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Members to remove, to reconcile the target roster")
+	dsl.Attribute("conflicts", dsl.ArrayOf(GroupsioSyncDiffConflictType), "Email collisions ITX could not resolve into an add or remove")
+	dsl.Required("mailing_list_id", "committee_uid", "sync_mode", "adds", "removes", "conflicts")
 })
 
 // GroupsioSyncApplyRequestType is the request body for applying an admin-approved subset of a
@@ -213,39 +239,47 @@ var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
 // get-groupsio-mailing-list-sync-diff returned for the ones they want applied now.
 var GroupsioSyncApplyRequestType = dsl.Type("groupsio-sync-apply-request", func() {
 	dsl.Description("Admin-approved subset of a sync-diff to apply")
-	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Committee members to add, as returned by sync-diff")
-	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Mailing list members to remove, as returned by sync-diff")
+	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Members to add, as returned by sync-diff")
+	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Members to remove, as returned by sync-diff")
 	dsl.Required("adds", "removes")
 })
 
 // GroupsioSyncApplyAddResultType reports what happened applying one approved add.
 var GroupsioSyncApplyAddResultType = dsl.Type("groupsio-sync-apply-add-result", func() {
-	dsl.Description("Outcome of applying one approved committee-member add")
-	dsl.Attribute("email", dsl.String, "Committee member's email address", func() {
+	dsl.Description("Outcome of applying one approved add")
+	dsl.Attribute("email", dsl.String, "Member's email address", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
-	dsl.Attribute("committee_member_uid", dsl.String, "LFX v2 committee member UID")
+	dsl.Attribute("member_id", dsl.String, "Member's ID in the roster identified by member_type")
+	dsl.Attribute("member_type", dsl.String, "Which roster member_id identifies", func() {
+		dsl.Enum("committee_member", "mailing_list_member")
+		dsl.Example("committee_member")
+	})
 	dsl.Attribute("outcome", dsl.String, "What happened", func() {
 		dsl.Enum("added", "invited", "failed")
 	})
-	dsl.Attribute("name_hint", dsl.String, "Committee member's display name, present only when outcome is 'invited' "+
-		"— not a resolved identity match, just the name already known from the committee roster")
+	dsl.Attribute("name_hint", dsl.String, "Member's display name, present only when outcome is 'invited' "+
+		"— not a resolved identity match, just the name already known from the source roster")
 	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
-	dsl.Required("email", "committee_member_uid", "outcome")
+	dsl.Required("email", "member_id", "member_type", "outcome")
 })
 
 // GroupsioSyncApplyRemoveResultType reports what happened applying one approved remove.
 var GroupsioSyncApplyRemoveResultType = dsl.Type("groupsio-sync-apply-remove-result", func() {
-	dsl.Description("Outcome of applying one approved mailing-list-member remove")
-	dsl.Attribute("email", dsl.String, "Mailing list member's email address", func() {
+	dsl.Description("Outcome of applying one approved remove")
+	dsl.Attribute("email", dsl.String, "Member's email address", func() {
 		dsl.Format(dsl.FormatEmail)
 	})
-	dsl.Attribute("mailing_list_member_id", dsl.String, "Mailing list member's ID")
+	dsl.Attribute("member_id", dsl.String, "Member's ID in the roster identified by member_type")
+	dsl.Attribute("member_type", dsl.String, "Which roster member_id identifies", func() {
+		dsl.Enum("committee_member", "mailing_list_member")
+		dsl.Example("mailing_list_member")
+	})
 	dsl.Attribute("outcome", dsl.String, "What happened", func() {
 		dsl.Enum("removed", "skipped_cross_list", "failed")
 	})
 	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
-	dsl.Required("email", "mailing_list_member_id", "outcome")
+	dsl.Required("email", "member_id", "member_type", "outcome")
 })
 
 // GroupsioSyncApplyResultType is the result of applying an admin-approved subset of a sync-diff.
