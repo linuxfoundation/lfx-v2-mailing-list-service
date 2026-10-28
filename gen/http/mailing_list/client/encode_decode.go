@@ -3619,9 +3619,10 @@ func unmarshalGroupsioSubgroupResponseBodyToMailinglistGroupsioSubgroup(v *Group
 // *GroupsioSyncDiffAddResponseBody.
 func unmarshalGroupsioSyncDiffAddResponseBodyToMailinglistGroupsioSyncDiffAdd(v *GroupsioSyncDiffAddResponseBody) *mailinglist.GroupsioSyncDiffAdd {
 	res := &mailinglist.GroupsioSyncDiffAdd{
-		Email:              *v.Email,
-		CommitteeMemberUID: *v.CommitteeMemberUID,
-		Name:               v.Name,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
+		Name:       v.Name,
 	}
 
 	return res
@@ -3632,8 +3633,22 @@ func unmarshalGroupsioSyncDiffAddResponseBodyToMailinglistGroupsioSyncDiffAdd(v 
 // type *GroupsioSyncDiffRemoveResponseBody.
 func unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRemove(v *GroupsioSyncDiffRemoveResponseBody) *mailinglist.GroupsioSyncDiffRemove {
 	res := &mailinglist.GroupsioSyncDiffRemove{
-		Email:               *v.Email,
-		MailingListMemberID: *v.MailingListMemberID,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
+	}
+
+	return res
+}
+
+// unmarshalGroupsioSyncDiffConflictResponseBodyToMailinglistGroupsioSyncDiffConflict
+// builds a value of type *mailinglist.GroupsioSyncDiffConflict from a value of
+// type *GroupsioSyncDiffConflictResponseBody.
+func unmarshalGroupsioSyncDiffConflictResponseBodyToMailinglistGroupsioSyncDiffConflict(v *GroupsioSyncDiffConflictResponseBody) *mailinglist.GroupsioSyncDiffConflict {
+	res := &mailinglist.GroupsioSyncDiffConflict{
+		CommitteeEmail:   *v.CommitteeEmail,
+		MailingListEmail: *v.MailingListEmail,
+		Name:             v.Name,
 	}
 
 	return res
@@ -3644,9 +3659,10 @@ func unmarshalGroupsioSyncDiffRemoveResponseBodyToMailinglistGroupsioSyncDiffRem
 // *mailinglist.GroupsioSyncDiffAdd.
 func marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddRequestBody(v *mailinglist.GroupsioSyncDiffAdd) *GroupsioSyncDiffAddRequestBody {
 	res := &GroupsioSyncDiffAddRequestBody{
-		Email:              v.Email,
-		CommitteeMemberUID: v.CommitteeMemberUID,
-		Name:               v.Name,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+		Name:       v.Name,
 	}
 
 	return res
@@ -3657,8 +3673,9 @@ func marshalMailinglistGroupsioSyncDiffAddToGroupsioSyncDiffAddRequestBody(v *ma
 // type *mailinglist.GroupsioSyncDiffRemove.
 func marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveRequestBody(v *mailinglist.GroupsioSyncDiffRemove) *GroupsioSyncDiffRemoveRequestBody {
 	res := &GroupsioSyncDiffRemoveRequestBody{
-		Email:               v.Email,
-		MailingListMemberID: v.MailingListMemberID,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
 	}
 
 	return res
@@ -3669,9 +3686,10 @@ func marshalMailinglistGroupsioSyncDiffRemoveToGroupsioSyncDiffRemoveRequestBody
 // *GroupsioSyncDiffAddRequestBody.
 func marshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(v *GroupsioSyncDiffAddRequestBody) *mailinglist.GroupsioSyncDiffAdd {
 	res := &mailinglist.GroupsioSyncDiffAdd{
-		Email:              v.Email,
-		CommitteeMemberUID: v.CommitteeMemberUID,
-		Name:               v.Name,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
+		Name:       v.Name,
 	}
 
 	return res
@@ -3682,8 +3700,9 @@ func marshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(v *Gr
 // type *GroupsioSyncDiffRemoveRequestBody.
 func marshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(v *GroupsioSyncDiffRemoveRequestBody) *mailinglist.GroupsioSyncDiffRemove {
 	res := &mailinglist.GroupsioSyncDiffRemove{
-		Email:               v.Email,
-		MailingListMemberID: v.MailingListMemberID,
+		Email:      v.Email,
+		MemberID:   v.MemberID,
+		MemberType: v.MemberType,
 	}
 
 	return res
@@ -3694,11 +3713,12 @@ func marshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove
 // of type *GroupsioSyncApplyAddResultResponseBody.
 func unmarshalGroupsioSyncApplyAddResultResponseBodyToMailinglistGroupsioSyncApplyAddResult(v *GroupsioSyncApplyAddResultResponseBody) *mailinglist.GroupsioSyncApplyAddResult {
 	res := &mailinglist.GroupsioSyncApplyAddResult{
-		Email:              *v.Email,
-		CommitteeMemberUID: *v.CommitteeMemberUID,
-		Outcome:            *v.Outcome,
-		NameHint:           v.NameHint,
-		Error:              v.Error,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
+		Outcome:    *v.Outcome,
+		NameHint:   v.NameHint,
+		Error:      v.Error,
 	}
 
 	return res
@@ -3709,10 +3729,11 @@ func unmarshalGroupsioSyncApplyAddResultResponseBodyToMailinglistGroupsioSyncApp
 // value of type *GroupsioSyncApplyRemoveResultResponseBody.
 func unmarshalGroupsioSyncApplyRemoveResultResponseBodyToMailinglistGroupsioSyncApplyRemoveResult(v *GroupsioSyncApplyRemoveResultResponseBody) *mailinglist.GroupsioSyncApplyRemoveResult {
 	res := &mailinglist.GroupsioSyncApplyRemoveResult{
-		Email:               *v.Email,
-		MailingListMemberID: *v.MailingListMemberID,
-		Outcome:             *v.Outcome,
-		Error:               v.Error,
+		Email:      *v.Email,
+		MemberID:   *v.MemberID,
+		MemberType: *v.MemberType,
+		Outcome:    *v.Outcome,
+		Error:      v.Error,
 	}
 
 	return res

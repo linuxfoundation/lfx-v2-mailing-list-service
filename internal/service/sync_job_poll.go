@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -30,23 +31,29 @@ const (
 )
 
 // pollSyncDiffJob polls GetSyncDiffJob until it reaches a terminal status (completed or failed),
-// or syncJobPollTimeout elapses.
+// or syncJobPollTimeout elapses. The deadline is bound into ctx itself (not just checked between
+// calls) so a GetSyncDiffJob call that hangs — rather than returning quickly — is also cancelled
+// at the deadline instead of blocking indefinitely.
 func pollSyncDiffJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncDiffJob, error) {
-	deadline := time.Now().Add(syncJobPollTimeout)
+	ctx, cancel := context.WithTimeout(ctx, syncJobPollTimeout)
+	defer cancel()
 	for {
 		job, err := client.GetSyncDiffJob(ctx, mailingListID, jobID)
 		if err != nil {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-diff job to complete")
+			}
 			return nil, err
 		}
 		switch job.Status {
 		case port.SyncJobStatusCompleted, port.SyncJobStatusFailed:
 			return job, nil
 		}
-		if time.Now().After(deadline) {
-			return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-diff job to complete")
-		}
 		select {
 		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-diff job to complete")
+			}
 			return nil, ctx.Err()
 		case <-time.After(syncJobPollInterval):
 		}
@@ -54,23 +61,28 @@ func pollSyncDiffJob(ctx context.Context, client port.ITXSyncClient, mailingList
 }
 
 // pollSyncApplyJob polls GetSyncApplyJob until it reaches a terminal status (completed or
-// failed), or syncJobPollTimeout elapses.
+// failed), or syncJobPollTimeout elapses. See pollSyncDiffJob for why the deadline is bound into
+// ctx rather than only checked between calls.
 func pollSyncApplyJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncApplyJob, error) {
-	deadline := time.Now().Add(syncJobPollTimeout)
+	ctx, cancel := context.WithTimeout(ctx, syncJobPollTimeout)
+	defer cancel()
 	for {
 		job, err := client.GetSyncApplyJob(ctx, mailingListID, jobID)
 		if err != nil {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-apply job to complete")
+			}
 			return nil, err
 		}
 		switch job.Status {
 		case port.SyncJobStatusCompleted, port.SyncJobStatusFailed:
 			return job, nil
 		}
-		if time.Now().After(deadline) {
-			return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-apply job to complete")
-		}
 		select {
 		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-apply job to complete")
+			}
 			return nil, ctx.Err()
 		case <-time.After(syncJobPollInterval):
 		}

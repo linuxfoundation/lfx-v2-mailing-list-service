@@ -789,6 +789,7 @@ paths:
                             - sync_mode
                             - adds
                             - removes
+                            - conflicts
                 "400":
                     description: Bad Request response.
                     schema:
@@ -1963,22 +1964,29 @@ definitions:
         title: GroupsioSyncApplyAddResult
         type: object
         properties:
-            committee_member_uid:
-                type: string
-                description: LFX v2 committee member UID
-                example: Qui sed repellendus quam in.
             email:
                 type: string
-                description: Committee member's email address
+                description: Member's email address
                 example: susie.lubowitz@graham.net
                 format: email
             error:
                 type: string
                 description: Failure detail, present only when outcome is 'failed'
                 example: Libero expedita assumenda voluptas omnis et.
+            member_id:
+                type: string
+                description: Member's ID in the roster identified by member_type
+                example: Aut non laudantium laborum natus vitae in.
+            member_type:
+                type: string
+                description: Which roster member_id identifies
+                example: committee_member
+                enum:
+                    - committee_member
+                    - mailing_list_member
             name_hint:
                 type: string
-                description: Committee member's display name, present only when outcome is 'invited' — not a resolved identity match, just the name already known from the committee roster
+                description: Member's display name, present only when outcome is 'invited' — not a resolved identity match, just the name already known from the source roster
                 example: Pariatur adipisci eveniet.
             outcome:
                 type: string
@@ -1988,16 +1996,18 @@ definitions:
                     - added
                     - invited
                     - failed
-        description: Outcome of applying one approved committee-member add
+        description: Outcome of applying one approved add
         example:
-            committee_member_uid: Qui sed repellendus quam in.
             email: susie.lubowitz@graham.net
             error: Libero expedita assumenda voluptas omnis et.
+            member_id: Aut non laudantium laborum natus vitae in.
+            member_type: committee_member
             name_hint: Pariatur adipisci eveniet.
             outcome: failed
         required:
             - email
-            - committee_member_uid
+            - member_id
+            - member_type
             - outcome
     GroupsioSyncApplyRemoveResult:
         title: GroupsioSyncApplyRemoveResult
@@ -2005,17 +2015,24 @@ definitions:
         properties:
             email:
                 type: string
-                description: Mailing list member's email address
+                description: Member's email address
                 example: irma.rolfson@quigley.net
                 format: email
             error:
                 type: string
                 description: Failure detail, present only when outcome is 'failed'
                 example: Sit id optio.
-            mailing_list_member_id:
+            member_id:
                 type: string
-                description: Mailing list member's ID
-                example: Incidunt et consequatur iste.
+                description: Member's ID in the roster identified by member_type
+                example: Modi mollitia cum voluptatem.
+            member_type:
+                type: string
+                description: Which roster member_id identifies
+                example: mailing_list_member
+                enum:
+                    - committee_member
+                    - mailing_list_member
             outcome:
                 type: string
                 description: What happened
@@ -2024,15 +2041,17 @@ definitions:
                     - removed
                     - skipped_cross_list
                     - failed
-        description: Outcome of applying one approved mailing-list-member remove
+        description: Outcome of applying one approved remove
         example:
             email: irma.rolfson@quigley.net
             error: Sit id optio.
-            mailing_list_member_id: Incidunt et consequatur iste.
+            member_id: Modi mollitia cum voluptatem.
+            member_type: mailing_list_member
             outcome: removed
         required:
             - email
-            - mailing_list_member_id
+            - member_id
+            - member_type
             - outcome
     GroupsioSyncApplyResult:
         title: GroupsioSyncApplyResult
@@ -2044,14 +2063,16 @@ definitions:
                     $ref: '#/definitions/GroupsioSyncApplyAddResult'
                 description: Outcome of each approved add
                 example:
-                    - committee_member_uid: Qui sed repellendus quam in.
-                      email: susie.lubowitz@graham.net
+                    - email: susie.lubowitz@graham.net
                       error: Libero expedita assumenda voluptas omnis et.
+                      member_id: Aut non laudantium laborum natus vitae in.
+                      member_type: committee_member
                       name_hint: Pariatur adipisci eveniet.
                       outcome: failed
-                    - committee_member_uid: Qui sed repellendus quam in.
-                      email: susie.lubowitz@graham.net
+                    - email: susie.lubowitz@graham.net
                       error: Libero expedita assumenda voluptas omnis et.
+                      member_id: Aut non laudantium laborum natus vitae in.
+                      member_type: committee_member
                       name_hint: Pariatur adipisci eveniet.
                       outcome: failed
             committee_uid:
@@ -2071,23 +2092,27 @@ definitions:
                 example:
                     - email: irma.rolfson@quigley.net
                       error: Sit id optio.
-                      mailing_list_member_id: Incidunt et consequatur iste.
+                      member_id: Modi mollitia cum voluptatem.
+                      member_type: mailing_list_member
                       outcome: removed
                     - email: irma.rolfson@quigley.net
                       error: Sit id optio.
-                      mailing_list_member_id: Incidunt et consequatur iste.
+                      member_id: Modi mollitia cum voluptatem.
+                      member_type: mailing_list_member
                       outcome: removed
         description: Result of applying an admin-approved subset of a sync-diff
         example:
             added:
-                - committee_member_uid: Qui sed repellendus quam in.
-                  email: susie.lubowitz@graham.net
+                - email: susie.lubowitz@graham.net
                   error: Libero expedita assumenda voluptas omnis et.
+                  member_id: Aut non laudantium laborum natus vitae in.
+                  member_type: committee_member
                   name_hint: Pariatur adipisci eveniet.
                   outcome: failed
-                - committee_member_uid: Qui sed repellendus quam in.
-                  email: susie.lubowitz@graham.net
+                - email: susie.lubowitz@graham.net
                   error: Libero expedita assumenda voluptas omnis et.
+                  member_id: Aut non laudantium laborum natus vitae in.
+                  member_type: committee_member
                   name_hint: Pariatur adipisci eveniet.
                   outcome: failed
             committee_uid: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
@@ -2095,11 +2120,13 @@ definitions:
             removed:
                 - email: irma.rolfson@quigley.net
                   error: Sit id optio.
-                  mailing_list_member_id: Incidunt et consequatur iste.
+                  member_id: Modi mollitia cum voluptatem.
+                  member_type: mailing_list_member
                   outcome: removed
                 - email: irma.rolfson@quigley.net
                   error: Sit id optio.
-                  mailing_list_member_id: Incidunt et consequatur iste.
+                  member_id: Modi mollitia cum voluptatem.
+                  member_type: mailing_list_member
                   outcome: removed
         required:
             - mailing_list_id
@@ -2114,19 +2141,33 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/GroupsioSyncDiffAdd'
-                description: Committee members to add to the mailing list
+                description: Members to add, to reconcile the target roster
                 example:
-                    - committee_member_uid: Cum illo ut nihil.
-                      email: fannie.wuckert@lockman.biz
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
                       name: Corrupti tempore optio animi corrupti.
-                    - committee_member_uid: Cum illo ut nihil.
-                      email: fannie.wuckert@lockman.biz
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
                       name: Corrupti tempore optio animi corrupti.
             committee_uid:
                 type: string
                 description: LFX v2 committee UID
                 example: e3ae8475-1077-414c-a576-249778ae6d10
                 format: uuid
+            conflicts:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffConflict'
+                description: Email collisions ITX could not resolve into an add or remove
+                example:
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
             mailing_list_id:
                 type: string
                 description: Mailing list (subgroup) ID
@@ -2135,42 +2176,60 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/GroupsioSyncDiffRemove'
-                description: Mailing list members to remove
+                description: Members to remove, to reconcile the target roster
                 example:
                     - email: dax_heaney@sporer.net
-                      mailing_list_member_id: Sunt laudantium porro.
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
                     - email: dax_heaney@sporer.net
-                      mailing_list_member_id: Sunt laudantium porro.
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
                     - email: dax_heaney@sporer.net
-                      mailing_list_member_id: Sunt laudantium porro.
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
                     - email: dax_heaney@sporer.net
-                      mailing_list_member_id: Sunt laudantium porro.
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
             sync_mode:
                 type: string
                 description: Sync direction this diff was computed for
                 example: auto_c_to_ml
                 enum:
                     - auto_c_to_ml
+                    - auto_ml_to_c
         description: Membership reconciliation diff between a mailing list and its linked committee
         example:
             adds:
-                - committee_member_uid: Cum illo ut nihil.
-                  email: fannie.wuckert@lockman.biz
+                - email: fannie.wuckert@lockman.biz
+                  member_id: Cumque quisquam omnis dolore.
+                  member_type: committee_member
                   name: Corrupti tempore optio animi corrupti.
-                - committee_member_uid: Cum illo ut nihil.
-                  email: fannie.wuckert@lockman.biz
+                - email: fannie.wuckert@lockman.biz
+                  member_id: Cumque quisquam omnis dolore.
+                  member_type: committee_member
                   name: Corrupti tempore optio animi corrupti.
             committee_uid: e3ae8475-1077-414c-a576-249778ae6d10
+            conflicts:
+                - committee_email: kacey@quitzon.org
+                  mailing_list_email: percy@boscomuller.info
+                  name: Est eum quisquam officiis numquam.
+                - committee_email: kacey@quitzon.org
+                  mailing_list_email: percy@boscomuller.info
+                  name: Est eum quisquam officiis numquam.
             mailing_list_id: Culpa dolores.
             removes:
                 - email: dax_heaney@sporer.net
-                  mailing_list_member_id: Sunt laudantium porro.
+                  member_id: Ut cum quam nemo tenetur rerum sed.
+                  member_type: mailing_list_member
                 - email: dax_heaney@sporer.net
-                  mailing_list_member_id: Sunt laudantium porro.
+                  member_id: Ut cum quam nemo tenetur rerum sed.
+                  member_type: mailing_list_member
                 - email: dax_heaney@sporer.net
-                  mailing_list_member_id: Sunt laudantium porro.
+                  member_id: Ut cum quam nemo tenetur rerum sed.
+                  member_type: mailing_list_member
                 - email: dax_heaney@sporer.net
-                  mailing_list_member_id: Sunt laudantium porro.
+                  member_id: Ut cum quam nemo tenetur rerum sed.
+                  member_type: mailing_list_member
             sync_mode: auto_c_to_ml
         required:
             - mailing_list_id
@@ -2178,51 +2237,96 @@ definitions:
             - sync_mode
             - adds
             - removes
+            - conflicts
     GroupsioSyncDiffAdd:
         title: GroupsioSyncDiffAdd
         type: object
         properties:
-            committee_member_uid:
-                type: string
-                description: LFX v2 committee member UID
-                example: Cum illo ut nihil.
             email:
                 type: string
-                description: Committee member's email address
+                description: Member's email address
                 example: fannie.wuckert@lockman.biz
                 format: email
+            member_id:
+                type: string
+                description: Member's ID in the roster identified by member_type
+                example: Cumque quisquam omnis dolore.
+            member_type:
+                type: string
+                description: Which roster member_id identifies
+                example: committee_member
+                enum:
+                    - committee_member
+                    - mailing_list_member
             name:
                 type: string
-                description: Committee member's display name, when known
+                description: Member's display name, when known
                 example: Corrupti tempore optio animi corrupti.
-        description: A committee member missing from the mailing list
+        description: A member missing from the target roster, who should be added to reconcile it
         example:
-            committee_member_uid: Cum illo ut nihil.
             email: fannie.wuckert@lockman.biz
+            member_id: Cumque quisquam omnis dolore.
+            member_type: committee_member
             name: Corrupti tempore optio animi corrupti.
         required:
             - email
-            - committee_member_uid
+            - member_id
+            - member_type
+    GroupsioSyncDiffConflict:
+        title: GroupsioSyncDiffConflict
+        type: object
+        properties:
+            committee_email:
+                type: string
+                description: Email as it appears on the committee roster
+                example: kacey@quitzon.org
+                format: email
+            mailing_list_email:
+                type: string
+                description: Email as it appears on the mailing list roster
+                example: percy@boscomuller.info
+                format: email
+            name:
+                type: string
+                description: Display name, when known
+                example: Est eum quisquam officiis numquam.
+        description: An email collision between the committee roster and the mailing list roster
+        example:
+            committee_email: kacey@quitzon.org
+            mailing_list_email: percy@boscomuller.info
+            name: Est eum quisquam officiis numquam.
+        required:
+            - committee_email
+            - mailing_list_email
     GroupsioSyncDiffRemove:
         title: GroupsioSyncDiffRemove
         type: object
         properties:
             email:
                 type: string
-                description: Mailing list member's email address
+                description: Member's email address
                 example: dax_heaney@sporer.net
                 format: email
-            mailing_list_member_id:
+            member_id:
                 type: string
-                description: Mailing list member's ID
-                example: Sunt laudantium porro.
-        description: A mailing list member no longer on the linked committee
+                description: Member's ID in the roster identified by member_type
+                example: Ut cum quam nemo tenetur rerum sed.
+            member_type:
+                type: string
+                description: Which roster member_id identifies
+                example: mailing_list_member
+                enum:
+                    - committee_member
+                    - mailing_list_member
+        description: A member who should be removed from the roster member_type identifies
         example:
             email: dax_heaney@sporer.net
-            mailing_list_member_id: Sunt laudantium porro.
+            member_id: Ut cum quam nemo tenetur rerum sed.
+            member_type: mailing_list_member
         required:
             - email
-            - mailing_list_member_id
+            - member_id
+            - member_type
     InternalServerError:
         title: InternalServerError
         type: object
@@ -2298,43 +2402,53 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/GroupsioSyncDiffAdd'
-                description: Committee members to add, as returned by sync-diff
+                description: Members to add, as returned by sync-diff
                 example:
-                    - committee_member_uid: Fugiat libero.
-                      email: jane_metz@olson.info
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
                       name: Debitis neque labore autem.
-                    - committee_member_uid: Fugiat libero.
-                      email: jane_metz@olson.info
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
                       name: Debitis neque labore autem.
-                    - committee_member_uid: Fugiat libero.
-                      email: jane_metz@olson.info
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
                       name: Debitis neque labore autem.
             removes:
                 type: array
                 items:
                     $ref: '#/definitions/GroupsioSyncDiffRemove'
-                description: Mailing list members to remove, as returned by sync-diff
+                description: Members to remove, as returned by sync-diff
                 example:
                     - email: cory.dubuque@haag.net
-                      mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
                     - email: cory.dubuque@haag.net
-                      mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
         example:
             adds:
-                - committee_member_uid: Fugiat libero.
-                  email: jane_metz@olson.info
+                - email: jane_metz@olson.info
+                  member_id: Rerum sequi fuga consequatur.
+                  member_type: committee_member
                   name: Debitis neque labore autem.
-                - committee_member_uid: Fugiat libero.
-                  email: jane_metz@olson.info
+                - email: jane_metz@olson.info
+                  member_id: Rerum sequi fuga consequatur.
+                  member_type: committee_member
                   name: Debitis neque labore autem.
-                - committee_member_uid: Fugiat libero.
-                  email: jane_metz@olson.info
+                - email: jane_metz@olson.info
+                  member_id: Rerum sequi fuga consequatur.
+                  member_type: committee_member
                   name: Debitis neque labore autem.
             removes:
                 - email: cory.dubuque@haag.net
-                  mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                  member_id: Error rem tenetur.
+                  member_type: mailing_list_member
                 - email: cory.dubuque@haag.net
-                  mailing_list_member_id: Aut voluptatibus beatae quia qui excepturi autem.
+                  member_id: Error rem tenetur.
+                  member_type: mailing_list_member
         required:
             - adds
             - removes

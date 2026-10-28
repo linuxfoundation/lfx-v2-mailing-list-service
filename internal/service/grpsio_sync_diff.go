@@ -78,24 +78,41 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, errs.NewServiceUnavailable("ITX sync-diff job failed: " + job.ErrorMessage)
 	}
 
-	return fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, job), nil
+	return fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, direction, job), nil
 }
 
-// fromSyncDiffJob translates a completed ITX sync-diff job into model.SyncDiff.
-func fromSyncDiffJob(mailingListID, committeeUID, syncMode string, job *port.SyncDiffJob) *model.SyncDiff {
+// fromSyncDiffJob translates a completed ITX sync-diff job into model.SyncDiff. direction decides
+// which roster each of ToAdd/ToRemove's IDs belongs to: for auto_c_to_ml, ToAdd holds committee
+// members and ToRemove holds mailing-list members; for auto_ml_to_c it is the reverse.
+func fromSyncDiffJob(mailingListID, committeeUID, syncMode, direction string, job *port.SyncDiffJob) *model.SyncDiff {
+	addMemberType, removeMemberType := model.MemberTypeCommitteeMember, model.MemberTypeMailingListMember
+	if direction == port.SyncJobDirectionMailingListToCommittee {
+		addMemberType, removeMemberType = model.MemberTypeMailingListMember, model.MemberTypeCommitteeMember
+	}
+
 	adds := make([]model.SyncDiffAdd, len(job.ToAdd))
 	for i, m := range job.ToAdd {
 		adds[i] = model.SyncDiffAdd{
-			Email:              m.Email,
-			CommitteeMemberUID: m.MemberID,
-			Name:               m.FullName,
+			Email:      m.Email,
+			MemberID:   m.MemberID,
+			MemberType: addMemberType,
+			Name:       m.FullName,
 		}
 	}
 	removes := make([]model.SyncDiffRemove, len(job.ToRemove))
 	for i, m := range job.ToRemove {
 		removes[i] = model.SyncDiffRemove{
-			Email:               m.Email,
-			MailingListMemberID: m.MemberID,
+			Email:      m.Email,
+			MemberID:   m.MemberID,
+			MemberType: removeMemberType,
+		}
+	}
+	conflicts := make([]model.SyncDiffConflict, len(job.EmailConflicts))
+	for i, c := range job.EmailConflicts {
+		conflicts[i] = model.SyncDiffConflict{
+			CommitteeEmail:   c.CommitteeEmail,
+			MailingListEmail: c.MLEmail,
+			Name:             c.FullName,
 		}
 	}
 	return &model.SyncDiff{
@@ -104,5 +121,6 @@ func fromSyncDiffJob(mailingListID, committeeUID, syncMode string, job *port.Syn
 		SyncMode:      syncMode,
 		Adds:          adds,
 		Removes:       removes,
+		Conflicts:     conflicts,
 	}
 }

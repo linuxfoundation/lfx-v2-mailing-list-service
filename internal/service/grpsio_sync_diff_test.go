@@ -184,12 +184,14 @@ func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 
 	require.Len(t, diff.Adds, 1)
 	assert.Equal(t, "bob@example.com", diff.Adds[0].Email)
-	assert.Equal(t, "cm-2", diff.Adds[0].CommitteeMemberUID)
+	assert.Equal(t, "cm-2", diff.Adds[0].MemberID)
+	assert.Equal(t, model.MemberTypeCommitteeMember, diff.Adds[0].MemberType)
 	assert.Equal(t, "Bob", diff.Adds[0].Name)
 
 	require.Len(t, diff.Removes, 1)
 	assert.Equal(t, "carol@example.com", diff.Removes[0].Email)
-	assert.Equal(t, "mlm-2", diff.Removes[0].MailingListMemberID)
+	assert.Equal(t, "mlm-2", diff.Removes[0].MemberID)
+	assert.Equal(t, model.MemberTypeMailingListMember, diff.Removes[0].MemberType)
 
 	assert.Equal(t, "ml-1", diff.MailingListID)
 	assert.Equal(t, "committee-1", diff.CommitteeUID)
@@ -220,6 +222,7 @@ func TestComputeSyncDiff_MailingListToCommitteeDirection(t *testing.T) {
 	assert.Equal(t, model.SyncModeAutoMailingListToCommittee, diff.SyncMode)
 	require.Len(t, diff.Adds, 1)
 	assert.Equal(t, "dana@example.com", diff.Adds[0].Email)
+	assert.Equal(t, model.MemberTypeMailingListMember, diff.Adds[0].MemberType)
 }
 
 func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {

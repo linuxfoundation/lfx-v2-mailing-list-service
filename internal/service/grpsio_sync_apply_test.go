@@ -86,12 +86,13 @@ func TestApplySyncDiff_AddSuccess(t *testing.T) {
 		},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
-		{Email: "alice@example.com", CommitteeMemberUID: "cm-1", Name: "Alice Example"},
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember, Name: "Alice Example"},
 	}, nil)
 	require.NoError(t, err)
 	require.Len(t, result.Added, 1)
 	assert.Equal(t, model.SyncApplyOutcomeAdded, result.Added[0].Outcome)
-	assert.Equal(t, "cm-1", result.Added[0].CommitteeMemberUID)
+	assert.Equal(t, "cm-1", result.Added[0].MemberID)
+	assert.Equal(t, model.MemberTypeCommitteeMember, result.Added[0].MemberType)
 	assert.Equal(t, "Alice Example", result.Added[0].NameHint)
 	assert.Empty(t, result.Added[0].Error)
 }
@@ -111,7 +112,7 @@ func TestApplySyncDiff_AddFailure_ReportedAsFailed(t *testing.T) {
 		},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
-		{Email: "alice@example.com", CommitteeMemberUID: "cm-1"},
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.NoError(t, err)
 	require.Len(t, result.Added, 1)
@@ -134,12 +135,13 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 		},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
-		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
+		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, model.SyncApplyOutcomeRemoved, result.Removed[0].Outcome)
-	assert.Equal(t, "mlm-1", result.Removed[0].MailingListMemberID)
+	assert.Equal(t, "mlm-1", result.Removed[0].MemberID)
+	assert.Equal(t, model.MemberTypeMailingListMember, result.Removed[0].MemberType)
 	assert.Empty(t, result.Removed[0].Error)
 }
 
@@ -162,7 +164,7 @@ func TestApplySyncDiff_MailingListToCommitteeDirection(t *testing.T) {
 	)
 
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
-		{Email: "dana@example.com", CommitteeMemberUID: "cm-1"},
+		{Email: "dana@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, stub.postApplyDirection)
@@ -185,7 +187,7 @@ func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 		},
 	)
 	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
-		{Email: "carol@example.com", MailingListMemberID: "mlm-1"},
+		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)

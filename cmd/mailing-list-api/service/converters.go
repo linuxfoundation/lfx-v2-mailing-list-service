@@ -16,14 +16,27 @@ func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
 	adds := make([]*mailinglist.GroupsioSyncDiffAdd, len(d.Adds))
 	for i, a := range d.Adds {
 		adds[i] = &mailinglist.GroupsioSyncDiffAdd{
-			Email:              a.Email,
-			CommitteeMemberUID: a.CommitteeMemberUID,
-			Name:               converter.NonEmptyString(a.Name),
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: string(a.MemberType),
+			Name:       converter.NonEmptyString(a.Name),
 		}
 	}
 	removes := make([]*mailinglist.GroupsioSyncDiffRemove, len(d.Removes))
 	for i, r := range d.Removes {
-		removes[i] = &mailinglist.GroupsioSyncDiffRemove{Email: r.Email, MailingListMemberID: r.MailingListMemberID}
+		removes[i] = &mailinglist.GroupsioSyncDiffRemove{
+			Email:      r.Email,
+			MemberID:   r.MemberID,
+			MemberType: string(r.MemberType),
+		}
+	}
+	conflicts := make([]*mailinglist.GroupsioSyncDiffConflict, len(d.Conflicts))
+	for i, c := range d.Conflicts {
+		conflicts[i] = &mailinglist.GroupsioSyncDiffConflict{
+			CommitteeEmail:   c.CommitteeEmail,
+			MailingListEmail: c.MailingListEmail,
+			Name:             converter.NonEmptyString(c.Name),
+		}
 	}
 	return &mailinglist.GroupsioSyncDiff{
 		MailingListID: d.MailingListID,
@@ -31,6 +44,7 @@ func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
 		SyncMode:      d.SyncMode,
 		Adds:          adds,
 		Removes:       removes,
+		Conflicts:     conflicts,
 	}
 }
 
@@ -39,20 +53,22 @@ func convertSyncApplyResult(r *model.SyncApplyResult) *mailinglist.GroupsioSyncA
 	added := make([]*mailinglist.GroupsioSyncApplyAddResult, len(r.Added))
 	for i, a := range r.Added {
 		added[i] = &mailinglist.GroupsioSyncApplyAddResult{
-			Email:              a.Email,
-			CommitteeMemberUID: a.CommitteeMemberUID,
-			Outcome:            string(a.Outcome),
-			NameHint:           converter.NonEmptyString(a.NameHint),
-			Error:              converter.NonEmptyString(a.Error),
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: string(a.MemberType),
+			Outcome:    string(a.Outcome),
+			NameHint:   converter.NonEmptyString(a.NameHint),
+			Error:      converter.NonEmptyString(a.Error),
 		}
 	}
 	removed := make([]*mailinglist.GroupsioSyncApplyRemoveResult, len(r.Removed))
 	for i, rm := range r.Removed {
 		removed[i] = &mailinglist.GroupsioSyncApplyRemoveResult{
-			Email:               rm.Email,
-			MailingListMemberID: rm.MailingListMemberID,
-			Outcome:             string(rm.Outcome),
-			Error:               converter.NonEmptyString(rm.Error),
+			Email:      rm.Email,
+			MemberID:   rm.MemberID,
+			MemberType: string(rm.MemberType),
+			Outcome:    string(rm.Outcome),
+			Error:      converter.NonEmptyString(rm.Error),
 		}
 	}
 	return &mailinglist.GroupsioSyncApplyResult{
@@ -73,9 +89,10 @@ func convertSyncApplyAddPayload(adds []*mailinglist.GroupsioSyncDiffAdd) []model
 			continue
 		}
 		result = append(result, model.SyncDiffAdd{
-			Email:              a.Email,
-			CommitteeMemberUID: a.CommitteeMemberUID,
-			Name:               converter.StringVal(a.Name),
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: model.MemberType(a.MemberType),
+			Name:       converter.StringVal(a.Name),
 		})
 	}
 	return result
@@ -90,8 +107,9 @@ func convertSyncApplyRemovePayload(removes []*mailinglist.GroupsioSyncDiffRemove
 			continue
 		}
 		result = append(result, model.SyncDiffRemove{
-			Email:               r.Email,
-			MailingListMemberID: r.MailingListMemberID,
+			Email:      r.Email,
+			MemberID:   r.MemberID,
+			MemberType: model.MemberType(r.MemberType),
 		})
 	}
 	return result

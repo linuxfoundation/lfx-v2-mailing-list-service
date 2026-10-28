@@ -99,9 +99,9 @@ type UpdateGroupsioMailingListRequestBody struct {
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // request body.
 type ApplyGroupsioMailingListSyncDiffRequestBody struct {
-	// Committee members to add, as returned by sync-diff
+	// Members to add, as returned by sync-diff
 	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
-	// Mailing list members to remove, as returned by sync-diff
+	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
 }
 
@@ -390,10 +390,12 @@ type GetGroupsioMailingListSyncDiffResponseBody struct {
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Sync direction this diff was computed for
 	SyncMode string `form:"sync_mode" json:"sync_mode" xml:"sync_mode"`
-	// Committee members to add to the mailing list
+	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds" json:"adds" xml:"adds"`
-	// Mailing list members to remove
+	// Members to remove, to reconcile the target roster
 	Removes []*GroupsioSyncDiffRemoveResponseBody `form:"removes" json:"removes" xml:"removes"`
+	// Email collisions ITX could not resolve into an add or remove
+	Conflicts []*GroupsioSyncDiffConflictResponseBody `form:"conflicts" json:"conflicts" xml:"conflicts"`
 }
 
 // ApplyGroupsioMailingListSyncDiffResponseBody is the type of the
@@ -1329,35 +1331,51 @@ type GroupsioSubgroupResponseBody struct {
 // GroupsioSyncDiffAddResponseBody is used to define fields on response body
 // types.
 type GroupsioSyncDiffAddResponseBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID string `form:"committee_member_uid" json:"committee_member_uid" xml:"committee_member_uid"`
-	// Committee member's display name, when known
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
+	// Member's display name, when known
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncDiffRemoveResponseBody is used to define fields on response body
 // types.
 type GroupsioSyncDiffRemoveResponseBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// Mailing list member's ID
-	MailingListMemberID string `form:"mailing_list_member_id" json:"mailing_list_member_id" xml:"mailing_list_member_id"`
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
+}
+
+// GroupsioSyncDiffConflictResponseBody is used to define fields on response
+// body types.
+type GroupsioSyncDiffConflictResponseBody struct {
+	// Email as it appears on the committee roster
+	CommitteeEmail string `form:"committee_email" json:"committee_email" xml:"committee_email"`
+	// Email as it appears on the mailing list roster
+	MailingListEmail string `form:"mailing_list_email" json:"mailing_list_email" xml:"mailing_list_email"`
+	// Display name, when known
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncApplyAddResultResponseBody is used to define fields on response
 // body types.
 type GroupsioSyncApplyAddResultResponseBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID string `form:"committee_member_uid" json:"committee_member_uid" xml:"committee_member_uid"`
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
 	// What happened
 	Outcome string `form:"outcome" json:"outcome" xml:"outcome"`
-	// Committee member's display name, present only when outcome is 'invited' —
-	// not a resolved identity match, just the name already known from the
-	// committee roster
+	// Member's display name, present only when outcome is 'invited' — not a
+	// resolved identity match, just the name already known from the source roster
 	NameHint *string `form:"name_hint,omitempty" json:"name_hint,omitempty" xml:"name_hint,omitempty"`
 	// Failure detail, present only when outcome is 'failed'
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
@@ -1366,10 +1384,12 @@ type GroupsioSyncApplyAddResultResponseBody struct {
 // GroupsioSyncApplyRemoveResultResponseBody is used to define fields on
 // response body types.
 type GroupsioSyncApplyRemoveResultResponseBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email string `form:"email" json:"email" xml:"email"`
-	// Mailing list member's ID
-	MailingListMemberID string `form:"mailing_list_member_id" json:"mailing_list_member_id" xml:"mailing_list_member_id"`
+	// Member's ID in the roster identified by member_type
+	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	// Which roster member_id identifies
+	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
 	// What happened
 	Outcome string `form:"outcome" json:"outcome" xml:"outcome"`
 	// Failure detail, present only when outcome is 'failed'
@@ -1426,21 +1446,25 @@ type GroupsioArtifactUserResponseBody struct {
 // GroupsioSyncDiffAddRequestBody is used to define fields on request body
 // types.
 type GroupsioSyncDiffAddRequestBody struct {
-	// Committee member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// LFX v2 committee member UID
-	CommitteeMemberUID *string `form:"committee_member_uid,omitempty" json:"committee_member_uid,omitempty" xml:"committee_member_uid,omitempty"`
-	// Committee member's display name, when known
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
+	// Member's display name, when known
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 }
 
 // GroupsioSyncDiffRemoveRequestBody is used to define fields on request body
 // types.
 type GroupsioSyncDiffRemoveRequestBody struct {
-	// Mailing list member's email address
+	// Member's email address
 	Email *string `form:"email,omitempty" json:"email,omitempty" xml:"email,omitempty"`
-	// Mailing list member's ID
-	MailingListMemberID *string `form:"mailing_list_member_id,omitempty" json:"mailing_list_member_id,omitempty" xml:"mailing_list_member_id,omitempty"`
+	// Member's ID in the roster identified by member_type
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Which roster member_id identifies
+	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 }
 
 // NewListGroupsioServicesResponseBody builds the HTTP response body from the
@@ -1683,6 +1707,18 @@ func NewGetGroupsioMailingListSyncDiffResponseBody(res *mailinglist.GroupsioSync
 		}
 	} else {
 		body.Removes = []*GroupsioSyncDiffRemoveResponseBody{}
+	}
+	if res.Conflicts != nil {
+		body.Conflicts = make([]*GroupsioSyncDiffConflictResponseBody, len(res.Conflicts))
+		for i, val := range res.Conflicts {
+			if val == nil {
+				body.Conflicts[i] = nil
+				continue
+			}
+			body.Conflicts[i] = marshalMailinglistGroupsioSyncDiffConflictToGroupsioSyncDiffConflictResponseBody(val)
+		}
+	} else {
+		body.Conflicts = []*GroupsioSyncDiffConflictResponseBody{}
 	}
 	return body
 }
@@ -3231,11 +3267,19 @@ func ValidateGroupsioSyncDiffAddRequestBody(body *GroupsioSyncDiffAddRequestBody
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.CommitteeMemberUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("committee_member_uid", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
 	}
 	return
 }
@@ -3246,11 +3290,19 @@ func ValidateGroupsioSyncDiffRemoveRequestBody(body *GroupsioSyncDiffRemoveReque
 	if body.Email == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("email", "body"))
 	}
-	if body.MailingListMemberID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("mailing_list_member_id", "body"))
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.MemberType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_type", "body"))
 	}
 	if body.Email != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.email", *body.Email, goa.FormatEmail))
+	}
+	if body.MemberType != nil {
+		if !(*body.MemberType == "committee_member" || *body.MemberType == "mailing_list_member") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.member_type", *body.MemberType, []any{"committee_member", "mailing_list_member"}))
+		}
 	}
 	return
 }
