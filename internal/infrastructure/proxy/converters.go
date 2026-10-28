@@ -63,7 +63,11 @@ func fromWireSubgroup(w *subgroupWire) *model.GroupsIOMailingList {
 		UpdatedAt:      updatedAt,
 	}
 	if w.CommitteeID != "" {
-		ml.Committees = []model.Committee{{UID: w.CommitteeID}}
+		ml.Committees = []model.Committee{{
+			UID:                   w.CommitteeID,
+			AllowedVotingStatuses: w.CommitteeFilters,
+			SyncMode:              w.SyncMode,
+		}}
 	}
 	return ml
 }
@@ -79,6 +83,7 @@ func toWireSubgroupRequest(ml *model.GroupsIOMailingList) *subgroupRequestWire {
 	}
 	if len(ml.Committees) > 0 {
 		req.CommitteeID = ml.Committees[0].UID
+		req.SyncMode = ml.Committees[0].SyncMode
 	}
 	return req
 }

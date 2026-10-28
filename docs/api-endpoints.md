@@ -36,6 +36,8 @@ Base URL (local): `http://localhost:8080`
 | `DELETE` | `/groupsio/mailing-lists/{subgroup_id}` | JWT | Delete a mailing list |
 | `GET` | `/groupsio/mailing-lists/count?project_uid=<uuid>` | JWT | Get mailing list count for a project |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/member_count` | JWT | Get member count for a mailing list |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT (writer) | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` or `auto_ml_to_c`) |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply` | JWT (writer) | Apply an admin-approved subset of a sync-diff's adds/removes (`auto_c_to_ml` or `auto_ml_to_c`) |
 
 ### GroupsIO Members
 
@@ -174,6 +176,20 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists"
 ```
 
+**Create a mailing list with automatic committee membership sync:**
+
+`sync_mode` requires `committee_uid` to also be set, and must be one of `manual` (default),
+`auto_c_to_ml`, or `auto_ml_to_c`. ITX is the system of record for this value — it is proxied
+through on the wire, not persisted locally — and the sync-diff and sync-apply endpoints below use
+it to decide how to reconcile membership.
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"project_uid":"<uuid>","service_id":"<service-uuid>","committee_uid":"<committee-uuid>","name":"my-list","description":"My list","type":"private","audience_access":"member","sync_mode":"auto_c_to_ml"}' \
+  "$BASE/groupsio/mailing-lists"
+```
+
 **Update a mailing list:**
 ```bash
 curl -X PUT -H "Authorization: Bearer $TOKEN" \
@@ -187,6 +203,68 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" \
 curl -X DELETE -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists/<subgroup-id>"
 # 204 No Content
+```
+
+**Compute the sync-diff for a mailing list linked to a committee:**
+
+Supported for mailing lists configured with `sync_mode: auto_c_to_ml` or `auto_ml_to_c`.
+Delegates to ITX's sync-diff job (ITX computes and owns the reconciliation logic; this endpoint
+posts the job, polls it to completion, and translates the result) and returns members missing
+from the target roster (`adds`) and members who no longer belong on it (`removes`): for
+`auto_c_to_ml`, `adds` are committee members and `removes` are mailing-list members; for
+`auto_ml_to_c` it is the reverse. Each add/remove entry's `member_type` says which roster its
+`member_id` belongs to. `conflicts` lists email collisions between the two rosters that ITX could
+not confidently resolve into an add or remove. Returns `400 Bad Request` if the mailing list has
+no linked committee, or its `sync_mode` is `manual`. Returns `503 Service Unavailable` if the
+underlying ITX job fails or does not complete within the poll timeout.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff"
+```
+
+```json
+{
+  "mailing_list_id": "<subgroup-id>",
+  "committee_uid": "<committee-uuid>",
+  "sync_mode": "auto_c_to_ml",
+  "adds": [
+    {"email": "new-member@example.com", "member_id": "<committee-member-uuid>", "member_type": "committee_member"}
+  ],
+  "removes": [
+    {"email": "departed-member@example.com", "member_id": "<mailing-list-member-id>", "member_type": "mailing_list_member"}
+  ],
+  "conflicts": [
+    {"committee_email": "jane@old-co.example.com", "mailing_list_email": "jane@new-co.example.com", "name": "Jane Doe"}
+  ]
+}
+```
+
+**Apply an admin-approved subset of a sync-diff:**
+
+Takes the `adds`/`removes` an admin chose to apply from a prior sync-diff response and delegates
+to ITX's sync-apply job (this endpoint posts the job, polls it to completion, and translates the
+per-entry results). An entry ITX could not apply is reported as `failed` with ITX's error message
+rather than silently dropped. Same `sync_mode` and committee-link requirements as sync-diff.
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply"
+```
+
+```json
+{
+  "mailing_list_id": "<subgroup-id>",
+  "committee_uid": "<committee-uuid>",
+  "added": [
+    {"email": "new-member@example.com", "member_id": "<committee-member-uuid>", "member_type": "committee_member", "outcome": "added"}
+  ],
+  "removed": [
+    {"email": "departed-member@example.com", "member_id": "<mailing-list-member-id>", "member_type": "mailing_list_member", "outcome": "removed"}
+  ]
+}
 ```
 
 ### GroupsIO Members

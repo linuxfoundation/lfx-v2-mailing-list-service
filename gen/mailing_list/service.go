@@ -49,6 +49,13 @@ type Service interface {
 	GetGroupsioMailingListCount(context.Context, *GetGroupsioMailingListCountPayload) (res *GroupsioCount, err error)
 	// Get count of members in a GroupsIO subgroup
 	GetGroupsioMailingListMemberCount(context.Context, *GetGroupsioMailingListMemberCountPayload) (res *GroupsioCount, err error)
+	// Compute the membership reconciliation diff between a GroupsIO subgroup and
+	// its linked committee
+	GetGroupsioMailingListSyncDiff(context.Context, *GetGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncDiff, err error)
+	// Apply an admin-approved subset of a previously computed sync-diff: add
+	// resolved committee members and remove members who dropped off the linked
+	// committee
+	ApplyGroupsioMailingListSyncDiff(context.Context, *ApplyGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncApplyResult, err error)
 	// List members of a GroupsIO subgroup
 	ListGroupsioMembers(context.Context, *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error)
 	// Add a member to a GroupsIO subgroup
@@ -89,7 +96,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [25]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
+var MethodNames = [27]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "apply-groupsio-mailing-list-sync-diff", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -112,6 +119,19 @@ type AddGroupsioMemberPayload struct {
 	Organization *string
 	// Member job title
 	JobTitle *string
+}
+
+// ApplyGroupsioMailingListSyncDiffPayload is the payload type of the
+// mailing-list service apply-groupsio-mailing-list-sync-diff method.
+type ApplyGroupsioMailingListSyncDiffPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+	// Members to add, as returned by sync-diff
+	Adds []*GroupsioSyncDiffAdd
+	// Members to remove, as returned by sync-diff
+	Removes []*GroupsioSyncDiffRemove
 }
 
 // CheckGroupsioSubscriberPayload is the payload type of the mailing-list
@@ -146,6 +166,9 @@ type CreateGroupsioMailingListPayload struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string
 }
 
 // CreateGroupsioServicePayload is the payload type of the mailing-list service
@@ -248,6 +271,15 @@ type GetGroupsioMailingListMemberCountPayload struct {
 // GetGroupsioMailingListPayload is the payload type of the mailing-list
 // service get-groupsio-mailing-list method.
 type GetGroupsioMailingListPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+}
+
+// GetGroupsioMailingListSyncDiffPayload is the payload type of the
+// mailing-list service get-groupsio-mailing-list-sync-diff method.
+type GetGroupsioMailingListSyncDiffPayload struct {
 	// JWT token issued by Heimdall
 	BearerToken *string
 	// Subgroup ID
@@ -465,6 +497,9 @@ type GroupsioSubgroup struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Only meaningful when committee_uid is set.
+	SyncMode *string
 	// Creation timestamp
 	CreatedAt *string
 	// Last update timestamp
@@ -478,6 +513,99 @@ type GroupsioSubgroupList struct {
 	Items []*GroupsioSubgroup
 	// Total count
 	Total *int
+}
+
+// Outcome of applying one approved add
+type GroupsioSyncApplyAddResult struct {
+	// Member's email address
+	Email string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
+	// What happened
+	Outcome string
+	// Member's display name, present only when outcome is 'invited' — not a
+	// resolved identity match, just the name already known from the source roster
+	NameHint *string
+	// Failure detail, present only when outcome is 'failed'
+	Error *string
+}
+
+// Outcome of applying one approved remove
+type GroupsioSyncApplyRemoveResult struct {
+	// Member's email address
+	Email string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
+	// What happened
+	Outcome string
+	// Failure detail, present only when outcome is 'failed'
+	Error *string
+}
+
+// GroupsioSyncApplyResult is the result type of the mailing-list service
+// apply-groupsio-mailing-list-sync-diff method.
+type GroupsioSyncApplyResult struct {
+	// Mailing list (subgroup) ID
+	MailingListID string
+	// LFX v2 committee UID
+	CommitteeUID string
+	// Outcome of each approved add
+	Added []*GroupsioSyncApplyAddResult
+	// Outcome of each approved remove
+	Removed []*GroupsioSyncApplyRemoveResult
+}
+
+// GroupsioSyncDiff is the result type of the mailing-list service
+// get-groupsio-mailing-list-sync-diff method.
+type GroupsioSyncDiff struct {
+	// Mailing list (subgroup) ID
+	MailingListID string
+	// LFX v2 committee UID
+	CommitteeUID string
+	// Sync direction this diff was computed for
+	SyncMode string
+	// Members to add, to reconcile the target roster
+	Adds []*GroupsioSyncDiffAdd
+	// Members to remove, to reconcile the target roster
+	Removes []*GroupsioSyncDiffRemove
+	// Email collisions ITX could not resolve into an add or remove
+	Conflicts []*GroupsioSyncDiffConflict
+}
+
+// A member missing from the target roster, who should be added to reconcile it
+type GroupsioSyncDiffAdd struct {
+	// Member's email address
+	Email string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
+	// Member's display name, when known
+	Name *string
+}
+
+// An email collision between the committee roster and the mailing list roster
+type GroupsioSyncDiffConflict struct {
+	// Email as it appears on the committee roster
+	CommitteeEmail string
+	// Email as it appears on the mailing list roster
+	MailingListEmail string
+	// Display name, when known
+	Name *string
+}
+
+// A member who should be removed from the roster member_type identifies
+type GroupsioSyncDiffRemove struct {
+	// Member's email address
+	Email string
+	// Member's ID in the roster identified by member_type
+	MemberID string
+	// Which roster member_id identifies
+	MemberType string
 }
 
 // InviteGroupsioMembersPayload is the payload type of the mailing-list service
@@ -543,6 +671,9 @@ type UpdateGroupsioMailingListPayload struct {
 	Type *string
 	// Audience access setting
 	AudienceAccess *string
+	// Automatic membership sync direction between the committee and this mailing
+	// list. Requires committee_uid to be set.
+	SyncMode *string
 }
 
 // UpdateGroupsioMemberPayload is the payload type of the mailing-list service

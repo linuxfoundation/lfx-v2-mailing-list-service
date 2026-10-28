@@ -32,6 +32,8 @@ type Client struct {
 	DeleteGroupsioMailingListEndpoint         goa.Endpoint
 	GetGroupsioMailingListCountEndpoint       goa.Endpoint
 	GetGroupsioMailingListMemberCountEndpoint goa.Endpoint
+	GetGroupsioMailingListSyncDiffEndpoint    goa.Endpoint
+	ApplyGroupsioMailingListSyncDiffEndpoint  goa.Endpoint
 	ListGroupsioMembersEndpoint               goa.Endpoint
 	AddGroupsioMemberEndpoint                 goa.Endpoint
 	GetGroupsioMemberEndpoint                 goa.Endpoint
@@ -44,7 +46,7 @@ type Client struct {
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, getGroupsioMailingListSyncDiff, applyGroupsioMailingListSyncDiff, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                             livez,
 		ReadyzEndpoint:                            readyz,
@@ -62,6 +64,8 @@ func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGr
 		DeleteGroupsioMailingListEndpoint:         deleteGroupsioMailingList,
 		GetGroupsioMailingListCountEndpoint:       getGroupsioMailingListCount,
 		GetGroupsioMailingListMemberCountEndpoint: getGroupsioMailingListMemberCount,
+		GetGroupsioMailingListSyncDiffEndpoint:    getGroupsioMailingListSyncDiff,
+		ApplyGroupsioMailingListSyncDiffEndpoint:  applyGroupsioMailingListSyncDiff,
 		ListGroupsioMembersEndpoint:               listGroupsioMembers,
 		AddGroupsioMemberEndpoint:                 addGroupsioMember,
 		GetGroupsioMemberEndpoint:                 getGroupsioMember,
@@ -316,6 +320,41 @@ func (c *Client) GetGroupsioMailingListMemberCount(ctx context.Context, p *GetGr
 		return
 	}
 	return ires.(*GroupsioCount), nil
+}
+
+// GetGroupsioMailingListSyncDiff calls the
+// "get-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list" service.
+// GetGroupsioMailingListSyncDiff may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
+//   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-diff
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioMailingListSyncDiff(ctx context.Context, p *GetGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncDiff, err error) {
+	var ires any
+	ires, err = c.GetGroupsioMailingListSyncDiffEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncDiff), nil
+}
+
+// ApplyGroupsioMailingListSyncDiff calls the
+// "apply-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list"
+// service.
+// ApplyGroupsioMailingListSyncDiff may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
+//   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-apply
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p *ApplyGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncApplyResult, err error) {
+	var ires any
+	ires, err = c.ApplyGroupsioMailingListSyncDiffEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncApplyResult), nil
 }
 
 // ListGroupsioMembers calls the "list-groupsio-members" endpoint of the

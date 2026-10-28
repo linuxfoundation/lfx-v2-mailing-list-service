@@ -45,6 +45,10 @@ type stubMLWriter struct {
 	createErr  error
 	updateErr  error
 	deleteErr  error
+	// onUpdate, when set, is invoked during UpdateMailingList — used to simulate a concurrent
+	// write landing in the window between the orchestrator's pre-mutation snapshot and this
+	// call returning.
+	onUpdate func()
 }
 
 func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
@@ -55,6 +59,9 @@ func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMa
 }
 
 func (w *stubMLWriter) UpdateMailingList(_ context.Context, _ string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	if w.onUpdate != nil {
+		w.onUpdate()
+	}
 	if w.updateResp != nil {
 		return w.updateResp, w.updateErr
 	}
@@ -67,14 +74,23 @@ var _ port.GroupsIOMailingListWriter = (*stubMLWriter)(nil)
 
 // stubMLReader always returns the configured ml/err from GetMailingList.
 // listMLs/listErr control ListMailingLists responses for the count check.
+// mlOnSecondCall, if set, is returned starting from the second GetMailingList call instead of ml —
+// lets a test simulate the mailing list's committee link changing between an orchestrator's
+// initial read and a later re-read (e.g. after an async ITX job completes).
 type stubMLReader struct {
-	ml      *model.GroupsIOMailingList
-	err     error
-	listMLs []*model.GroupsIOMailingList
-	listErr error
+	ml             *model.GroupsIOMailingList
+	err            error
+	mlOnSecondCall *model.GroupsIOMailingList
+	calls          int
+	listMLs        []*model.GroupsIOMailingList
+	listErr        error
 }
 
 func (r *stubMLReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
+	r.calls++
+	if r.calls > 1 && r.mlOnSecondCall != nil {
+		return r.mlOnSecondCall, r.err
+	}
 	return r.ml, r.err
 }
 func (r *stubMLReader) ListMailingLists(_ context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
@@ -220,31 +236,35 @@ func TestPublishCommitteeMailingListChanged_ValidUID_PublishesFalse(t *testing.T
 
 // ---- fetchCommitteeUID ----
 
-func TestFetchCommitteeUID_NilReader_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_NilReader_ReturnsEmptyNotOK(t *testing.T) {
 	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_ReaderError_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_ReaderError_ReturnsEmptyNotOK(t *testing.T) {
 	reader := &stubMLReader{err: errors.New("not found")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_NoCommittees_ReturnsEmpty(t *testing.T) {
+func TestFetchCommitteeUID_NoCommittees_ReturnsEmptyOK(t *testing.T) {
 	reader := &stubMLReader{ml: &model.GroupsIOMailingList{}}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
+	assert.True(t, ok)
 }
 
 func TestFetchCommitteeUID_WithCommittee_ReturnsUID(t *testing.T) {
 	reader := &stubMLReader{ml: mlWith("committee-abc")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Equal(t, "committee-abc", uid)
+	assert.True(t, ok)
 }
 
 // ---- CreateMailingList ----
@@ -673,4 +693,43 @@ func TestUpdateMailingList_CrossProjectCommittee_ReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.IsType(t, errs.Validation{}, err)
 	assert.Empty(t, spy.calls, "no event published on validation failure")
+}
+
+// ---- sync_mode validation ----
+
+func TestValidateCommitteeProject_SyncModeWithoutCommitteeUID_ReturnsValidationError(t *testing.T) {
+	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{SyncMode: "auto_c_to_ml"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_InvalidSyncMode_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: "bogus"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_ValidSyncMode_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
 }

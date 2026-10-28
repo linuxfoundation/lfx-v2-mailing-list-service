@@ -112,6 +112,7 @@ func (o *GroupsIOMailingListReaderOrchestrator) translateMailingListResponse(ctx
 		}
 		ml.Committees[0].UID = v2UID
 	}
+
 	return nil
 }
 

@@ -77,8 +77,17 @@ func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) Mailin
 // required dependencies are not configured. On success it sets ml.ProjectUID from the
 // authoritative service record.
 func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.Context, ml *model.GroupsIOMailingList) error {
-	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+	if len(ml.Committees) == 0 {
 		return nil
+	}
+	if ml.Committees[0].UID == "" {
+		if ml.Committees[0].SyncMode != "" {
+			return errs.NewValidation("sync_mode requires committee_uid")
+		}
+		return nil
+	}
+	if syncMode := ml.Committees[0].SyncMode; syncMode != "" && !isValidSyncMode(syncMode) {
+		return errs.NewValidation("invalid sync_mode")
 	}
 	if o.serviceReader == nil || o.committeeProjectLookup == nil {
 		return errs.NewServiceUnavailable("committee project validation is not configured")
@@ -156,8 +165,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	// Snapshot the current committee association before the update so we can detect changes.
-	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
+	oldCUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
 
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
@@ -188,8 +196,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 // that a mailing list was removed. Only publishes has_mailing_list=false if no other
 // mailing lists reference the committee.
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	// Fetch current state before delete so we know which committee to notify.
-	cUID := o.fetchCommitteeUID(ctx, mailingListID)
+	cUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
 		return err
@@ -241,19 +248,21 @@ func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx
 	}
 }
 
-// fetchCommitteeUID reads the current committee UID for a mailing list.
-// Returns "" if the reader is not configured or the fetch fails (non-fatal).
-func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) string {
+// fetchCommitteeUID reads the current committee UID for a mailing list. ok is false when the
+// reader is unavailable or the read failed — callers that treat "" as "no committee" (safe to
+// no-op on) must not treat a failed read the same way when "" vs "unknown" changes behavior,
+// e.g. cleanupStaleSyncMode's live-association re-check.
+func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) (string, bool) {
 	if o.reader == nil {
-		return ""
+		return "", false
 	}
 	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to fetch mailing list before mutation — committee event may be skipped",
+		slog.WarnContext(ctx, "failed to fetch mailing list for committee UID lookup — committee event may be skipped",
 			"mailing_list_id", mailingListID, "error", err)
-		return ""
+		return "", false
 	}
-	return committeeUID(ml)
+	return committeeUID(ml), true
 }
 
 // committeeHasRemainingMailingLists checks whether the committee still has other mailing lists
@@ -283,6 +292,16 @@ func committeeUID(ml *model.GroupsIOMailingList) string {
 		return ml.Committees[0].UID
 	}
 	return ""
+}
+
+// isValidSyncMode reports whether syncMode is one of model.ValidSyncModes.
+func isValidSyncMode(syncMode string) bool {
+	for _, valid := range model.ValidSyncModes {
+		if syncMode == valid {
+			return true
+		}
+	}
+	return false
 }
 
 // ---- ID mapping helpers ----

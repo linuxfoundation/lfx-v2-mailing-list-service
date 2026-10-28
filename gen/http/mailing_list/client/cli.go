@@ -245,7 +245,7 @@ func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"type\": \"Distinctio totam vero.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Distinctio totam vero.\"\n   }'")
 		}
 	}
 	var bearerToken *string
@@ -263,6 +263,7 @@ func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListB
 		Description:    body.Description,
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
+		SyncMode:       body.SyncMode,
 	}
 	v.BearerToken = bearerToken
 
@@ -297,13 +298,18 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }'")
 		}
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 		}
 		if body.CommitteeUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+		}
+		if body.SyncMode != nil {
+			if !(*body.SyncMode == "manual" || *body.SyncMode == "auto_c_to_ml" || *body.SyncMode == "auto_ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.sync_mode", *body.SyncMode, []any{"manual", "auto_c_to_ml", "auto_ml_to_c"}))
+			}
 		}
 		if err != nil {
 			return nil, err
@@ -328,6 +334,7 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 		Description:    body.Description,
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
+		SyncMode:       body.SyncMode,
 	}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
@@ -394,6 +401,101 @@ func BuildGetGroupsioMailingListMemberCountPayload(mailingListGetGroupsioMailing
 		}
 	}
 	v := &mailinglist.GetGroupsioMailingListMemberCountPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildGetGroupsioMailingListSyncDiffPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-sync-diff endpoint from CLI flags.
+func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingListSyncDiffSubgroupID string, mailingListGetGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+	var subgroupID string
+	{
+		subgroupID = mailingListGetGroupsioMailingListSyncDiffSubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGroupsioMailingListSyncDiffBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListSyncDiffBearerToken
+		}
+	}
+	v := &mailinglist.GetGroupsioMailingListSyncDiffPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildApplyGroupsioMailingListSyncDiffPayload builds the payload for the
+// mailing-list apply-groupsio-mailing-list-sync-diff endpoint from CLI flags.
+func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailingListSyncDiffBody string, mailingListApplyGroupsioMailingListSyncDiffSubgroupID string, mailingListApplyGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.ApplyGroupsioMailingListSyncDiffPayload, error) {
+	var err error
+	var body ApplyGroupsioMailingListSyncDiffRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListApplyGroupsioMailingListSyncDiffBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
+		}
+		if body.Adds == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
+		}
+		if body.Removes == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+		}
+		for _, e := range body.Adds {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffAddRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Removes {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffRemoveRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var subgroupID string
+	{
+		subgroupID = mailingListApplyGroupsioMailingListSyncDiffSubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListApplyGroupsioMailingListSyncDiffBearerToken != "" {
+			bearerToken = &mailingListApplyGroupsioMailingListSyncDiffBearerToken
+		}
+	}
+	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{}
+	if body.Adds != nil {
+		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
+		for i, val := range body.Adds {
+			if val == nil {
+				v.Adds[i] = nil
+				continue
+			}
+			v.Adds[i] = marshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(val)
+		}
+	} else {
+		v.Adds = []*mailinglist.GroupsioSyncDiffAdd{}
+	}
+	if body.Removes != nil {
+		v.Removes = make([]*mailinglist.GroupsioSyncDiffRemove, len(body.Removes))
+		for i, val := range body.Removes {
+			if val == nil {
+				v.Removes[i] = nil
+				continue
+			}
+			v.Removes[i] = marshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(val)
+		}
+	} else {
+		v.Removes = []*mailinglist.GroupsioSyncDiffRemove{}
+	}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
 

@@ -106,6 +106,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -117,6 +118,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -128,6 +130,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
@@ -139,6 +142,7 @@ paths:
                                       name: Ab et totam sapiente voluptatem ea.
                                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       service_id: Sint illo ea doloribus.
+                                      sync_mode: manual
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                 total: 2885963747865388981
@@ -189,6 +193,7 @@ paths:
                             name: Totam aut voluptas architecto eum cupiditate et.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             service_id: Autem tempora at architecto consectetur voluptatum ullam.
+                            sync_mode: manual
                             type: Distinctio totam vero.
             responses:
                 "201":
@@ -207,6 +212,7 @@ paths:
                                 name: Enim cumque maiores expedita perspiciatis.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Ea officia molestiae quis molestiae at.
+                                sync_mode: manual
                                 type: Aliquam inventore corporis et.
                                 updated_at: Amet voluptas.
                 "400":
@@ -322,6 +328,7 @@ paths:
                                 name: Quasi architecto sit quo.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Facilis sit ut maxime laboriosam animi.
+                                sync_mode: manual
                                 type: Velit illo voluptatem consequatur rerum.
                                 updated_at: Aut officiis fuga.
                 "404":
@@ -381,6 +388,7 @@ paths:
                             name: Sunt optio.
                             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             service_id: Qui aut sunt modi.
+                            sync_mode: manual
                             type: Blanditiis occaecati impedit.
             responses:
                 "200":
@@ -399,6 +407,7 @@ paths:
                                 name: Est voluptates quo exercitationem.
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 service_id: Iste et dolor dolor nulla.
+                                sync_mode: manual
                                 type: Dignissimos deserunt qui qui.
                                 updated_at: Sed sit corporis harum.
                 "400":
@@ -1146,6 +1155,210 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-apply:
+        post:
+            tags:
+                - mailing-list
+            summary: apply-groupsio-mailing-list-sync-diff mailing-list
+            description: 'Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee'
+            operationId: mailing-list#apply-groupsio-mailing-list-sync-diff
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Commodi ea ut reprehenderit blanditiis.
+                  example: Eum et ut.
+            requestBody:
+                description: Request body for apply-groupsio-mailing-list-sync-diff.
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ApplyGroupsioMailingListSyncDiffRequestBody'
+                        example:
+                            adds:
+                                - email: jane_metz@olson.info
+                                  member_id: Rerum sequi fuga consequatur.
+                                  member_type: committee_member
+                                  name: Debitis neque labore autem.
+                                - email: jane_metz@olson.info
+                                  member_id: Rerum sequi fuga consequatur.
+                                  member_type: committee_member
+                                  name: Debitis neque labore autem.
+                                - email: jane_metz@olson.info
+                                  member_id: Rerum sequi fuga consequatur.
+                                  member_type: committee_member
+                                  name: Debitis neque labore autem.
+                            removes:
+                                - email: cory.dubuque@haag.net
+                                  member_id: Error rem tenetur.
+                                  member_type: mailing_list_member
+                                - email: cory.dubuque@haag.net
+                                  member_id: Error rem tenetur.
+                                  member_type: mailing_list_member
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSyncApplyResult'
+                            example:
+                                added:
+                                    - email: susie.lubowitz@graham.net
+                                      error: Libero expedita assumenda voluptas omnis et.
+                                      member_id: Aut non laudantium laborum natus vitae in.
+                                      member_type: committee_member
+                                      name_hint: Pariatur adipisci eveniet.
+                                      outcome: failed
+                                    - email: susie.lubowitz@graham.net
+                                      error: Libero expedita assumenda voluptas omnis et.
+                                      member_id: Aut non laudantium laborum natus vitae in.
+                                      member_type: committee_member
+                                      name_hint: Pariatur adipisci eveniet.
+                                      outcome: failed
+                                committee_uid: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
+                                mailing_list_id: Distinctio consectetur soluta quia est omnis.
+                                removed:
+                                    - email: irma.rolfson@quigley.net
+                                      error: Sit id optio.
+                                      member_id: Modi mollitia cum voluptatem.
+                                      member_type: mailing_list_member
+                                      outcome: removed
+                                    - email: irma.rolfson@quigley.net
+                                      error: Sit id optio.
+                                      member_id: Modi mollitia cum voluptatem.
+                                      member_type: mailing_list_member
+                                      outcome: removed
+                "400":
+                    description: 'BadRequest: Subgroup has no linked committee, or its sync_mode does not support sync-apply'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Subgroup or linked committee not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-diff:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-sync-diff mailing-list
+            description: Compute the membership reconciliation diff between a GroupsIO subgroup and its linked committee
+            operationId: mailing-list#get-groupsio-mailing-list-sync-diff
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Subgroup ID
+                    example: Est nemo at minima reprehenderit laudantium.
+                  example: Enim est et voluptatem non nobis.
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupsioSyncDiff'
+                            example:
+                                adds:
+                                    - email: fannie.wuckert@lockman.biz
+                                      member_id: Cumque quisquam omnis dolore.
+                                      member_type: committee_member
+                                      name: Corrupti tempore optio animi corrupti.
+                                    - email: fannie.wuckert@lockman.biz
+                                      member_id: Cumque quisquam omnis dolore.
+                                      member_type: committee_member
+                                      name: Corrupti tempore optio animi corrupti.
+                                committee_uid: e3ae8475-1077-414c-a576-249778ae6d10
+                                conflicts:
+                                    - committee_email: kacey@quitzon.org
+                                      mailing_list_email: percy@boscomuller.info
+                                      name: Est eum quisquam officiis numquam.
+                                    - committee_email: kacey@quitzon.org
+                                      mailing_list_email: percy@boscomuller.info
+                                      name: Est eum quisquam officiis numquam.
+                                mailing_list_id: Culpa dolores.
+                                removes:
+                                    - email: dax_heaney@sporer.net
+                                      member_id: Ut cum quam nemo tenetur rerum sed.
+                                      member_type: mailing_list_member
+                                    - email: dax_heaney@sporer.net
+                                      member_id: Ut cum quam nemo tenetur rerum sed.
+                                      member_type: mailing_list_member
+                                    - email: dax_heaney@sporer.net
+                                      member_id: Ut cum quam nemo tenetur rerum sed.
+                                      member_type: mailing_list_member
+                                    - email: dax_heaney@sporer.net
+                                      member_id: Ut cum quam nemo tenetur rerum sed.
+                                      member_type: mailing_list_member
+                                sync_mode: auto_c_to_ml
+                "400":
+                    description: 'BadRequest: Subgroup has no linked committee, or its sync_mode does not support sync-diff'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
+                "404":
+                    description: 'NotFound: Subgroup or linked committee not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                message: The resource was not found.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                message: An internal server error occurred.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                message: The service is unavailable.
+            security:
+                - jwt_header_Authorization: []
     /groupsio/mailing-lists/count:
         get:
             tags:
@@ -1743,6 +1956,64 @@ components:
                 mod_status: owner
                 name: Odit et nemo rem aliquid vel sed.
                 organization: Qui itaque.
+        ApplyGroupsioMailingListSyncDiffRequestBody:
+            type: object
+            properties:
+                adds:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncDiffAdd'
+                    description: Members to add, as returned by sync-diff
+                    example:
+                        - email: jane_metz@olson.info
+                          member_id: Rerum sequi fuga consequatur.
+                          member_type: committee_member
+                          name: Debitis neque labore autem.
+                        - email: jane_metz@olson.info
+                          member_id: Rerum sequi fuga consequatur.
+                          member_type: committee_member
+                          name: Debitis neque labore autem.
+                        - email: jane_metz@olson.info
+                          member_id: Rerum sequi fuga consequatur.
+                          member_type: committee_member
+                          name: Debitis neque labore autem.
+                removes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncDiffRemove'
+                    description: Members to remove, as returned by sync-diff
+                    example:
+                        - email: cory.dubuque@haag.net
+                          member_id: Error rem tenetur.
+                          member_type: mailing_list_member
+                        - email: cory.dubuque@haag.net
+                          member_id: Error rem tenetur.
+                          member_type: mailing_list_member
+            description: Request body for apply-groupsio-mailing-list-sync-diff.
+            example:
+                adds:
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
+                      name: Debitis neque labore autem.
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
+                      name: Debitis neque labore autem.
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
+                      name: Debitis neque labore autem.
+                removes:
+                    - email: cory.dubuque@haag.net
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
+                    - email: cory.dubuque@haag.net
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
+            required:
+                - adds
+                - removes
         BadRequestError:
             type: object
             properties:
@@ -1820,6 +2091,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Autem tempora at architecto consectetur voluptatum ullam.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -1833,6 +2112,7 @@ components:
                 name: Totam aut voluptas architecto eum cupiditate et.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Autem tempora at architecto consectetur voluptatum ullam.
+                sync_mode: manual
                 type: Distinctio totam vero.
         CreateGroupsioServiceRequestBody:
             type: object
@@ -2463,6 +2743,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Sint illo ea doloribus.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Only meaningful when committee_uid is set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -2482,6 +2770,7 @@ components:
                 name: Ab et totam sapiente voluptatem ea.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Sint illo ea doloribus.
+                sync_mode: manual
                 type: Rerum et quasi perspiciatis.
                 updated_at: Dolores odit et velit.
         GroupsioSubgroupList:
@@ -2502,6 +2791,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2513,6 +2803,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2524,6 +2815,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
@@ -2535,6 +2827,7 @@ components:
                           name: Ab et totam sapiente voluptatem ea.
                           project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           service_id: Sint illo ea doloribus.
+                          sync_mode: manual
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                 total:
@@ -2554,6 +2847,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2565,6 +2859,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2576,6 +2871,7 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
@@ -2587,9 +2883,370 @@ components:
                       name: Ab et totam sapiente voluptatem ea.
                       project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       service_id: Sint illo ea doloribus.
+                      sync_mode: manual
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                 total: 2885963747865388981
+        GroupsioSyncApplyAddResult:
+            type: object
+            properties:
+                email:
+                    type: string
+                    description: Member's email address
+                    example: susie.lubowitz@graham.net
+                    format: email
+                error:
+                    type: string
+                    description: Failure detail, present only when outcome is 'failed'
+                    example: Libero expedita assumenda voluptas omnis et.
+                member_id:
+                    type: string
+                    description: Member's ID in the roster identified by member_type
+                    example: Aut non laudantium laborum natus vitae in.
+                member_type:
+                    type: string
+                    description: Which roster member_id identifies
+                    example: committee_member
+                    enum:
+                        - committee_member
+                        - mailing_list_member
+                name_hint:
+                    type: string
+                    description: Member's display name, present only when outcome is 'invited' — not a resolved identity match, just the name already known from the source roster
+                    example: Pariatur adipisci eveniet.
+                outcome:
+                    type: string
+                    description: What happened
+                    example: failed
+                    enum:
+                        - added
+                        - invited
+                        - failed
+            description: Outcome of applying one approved add
+            example:
+                email: susie.lubowitz@graham.net
+                error: Libero expedita assumenda voluptas omnis et.
+                member_id: Aut non laudantium laborum natus vitae in.
+                member_type: committee_member
+                name_hint: Pariatur adipisci eveniet.
+                outcome: failed
+            required:
+                - email
+                - member_id
+                - member_type
+                - outcome
+        GroupsioSyncApplyRemoveResult:
+            type: object
+            properties:
+                email:
+                    type: string
+                    description: Member's email address
+                    example: irma.rolfson@quigley.net
+                    format: email
+                error:
+                    type: string
+                    description: Failure detail, present only when outcome is 'failed'
+                    example: Sit id optio.
+                member_id:
+                    type: string
+                    description: Member's ID in the roster identified by member_type
+                    example: Modi mollitia cum voluptatem.
+                member_type:
+                    type: string
+                    description: Which roster member_id identifies
+                    example: mailing_list_member
+                    enum:
+                        - committee_member
+                        - mailing_list_member
+                outcome:
+                    type: string
+                    description: What happened
+                    example: removed
+                    enum:
+                        - removed
+                        - skipped_cross_list
+                        - failed
+            description: Outcome of applying one approved remove
+            example:
+                email: irma.rolfson@quigley.net
+                error: Sit id optio.
+                member_id: Modi mollitia cum voluptatem.
+                member_type: mailing_list_member
+                outcome: removed
+            required:
+                - email
+                - member_id
+                - member_type
+                - outcome
+        GroupsioSyncApplyResult:
+            type: object
+            properties:
+                added:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncApplyAddResult'
+                    description: Outcome of each approved add
+                    example:
+                        - email: susie.lubowitz@graham.net
+                          error: Libero expedita assumenda voluptas omnis et.
+                          member_id: Aut non laudantium laborum natus vitae in.
+                          member_type: committee_member
+                          name_hint: Pariatur adipisci eveniet.
+                          outcome: failed
+                        - email: susie.lubowitz@graham.net
+                          error: Libero expedita assumenda voluptas omnis et.
+                          member_id: Aut non laudantium laborum natus vitae in.
+                          member_type: committee_member
+                          name_hint: Pariatur adipisci eveniet.
+                          outcome: failed
+                committee_uid:
+                    type: string
+                    description: LFX v2 committee UID
+                    example: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
+                    format: uuid
+                mailing_list_id:
+                    type: string
+                    description: Mailing list (subgroup) ID
+                    example: Distinctio consectetur soluta quia est omnis.
+                removed:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncApplyRemoveResult'
+                    description: Outcome of each approved remove
+                    example:
+                        - email: irma.rolfson@quigley.net
+                          error: Sit id optio.
+                          member_id: Modi mollitia cum voluptatem.
+                          member_type: mailing_list_member
+                          outcome: removed
+                        - email: irma.rolfson@quigley.net
+                          error: Sit id optio.
+                          member_id: Modi mollitia cum voluptatem.
+                          member_type: mailing_list_member
+                          outcome: removed
+            description: Result of applying an admin-approved subset of a sync-diff
+            example:
+                added:
+                    - email: susie.lubowitz@graham.net
+                      error: Libero expedita assumenda voluptas omnis et.
+                      member_id: Aut non laudantium laborum natus vitae in.
+                      member_type: committee_member
+                      name_hint: Pariatur adipisci eveniet.
+                      outcome: failed
+                    - email: susie.lubowitz@graham.net
+                      error: Libero expedita assumenda voluptas omnis et.
+                      member_id: Aut non laudantium laborum natus vitae in.
+                      member_type: committee_member
+                      name_hint: Pariatur adipisci eveniet.
+                      outcome: failed
+                committee_uid: 0bf3d37c-5b42-44b7-8c5c-96116425cda3
+                mailing_list_id: Distinctio consectetur soluta quia est omnis.
+                removed:
+                    - email: irma.rolfson@quigley.net
+                      error: Sit id optio.
+                      member_id: Modi mollitia cum voluptatem.
+                      member_type: mailing_list_member
+                      outcome: removed
+                    - email: irma.rolfson@quigley.net
+                      error: Sit id optio.
+                      member_id: Modi mollitia cum voluptatem.
+                      member_type: mailing_list_member
+                      outcome: removed
+            required:
+                - mailing_list_id
+                - committee_uid
+                - added
+                - removed
+        GroupsioSyncDiff:
+            type: object
+            properties:
+                adds:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncDiffAdd'
+                    description: Members to add, to reconcile the target roster
+                    example:
+                        - email: fannie.wuckert@lockman.biz
+                          member_id: Cumque quisquam omnis dolore.
+                          member_type: committee_member
+                          name: Corrupti tempore optio animi corrupti.
+                        - email: fannie.wuckert@lockman.biz
+                          member_id: Cumque quisquam omnis dolore.
+                          member_type: committee_member
+                          name: Corrupti tempore optio animi corrupti.
+                committee_uid:
+                    type: string
+                    description: LFX v2 committee UID
+                    example: e3ae8475-1077-414c-a576-249778ae6d10
+                    format: uuid
+                conflicts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncDiffConflict'
+                    description: Email collisions ITX could not resolve into an add or remove
+                    example:
+                        - committee_email: kacey@quitzon.org
+                          mailing_list_email: percy@boscomuller.info
+                          name: Est eum quisquam officiis numquam.
+                        - committee_email: kacey@quitzon.org
+                          mailing_list_email: percy@boscomuller.info
+                          name: Est eum quisquam officiis numquam.
+                mailing_list_id:
+                    type: string
+                    description: Mailing list (subgroup) ID
+                    example: Culpa dolores.
+                removes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupsioSyncDiffRemove'
+                    description: Members to remove, to reconcile the target roster
+                    example:
+                        - email: dax_heaney@sporer.net
+                          member_id: Ut cum quam nemo tenetur rerum sed.
+                          member_type: mailing_list_member
+                        - email: dax_heaney@sporer.net
+                          member_id: Ut cum quam nemo tenetur rerum sed.
+                          member_type: mailing_list_member
+                        - email: dax_heaney@sporer.net
+                          member_id: Ut cum quam nemo tenetur rerum sed.
+                          member_type: mailing_list_member
+                        - email: dax_heaney@sporer.net
+                          member_id: Ut cum quam nemo tenetur rerum sed.
+                          member_type: mailing_list_member
+                sync_mode:
+                    type: string
+                    description: Sync direction this diff was computed for
+                    example: auto_c_to_ml
+                    enum:
+                        - auto_c_to_ml
+                        - auto_ml_to_c
+            description: Membership reconciliation diff between a mailing list and its linked committee
+            example:
+                adds:
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
+                      name: Corrupti tempore optio animi corrupti.
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
+                      name: Corrupti tempore optio animi corrupti.
+                committee_uid: e3ae8475-1077-414c-a576-249778ae6d10
+                conflicts:
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                mailing_list_id: Culpa dolores.
+                removes:
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                sync_mode: auto_c_to_ml
+            required:
+                - mailing_list_id
+                - committee_uid
+                - sync_mode
+                - adds
+                - removes
+                - conflicts
+        GroupsioSyncDiffAdd:
+            type: object
+            properties:
+                email:
+                    type: string
+                    description: Member's email address
+                    example: fannie.wuckert@lockman.biz
+                    format: email
+                member_id:
+                    type: string
+                    description: Member's ID in the roster identified by member_type
+                    example: Cumque quisquam omnis dolore.
+                member_type:
+                    type: string
+                    description: Which roster member_id identifies
+                    example: committee_member
+                    enum:
+                        - committee_member
+                        - mailing_list_member
+                name:
+                    type: string
+                    description: Member's display name, when known
+                    example: Corrupti tempore optio animi corrupti.
+            description: A member missing from the target roster, who should be added to reconcile it
+            example:
+                email: fannie.wuckert@lockman.biz
+                member_id: Cumque quisquam omnis dolore.
+                member_type: committee_member
+                name: Corrupti tempore optio animi corrupti.
+            required:
+                - email
+                - member_id
+                - member_type
+        GroupsioSyncDiffConflict:
+            type: object
+            properties:
+                committee_email:
+                    type: string
+                    description: Email as it appears on the committee roster
+                    example: kacey@quitzon.org
+                    format: email
+                mailing_list_email:
+                    type: string
+                    description: Email as it appears on the mailing list roster
+                    example: percy@boscomuller.info
+                    format: email
+                name:
+                    type: string
+                    description: Display name, when known
+                    example: Est eum quisquam officiis numquam.
+            description: An email collision between the committee roster and the mailing list roster
+            example:
+                committee_email: kacey@quitzon.org
+                mailing_list_email: percy@boscomuller.info
+                name: Est eum quisquam officiis numquam.
+            required:
+                - committee_email
+                - mailing_list_email
+        GroupsioSyncDiffRemove:
+            type: object
+            properties:
+                email:
+                    type: string
+                    description: Member's email address
+                    example: dax_heaney@sporer.net
+                    format: email
+                member_id:
+                    type: string
+                    description: Member's ID in the roster identified by member_type
+                    example: Ut cum quam nemo tenetur rerum sed.
+                member_type:
+                    type: string
+                    description: Which roster member_id identifies
+                    example: mailing_list_member
+                    enum:
+                        - committee_member
+                        - mailing_list_member
+            description: A member who should be removed from the roster member_type identifies
+            example:
+                email: dax_heaney@sporer.net
+                member_id: Ut cum quam nemo tenetur rerum sed.
+                member_type: mailing_list_member
+            required:
+                - email
+                - member_id
+                - member_type
         InternalServerError:
             type: object
             properties:
@@ -2695,6 +3352,14 @@ components:
                     type: string
                     description: Parent GroupsIO service ID
                     example: Qui aut sunt modi.
+                sync_mode:
+                    type: string
+                    description: Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.
+                    example: manual
+                    enum:
+                        - manual
+                        - auto_c_to_ml
+                        - auto_ml_to_c
                 type:
                     type: string
                     description: Subgroup type
@@ -2708,6 +3373,7 @@ components:
                 name: Sunt optio.
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 service_id: Qui aut sunt modi.
+                sync_mode: manual
                 type: Blanditiis occaecati impedit.
         UpdateGroupsioServiceRequestBody:
             type: object

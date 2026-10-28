@@ -34,8 +34,8 @@ func (s *mailingListAPI) CreateGroupsioMailingList(ctx context.Context, p *maili
 		Type:           converter.StringVal(p.Type),
 		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
-	if committeeUID := converter.StringVal(p.CommitteeUID); committeeUID != "" {
-		ml.Committees = []model.Committee{{UID: committeeUID}}
+	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" {
+		ml.Committees = []model.Committee{{UID: committeeUID, SyncMode: syncMode}}
 	}
 	resp, err := s.mailingListWriter.CreateMailingList(ctx, ml)
 	if err != nil {
@@ -61,8 +61,8 @@ func (s *mailingListAPI) UpdateGroupsioMailingList(ctx context.Context, p *maili
 		Type:           converter.StringVal(p.Type),
 		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
-	if committeeUID := converter.StringVal(p.CommitteeUID); committeeUID != "" {
-		ml.Committees = []model.Committee{{UID: committeeUID}}
+	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" {
+		ml.Committees = []model.Committee{{UID: committeeUID, SyncMode: syncMode}}
 	}
 	resp, err := s.mailingListWriter.UpdateMailingList(ctx, p.SubgroupID, ml)
 	if err != nil {
@@ -89,4 +89,25 @@ func (s *mailingListAPI) GetGroupsioMailingListMemberCount(ctx context.Context, 
 		return nil, mapDomainError(err)
 	}
 	return &mailinglist.GroupsioCount{Count: count}, nil
+}
+
+func (s *mailingListAPI) GetGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncDiff, error) {
+	diff, err := s.syncDiffComputer.ComputeSyncDiff(ctx, p.SubgroupID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncDiff(diff), nil
+}
+
+func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.ApplyGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncApplyResult, error) {
+	result, err := s.syncApplier.ApplySyncDiff(
+		ctx,
+		p.SubgroupID,
+		convertSyncApplyAddPayload(p.Adds),
+		convertSyncApplyRemovePayload(p.Removes),
+	)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncApplyResult(result), nil
 }
