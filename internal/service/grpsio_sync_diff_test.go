@@ -26,8 +26,9 @@ type stubITXSyncClient struct {
 	diffJob    *port.SyncDiffJob
 	diffJobErr error
 
-	postApplyJobID string
-	postApplyErr   error
+	postApplyJobID     string
+	postApplyErr       error
+	postApplyDirection string
 
 	applyJob    *port.SyncApplyJob
 	applyJobErr error
@@ -42,7 +43,8 @@ func (c *stubITXSyncClient) GetSyncDiffJob(_ context.Context, _, _ string) (*por
 	return c.diffJob, c.diffJobErr
 }
 
-func (c *stubITXSyncClient) PostSyncApply(_ context.Context, _, _ string, _, _ []string, _ string) (string, error) {
+func (c *stubITXSyncClient) PostSyncApply(_ context.Context, _, direction string, _, _ []string, _ string) (string, error) {
+	c.postApplyDirection = direction
 	return c.postApplyJobID, c.postApplyErr
 }
 
