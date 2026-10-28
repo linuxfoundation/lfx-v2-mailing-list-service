@@ -29,6 +29,8 @@ type stubITXSyncClient struct {
 	postApplyJobID     string
 	postApplyErr       error
 	postApplyDirection string
+	postApplyAdds      []string
+	postApplyRemoves   []string
 
 	applyJob    *port.SyncApplyJob
 	applyJobErr error
@@ -43,8 +45,10 @@ func (c *stubITXSyncClient) GetSyncDiffJob(_ context.Context, _, _ string) (*por
 	return c.diffJob, c.diffJobErr
 }
 
-func (c *stubITXSyncClient) PostSyncApply(_ context.Context, _, direction string, _, _ []string, _ string) (string, error) {
+func (c *stubITXSyncClient) PostSyncApply(_ context.Context, _, direction string, adds, removes []string, _ string) (string, error) {
 	c.postApplyDirection = direction
+	c.postApplyAdds = adds
+	c.postApplyRemoves = removes
 	return c.postApplyJobID, c.postApplyErr
 }
 
@@ -238,4 +242,24 @@ func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, diff.Adds)
 	assert.Empty(t, diff.Removes)
+}
+
+// TestComputeSyncDiff_CommitteeUIDRefreshedAfterJobCompletes pins that the result's CommitteeUID
+// reflects the mailing list's committee link as of job completion, not as of the initial read
+// before the (potentially long-running) ITX job was submitted.
+func TestComputeSyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{
+			ml:             mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList),
+			mlOnSecondCall: mlWithCommitteeSyncMode("committee-2", model.SyncModeAutoCommitteeToMailingList),
+		}),
+		WithSyncDiffITXSyncClient(&stubITXSyncClient{
+			postDiffJobID: "job-1",
+			diffJob:       &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusCompleted},
+		}),
+	)
+
+	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	require.NoError(t, err)
+	assert.Equal(t, "committee-2", diff.CommitteeUID)
 }

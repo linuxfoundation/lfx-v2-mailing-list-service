@@ -89,6 +89,16 @@ func pollSyncApplyJob(ctx context.Context, client port.ITXSyncClient, mailingLis
 	}
 }
 
+// memberTypesForDirection returns which roster (committee_member or mailing_list_member) an add
+// and a remove entry belong to for the given sync direction: for c_to_ml, adds come from the
+// committee roster and removes come from the mailing-list roster; for ml_to_c it is the reverse.
+func memberTypesForDirection(direction string) (addType, removeType model.MemberType) {
+	if direction == port.SyncJobDirectionMailingListToCommittee {
+		return model.MemberTypeMailingListMember, model.MemberTypeCommitteeMember
+	}
+	return model.MemberTypeCommitteeMember, model.MemberTypeMailingListMember
+}
+
 // syncJobDirectionForMode maps a committee's configured sync_mode to the direction ITX's
 // sync-diff/sync-apply jobs expect. Only auto_c_to_ml and auto_ml_to_c have a direction; manual
 // (or unset) means there is nothing to reconcile.

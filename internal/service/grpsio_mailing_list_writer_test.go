@@ -74,14 +74,23 @@ var _ port.GroupsIOMailingListWriter = (*stubMLWriter)(nil)
 
 // stubMLReader always returns the configured ml/err from GetMailingList.
 // listMLs/listErr control ListMailingLists responses for the count check.
+// mlOnSecondCall, if set, is returned starting from the second GetMailingList call instead of ml —
+// lets a test simulate the mailing list's committee link changing between an orchestrator's
+// initial read and a later re-read (e.g. after an async ITX job completes).
 type stubMLReader struct {
-	ml      *model.GroupsIOMailingList
-	err     error
-	listMLs []*model.GroupsIOMailingList
-	listErr error
+	ml             *model.GroupsIOMailingList
+	err            error
+	mlOnSecondCall *model.GroupsIOMailingList
+	calls          int
+	listMLs        []*model.GroupsIOMailingList
+	listErr        error
 }
 
 func (r *stubMLReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
+	r.calls++
+	if r.calls > 1 && r.mlOnSecondCall != nil {
+		return r.mlOnSecondCall, r.err
+	}
 	return r.ml, r.err
 }
 func (r *stubMLReader) ListMailingLists(_ context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
