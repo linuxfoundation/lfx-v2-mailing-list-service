@@ -19,8 +19,9 @@ import (
 // stubITXSyncClient returns configured responses for the ITXSyncClient methods used by the
 // sync-diff/sync-apply orchestrators.
 type stubITXSyncClient struct {
-	postDiffJobID string
-	postDiffErr   error
+	postDiffJobID     string
+	postDiffErr       error
+	postDiffDirection string
 
 	diffJob    *port.SyncDiffJob
 	diffJobErr error
@@ -32,7 +33,8 @@ type stubITXSyncClient struct {
 	applyJobErr error
 }
 
-func (c *stubITXSyncClient) PostSyncDiff(_ context.Context, _, _ string) (string, error) {
+func (c *stubITXSyncClient) PostSyncDiff(_ context.Context, _, direction string) (string, error) {
+	c.postDiffDirection = direction
 	return c.postDiffJobID, c.postDiffErr
 }
 
@@ -190,6 +192,32 @@ func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 	assert.Equal(t, "ml-1", diff.MailingListID)
 	assert.Equal(t, "committee-1", diff.CommitteeUID)
 	assert.Equal(t, model.SyncModeAutoCommitteeToMailingList, diff.SyncMode)
+}
+
+// TestComputeSyncDiff_MailingListToCommitteeDirection pins that auto_ml_to_c mailing lists are
+// fully supported (not blocked), and that the reverse direction is sent to ITX.
+func TestComputeSyncDiff_MailingListToCommitteeDirection(t *testing.T) {
+	stub := &stubITXSyncClient{
+		postDiffJobID: "job-1",
+		diffJob: &port.SyncDiffJob{
+			ID:     "job-1",
+			Status: port.SyncJobStatusCompleted,
+			ToAdd: []port.SyncJobMember{
+				{MemberID: "mlm-1", Email: "dana@example.com", FullName: "Dana"},
+			},
+		},
+	}
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)}),
+		WithSyncDiffITXSyncClient(stub),
+	)
+
+	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, stub.postDiffDirection)
+	assert.Equal(t, model.SyncModeAutoMailingListToCommittee, diff.SyncMode)
+	require.Len(t, diff.Adds, 1)
+	assert.Equal(t, "dana@example.com", diff.Adds[0].Email)
 }
 
 func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {

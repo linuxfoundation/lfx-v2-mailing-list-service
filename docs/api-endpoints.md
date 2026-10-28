@@ -207,13 +207,14 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Compute the sync-diff for a mailing list linked to a committee:**
 
-Only supported for mailing lists configured with `sync_mode: auto_c_to_ml`. Delegates to ITX's
-sync-diff job (ITX computes and owns the reconciliation logic; this endpoint posts the job, polls
-it to completion, and translates the result) and returns the committee members missing from the
-mailing list (`adds`) and the mailing list members no longer on the committee (`removes`).
-Returns `400 Bad Request` if the mailing list has no linked committee, or its `sync_mode` is
-`manual` or `auto_ml_to_c` (not yet supported). Returns `503 Service Unavailable` if the
-underlying ITX job fails.
+Supported for mailing lists configured with `sync_mode: auto_c_to_ml` or `auto_ml_to_c`.
+Delegates to ITX's sync-diff job (ITX computes and owns the reconciliation logic; this endpoint
+posts the job, polls it to completion, and translates the result) and returns the committee
+members missing from the mailing list (`adds`) and the mailing list members no longer on the
+committee (`removes`) for `auto_c_to_ml`, or the reverse for `auto_ml_to_c`. Returns
+`400 Bad Request` if the mailing list has no linked committee, or its `sync_mode` is `manual`.
+Returns `503 Service Unavailable` if the underlying ITX job fails or does not complete within the
+poll timeout.
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
