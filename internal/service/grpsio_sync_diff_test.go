@@ -244,10 +244,10 @@ func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {
 	assert.Empty(t, diff.Removes)
 }
 
-// TestComputeSyncDiff_CommitteeUIDRefreshedAfterJobCompletes pins that the result's CommitteeUID
-// reflects the mailing list's committee link as of job completion, not as of the initial read
-// before the (potentially long-running) ITX job was submitted.
-func TestComputeSyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
+// TestComputeSyncDiff_CommitteeChangedWhileJobRunning pins that if the mailing list's linked
+// committee changes between the sync-diff job starting and completing, the request fails instead
+// of mislabeling the (stale) job's diff data as belonging to the newly-linked committee.
+func TestComputeSyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{
 			ml:             mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList),
@@ -259,7 +259,8 @@ func TestComputeSyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
 		}),
 	)
 
-	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
-	require.NoError(t, err)
-	assert.Equal(t, "committee-2", diff.CommitteeUID)
+	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
 }

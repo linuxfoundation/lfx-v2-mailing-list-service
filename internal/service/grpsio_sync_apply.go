@@ -108,16 +108,20 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		return nil, errs.NewServiceUnavailable("ITX sync-apply job failed: " + job.ErrorMessage)
 	}
 
-	// Re-resolve the mailing list's linked committee after the (potentially long-running) ITX job
-	// completes, rather than trusting the committeeUID resolved before the job started: narrows
-	// the window in which the result is mislabeled with a stale committee if the mailing list gets
-	// reassociated to a different committee while the job was in flight.
-	if refreshedML, refreshErr := o.mailingListReader.GetMailingList(ctx, mailingListID); refreshErr == nil &&
-		len(refreshedML.Committees) > 0 && refreshedML.Committees[0].UID != "" {
-		committeeUID = refreshedML.Committees[0].UID
+	// job.Results reflect the committee that was linked when PostSyncApply was called
+	// (committeeUID) — ITX's job response carries no committee identifier of its own to confirm
+	// this against. Re-check the link after the (potentially long-running) job completes: if it
+	// changed, the job's results no longer describe the currently-linked committee, so reject the
+	// result instead of attributing committee A's membership changes to committee B.
+	refreshedML, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+	if len(refreshedML.Committees) == 0 || refreshedML.Committees[0].UID != committeeUID {
+		return nil, errs.NewConflict("mailing list's linked committee changed while the sync-apply job was running; request a fresh diff and re-apply")
 	}
 
-	return fromSyncApplyJob(mailingListID, committeeUID, job, addEmailByNormalized, removeByNormalized), nil
+	return fromSyncApplyJob(mailingListID, committeeUID, job, addEmailByNormalized, removeByNormalized)
 }
 
 // fromSyncApplyJob translates a completed ITX sync-apply job's flat action/status results back
@@ -126,13 +130,16 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 // concept (its own sync-mode conflict validation differs from this service's former bespoke
 // guard) — those outcomes never appear here, only added/removed/failed. ITX's results only carry
 // email, not the member ID/type that was approved, so both are recovered from the original
-// request by (normalized) email.
+// request by (normalized) email. A result email that matches no approved add/remove has no valid
+// MemberType to report — the response schema requires one of the two enum values, so such a
+// result can't be represented as a (even failed) per-entry outcome without violating it. That
+// case is treated as an ITX protocol violation and fails the whole request.
 func fromSyncApplyJob(
 	mailingListID, committeeUID string,
 	job *port.SyncApplyJob,
 	addByNormalized map[string]model.SyncDiffAdd,
 	removeByNormalized map[string]model.SyncDiffRemove,
-) *model.SyncApplyResult {
+) (*model.SyncApplyResult, error) {
 	result := &model.SyncApplyResult{
 		MailingListID: mailingListID,
 		CommitteeUID:  committeeUID,
@@ -141,17 +148,16 @@ func fromSyncApplyJob(
 	}
 
 	for _, r := range job.Results {
-		outcome := model.SyncApplyOutcomeFailed
 		switch r.Action {
 		case "add":
+			add, ok := addByNormalized[normalizeEmail(r.Email)]
+			if !ok {
+				return nil, errs.NewServiceUnavailable(
+					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved add by email")
+			}
+			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeAdded
-			}
-			add, ok := addByNormalized[normalizeEmail(r.Email)]
-			errMsg := r.Error
-			if !ok {
-				outcome = model.SyncApplyOutcomeFailed
-				errMsg = "ITX reported this email but it does not match any approved add by email: " + r.Email
 			}
 			result.Added = append(result.Added, model.SyncApplyAddResult{
 				Email:      r.Email,
@@ -159,27 +165,27 @@ func fromSyncApplyJob(
 				MemberType: add.MemberType,
 				Outcome:    outcome,
 				NameHint:   add.Name,
-				Error:      errMsg,
+				Error:      r.Error,
 			})
 		case "remove":
+			remove, ok := removeByNormalized[normalizeEmail(r.Email)]
+			if !ok {
+				return nil, errs.NewServiceUnavailable(
+					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved remove by email")
+			}
+			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeRemoved
-			}
-			remove, ok := removeByNormalized[normalizeEmail(r.Email)]
-			errMsg := r.Error
-			if !ok {
-				outcome = model.SyncApplyOutcomeFailed
-				errMsg = "ITX reported this email but it does not match any approved remove by email: " + r.Email
 			}
 			result.Removed = append(result.Removed, model.SyncApplyRemoveResult{
 				Email:      r.Email,
 				MemberID:   remove.MemberID,
 				MemberType: remove.MemberType,
 				Outcome:    outcome,
-				Error:      errMsg,
+				Error:      r.Error,
 			})
 		}
 	}
 
-	return result
+	return result, nil
 }
