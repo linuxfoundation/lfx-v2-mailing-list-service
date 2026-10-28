@@ -231,8 +231,8 @@ func TestApplySyncDiff_RemoveMemberTypeMismatch(t *testing.T) {
 }
 
 // TestApplySyncDiff_UnmatchedResultEmail pins that an ITX result whose email doesn't normalize-
-// match any approved add/remove is reported as an explicit failure rather than silently emitting
-// a zero-value MemberID/MemberType, which would otherwise look like a real (if empty) result.
+// match any approved add/remove fails the whole request, since there's no valid MemberType to
+// report for it and the response schema requires one of the enum values on every entry.
 func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
@@ -247,20 +247,17 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 			},
 		},
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
-	require.NoError(t, err)
-	require.Len(t, result.Added, 1)
-	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Added[0].Outcome)
-	assert.Empty(t, result.Added[0].MemberID)
-	assert.Contains(t, result.Added[0].Error, "unexpected@example.com")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected@example.com")
 }
 
-// TestApplySyncDiff_CommitteeUIDRefreshedAfterJobCompletes pins that the result's CommitteeUID
-// reflects the mailing list's committee link as of job completion, not as of the initial read
-// before the (potentially long-running) ITX job was submitted.
-func TestApplySyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
+// TestApplySyncDiff_CommitteeChangedWhileJobRunning pins that if the mailing list's linked
+// committee changes between the sync-apply job starting and completing, the request fails
+// instead of attributing the (stale) job's results to the newly-linked committee.
+func TestApplySyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{
 			ml:             mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList),
@@ -277,9 +274,10 @@ func TestApplySyncDiff_CommitteeUIDRefreshedAfterJobCompletes(t *testing.T) {
 			},
 		},
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
-	require.NoError(t, err)
-	assert.Equal(t, "committee-2", result.CommitteeUID)
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
 }

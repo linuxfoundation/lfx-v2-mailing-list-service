@@ -78,13 +78,17 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, errs.NewServiceUnavailable("ITX sync-diff job failed: " + job.ErrorMessage)
 	}
 
-	// Re-resolve the mailing list's linked committee after the (potentially long-running) ITX job
-	// completes, rather than trusting the committeeUID resolved before the job started: narrows
-	// the window in which the result is mislabeled with a stale committee if the mailing list gets
-	// reassociated to a different committee while the job was in flight.
-	if refreshedML, refreshErr := o.mailingListReader.GetMailingList(ctx, mailingListID); refreshErr == nil &&
-		len(refreshedML.Committees) > 0 && refreshedML.Committees[0].UID != "" {
-		committeeUID = refreshedML.Committees[0].UID
+	// job.ToAdd/ToRemove reflect the committee that was linked when PostSyncDiff was called
+	// (committeeUID) — ITX's job response carries no committee identifier of its own to confirm
+	// this against. Re-check the link after the (potentially long-running) job completes: if it
+	// changed, the job's data no longer describes the currently-linked committee, so reject the
+	// result instead of mislabeling committee A's diff as committee B's.
+	refreshedML, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+	if len(refreshedML.Committees) == 0 || refreshedML.Committees[0].UID != committeeUID {
+		return nil, errs.NewConflict("mailing list's linked committee changed while the sync-diff job was running; request a fresh diff")
 	}
 
 	return fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, direction, job), nil
