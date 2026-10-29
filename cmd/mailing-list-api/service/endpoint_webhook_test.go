@@ -6,8 +6,8 @@ package service
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
+	"crypto/sha1" //nolint:gosec // must match Groups.io's own webhook signing scheme
+	"encoding/base64"
 	"errors"
 	"log/slog"
 	"testing"
@@ -61,9 +61,9 @@ func autoML2CList() *model.GroupsIOMailingList {
 }
 
 func sign(secret string, body []byte) string {
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha1.New, []byte(secret))
 	mac.Write(body)
-	return hex.EncodeToString(mac.Sum(nil))
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
 
 func TestVerifyGroupsIOWebhookSignature(t *testing.T) {

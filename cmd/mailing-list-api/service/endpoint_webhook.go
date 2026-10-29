@@ -6,8 +6,8 @@ package service
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
+	"crypto/sha1" //nolint:gosec // required to match Groups.io's own webhook signing scheme, not a choice made here
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -55,9 +55,12 @@ func (s *mailingListAPI) ReceiveGroupsioWebhook(ctx context.Context, p *mailingl
 	return nil
 }
 
-// verifyGroupsIOWebhookSignature checks body's HMAC-SHA256 signature (hex-encoded) against
-// secret. An empty secret or signature is always rejected: webhook ingestion must not silently
-// accept unsigned/unverifiable requests just because configuration is incomplete.
+// verifyGroupsIOWebhookSignature checks body's signature against secret using the same scheme
+// Groups.io itself signs webhook deliveries with: HMAC-SHA1 of the raw body, base64-encoded (see
+// itx-service-groupsio's verifyGroupsioRequest, the existing production verifier for this same
+// webhook source) — not a scheme chosen by this service, so it must match exactly. An empty
+// secret or signature is always rejected: webhook ingestion must not silently accept
+// unsigned/unverifiable requests just because configuration is incomplete.
 func verifyGroupsIOWebhookSignature(body []byte, signature *string, secret string) error {
 	if secret == "" {
 		return fmt.Errorf("webhook signature verification is not configured")
@@ -66,9 +69,9 @@ func verifyGroupsIOWebhookSignature(body []byte, signature *string, secret strin
 		return fmt.Errorf("missing webhook signature header")
 	}
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha1.New, []byte(secret))
 	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
+	expected := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
 	if !hmac.Equal([]byte(expected), []byte(*signature)) {
 		return fmt.Errorf("webhook signature mismatch")

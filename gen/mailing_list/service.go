@@ -657,8 +657,8 @@ type ListGroupsioServicesPayload struct {
 // ReceiveGroupsioWebhookPayload is the payload type of the mailing-list
 // service receive-groupsio-webhook method.
 type ReceiveGroupsioWebhookPayload struct {
-	// HMAC-SHA256 signature of the raw request body, from the Groups.io webhook
-	// request's signature header
+	// HMAC-SHA1 signature of the raw request body, base64-encoded, from the
+	// Groups.io webhook request's signature header
 	Signature *string
 	// Raw JSON webhook payload
 	Body []byte

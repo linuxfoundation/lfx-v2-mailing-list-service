@@ -708,8 +708,8 @@ var _ = dsl.Service("mailing-list", func() {
 			"sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership " +
 			"reconciliation (issue #4023).")
 		dsl.Payload(func() {
-			dsl.Attribute("signature", dsl.String, "HMAC-SHA256 signature of the raw request body, "+
-				"from the Groups.io webhook request's signature header")
+			dsl.Attribute("signature", dsl.String, "HMAC-SHA1 signature of the raw request body, "+
+				"base64-encoded, from the Groups.io webhook request's signature header")
 			dsl.Attribute("body", dsl.Bytes, "Raw JSON webhook payload")
 			dsl.Required("body")
 		})

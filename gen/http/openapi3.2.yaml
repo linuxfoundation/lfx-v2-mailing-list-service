@@ -1910,10 +1910,10 @@ paths:
             parameters:
                 - name: X-Groupsio-Signature
                   in: header
-                  description: HMAC-SHA256 signature of the raw request body, from the Groups.io webhook request's signature header
+                  description: HMAC-SHA1 signature of the raw request body, base64-encoded, from the Groups.io webhook request's signature header
                   schema:
                     type: string
-                    description: HMAC-SHA256 signature of the raw request body, from the Groups.io webhook request's signature header
+                    description: HMAC-SHA1 signature of the raw request body, base64-encoded, from the Groups.io webhook request's signature header
                     example: Dolores quod maxime.
                   example: Corporis amet non.
             requestBody:
