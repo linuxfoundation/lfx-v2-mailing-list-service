@@ -74,15 +74,6 @@ type Service interface {
 	GetGroupsioArtifact(context.Context, *GetGroupsioArtifactPayload) (res *GroupsioArtifact, err error)
 	// Get a presigned S3 download URL for a GroupsIO subgroup artifact
 	GetGroupsioArtifactDownload(context.Context, *GetGroupsioArtifactDownloadPayload) (res *GroupsioArtifactDownload, err error)
-	// Trigger an immediate committee-membership auto-sync reconciliation for a
-	// GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c
-	// (issue #4023). Groups.io itself still delivers its subscribe/unsubscribe
-	// webhook only to ITX's existing endpoint, not to this service; ITX's
-	// committee-association Lambda calls this endpoint after it observes a
-	// SubGroupMemberAdded/Removed event on its own SNS topic for a V2-managed
-	// mailing list, so this service never needs its own Groups.io webhook
-	// registration or shared signing secret.
-	TriggerGroupsioAutoSync(context.Context, *TriggerGroupsioAutoSyncPayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -105,7 +96,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [28]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "apply-groupsio-mailing-list-sync-diff", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download", "trigger-groupsio-auto-sync"}
+var MethodNames = [27]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "apply-groupsio-mailing-list-sync-diff", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -655,15 +646,6 @@ type ListGroupsioServicesPayload struct {
 	BearerToken *string
 	// LFX v2 project UID filter
 	ProjectUID *string
-}
-
-// TriggerGroupsioAutoSyncPayload is the payload type of the mailing-list
-// service trigger-groupsio-auto-sync method.
-type TriggerGroupsioAutoSyncPayload struct {
-	// JWT token issued by Heimdall
-	BearerToken *string
-	// Subgroup ID
-	SubgroupID string
 }
 
 // UpdateGroupsioMailingListPayload is the payload type of the mailing-list

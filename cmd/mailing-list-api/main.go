@@ -209,8 +209,9 @@ func run() int {
 	// Real-time auto sync (issue #4023): react to committee-member events so that a
 	// committee membership change on a mailing list configured with sync_mode auto_c_to_ml
 	// propagates without a manual "Sync Now". The Groups.io-side (auto_ml_to_c) direction is
-	// triggered from the /webhooks/groupsio HTTP endpoint instead (see endpoint_webhook.go),
-	// since Groups.io delivers subscribe/unsubscribe events as webhooks, not NATS events.
+	// not this service's concern: ITX's committee-association webhook handler already
+	// propagates Groups.io subscribe/unsubscribe events straight to the LFX committee API in
+	// real time for any subgroup in auto_ml_to_c mode, regardless of how it was configured.
 	committeeMemberSub := eventing.NewCommitteeMemberSubscriber(
 		natsClient, mailingListReaderOrchestrator, realtimeAutoSyncOrchestrator, slog.Default())
 	if err := committeeMemberSub.Start(ctx); err != nil {
@@ -242,7 +243,6 @@ func run() int {
 		accessChecker,
 		syncDiffOrchestrator,
 		syncApplyOrchestrator,
-		realtimeAutoSyncOrchestrator,
 	)
 
 	// Wrap the service in GOA endpoints.

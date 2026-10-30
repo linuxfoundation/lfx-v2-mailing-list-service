@@ -1277,30 +1277,6 @@ type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// TriggerGroupsioAutoSyncInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "InternalServerError" error.
-type TriggerGroupsioAutoSyncInternalServerErrorResponseBody struct {
-	// Error message
-	Message string `form:"message" json:"message" xml:"message"`
-}
-
-// TriggerGroupsioAutoSyncNotFoundResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "NotFound" error.
-type TriggerGroupsioAutoSyncNotFoundResponseBody struct {
-	// Error message
-	Message string `form:"message" json:"message" xml:"message"`
-}
-
-// TriggerGroupsioAutoSyncServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "ServiceUnavailable" error.
-type TriggerGroupsioAutoSyncServiceUnavailableResponseBody struct {
-	// Error message
-	Message string `form:"message" json:"message" xml:"message"`
-}
-
 // GroupsioServiceResponseBody is used to define fields on response body types.
 type GroupsioServiceResponseBody struct {
 	// Service ID
@@ -2800,36 +2776,6 @@ func NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody(res *mailingli
 	return body
 }
 
-// NewTriggerGroupsioAutoSyncInternalServerErrorResponseBody builds the HTTP
-// response body from the result of the "trigger-groupsio-auto-sync" endpoint
-// of the "mailing-list" service.
-func NewTriggerGroupsioAutoSyncInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *TriggerGroupsioAutoSyncInternalServerErrorResponseBody {
-	body := &TriggerGroupsioAutoSyncInternalServerErrorResponseBody{
-		Message: res.Message,
-	}
-	return body
-}
-
-// NewTriggerGroupsioAutoSyncNotFoundResponseBody builds the HTTP response body
-// from the result of the "trigger-groupsio-auto-sync" endpoint of the
-// "mailing-list" service.
-func NewTriggerGroupsioAutoSyncNotFoundResponseBody(res *mailinglist.NotFoundError) *TriggerGroupsioAutoSyncNotFoundResponseBody {
-	body := &TriggerGroupsioAutoSyncNotFoundResponseBody{
-		Message: res.Message,
-	}
-	return body
-}
-
-// NewTriggerGroupsioAutoSyncServiceUnavailableResponseBody builds the HTTP
-// response body from the result of the "trigger-groupsio-auto-sync" endpoint
-// of the "mailing-list" service.
-func NewTriggerGroupsioAutoSyncServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *TriggerGroupsioAutoSyncServiceUnavailableResponseBody {
-	body := &TriggerGroupsioAutoSyncServiceUnavailableResponseBody{
-		Message: res.Message,
-	}
-	return body
-}
-
 // NewListGroupsioServicesPayload builds a mailing-list service
 // list-groupsio-services endpoint payload.
 func NewListGroupsioServicesPayload(projectUID *string, bearerToken *string) *mailinglist.ListGroupsioServicesPayload {
@@ -3150,16 +3096,6 @@ func NewGetGroupsioArtifactDownloadPayload(subgroupID string, artifactID string,
 	v := &mailinglist.GetGroupsioArtifactDownloadPayload{}
 	v.SubgroupID = subgroupID
 	v.ArtifactID = artifactID
-	v.BearerToken = bearerToken
-
-	return v
-}
-
-// NewTriggerGroupsioAutoSyncPayload builds a mailing-list service
-// trigger-groupsio-auto-sync endpoint payload.
-func NewTriggerGroupsioAutoSyncPayload(subgroupID string, bearerToken *string) *mailinglist.TriggerGroupsioAutoSyncPayload {
-	v := &mailinglist.TriggerGroupsioAutoSyncPayload{}
-	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken
 
 	return v

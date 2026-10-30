@@ -599,52 +599,6 @@ paths:
                                 message: The service is unavailable.
             security:
                 - jwt_header_Authorization: []
-    /groupsio/mailing-lists/{subgroup_id}/auto-sync:
-        post:
-            tags:
-                - mailing-list
-            summary: trigger-groupsio-auto-sync mailing-list
-            description: 'Trigger an immediate committee-membership auto-sync reconciliation for a GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c (issue #4023). Groups.io itself still delivers its subscribe/unsubscribe webhook only to ITX''s existing endpoint, not to this service; ITX''s committee-association Lambda calls this endpoint after it observes a SubGroupMemberAdded/Removed event on its own SNS topic for a V2-managed mailing list, so this service never needs its own Groups.io webhook registration or shared signing secret.'
-            operationId: mailing-list#trigger-groupsio-auto-sync
-            parameters:
-                - name: subgroup_id
-                  in: path
-                  description: Subgroup ID
-                  required: true
-                  schema:
-                    type: string
-                    description: Subgroup ID
-                    example: Nam exercitationem.
-                  example: Amet maiores praesentium.
-            responses:
-                "204":
-                    description: No Content response.
-                "404":
-                    description: 'NotFound: Subgroup not found'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/NotFoundError'
-                            example:
-                                message: The resource was not found.
-                "500":
-                    description: 'InternalServerError: Internal server error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InternalServerError'
-                            example:
-                                message: An internal server error occurred.
-                "503":
-                    description: 'ServiceUnavailable: Service unavailable'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ServiceUnavailableError'
-                            example:
-                                message: The service is unavailable.
-            security:
-                - jwt_header_Authorization: []
     /groupsio/mailing-lists/{subgroup_id}/invitemembers:
         post:
             tags:

@@ -699,37 +699,6 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	// ---- GroupsIO auto-sync trigger ----
-
-	dsl.Method("trigger-groupsio-auto-sync", func() {
-		dsl.Description("Trigger an immediate committee-membership auto-sync reconciliation for a " +
-			"GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c (issue " +
-			"#4023). Groups.io itself still delivers its subscribe/unsubscribe webhook only to " +
-			"ITX's existing endpoint, not to this service; ITX's committee-association Lambda " +
-			"calls this endpoint after it observes a SubGroupMemberAdded/Removed event on its own " +
-			"SNS topic for a V2-managed mailing list, so this service never needs its own " +
-			"Groups.io webhook registration or shared signing secret.")
-		dsl.Security(JWTAuth)
-		dsl.Payload(func() {
-			BearerTokenAttribute()
-			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
-			dsl.Required("subgroup_id")
-			dsl.Token("bearer_token", dsl.String)
-		})
-		dsl.Error("NotFound", NotFoundError, "Subgroup not found")
-		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
-		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
-		dsl.HTTP(func() {
-			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/auto-sync")
-			dsl.Param("subgroup_id")
-			dsl.Header("bearer_token:Authorization")
-			dsl.Response(dsl.StatusNoContent)
-			dsl.Response("NotFound", dsl.StatusNotFound)
-			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
-			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
-		})
-	})
-
 	// Serve OpenAPI spec files under the /_groupsio/ prefix to match the httproute and ruleset.
 	dsl.Files("/_groupsio/openapi.json", "gen/http/openapi.json", func() {
 		dsl.Meta("swagger:generate", "false")

@@ -812,23 +812,3 @@ func BuildGetGroupsioArtifactDownloadPayload(mailingListGetGroupsioArtifactDownl
 
 	return v, nil
 }
-
-// BuildTriggerGroupsioAutoSyncPayload builds the payload for the mailing-list
-// trigger-groupsio-auto-sync endpoint from CLI flags.
-func BuildTriggerGroupsioAutoSyncPayload(mailingListTriggerGroupsioAutoSyncSubgroupID string, mailingListTriggerGroupsioAutoSyncBearerToken string) (*mailinglist.TriggerGroupsioAutoSyncPayload, error) {
-	var subgroupID string
-	{
-		subgroupID = mailingListTriggerGroupsioAutoSyncSubgroupID
-	}
-	var bearerToken *string
-	{
-		if mailingListTriggerGroupsioAutoSyncBearerToken != "" {
-			bearerToken = &mailingListTriggerGroupsioAutoSyncBearerToken
-		}
-	}
-	v := &mailinglist.TriggerGroupsioAutoSyncPayload{}
-	v.SubgroupID = subgroupID
-	v.BearerToken = bearerToken
-
-	return v, nil
-}

@@ -1277,30 +1277,6 @@ type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// TriggerGroupsioAutoSyncInternalServerErrorResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "InternalServerError" error.
-type TriggerGroupsioAutoSyncInternalServerErrorResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// TriggerGroupsioAutoSyncNotFoundResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "NotFound" error.
-type TriggerGroupsioAutoSyncNotFoundResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// TriggerGroupsioAutoSyncServiceUnavailableResponseBody is the type of the
-// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
-// body for the "ServiceUnavailable" error.
-type TriggerGroupsioAutoSyncServiceUnavailableResponseBody struct {
-	// Error message
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
 // GroupsioServiceResponseBody is used to define fields on response body types.
 type GroupsioServiceResponseBody struct {
 	// Service ID
@@ -2955,36 +2931,6 @@ func NewGetGroupsioArtifactDownloadServiceUnavailable(body *GetGroupsioArtifactD
 	return v
 }
 
-// NewTriggerGroupsioAutoSyncInternalServerError builds a mailing-list service
-// trigger-groupsio-auto-sync endpoint InternalServerError error.
-func NewTriggerGroupsioAutoSyncInternalServerError(body *TriggerGroupsioAutoSyncInternalServerErrorResponseBody) *mailinglist.InternalServerError {
-	v := &mailinglist.InternalServerError{
-		Message: *body.Message,
-	}
-
-	return v
-}
-
-// NewTriggerGroupsioAutoSyncNotFound builds a mailing-list service
-// trigger-groupsio-auto-sync endpoint NotFound error.
-func NewTriggerGroupsioAutoSyncNotFound(body *TriggerGroupsioAutoSyncNotFoundResponseBody) *mailinglist.NotFoundError {
-	v := &mailinglist.NotFoundError{
-		Message: *body.Message,
-	}
-
-	return v
-}
-
-// NewTriggerGroupsioAutoSyncServiceUnavailable builds a mailing-list service
-// trigger-groupsio-auto-sync endpoint ServiceUnavailable error.
-func NewTriggerGroupsioAutoSyncServiceUnavailable(body *TriggerGroupsioAutoSyncServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
-	v := &mailinglist.ServiceUnavailableError{
-		Message: *body.Message,
-	}
-
-	return v
-}
-
 // ValidateListGroupsioServicesResponseBody runs the validations defined on
 // List-Groupsio-ServicesResponseBody
 func ValidateListGroupsioServicesResponseBody(body *ListGroupsioServicesResponseBody) (err error) {
@@ -4087,35 +4033,6 @@ func ValidateGetGroupsioArtifactDownloadNotFoundResponseBody(body *GetGroupsioAr
 // validations defined on
 // get-groupsio-artifact-download_ServiceUnavailable_response_body
 func ValidateGetGroupsioArtifactDownloadServiceUnavailableResponseBody(body *GetGroupsioArtifactDownloadServiceUnavailableResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateTriggerGroupsioAutoSyncInternalServerErrorResponseBody runs the
-// validations defined on
-// trigger-groupsio-auto-sync_InternalServerError_response_body
-func ValidateTriggerGroupsioAutoSyncInternalServerErrorResponseBody(body *TriggerGroupsioAutoSyncInternalServerErrorResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateTriggerGroupsioAutoSyncNotFoundResponseBody runs the validations
-// defined on trigger-groupsio-auto-sync_NotFound_response_body
-func ValidateTriggerGroupsioAutoSyncNotFoundResponseBody(body *TriggerGroupsioAutoSyncNotFoundResponseBody) (err error) {
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	return
-}
-
-// ValidateTriggerGroupsioAutoSyncServiceUnavailableResponseBody runs the
-// validations defined on
-// trigger-groupsio-auto-sync_ServiceUnavailable_response_body
-func ValidateTriggerGroupsioAutoSyncServiceUnavailableResponseBody(body *TriggerGroupsioAutoSyncServiceUnavailableResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

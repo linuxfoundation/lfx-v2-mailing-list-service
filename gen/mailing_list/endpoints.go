@@ -44,7 +44,6 @@ type Endpoints struct {
 	CheckGroupsioSubscriber           goa.Endpoint
 	GetGroupsioArtifact               goa.Endpoint
 	GetGroupsioArtifactDownload       goa.Endpoint
-	TriggerGroupsioAutoSync           goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -79,7 +78,6 @@ func NewEndpoints(s Service) *Endpoints {
 		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
 		GetGroupsioArtifact:               NewGetGroupsioArtifactEndpoint(s, a.JWTAuth),
 		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadEndpoint(s, a.JWTAuth),
-		TriggerGroupsioAutoSync:           NewTriggerGroupsioAutoSyncEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -112,7 +110,6 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CheckGroupsioSubscriber = m(e.CheckGroupsioSubscriber)
 	e.GetGroupsioArtifact = m(e.GetGroupsioArtifact)
 	e.GetGroupsioArtifactDownload = m(e.GetGroupsioArtifactDownload)
-	e.TriggerGroupsioAutoSync = m(e.TriggerGroupsioAutoSync)
 }
 
 // NewLivezEndpoint returns an endpoint function that calls the method "livez"
@@ -706,28 +703,5 @@ func NewGetGroupsioArtifactDownloadEndpoint(s Service, authJWTFn security.AuthJW
 			return nil, err
 		}
 		return s.GetGroupsioArtifactDownload(ctx, p)
-	}
-}
-
-// NewTriggerGroupsioAutoSyncEndpoint returns an endpoint function that calls
-// the method "trigger-groupsio-auto-sync" of service "mailing-list".
-func NewTriggerGroupsioAutoSyncEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*TriggerGroupsioAutoSyncPayload)
-		var err error
-		sc := security.JWTScheme{
-			Name:           "jwt",
-			Scopes:         []string{},
-			RequiredScopes: []string{},
-		}
-		var token string
-		if p.BearerToken != nil {
-			token = *p.BearerToken
-		}
-		ctx, err = authJWTFn(ctx, token, &sc)
-		if err != nil {
-			return nil, err
-		}
-		return nil, s.TriggerGroupsioAutoSync(ctx, p)
 	}
 }
