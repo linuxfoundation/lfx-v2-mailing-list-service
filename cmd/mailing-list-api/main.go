@@ -173,6 +173,13 @@ func run() int {
 		orchestrator.WithSyncApplyITXSyncClient(proxyClient),
 	)
 
+	realtimeAutoSyncOrchestrator := orchestrator.NewRealtimeAutoSyncOrchestrator(
+		orchestrator.WithRealtimeAutoSyncMailingListReader(mailingListReaderOrchestrator),
+		orchestrator.WithRealtimeAutoSyncMemberReader(memberReaderOrchestrator),
+		orchestrator.WithRealtimeAutoSyncDiffComputer(syncDiffOrchestrator),
+		orchestrator.WithRealtimeAutoSyncApplier(syncApplyOrchestrator),
+	)
+
 	// userReader resolves an LFX account by email for the invite-acceptance data stream handler.
 	userReader := infraNATS.NewUserReader(natsClient, slog.Default())
 
@@ -197,6 +204,22 @@ func run() int {
 		}
 	} else {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
+	}
+
+	// Real-time auto sync (issue #4023): react to committee-member events so that a
+	// committee membership change on a mailing list configured with sync_mode auto_c_to_ml
+	// propagates without a manual "Sync Now". The Groups.io-side (auto_ml_to_c) direction is
+	// not this service's concern: ITX's committee-association webhook handler already
+	// propagates Groups.io subscribe/unsubscribe events straight to the LFX committee API in
+	// real time for any subgroup in auto_ml_to_c mode, regardless of how it was configured.
+	committeeMemberSub := eventing.NewCommitteeMemberSubscriber(
+		natsClient, mailingListReaderOrchestrator, realtimeAutoSyncOrchestrator, slog.Default())
+	if err := committeeMemberSub.Start(ctx); err != nil {
+		slog.ErrorContext(ctx, "failed to start committee_member subscriber; continuing without it",
+			"error", err)
+		committeeMemberSub = nil
+	} else {
+		slog.InfoContext(ctx, "committee_member subscriber started")
 	}
 
 	// Initialize access checker.
@@ -274,6 +297,11 @@ func run() int {
 	// in-flight AcceptInvite calls can complete gracefully.
 	if inviteAccSub != nil {
 		inviteAccSub.Stop()
+	}
+	// Stop the committee_member subscriber before cancelling the context so that an
+	// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll.
+	if committeeMemberSub != nil {
+		committeeMemberSub.Stop()
 	}
 
 	// Create the shutdown deadline once and share it with the HTTP goroutine via
