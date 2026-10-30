@@ -124,9 +124,9 @@ type Client struct {
 	// the get-groupsio-artifact-download endpoint.
 	GetGroupsioArtifactDownloadDoer goahttp.Doer
 
-	// ReceiveGroupsioWebhook Doer is the HTTP client used to make requests to the
-	// receive-groupsio-webhook endpoint.
-	ReceiveGroupsioWebhookDoer goahttp.Doer
+	// TriggerGroupsioAutoSync Doer is the HTTP client used to make requests to the
+	// trigger-groupsio-auto-sync endpoint.
+	TriggerGroupsioAutoSyncDoer goahttp.Doer
 
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
@@ -175,7 +175,7 @@ func NewClient(
 		CheckGroupsioSubscriberDoer:           doer,
 		GetGroupsioArtifactDoer:               doer,
 		GetGroupsioArtifactDownloadDoer:       doer,
-		ReceiveGroupsioWebhookDoer:            doer,
+		TriggerGroupsioAutoSyncDoer:           doer,
 		RestoreResponseBody:                   restoreBody,
 		scheme:                                scheme,
 		host:                                  host,
@@ -824,15 +824,15 @@ func (c *Client) GetGroupsioArtifactDownload() goa.Endpoint {
 	}
 }
 
-// ReceiveGroupsioWebhook returns an endpoint that makes HTTP requests to the
-// mailing-list service receive-groupsio-webhook server.
-func (c *Client) ReceiveGroupsioWebhook() goa.Endpoint {
+// TriggerGroupsioAutoSync returns an endpoint that makes HTTP requests to the
+// mailing-list service trigger-groupsio-auto-sync server.
+func (c *Client) TriggerGroupsioAutoSync() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeReceiveGroupsioWebhookRequest(c.encoder)
-		decodeResponse = DecodeReceiveGroupsioWebhookResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeTriggerGroupsioAutoSyncRequest(c.encoder)
+		decodeResponse = DecodeTriggerGroupsioAutoSyncResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildReceiveGroupsioWebhookRequest(ctx, v)
+		req, err := c.BuildTriggerGroupsioAutoSyncRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -840,9 +840,9 @@ func (c *Client) ReceiveGroupsioWebhook() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.ReceiveGroupsioWebhookDoer.Do(req)
+		resp, err := c.TriggerGroupsioAutoSyncDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("mailing-list", "receive-groupsio-webhook", err)
+			return nil, goahttp.ErrRequestError("mailing-list", "trigger-groupsio-auto-sync", err)
 		}
 		return decodeResponse(resp)
 	}

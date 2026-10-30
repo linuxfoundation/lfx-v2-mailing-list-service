@@ -43,11 +43,11 @@ type Client struct {
 	CheckGroupsioSubscriberEndpoint           goa.Endpoint
 	GetGroupsioArtifactEndpoint               goa.Endpoint
 	GetGroupsioArtifactDownloadEndpoint       goa.Endpoint
-	ReceiveGroupsioWebhookEndpoint            goa.Endpoint
+	TriggerGroupsioAutoSyncEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, getGroupsioMailingListSyncDiff, applyGroupsioMailingListSyncDiff, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload, receiveGroupsioWebhook goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, getGroupsioMailingListSyncDiff, applyGroupsioMailingListSyncDiff, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload, triggerGroupsioAutoSync goa.Endpoint) *Client {
 	return &Client{
 		LivezEndpoint:                             livez,
 		ReadyzEndpoint:                            readyz,
@@ -76,7 +76,7 @@ func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGr
 		CheckGroupsioSubscriberEndpoint:           checkGroupsioSubscriber,
 		GetGroupsioArtifactEndpoint:               getGroupsioArtifact,
 		GetGroupsioArtifactDownloadEndpoint:       getGroupsioArtifactDownload,
-		ReceiveGroupsioWebhookEndpoint:            receiveGroupsioWebhook,
+		TriggerGroupsioAutoSyncEndpoint:           triggerGroupsioAutoSync,
 	}
 }
 
@@ -500,12 +500,14 @@ func (c *Client) GetGroupsioArtifactDownload(ctx context.Context, p *GetGroupsio
 	return ires.(*GroupsioArtifactDownload), nil
 }
 
-// ReceiveGroupsioWebhook calls the "receive-groupsio-webhook" endpoint of the
-// "mailing-list" service.
-// ReceiveGroupsioWebhook may return the following errors:
-//   - "BadRequest" (type *BadRequestError): Missing/invalid signature, or malformed payload
+// TriggerGroupsioAutoSync calls the "trigger-groupsio-auto-sync" endpoint of
+// the "mailing-list" service.
+// TriggerGroupsioAutoSync may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup not found
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
-func (c *Client) ReceiveGroupsioWebhook(ctx context.Context, p *ReceiveGroupsioWebhookPayload) (err error) {
-	_, err = c.ReceiveGroupsioWebhookEndpoint(ctx, p)
+func (c *Client) TriggerGroupsioAutoSync(ctx context.Context, p *TriggerGroupsioAutoSyncPayload) (err error) {
+	_, err = c.TriggerGroupsioAutoSyncEndpoint(ctx, p)
 	return
 }

@@ -147,7 +147,7 @@ func GetGroupsioArtifactDownloadMailingListPath(subgroupID string, artifactID st
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/artifacts/%v/download", subgroupID, artifactID)
 }
 
-// ReceiveGroupsioWebhookMailingListPath returns the URL path to the mailing-list service receive-groupsio-webhook HTTP endpoint.
-func ReceiveGroupsioWebhookMailingListPath() string {
-	return "/webhooks/groupsio"
+// TriggerGroupsioAutoSyncMailingListPath returns the URL path to the mailing-list service trigger-groupsio-auto-sync HTTP endpoint.
+func TriggerGroupsioAutoSyncMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/auto-sync", subgroupID)
 }

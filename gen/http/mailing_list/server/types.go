@@ -1277,10 +1277,26 @@ type GetGroupsioArtifactDownloadServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// ReceiveGroupsioWebhookBadRequestResponseBody is the type of the
-// "mailing-list" service "receive-groupsio-webhook" endpoint HTTP response
-// body for the "BadRequest" error.
-type ReceiveGroupsioWebhookBadRequestResponseBody struct {
+// TriggerGroupsioAutoSyncInternalServerErrorResponseBody is the type of the
+// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
+// body for the "InternalServerError" error.
+type TriggerGroupsioAutoSyncInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// TriggerGroupsioAutoSyncNotFoundResponseBody is the type of the
+// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
+// body for the "NotFound" error.
+type TriggerGroupsioAutoSyncNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// TriggerGroupsioAutoSyncServiceUnavailableResponseBody is the type of the
+// "mailing-list" service "trigger-groupsio-auto-sync" endpoint HTTP response
+// body for the "ServiceUnavailable" error.
+type TriggerGroupsioAutoSyncServiceUnavailableResponseBody struct {
 	// Error message
 	Message string `form:"message" json:"message" xml:"message"`
 }
@@ -2784,11 +2800,31 @@ func NewGetGroupsioArtifactDownloadServiceUnavailableResponseBody(res *mailingli
 	return body
 }
 
-// NewReceiveGroupsioWebhookBadRequestResponseBody builds the HTTP response
-// body from the result of the "receive-groupsio-webhook" endpoint of the
+// NewTriggerGroupsioAutoSyncInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "trigger-groupsio-auto-sync" endpoint
+// of the "mailing-list" service.
+func NewTriggerGroupsioAutoSyncInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *TriggerGroupsioAutoSyncInternalServerErrorResponseBody {
+	body := &TriggerGroupsioAutoSyncInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewTriggerGroupsioAutoSyncNotFoundResponseBody builds the HTTP response body
+// from the result of the "trigger-groupsio-auto-sync" endpoint of the
 // "mailing-list" service.
-func NewReceiveGroupsioWebhookBadRequestResponseBody(res *mailinglist.BadRequestError) *ReceiveGroupsioWebhookBadRequestResponseBody {
-	body := &ReceiveGroupsioWebhookBadRequestResponseBody{
+func NewTriggerGroupsioAutoSyncNotFoundResponseBody(res *mailinglist.NotFoundError) *TriggerGroupsioAutoSyncNotFoundResponseBody {
+	body := &TriggerGroupsioAutoSyncNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewTriggerGroupsioAutoSyncServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "trigger-groupsio-auto-sync" endpoint
+// of the "mailing-list" service.
+func NewTriggerGroupsioAutoSyncServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *TriggerGroupsioAutoSyncServiceUnavailableResponseBody {
+	body := &TriggerGroupsioAutoSyncServiceUnavailableResponseBody{
 		Message: res.Message,
 	}
 	return body
@@ -3119,16 +3155,14 @@ func NewGetGroupsioArtifactDownloadPayload(subgroupID string, artifactID string,
 	return v
 }
 
-// NewReceiveGroupsioWebhookPayload builds a mailing-list service
-// receive-groupsio-webhook endpoint payload.
-func NewReceiveGroupsioWebhookPayload(body []byte, signature *string) *mailinglist.ReceiveGroupsioWebhookPayload {
-	v := body
-	res := &mailinglist.ReceiveGroupsioWebhookPayload{
-		Body: v,
-	}
-	res.Signature = signature
+// NewTriggerGroupsioAutoSyncPayload builds a mailing-list service
+// trigger-groupsio-auto-sync endpoint payload.
+func NewTriggerGroupsioAutoSyncPayload(subgroupID string, bearerToken *string) *mailinglist.TriggerGroupsioAutoSyncPayload {
+	v := &mailinglist.TriggerGroupsioAutoSyncPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
 
-	return res
+	return v
 }
 
 // ValidateCreateGroupsioServiceRequestBody runs the validations defined on

@@ -64,9 +64,6 @@ type environment struct {
 	EventingMaxAckPending int
 	EventingAckWaitSecs   int
 
-	// Groups.io webhook ingestion
-	GroupsIOWebhookSecret string
-
 	// HTTP
 	KODataPath string
 }
@@ -183,7 +180,6 @@ func parseEnv() environment {
 		EventingMaxDeliver:    envInt("EVENTING_MAX_DELIVER", 3),
 		EventingMaxAckPending: envInt("EVENTING_MAX_ACK_PENDING", 1000),
 		EventingAckWaitSecs:   envInt("EVENTING_ACK_WAIT_SECS", 30),
-		GroupsIOWebhookSecret: os.Getenv("GROUPSIO_WEBHOOK_SECRET"),
 		KODataPath:            koDataPath(),
 	}
 }

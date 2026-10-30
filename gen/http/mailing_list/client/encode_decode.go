@@ -3567,14 +3567,24 @@ func DecodeGetGroupsioArtifactDownloadResponse(decoder func(*http.Response) goah
 	}
 }
 
-// BuildReceiveGroupsioWebhookRequest instantiates a HTTP request object with
+// BuildTriggerGroupsioAutoSyncRequest instantiates a HTTP request object with
 // method and path set to call the "mailing-list" service
-// "receive-groupsio-webhook" endpoint
-func (c *Client) BuildReceiveGroupsioWebhookRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ReceiveGroupsioWebhookMailingListPath()}
+// "trigger-groupsio-auto-sync" endpoint
+func (c *Client) BuildTriggerGroupsioAutoSyncRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		subgroupID string
+	)
+	{
+		p, ok := v.(*mailinglist.TriggerGroupsioAutoSyncPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("mailing-list", "trigger-groupsio-auto-sync", "*mailinglist.TriggerGroupsioAutoSyncPayload", v)
+		}
+		subgroupID = p.SubgroupID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: TriggerGroupsioAutoSyncMailingListPath(subgroupID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("mailing-list", "receive-groupsio-webhook", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("mailing-list", "trigger-groupsio-auto-sync", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -3583,33 +3593,36 @@ func (c *Client) BuildReceiveGroupsioWebhookRequest(ctx context.Context, v any) 
 	return req, nil
 }
 
-// EncodeReceiveGroupsioWebhookRequest returns an encoder for requests sent to
-// the mailing-list receive-groupsio-webhook server.
-func EncodeReceiveGroupsioWebhookRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+// EncodeTriggerGroupsioAutoSyncRequest returns an encoder for requests sent to
+// the mailing-list trigger-groupsio-auto-sync server.
+func EncodeTriggerGroupsioAutoSyncRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
 	return func(req *http.Request, v any) error {
-		p, ok := v.(*mailinglist.ReceiveGroupsioWebhookPayload)
+		p, ok := v.(*mailinglist.TriggerGroupsioAutoSyncPayload)
 		if !ok {
-			return goahttp.ErrInvalidType("mailing-list", "receive-groupsio-webhook", "*mailinglist.ReceiveGroupsioWebhookPayload", v)
+			return goahttp.ErrInvalidType("mailing-list", "trigger-groupsio-auto-sync", "*mailinglist.TriggerGroupsioAutoSyncPayload", v)
 		}
-		if p.Signature != nil {
-			head := *p.Signature
-			req.Header.Set("X-Groupsio-Signature", head)
-		}
-		body := p.Body
-		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("mailing-list", "receive-groupsio-webhook", err)
+		if p.BearerToken != nil {
+			head := *p.BearerToken
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
 		}
 		return nil
 	}
 }
 
-// DecodeReceiveGroupsioWebhookResponse returns a decoder for responses
-// returned by the mailing-list receive-groupsio-webhook endpoint. restoreBody
-// controls whether the response body should be restored after having been read.
-// DecodeReceiveGroupsioWebhookResponse may return the following errors:
-//   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+// DecodeTriggerGroupsioAutoSyncResponse returns a decoder for responses
+// returned by the mailing-list trigger-groupsio-auto-sync endpoint.
+// restoreBody controls whether the response body should be restored after
+// having been read.
+// DecodeTriggerGroupsioAutoSyncResponse may return the following errors:
+//   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - error: internal error
-func DecodeReceiveGroupsioWebhookResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeTriggerGroupsioAutoSyncResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -3626,23 +3639,51 @@ func DecodeReceiveGroupsioWebhookResponse(decoder func(*http.Response) goahttp.D
 		switch resp.StatusCode {
 		case http.StatusNoContent:
 			return nil, nil
-		case http.StatusBadRequest:
+		case http.StatusInternalServerError:
 			var (
-				body ReceiveGroupsioWebhookBadRequestResponseBody
+				body TriggerGroupsioAutoSyncInternalServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("mailing-list", "receive-groupsio-webhook", err)
+				return nil, goahttp.ErrDecodingError("mailing-list", "trigger-groupsio-auto-sync", err)
 			}
-			err = ValidateReceiveGroupsioWebhookBadRequestResponseBody(&body)
+			err = ValidateTriggerGroupsioAutoSyncInternalServerErrorResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("mailing-list", "receive-groupsio-webhook", err)
+				return nil, goahttp.ErrValidationError("mailing-list", "trigger-groupsio-auto-sync", err)
 			}
-			return nil, NewReceiveGroupsioWebhookBadRequest(&body)
+			return nil, NewTriggerGroupsioAutoSyncInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body TriggerGroupsioAutoSyncNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "trigger-groupsio-auto-sync", err)
+			}
+			err = ValidateTriggerGroupsioAutoSyncNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "trigger-groupsio-auto-sync", err)
+			}
+			return nil, NewTriggerGroupsioAutoSyncNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body TriggerGroupsioAutoSyncServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "trigger-groupsio-auto-sync", err)
+			}
+			err = ValidateTriggerGroupsioAutoSyncServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "trigger-groupsio-auto-sync", err)
+			}
+			return nil, NewTriggerGroupsioAutoSyncServiceUnavailable(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("mailing-list", "receive-groupsio-webhook", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("mailing-list", "trigger-groupsio-auto-sync", resp.StatusCode, string(body))
 		}
 	}
 }

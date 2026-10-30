@@ -243,7 +243,6 @@ func run() int {
 		syncDiffOrchestrator,
 		syncApplyOrchestrator,
 		realtimeAutoSyncOrchestrator,
-		env.GroupsIOWebhookSecret,
 	)
 
 	// Wrap the service in GOA endpoints.

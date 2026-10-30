@@ -699,27 +699,34 @@ var _ = dsl.Service("mailing-list", func() {
 		})
 	})
 
-	// ---- GroupsIO webhook ingestion ----
+	// ---- GroupsIO auto-sync trigger ----
 
-	dsl.Method("receive-groupsio-webhook", func() {
-		dsl.Description("Receive a Groups.io webhook event (subgroup member added/removed). The " +
-			"raw request body is HMAC-verified against a shared secret rather than JWT-authenticated " +
-			"(see ruleset.yaml's allow_all rule for this path); for a mailing list configured with " +
-			"sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership " +
-			"reconciliation (issue #4023).")
+	dsl.Method("trigger-groupsio-auto-sync", func() {
+		dsl.Description("Trigger an immediate committee-membership auto-sync reconciliation for a " +
+			"GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c (issue " +
+			"#4023). Groups.io itself still delivers its subscribe/unsubscribe webhook only to " +
+			"ITX's existing endpoint, not to this service; ITX's committee-association Lambda " +
+			"calls this endpoint after it observes a SubGroupMemberAdded/Removed event on its own " +
+			"SNS topic for a V2-managed mailing list, so this service never needs its own " +
+			"Groups.io webhook registration or shared signing secret.")
+		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
-			dsl.Attribute("signature", dsl.String, "HMAC-SHA1 signature of the raw request body, "+
-				"base64-encoded, from the Groups.io webhook request's signature header")
-			dsl.Attribute("body", dsl.Bytes, "Raw JSON webhook payload")
-			dsl.Required("body")
+			BearerTokenAttribute()
+			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
+			dsl.Required("subgroup_id")
+			dsl.Token("bearer_token", dsl.String)
 		})
-		dsl.Error("BadRequest", BadRequestError, "Missing/invalid signature, or malformed payload")
+		dsl.Error("NotFound", NotFoundError, "Subgroup not found")
+		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
+		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
-			dsl.POST("/webhooks/groupsio")
-			dsl.Header("signature:X-Groupsio-Signature")
-			dsl.Body("body")
+			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/auto-sync")
+			dsl.Param("subgroup_id")
+			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusNoContent)
-			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("NotFound", dsl.StatusNotFound)
+			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
+			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
 		})
 	})
 

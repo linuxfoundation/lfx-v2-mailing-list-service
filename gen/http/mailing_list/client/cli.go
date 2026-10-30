@@ -813,24 +813,22 @@ func BuildGetGroupsioArtifactDownloadPayload(mailingListGetGroupsioArtifactDownl
 	return v, nil
 }
 
-// BuildReceiveGroupsioWebhookPayload builds the payload for the mailing-list
-// receive-groupsio-webhook endpoint from CLI flags.
-func BuildReceiveGroupsioWebhookPayload(mailingListReceiveGroupsioWebhookBody string, mailingListReceiveGroupsioWebhookSignature string) (*mailinglist.ReceiveGroupsioWebhookPayload, error) {
-	var body []byte
+// BuildTriggerGroupsioAutoSyncPayload builds the payload for the mailing-list
+// trigger-groupsio-auto-sync endpoint from CLI flags.
+func BuildTriggerGroupsioAutoSyncPayload(mailingListTriggerGroupsioAutoSyncSubgroupID string, mailingListTriggerGroupsioAutoSyncBearerToken string) (*mailinglist.TriggerGroupsioAutoSyncPayload, error) {
+	var subgroupID string
 	{
-		body = []byte(mailingListReceiveGroupsioWebhookBody)
+		subgroupID = mailingListTriggerGroupsioAutoSyncSubgroupID
 	}
-	var signature *string
+	var bearerToken *string
 	{
-		if mailingListReceiveGroupsioWebhookSignature != "" {
-			signature = &mailingListReceiveGroupsioWebhookSignature
+		if mailingListTriggerGroupsioAutoSyncBearerToken != "" {
+			bearerToken = &mailingListTriggerGroupsioAutoSyncBearerToken
 		}
 	}
-	v := body
-	res := &mailinglist.ReceiveGroupsioWebhookPayload{
-		Body: v,
-	}
-	res.Signature = signature
+	v := &mailinglist.TriggerGroupsioAutoSyncPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
 
-	return res, nil
+	return v, nil
 }

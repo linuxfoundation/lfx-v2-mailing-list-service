@@ -33,7 +33,6 @@ type mailingListAPI struct {
 	syncDiffComputer   port.SyncDiffComputer
 	syncApplier        port.SyncApplier
 	realtimeAutoSyncer port.RealtimeAutoSyncer
-	webhookSecret      string
 }
 
 // NewMailingListAPI returns the mailing list API service implementation.
@@ -51,7 +50,6 @@ func NewMailingListAPI(
 	syncDiffComputer port.SyncDiffComputer,
 	syncApplier port.SyncApplier,
 	realtimeAutoSyncer port.RealtimeAutoSyncer,
-	webhookSecret string,
 ) mailinglist.Service {
 	return &mailingListAPI{
 		auth:               auth,
@@ -67,7 +65,6 @@ func NewMailingListAPI(
 		syncDiffComputer:   syncDiffComputer,
 		syncApplier:        syncApplier,
 		realtimeAutoSyncer: realtimeAutoSyncer,
-		webhookSecret:      webhookSecret,
 	}
 }
 

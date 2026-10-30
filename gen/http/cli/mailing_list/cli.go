@@ -24,7 +24,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|apply-groupsio-mailing-list-sync-diff|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download|receive-groupsio-webhook)",
+		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|apply-groupsio-mailing-list-sync-diff|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download|trigger-groupsio-auto-sync)",
 	}
 }
 
@@ -161,9 +161,9 @@ func ParseEndpoint(
 		mailingListGetGroupsioArtifactDownloadArtifactIDFlag  = mailingListGetGroupsioArtifactDownloadFlags.String("artifact-id", "REQUIRED", "Artifact UUID")
 		mailingListGetGroupsioArtifactDownloadBearerTokenFlag = mailingListGetGroupsioArtifactDownloadFlags.String("bearer-token", "", "")
 
-		mailingListReceiveGroupsioWebhookFlags         = flag.NewFlagSet("receive-groupsio-webhook", flag.ExitOnError)
-		mailingListReceiveGroupsioWebhookBodyFlag      = mailingListReceiveGroupsioWebhookFlags.String("body", "REQUIRED", "")
-		mailingListReceiveGroupsioWebhookSignatureFlag = mailingListReceiveGroupsioWebhookFlags.String("signature", "", "")
+		mailingListTriggerGroupsioAutoSyncFlags           = flag.NewFlagSet("trigger-groupsio-auto-sync", flag.ExitOnError)
+		mailingListTriggerGroupsioAutoSyncSubgroupIDFlag  = mailingListTriggerGroupsioAutoSyncFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListTriggerGroupsioAutoSyncBearerTokenFlag = mailingListTriggerGroupsioAutoSyncFlags.String("bearer-token", "", "")
 	)
 	mailingListFlags.Usage = mailingListUsage
 	mailingListLivezFlags.Usage = mailingListLivezUsage
@@ -193,7 +193,7 @@ func ParseEndpoint(
 	mailingListCheckGroupsioSubscriberFlags.Usage = mailingListCheckGroupsioSubscriberUsage
 	mailingListGetGroupsioArtifactFlags.Usage = mailingListGetGroupsioArtifactUsage
 	mailingListGetGroupsioArtifactDownloadFlags.Usage = mailingListGetGroupsioArtifactDownloadUsage
-	mailingListReceiveGroupsioWebhookFlags.Usage = mailingListReceiveGroupsioWebhookUsage
+	mailingListTriggerGroupsioAutoSyncFlags.Usage = mailingListTriggerGroupsioAutoSyncUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -310,8 +310,8 @@ func ParseEndpoint(
 			case "get-groupsio-artifact-download":
 				epf = mailingListGetGroupsioArtifactDownloadFlags
 
-			case "receive-groupsio-webhook":
-				epf = mailingListReceiveGroupsioWebhookFlags
+			case "trigger-groupsio-auto-sync":
+				epf = mailingListTriggerGroupsioAutoSyncFlags
 
 			}
 
@@ -417,9 +417,9 @@ func ParseEndpoint(
 			case "get-groupsio-artifact-download":
 				endpoint = c.GetGroupsioArtifactDownload()
 				data, err = mailinglistc.BuildGetGroupsioArtifactDownloadPayload(*mailingListGetGroupsioArtifactDownloadSubgroupIDFlag, *mailingListGetGroupsioArtifactDownloadArtifactIDFlag, *mailingListGetGroupsioArtifactDownloadBearerTokenFlag)
-			case "receive-groupsio-webhook":
-				endpoint = c.ReceiveGroupsioWebhook()
-				data, err = mailinglistc.BuildReceiveGroupsioWebhookPayload(*mailingListReceiveGroupsioWebhookBodyFlag, *mailingListReceiveGroupsioWebhookSignatureFlag)
+			case "trigger-groupsio-auto-sync":
+				endpoint = c.TriggerGroupsioAutoSync()
+				data, err = mailinglistc.BuildTriggerGroupsioAutoSyncPayload(*mailingListTriggerGroupsioAutoSyncSubgroupIDFlag, *mailingListTriggerGroupsioAutoSyncBearerTokenFlag)
 			}
 		}
 	}
@@ -463,7 +463,7 @@ func mailingListUsage() {
 	fmt.Fprintln(os.Stderr, `    check-groupsio-subscriber: Check if an email address is subscribed to a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-artifact: Get a GroupsIO subgroup artifact by ID`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-artifact-download: Get a presigned S3 download URL for a GroupsIO subgroup artifact`)
-	fmt.Fprintln(os.Stderr, `    receive-groupsio-webhook: Receive a Groups.io webhook event (subgroup member added/removed). The raw request body is HMAC-verified against a shared secret rather than JWT-authenticated (see ruleset.yaml's allow_all rule for this path); for a mailing list configured with sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership reconciliation (issue #4023).`)
+	fmt.Fprintln(os.Stderr, `    trigger-groupsio-auto-sync: Trigger an immediate committee-membership auto-sync reconciliation for a GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c (issue #4023). Groups.io itself still delivers its subscribe/unsubscribe webhook only to ITX's existing endpoint, not to this service; ITX's committee-association Lambda calls this endpoint after it observes a SubGroupMemberAdded/Removed event on its own SNS topic for a V2-managed mailing list, so this service never needs its own Groups.io webhook registration or shared signing secret.`)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Additional help:")
 	fmt.Fprintf(os.Stderr, "    %s mailing-list COMMAND --help\n", os.Args[0])
@@ -1022,22 +1022,22 @@ func mailingListGetGroupsioArtifactDownloadUsage() {
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-artifact-download --subgroup-id \"Ipsa quis unde.\" --artifact-id \"Nam ab.\" --bearer-token \"eyJhbGci...\"")
 }
 
-func mailingListReceiveGroupsioWebhookUsage() {
+func mailingListTriggerGroupsioAutoSyncUsage() {
 	// Header with flags
-	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list receive-groupsio-webhook", os.Args[0])
-	fmt.Fprint(os.Stderr, " -body STRING")
-	fmt.Fprint(os.Stderr, " -signature STRING")
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list trigger-groupsio-auto-sync", os.Args[0])
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
 	fmt.Fprintln(os.Stderr)
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Receive a Groups.io webhook event (subgroup member added/removed). The raw request body is HMAC-verified against a shared secret rather than JWT-authenticated (see ruleset.yaml's allow_all rule for this path); for a mailing list configured with sync_mode auto_ml_to_c, a relevant event triggers an immediate committee membership reconciliation (issue #4023).`)
+	fmt.Fprintln(os.Stderr, `Trigger an immediate committee-membership auto-sync reconciliation for a GroupsIO subgroup, for a mailing list configured with sync_mode auto_ml_to_c (issue #4023). Groups.io itself still delivers its subscribe/unsubscribe webhook only to ITX's existing endpoint, not to this service; ITX's committee-association Lambda calls this endpoint after it observes a SubGroupMemberAdded/Removed event on its own SNS topic for a V2-managed mailing list, so this service never needs its own Groups.io webhook registration or shared signing secret.`)
 
 	// Flags list
-	fmt.Fprintln(os.Stderr, `    -body STRING: `)
-	fmt.Fprintln(os.Stderr, `    -signature STRING: `)
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list receive-groupsio-webhook --body \"UGVyc3BpY2lhdGlzIHZvbHVwdGFzIHJlY3VzYW5kYWUgdGVuZXR1ci4=\" --signature \"Dolores quod maxime.\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list trigger-groupsio-auto-sync --subgroup-id \"Nam exercitationem.\" --bearer-token \"eyJhbGci...\"")
 }

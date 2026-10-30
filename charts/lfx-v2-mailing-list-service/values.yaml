@@ -257,13 +257,6 @@ app:
     EVENTING_ENABLED:
       value: "true"
 
-    # GROUPSIO_WEBHOOK_SECRET is the shared secret Groups.io signs its webhook payloads with
-    # (verified against the x-groupsio-signature header). Already documented in lfx-v2-helm's
-    # platform README as part of the `lfx-v2-mailing-list-service` Kubernetes secret, alongside
-    # GROUPSIO_EMAIL/GROUPSIO_PASSWORD — set via valueFrom in a values override, never a literal here.
-    GROUPSIO_WEBHOOK_SECRET:
-      value: ""
-
 # externalSecretsOperator is the configuration for the External Secrets Operator integration
 externalSecretsOperator:
   # Enable/disable External Secrets Operator integration
