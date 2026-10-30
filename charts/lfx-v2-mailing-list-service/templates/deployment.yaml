@@ -108,11 +108,6 @@ spec:
             - name: OTEL_PROPAGATORS
               value: {{ $otelPropagators | quote }}
             {{- end }}
-          {{- if .Values.externalSecretsOperator.enabled }}
-          envFrom:
-            - secretRef:
-                name: {{ .Chart.Name }}
-          {{- end }}
           ports:
             - containerPort: {{.Values.service.port}}
               name: web
