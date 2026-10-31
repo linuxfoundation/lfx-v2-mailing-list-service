@@ -327,6 +327,7 @@ func (c *Client) GetGroupsioMailingListMemberCount(ctx context.Context, p *GetGr
 // GetGroupsioMailingListSyncDiff may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
 //   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-diff
+//   - "Conflict" (type *ConflictError): Mailing list's linked committee changed while the sync-diff job was running
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
@@ -345,6 +346,7 @@ func (c *Client) GetGroupsioMailingListSyncDiff(ctx context.Context, p *GetGroup
 // ApplyGroupsioMailingListSyncDiff may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
 //   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-apply
+//   - "Conflict" (type *ConflictError): Mailing list's linked committee changed while the sync-apply job was running
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error

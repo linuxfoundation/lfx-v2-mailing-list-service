@@ -965,6 +965,14 @@ type GetGroupsioMailingListSyncDiffBadRequestResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// GetGroupsioMailingListSyncDiffConflictResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Conflict" error.
+type GetGroupsioMailingListSyncDiffConflictResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody is the type of
 // the "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint
 // HTTP response body for the "InternalServerError" error.
@@ -993,6 +1001,14 @@ type GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // response body for the "BadRequest" error.
 type ApplyGroupsioMailingListSyncDiffBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ApplyGroupsioMailingListSyncDiffConflictResponseBody is the type of the
+// "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Conflict" error.
+type ApplyGroupsioMailingListSyncDiffConflictResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
@@ -2359,6 +2375,16 @@ func NewGetGroupsioMailingListSyncDiffBadRequest(body *GetGroupsioMailingListSyn
 	return v
 }
 
+// NewGetGroupsioMailingListSyncDiffConflict builds a mailing-list service
+// get-groupsio-mailing-list-sync-diff endpoint Conflict error.
+func NewGetGroupsioMailingListSyncDiffConflict(body *GetGroupsioMailingListSyncDiffConflictResponseBody) *mailinglist.ConflictError {
+	v := &mailinglist.ConflictError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewGetGroupsioMailingListSyncDiffInternalServerError builds a mailing-list
 // service get-groupsio-mailing-list-sync-diff endpoint InternalServerError
 // error.
@@ -2423,6 +2449,16 @@ func NewApplyGroupsioMailingListSyncDiffGroupsioSyncApplyResultOK(body *ApplyGro
 // apply-groupsio-mailing-list-sync-diff endpoint BadRequest error.
 func NewApplyGroupsioMailingListSyncDiffBadRequest(body *ApplyGroupsioMailingListSyncDiffBadRequestResponseBody) *mailinglist.BadRequestError {
 	v := &mailinglist.BadRequestError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyGroupsioMailingListSyncDiffConflict builds a mailing-list service
+// apply-groupsio-mailing-list-sync-diff endpoint Conflict error.
+func NewApplyGroupsioMailingListSyncDiffConflict(body *ApplyGroupsioMailingListSyncDiffConflictResponseBody) *mailinglist.ConflictError {
+	v := &mailinglist.ConflictError{
 		Message: *body.Message,
 	}
 
@@ -3669,6 +3705,16 @@ func ValidateGetGroupsioMailingListSyncDiffBadRequestResponseBody(body *GetGroup
 	return
 }
 
+// ValidateGetGroupsioMailingListSyncDiffConflictResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-sync-diff_Conflict_response_body
+func ValidateGetGroupsioMailingListSyncDiffConflictResponseBody(body *GetGroupsioMailingListSyncDiffConflictResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody runs
 // the validations defined on
 // get-groupsio-mailing-list-sync-diff_InternalServerError_response_body
@@ -3703,6 +3749,16 @@ func ValidateGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(body *
 // validations defined on
 // apply-groupsio-mailing-list-sync-diff_BadRequest_response_body
 func ValidateApplyGroupsioMailingListSyncDiffBadRequestResponseBody(body *ApplyGroupsioMailingListSyncDiffBadRequestResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateApplyGroupsioMailingListSyncDiffConflictResponseBody runs the
+// validations defined on
+// apply-groupsio-mailing-list-sync-diff_Conflict_response_body
+func ValidateApplyGroupsioMailingListSyncDiffConflictResponseBody(body *ApplyGroupsioMailingListSyncDiffConflictResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
