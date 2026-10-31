@@ -965,6 +965,14 @@ type GetGroupsioMailingListSyncDiffBadRequestResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetGroupsioMailingListSyncDiffConflictResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Conflict" error.
+type GetGroupsioMailingListSyncDiffConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody is the type of
 // the "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint
 // HTTP response body for the "InternalServerError" error.
@@ -993,6 +1001,14 @@ type GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // response body for the "BadRequest" error.
 type ApplyGroupsioMailingListSyncDiffBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ApplyGroupsioMailingListSyncDiffConflictResponseBody is the type of the
+// "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Conflict" error.
+type ApplyGroupsioMailingListSyncDiffConflictResponseBody struct {
 	// Error message
 	Message string `form:"message" json:"message" xml:"message"`
 }
@@ -2384,6 +2400,16 @@ func NewGetGroupsioMailingListSyncDiffBadRequestResponseBody(res *mailinglist.Ba
 	return body
 }
 
+// NewGetGroupsioMailingListSyncDiffConflictResponseBody builds the HTTP
+// response body from the result of the "get-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewGetGroupsioMailingListSyncDiffConflictResponseBody(res *mailinglist.ConflictError) *GetGroupsioMailingListSyncDiffConflictResponseBody {
+	body := &GetGroupsioMailingListSyncDiffConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewGetGroupsioMailingListSyncDiffInternalServerErrorResponseBody builds the
 // HTTP response body from the result of the
 // "get-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list" service.
@@ -2419,6 +2445,16 @@ func NewGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(res *mailin
 // endpoint of the "mailing-list" service.
 func NewApplyGroupsioMailingListSyncDiffBadRequestResponseBody(res *mailinglist.BadRequestError) *ApplyGroupsioMailingListSyncDiffBadRequestResponseBody {
 	body := &ApplyGroupsioMailingListSyncDiffBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyGroupsioMailingListSyncDiffConflictResponseBody builds the HTTP
+// response body from the result of the "apply-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewApplyGroupsioMailingListSyncDiffConflictResponseBody(res *mailinglist.ConflictError) *ApplyGroupsioMailingListSyncDiffConflictResponseBody {
+	body := &ApplyGroupsioMailingListSyncDiffConflictResponseBody{
 		Message: res.Message,
 	}
 	return body

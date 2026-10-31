@@ -1249,6 +1249,14 @@ paths:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
                                 message: The resource was not found.
+                "409":
+                    description: 'Conflict: Mailing list''s linked committee changed while the sync-apply job was running'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -1340,6 +1348,14 @@ paths:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
                                 message: The resource was not found.
+                "409":
+                    description: 'Conflict: Mailing list''s linked committee changed while the sync-diff job was running'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                message: The resource already exists.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
