@@ -277,13 +277,15 @@ Both orchestrators are thin proxies: they resolve the mailing list's committee U
 
 **Intentional gap in the proxied system:** when a committee is associated with a subgroup that previously had none (via `PUT`), the `CommitteeAssociated` event is deliberately not fired (commented out in `groups_subgroups.go`). Pre-existing product decision, out of scope.
 
-### Committee Member Sync (handled by the proxied system)
+### Committee Member Sync
 
-This service does **not** implement committee-to-mailing-list member synchronization. That sync is fully handled by the `committee-association` Lambda (`cmd/committee-association`) in `itx-service-groupsio`.
+There are now two independent paths that keep a mailing list in sync with its linked committee's membership. Both ultimately call the same ITX proxy endpoints this service exposes — neither reimplements committee-membership resolution locally.
 
-The flow is event-driven: `project-management` publishes SNS events (`CommitteeMemberV2Created`, `CommitteeMemberV2Deleted`, `CommitteeV2Deleted`), and `itx-service-groupsio` publishes `CommitteeChanged` when a subgroup's committee association or filters are updated. Those events flow through SQS into the Lambda, which calls this service's ITX proxy endpoints to subscribe or remove members in Groups.io.
+**v1/proxied path (handled entirely outside this service):** `project-management` publishes SNS events (`CommitteeMemberV2Created`, `CommitteeMemberV2Deleted`, `CommitteeV2Deleted`), and `itx-service-groupsio` publishes `CommitteeChanged` when a subgroup's committee association or filters are updated. Those events flow through SQS into the `committee-association` Lambda (`cmd/committee-association` in `itx-service-groupsio`), which calls this service's ITX proxy endpoints to subscribe or remove members in Groups.io. This service only needs to correctly proxy those calls.
 
-No additional implementation is needed here — this service only needs to correctly proxy the member subscribe/remove calls the Lambda makes.
+**v2 realtime auto-sync path (issue #4023, implemented in this service):** `CommitteeMemberSubscriber` (`cmd/mailing-list-api/eventing/committee_member_subscriber.go`) subscribes to committee-api's NATS `committee_member.created`/`.updated`/`.deleted` events. On each event it resolves the affected committee's linked mailing lists and, for every list configured with `sync_mode: auto_c_to_ml`, calls `RealtimeAutoSyncOrchestrator.TriggerAutoSync` (`internal/service/realtime_auto_sync.go`) — which re-runs the same `ComputeSyncDiff` + `ApplySyncDiff` reconciliation a manual "Sync Now" would, gated so only adds (never removes on a public list) propagate automatically. This keeps automatic and manual sync identical by construction instead of hand-resolving the single changed member. Processing is best-effort and not retried on failure; per-entry `SyncApplyOutcomeFailed` results are logged (not silently dropped) since there is no HTTP caller to surface them to.
+
+The two paths are independent and can both be active for the same mailing list; they converge on the same ITX sync-apply job engine, so neither can diverge from what a manual sync would produce.
 
 ### Testing the Data Stream Processor
 To test the v1 DynamoDB KV event processor locally:

@@ -232,7 +232,9 @@ func TestApplySyncDiff_RemoveMemberTypeMismatch(t *testing.T) {
 
 // TestApplySyncDiff_UnmatchedResultEmail pins that an ITX result whose email doesn't normalize-
 // match any approved add/remove fails the whole request, since there's no valid MemberType to
-// report for it and the response schema requires one of the enum values on every entry.
+// report for it and the response schema requires one of the enum values on every entry. The
+// error message redacts the email (via pkg/redaction) rather than including it verbatim, since
+// this error can also surface in an HTTP response.
 func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
@@ -251,7 +253,8 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected@example.com")
+	assert.Contains(t, err.Error(), "une****@example.com")
+	assert.NotContains(t, err.Error(), "unexpected@example.com")
 }
 
 // TestApplySyncDiff_CommitteeChangedWhileJobRunning pins that if the mailing list's linked

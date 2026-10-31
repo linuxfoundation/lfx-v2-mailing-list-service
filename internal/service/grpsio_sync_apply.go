@@ -9,6 +9,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/redaction"
 )
 
 // SyncApplyOrchestrator implements port.SyncApplier by delegating the actual apply to ITX's own
@@ -70,13 +71,13 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	wantAddType, wantRemoveType := memberTypesForDirection(direction)
 	for _, add := range approvedAdds {
 		if add.MemberType != wantAddType {
-			return nil, errs.NewValidation("approved add for " + add.Email + " has member_type " +
+			return nil, errs.NewValidation("approved add for " + redaction.RedactEmail(add.Email) + " has member_type " +
 				string(add.MemberType) + ", but the mailing list's current sync_mode expects " + string(wantAddType))
 		}
 	}
 	for _, remove := range approvedRemoves {
 		if remove.MemberType != wantRemoveType {
-			return nil, errs.NewValidation("approved remove for " + remove.Email + " has member_type " +
+			return nil, errs.NewValidation("approved remove for " + redaction.RedactEmail(remove.Email) + " has member_type " +
 				string(remove.MemberType) + ", but the mailing list's current sync_mode expects " + string(wantRemoveType))
 		}
 	}
@@ -153,7 +154,7 @@ func fromSyncApplyJob(
 			add, ok := addByNormalized[normalizeEmail(r.Email)]
 			if !ok {
 				return nil, errs.NewServiceUnavailable(
-					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved add by email")
+					"ITX sync-apply reported a result for " + redaction.RedactEmail(r.Email) + " that does not match any approved add by email")
 			}
 			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {
@@ -171,7 +172,7 @@ func fromSyncApplyJob(
 			remove, ok := removeByNormalized[normalizeEmail(r.Email)]
 			if !ok {
 				return nil, errs.NewServiceUnavailable(
-					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved remove by email")
+					"ITX sync-apply reported a result for " + redaction.RedactEmail(r.Email) + " that does not match any approved remove by email")
 			}
 			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {

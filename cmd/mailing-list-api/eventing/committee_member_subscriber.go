@@ -95,9 +95,16 @@ func (s *CommitteeMemberSubscriber) Start(ctx context.Context) error {
 	return nil
 }
 
+// committeeMemberDrainTimeout bounds how long Stop waits for in-flight handlers to finish
+// draining before cancelling the context regardless, so a stuck drain cannot hang shutdown
+// forever.
+const committeeMemberDrainTimeout = 5 * time.Second
+
 // Stop drains all subscriptions (allowing in-flight handlers to complete), then cancels the
 // context. Drain must precede cancel so an in-flight TriggerAutoSync call is not aborted mid-ITX-
-// job-poll by context cancellation.
+// job-poll by context cancellation: *nats.Subscription.Drain only *starts* an asynchronous drain
+// and returns immediately, so stopSubs polls IsDraining until it clears (or the timeout elapses)
+// instead of treating Drain's return as completion.
 func (s *CommitteeMemberSubscriber) Stop() {
 	s.stopSubs()
 	if s.cancel != nil {
@@ -109,14 +116,16 @@ func (s *CommitteeMemberSubscriber) stopSubs() {
 	for _, sub := range s.subs {
 		if err := sub.Drain(); err != nil {
 			s.logger.Warn("error draining committee_member subscription", "subject", sub.Subject, "error", err)
+			continue
+		}
+		deadline := time.Now().Add(committeeMemberDrainTimeout)
+		for sub.IsDraining() && time.Now().Before(deadline) {
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 }
 
 func (s *CommitteeMemberSubscriber) handle(msg *nats.Msg) {
-	ctx, cancel := context.WithTimeout(s.ctx, committeeMemberEventCallTimeout)
-	defer cancel()
-
 	committeeUID, err := committeeUIDFromEvent(msg.Data)
 	if err != nil {
 		s.logger.Warn("failed to parse committee_member event; discarding", "subject", msg.Subject, "error", err)
@@ -127,7 +136,7 @@ func (s *CommitteeMemberSubscriber) handle(msg *nats.Msg) {
 		return
 	}
 
-	if err := processCommitteeMemberEvent(ctx, committeeUID, s.mailingListReader, s.autoSyncer, s.logger); err != nil {
+	if err := processCommitteeMemberEvent(s.ctx, committeeUID, s.mailingListReader, s.autoSyncer, s.logger); err != nil {
 		s.logger.Warn("committee_member auto-sync failed; best-effort, not retrying",
 			"error", err,
 			"committee_uid", committeeUID,
@@ -140,14 +149,32 @@ func (s *CommitteeMemberSubscriber) handle(msg *nats.Msg) {
 // payloads without needing to know which of the three shapes applies: TriggerAutoSync
 // recomputes a full sync-diff rather than hand-resolving the single changed member, so the
 // per-member fields in the event (email, voting status, ...) are not needed here.
+//
+// committee-api's CommitteeEvent envelope (committee_message.go) carries the actual payload
+// nested under "data", not at the top level: created/deleted events flatten the member (and so
+// committee_uid) directly under data, while the updated event nests the member (and its
+// committee_uid) one level deeper under data.member — see CommitteeMemberCreatedEventData/
+// CommitteeMemberDeletedEventData (embedded *CommitteeMember) vs CommitteeMemberUpdateEventData
+// (MemberUID/OldMember/Member) in that file.
 func committeeUIDFromEvent(data []byte) (string, error) {
 	var envelope struct {
-		CommitteeUID string `json:"committee_uid"`
+		Data struct {
+			CommitteeUID string `json:"committee_uid"`
+			Member       *struct {
+				CommitteeUID string `json:"committee_uid"`
+			} `json:"member"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal(data, &envelope); err != nil {
 		return "", err
 	}
-	return envelope.CommitteeUID, nil
+	if envelope.Data.CommitteeUID != "" {
+		return envelope.Data.CommitteeUID, nil
+	}
+	if envelope.Data.Member != nil {
+		return envelope.Data.Member.CommitteeUID, nil
+	}
+	return "", nil
 }
 
 // processCommitteeMemberEvent resolves committeeUID's linked mailing lists and triggers an
@@ -156,6 +183,11 @@ func committeeUIDFromEvent(data []byte) (string, error) {
 // them, but filtering here avoids an unnecessary ITX round-trip for lists this event cannot
 // possibly affect, and keeps this handler's effect scoped to the issue's committee-to-mailing-list
 // direction rather than also quietly reconciling an unrelated ml_to_c list's drift.
+//
+// Each linked list gets its own committeeMemberEventCallTimeout budget rather than sharing one
+// deadline for the whole batch: a committee linked to several mailing lists would otherwise have
+// its later lists starved (or outright skipped) by the earlier ones' ITX round-trips eating into a
+// single shared window.
 func processCommitteeMemberEvent(
 	ctx context.Context,
 	committeeUID string,
@@ -173,7 +205,10 @@ func processCommitteeMemberEvent(
 		if len(ml.Committees) == 0 || ml.Committees[0].SyncMode != model.SyncModeAutoCommitteeToMailingList {
 			continue
 		}
-		if err := autoSyncer.TriggerAutoSync(ctx, ml.UID); err != nil {
+		listCtx, cancel := context.WithTimeout(ctx, committeeMemberEventCallTimeout)
+		err := autoSyncer.TriggerAutoSync(listCtx, ml.UID)
+		cancel()
+		if err != nil {
 			logger.Warn("auto-sync failed for mailing list linked to committee",
 				"mailing_list_id", ml.UID,
 				"committee_uid", committeeUID,

@@ -4,8 +4,10 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,37 +56,13 @@ func (a *stubSyncApplier) ApplySyncDiff(
 	return a.result, a.err
 }
 
-// stubMemberReader controls CheckSubscriber responses by mailingListID+email.
-type stubMemberReader struct {
-	// subscribed[mailingListID][email] = true means CheckSubscriber returns (true, nil).
-	subscribed map[string]map[string]bool
-	err        error
-}
-
-func (r *stubMemberReader) ListMembers(_ context.Context, _ string) ([]*model.GrpsIOMember, int, error) {
-	return nil, 0, nil
-}
-
-func (r *stubMemberReader) GetMember(_ context.Context, _, _ string) (*model.GrpsIOMember, error) {
-	return nil, nil
-}
-
-func (r *stubMemberReader) CheckSubscriber(_ context.Context, mailingListID, email string) (bool, error) {
-	if r.err != nil {
-		return false, r.err
-	}
-	return r.subscribed[mailingListID][email], nil
-}
-
 func newTestRealtimeAutoSyncOrchestrator(
 	mlReader *stubMLReader,
-	memberReader *stubMemberReader,
 	diffComputer *stubSyncDiffComputer,
 	applier *stubSyncApplier,
 ) port.RealtimeAutoSyncer {
 	return NewRealtimeAutoSyncOrchestrator(
 		WithRealtimeAutoSyncMailingListReader(mlReader),
-		WithRealtimeAutoSyncMemberReader(memberReader),
 		WithRealtimeAutoSyncDiffComputer(diffComputer),
 		WithRealtimeAutoSyncApplier(applier),
 	)
@@ -95,7 +73,7 @@ func TestTriggerAutoSync_NoLinkedCommitteeOrManual_NoOp(t *testing.T) {
 	diffComputer := &stubSyncDiffComputer{err: errs.NewValidation("mailing list is not linked to a committee")}
 	applier := &stubSyncApplier{}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.NoError(t, err)
@@ -107,7 +85,7 @@ func TestTriggerAutoSync_ComputeDiffUnexpectedError_Propagates(t *testing.T) {
 	diffComputer := &stubSyncDiffComputer{err: errors.New("itx unavailable")}
 	applier := &stubSyncApplier{}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.Error(t, err)
@@ -119,7 +97,7 @@ func TestTriggerAutoSync_EmptyDiff_NoOp(t *testing.T) {
 	diffComputer := &stubSyncDiffComputer{diff: &model.SyncDiff{MailingListID: "ml-1"}}
 	applier := &stubSyncApplier{}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.NoError(t, err)
@@ -137,7 +115,7 @@ func TestTriggerAutoSync_AddsAlwaysPropagate_RegardlessOfVisibility(t *testing.T
 		diffComputer := &stubSyncDiffComputer{diff: diff}
 		applier := &stubSyncApplier{}
 
-		o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+		o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 		err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 		require.NoError(t, err)
@@ -157,100 +135,31 @@ func TestTriggerAutoSync_PublicList_RemovesNeverPropagate(t *testing.T) {
 	diffComputer := &stubSyncDiffComputer{diff: diff}
 	applier := &stubSyncApplier{}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.NoError(t, err)
 	assert.False(t, applier.called, "a public list with nothing but a gated remove has nothing left to apply")
 }
 
-func TestTriggerAutoSync_PrivateList_MailingListMemberRemove_PropagatesWithoutGuardCheck(t *testing.T) {
-	ml := mlWithCommittee("committee-1")
-	ml.Public = false
-	mlReader := &stubMLReader{ml: ml}
-	diff := &model.SyncDiff{
-		Removes: []model.SyncDiffRemove{{Email: "gone@example.com", MemberType: model.MemberTypeMailingListMember}},
+func TestTriggerAutoSync_PrivateList_RemovesPropagate_RegardlessOfMemberType(t *testing.T) {
+	for _, memberType := range []model.MemberType{model.MemberTypeMailingListMember, model.MemberTypeCommitteeMember} {
+		ml := mlWithCommittee("committee-1")
+		ml.Public = false
+		mlReader := &stubMLReader{ml: ml}
+		diff := &model.SyncDiff{
+			Removes: []model.SyncDiffRemove{{Email: "gone@example.com", MemberType: memberType}},
+		}
+		diffComputer := &stubSyncDiffComputer{diff: diff}
+		applier := &stubSyncApplier{}
+
+		o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
+		err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+		require.NoError(t, err)
+		require.True(t, applier.called)
+		assert.Equal(t, diff.Removes, applier.gotRemoves)
 	}
-	diffComputer := &stubSyncDiffComputer{diff: diff}
-	applier := &stubSyncApplier{}
-	// No other lists configured; CheckSubscriber would fail the test if the guard incorrectly
-	// consulted it for a c_to_ml-direction (mailing-list-member) removal.
-	memberReader := &stubMemberReader{err: errors.New("should not be called")}
-
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, memberReader, diffComputer, applier)
-	err := o.TriggerAutoSync(context.Background(), "ml-1")
-
-	require.NoError(t, err)
-	require.True(t, applier.called)
-	assert.Equal(t, diff.Removes, applier.gotRemoves)
-}
-
-func TestTriggerAutoSync_PrivateList_CommitteeMemberRemove_SkippedIfStillSubscribedElsewhere(t *testing.T) {
-	ml := mlWithCommittee("committee-1")
-	ml.UID = "ml-1"
-	ml.Public = false
-	otherML := mlWithCommittee("committee-1")
-	otherML.UID = "ml-2"
-	mlReader := &stubMLReader{ml: ml, listMLs: []*model.GroupsIOMailingList{ml, otherML}}
-	diff := &model.SyncDiff{
-		Removes: []model.SyncDiffRemove{{Email: "still-subscribed@example.com", MemberType: model.MemberTypeCommitteeMember}},
-	}
-	diffComputer := &stubSyncDiffComputer{diff: diff}
-	applier := &stubSyncApplier{}
-	memberReader := &stubMemberReader{
-		subscribed: map[string]map[string]bool{
-			"ml-2": {"still-subscribed@example.com": true},
-		},
-	}
-
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, memberReader, diffComputer, applier)
-	err := o.TriggerAutoSync(context.Background(), "ml-1")
-
-	require.NoError(t, err)
-	assert.False(t, applier.called, "removal must be skipped while the person is still subscribed via another linked mailing list")
-}
-
-func TestTriggerAutoSync_PrivateList_CommitteeMemberRemove_PropagatesIfNotSubscribedElsewhere(t *testing.T) {
-	ml := mlWithCommittee("committee-1")
-	ml.UID = "ml-1"
-	ml.Public = false
-	otherML := mlWithCommittee("committee-1")
-	otherML.UID = "ml-2"
-	mlReader := &stubMLReader{ml: ml, listMLs: []*model.GroupsIOMailingList{ml, otherML}}
-	diff := &model.SyncDiff{
-		Removes: []model.SyncDiffRemove{{Email: "fully-gone@example.com", MemberType: model.MemberTypeCommitteeMember}},
-	}
-	diffComputer := &stubSyncDiffComputer{diff: diff}
-	applier := &stubSyncApplier{}
-	memberReader := &stubMemberReader{subscribed: map[string]map[string]bool{}}
-
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, memberReader, diffComputer, applier)
-	err := o.TriggerAutoSync(context.Background(), "ml-1")
-
-	require.NoError(t, err)
-	require.True(t, applier.called)
-	assert.Equal(t, diff.Removes, applier.gotRemoves)
-}
-
-func TestTriggerAutoSync_CrossListGuardError_Propagates(t *testing.T) {
-	ml := mlWithCommittee("committee-1")
-	ml.UID = "ml-1"
-	ml.Public = false
-	otherML := mlWithCommittee("committee-1")
-	otherML.UID = "ml-2"
-	mlReader := &stubMLReader{ml: ml, listMLs: []*model.GroupsIOMailingList{ml, otherML}}
-	diff := &model.SyncDiff{
-		Removes: []model.SyncDiffRemove{{Email: "x@example.com", MemberType: model.MemberTypeCommitteeMember}},
-	}
-	diffComputer := &stubSyncDiffComputer{diff: diff}
-	applier := &stubSyncApplier{}
-	memberReader := &stubMemberReader{err: errors.New("member service unavailable")}
-
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, memberReader, diffComputer, applier)
-	err := o.TriggerAutoSync(context.Background(), "ml-1")
-
-	require.Error(t, err)
-	assert.False(t, applier.called)
 }
 
 func TestTriggerAutoSync_GetMailingListError_Propagates(t *testing.T) {
@@ -260,11 +169,40 @@ func TestTriggerAutoSync_GetMailingListError_Propagates(t *testing.T) {
 	}}
 	applier := &stubSyncApplier{}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.Error(t, err)
 	assert.False(t, applier.called)
+}
+
+func TestTriggerAutoSync_PerEntryFailure_LoggedNotDropped(t *testing.T) {
+	ml := mlWithCommittee("committee-1")
+	mlReader := &stubMLReader{ml: ml}
+	diffComputer := &stubSyncDiffComputer{diff: &model.SyncDiff{
+		Adds: []model.SyncDiffAdd{{Email: "bounced@example.com", MemberType: model.MemberTypeMailingListMember}},
+	}}
+	applier := &stubSyncApplier{result: &model.SyncApplyResult{
+		MailingListID: "ml-1",
+		Added: []model.SyncApplyAddResult{
+			{Email: "bounced@example.com", Outcome: model.SyncApplyOutcomeFailed, Error: "subscriber add rejected"},
+		},
+	}}
+
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+	o := NewRealtimeAutoSyncOrchestrator(
+		WithRealtimeAutoSyncMailingListReader(mlReader),
+		WithRealtimeAutoSyncDiffComputer(diffComputer),
+		WithRealtimeAutoSyncApplier(applier),
+		WithRealtimeAutoSyncLogger(logger),
+	)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err, "a per-entry failure inside an otherwise-successful job is not a call error")
+	assert.Contains(t, logBuf.String(), "add failed")
+	assert.Contains(t, logBuf.String(), "subscriber add rejected")
+	assert.NotContains(t, logBuf.String(), "bounced@example.com", "the raw email must not be logged")
 }
 
 func TestTriggerAutoSync_ApplySyncDiffError_Propagates(t *testing.T) {
@@ -275,7 +213,7 @@ func TestTriggerAutoSync_ApplySyncDiffError_Propagates(t *testing.T) {
 	}}
 	applier := &stubSyncApplier{err: errors.New("itx job failed")}
 
-	o := newTestRealtimeAutoSyncOrchestrator(mlReader, &stubMemberReader{}, diffComputer, applier)
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.Error(t, err)

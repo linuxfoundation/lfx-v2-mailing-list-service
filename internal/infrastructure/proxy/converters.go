@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
@@ -51,13 +52,17 @@ func fromWireSubgroup(w *subgroupWire) *model.GroupsIOMailingList {
 	createdAt, _ := converter.ParseRFC3339(w.CreatedAt)
 	updatedAt, _ := converter.ParseRFC3339(w.UpdatedAt)
 	ml := &model.GroupsIOMailingList{
-		UID:            uid,
-		ProjectUID:     w.ProjectID,
-		ServiceUID:     w.ParentID,
-		GroupID:        converter.NonZeroInt64(w.GroupID),
-		GroupName:      w.Name,
-		Description:    w.Description,
-		Type:           w.Type,
+		UID:         uid,
+		ProjectUID:  w.ProjectID,
+		ServiceUID:  w.ParentID,
+		GroupID:     converter.NonZeroInt64(w.GroupID),
+		GroupName:   w.Name,
+		Description: w.Description,
+		Type:        w.Type,
+		// Public mirrors transformV1ToGrpsIOMailingList's visibility handling: ITX's
+		// "visibility" wire field is "public" | "approval_required" | "invite_only", and only
+		// "public" grants public access — any other or unrecognized value is treated as private.
+		Public:         strings.EqualFold(w.AudienceAccess, "public"),
 		AudienceAccess: w.AudienceAccess,
 		CreatedAt:      createdAt,
 		UpdatedAt:      updatedAt,

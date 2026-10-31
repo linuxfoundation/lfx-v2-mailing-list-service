@@ -66,10 +66,10 @@ func TestCommitteeUIDFromEvent(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "created event", data: `{"member_uid":"m1","committee_uid":"c1","project_uid":"p1"}`, want: "c1"},
-		{name: "deleted event", data: `{"member_uid":"m1","committee_uid":"c2","email":"a@example.com"}`, want: "c2"},
-		{name: "updated event", data: `{"member_uid":"m1","committee_uid":"c3","old_member":{},"new_member":{}}`, want: "c3"},
-		{name: "missing committee_uid", data: `{"member_uid":"m1"}`, want: ""},
+		{name: "created event", data: `{"data":{"member_uid":"m1","committee_uid":"c1","project_uid":"p1"}}`, want: "c1"},
+		{name: "deleted event", data: `{"data":{"member_uid":"m1","committee_uid":"c2","email":"a@example.com"}}`, want: "c2"},
+		{name: "updated event", data: `{"data":{"member_uid":"m1","old_member":{},"member":{"committee_uid":"c3"}}}`, want: "c3"},
+		{name: "missing committee_uid", data: `{"data":{"member_uid":"m1"}}`, want: ""},
 		{name: "malformed json", data: `not json`, wantErr: true},
 	}
 	for _, tt := range tests {
