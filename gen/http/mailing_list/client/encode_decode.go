@@ -2056,6 +2056,7 @@ func EncodeGetGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) goa
 // having been read.
 // DecodeGetGroupsioMailingListSyncDiffResponse may return the following errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *mailinglist.ConflictError): http.StatusConflict
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
@@ -2104,6 +2105,20 @@ func DecodeGetGroupsioMailingListSyncDiffResponse(decoder func(*http.Response) g
 				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
 			}
 			return nil, NewGetGroupsioMailingListSyncDiffBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body GetGroupsioMailingListSyncDiffConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffConflict(&body)
 		case http.StatusInternalServerError:
 			var (
 				body GetGroupsioMailingListSyncDiffInternalServerErrorResponseBody
@@ -2211,6 +2226,7 @@ func EncodeApplyGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) g
 // DecodeApplyGroupsioMailingListSyncDiffResponse may return the following
 // errors:
 //   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *mailinglist.ConflictError): http.StatusConflict
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
@@ -2259,6 +2275,20 @@ func DecodeApplyGroupsioMailingListSyncDiffResponse(decoder func(*http.Response)
 				return nil, goahttp.ErrValidationError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
 			}
 			return nil, NewApplyGroupsioMailingListSyncDiffBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body ApplyGroupsioMailingListSyncDiffConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateApplyGroupsioMailingListSyncDiffConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewApplyGroupsioMailingListSyncDiffConflict(&body)
 		case http.StatusInternalServerError:
 			var (
 				body ApplyGroupsioMailingListSyncDiffInternalServerErrorResponseBody

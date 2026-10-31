@@ -415,6 +415,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Result(GroupsioSyncDiffType)
 		dsl.Error("NotFound", NotFoundError, "Subgroup or linked committee not found")
 		dsl.Error("BadRequest", BadRequestError, "Subgroup has no linked committee, or its sync_mode does not support sync-diff")
+		dsl.Error("Conflict", ConflictError, "Mailing list's linked committee changed while the sync-diff job was running")
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
@@ -424,6 +425,7 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("NotFound", dsl.StatusNotFound)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("Conflict", dsl.StatusConflict)
 			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
 			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
 		})
@@ -443,6 +445,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Result(GroupsioSyncApplyResultType)
 		dsl.Error("NotFound", NotFoundError, "Subgroup or linked committee not found")
 		dsl.Error("BadRequest", BadRequestError, "Subgroup has no linked committee, or its sync_mode does not support sync-apply")
+		dsl.Error("Conflict", ConflictError, "Mailing list's linked committee changed while the sync-apply job was running")
 		dsl.Error("InternalServerError", InternalServerError, "Internal server error")
 		dsl.Error("ServiceUnavailable", ServiceUnavailableError, "Service unavailable")
 		dsl.HTTP(func() {
@@ -452,6 +455,7 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("NotFound", dsl.StatusNotFound)
 			dsl.Response("BadRequest", dsl.StatusBadRequest)
+			dsl.Response("Conflict", dsl.StatusConflict)
 			dsl.Response("InternalServerError", dsl.StatusInternalServerError)
 			dsl.Response("ServiceUnavailable", dsl.StatusServiceUnavailable)
 		})
