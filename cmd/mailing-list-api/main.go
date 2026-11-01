@@ -314,19 +314,28 @@ func run() int {
 	shutdownCtxC <- shutdownCtx
 	cancel()
 
-	// Stop the invite_accepted subscriber so that in-flight AcceptInvite calls can
-	// complete gracefully. Bounded by the same shutdownCtx deadline so a stuck drain cannot
-	// run past it either. Runs concurrently with HTTP shutdown (triggered above).
+	// Stop the invite_accepted and committee_member subscribers concurrently, each bounded by
+	// the same shutdownCtx deadline so a stuck drain cannot run past it either. Both run
+	// concurrently with HTTP shutdown (triggered above). Calling these sequentially would let a
+	// slow invite_accepted drain consume the whole shutdown budget before the committee_member
+	// drain even starts, leaving its subscriptions live and still accepting events the entire
+	// time.
+	var subWG sync.WaitGroup
 	if inviteAccSub != nil {
-		inviteAccSub.Stop(shutdownCtx)
+		subWG.Add(1)
+		go func() {
+			defer subWG.Done()
+			inviteAccSub.Stop(shutdownCtx)
+		}()
 	}
-	// Stop the committee_member subscriber so that an in-flight TriggerAutoSync call is
-	// not aborted mid-ITX-job-poll. Bounded by the same shutdownCtx deadline so a stuck
-	// drain cannot run past it either. Runs concurrently with HTTP shutdown and the
-	// invite_accepted drain above.
 	if committeeMemberSub != nil {
-		committeeMemberSub.Stop(shutdownCtx)
+		subWG.Add(1)
+		go func() {
+			defer subWG.Done()
+			committeeMemberSub.Stop(shutdownCtx)
+		}()
 	}
+	subWG.Wait()
 
 	done := make(chan struct{})
 	go func() {

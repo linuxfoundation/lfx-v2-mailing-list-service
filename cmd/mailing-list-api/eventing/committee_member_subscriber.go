@@ -124,19 +124,38 @@ func (s *CommitteeMemberSubscriber) Stop(deadlineCtx context.Context) {
 	}
 }
 
+// stopSubs starts draining every subscription before waiting on any of them, so the shared deadline
+// is spent waiting on all subscriptions concurrently rather than sequentially. A per-subscription
+// drain-then-wait loop would let one slow subscription consume the whole deadline before the next
+// subscription's Drain() is even called — leaving it undrained and still accepting queue-group
+// deliveries for the entire shutdown window.
 func (s *CommitteeMemberSubscriber) stopSubs(deadlineCtx context.Context) {
 	deadline := time.Now().Add(committeeMemberDrainTimeout)
 	if d, ok := deadlineCtx.Deadline(); ok && d.Before(deadline) {
 		deadline = d
 	}
+
+	draining := make([]*nats.Subscription, 0, len(s.subs))
 	for _, sub := range s.subs {
 		if err := sub.Drain(); err != nil {
 			s.logger.Warn("error draining committee_member subscription", "subject", sub.Subject, "error", err)
 			continue
 		}
-		for sub.IsDraining() && time.Now().Before(deadline) {
-			time.Sleep(10 * time.Millisecond)
+		draining = append(draining, sub)
+	}
+
+	for {
+		stillDraining := false
+		for _, sub := range draining {
+			if sub.IsDraining() {
+				stillDraining = true
+				break
+			}
 		}
+		if !stillDraining || !time.Now().Before(deadline) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
