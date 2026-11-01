@@ -177,7 +177,9 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 // request by (normalized) email. A result email that matches no approved add/remove has no valid
 // MemberType to report — the response schema requires one of the two enum values, so such a
 // result can't be represented as a (even failed) per-entry outcome without violating it. That
-// case is treated as an ITX protocol violation and fails the whole request.
+// case, an unrecognized Action, and a short result set (ITX silently dropping an approved entry)
+// are all treated as ITX protocol violations and fail the whole request — the API promises exactly
+// one outcome per approved add/remove, so a partial result set must not be reported as success.
 func fromSyncApplyJob(
 	mailingListID, committeeUID string,
 	job *port.SyncApplyJob,
@@ -191,14 +193,23 @@ func fromSyncApplyJob(
 		Removed:       make([]model.SyncApplyRemoveResult, 0, len(job.Results)),
 	}
 
+	seenAdds := make(map[string]bool, len(addByNormalized))
+	seenRemoves := make(map[string]bool, len(removeByNormalized))
+
 	for _, r := range job.Results {
+		normalized := normalizeEmail(r.Email)
 		switch r.Action {
 		case "add":
-			add, ok := addByNormalized[normalizeEmail(r.Email)]
+			add, ok := addByNormalized[normalized]
 			if !ok {
 				return nil, errs.NewServiceUnavailable(
 					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved add by email")
 			}
+			if seenAdds[normalized] {
+				return nil, errs.NewServiceUnavailable(
+					"ITX sync-apply reported more than one result for approved add " + r.Email)
+			}
+			seenAdds[normalized] = true
 			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeAdded
@@ -212,11 +223,16 @@ func fromSyncApplyJob(
 				Error:      r.Error,
 			})
 		case "remove":
-			remove, ok := removeByNormalized[normalizeEmail(r.Email)]
+			remove, ok := removeByNormalized[normalized]
 			if !ok {
 				return nil, errs.NewServiceUnavailable(
 					"ITX sync-apply reported a result for " + r.Email + " that does not match any approved remove by email")
 			}
+			if seenRemoves[normalized] {
+				return nil, errs.NewServiceUnavailable(
+					"ITX sync-apply reported more than one result for approved remove " + r.Email)
+			}
+			seenRemoves[normalized] = true
 			outcome := model.SyncApplyOutcomeFailed
 			if r.Status == "success" {
 				outcome = model.SyncApplyOutcomeRemoved
@@ -228,7 +244,15 @@ func fromSyncApplyJob(
 				Outcome:    outcome,
 				Error:      r.Error,
 			})
+		default:
+			return nil, errs.NewServiceUnavailable(
+				"ITX sync-apply reported a result for " + r.Email + " with unrecognized action " + r.Action)
 		}
+	}
+
+	if len(seenAdds) != len(addByNormalized) || len(seenRemoves) != len(removeByNormalized) {
+		return nil, errs.NewServiceUnavailable(
+			"ITX sync-apply job completed without reporting a result for every approved add/remove")
 	}
 
 	return result, nil
