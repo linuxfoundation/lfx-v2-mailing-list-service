@@ -256,6 +256,79 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 	assert.Contains(t, err.Error(), "unexpected@example.com")
 }
 
+// TestApplySyncDiff_IncompleteResultSet pins that a job completing with fewer results than
+// approved entries fails the whole request instead of silently reporting success for a subset
+// (per @copilot-pull-request-reviewer).
+func TestApplySyncDiff_IncompleteResultSet(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			postApplyJobID: "apply-1",
+			applyJob: &port.SyncApplyJob{
+				ID:     "apply-1",
+				Status: port.SyncJobStatusCompleted,
+				Results: []port.SyncApplyJobResult{
+					{Email: "alice@example.com", Action: "add", Status: "success"},
+					// bob@example.com was approved but ITX reported no result for it.
+				},
+			},
+		},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+		{Email: "bob@example.com", MemberID: "cm-2", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "every approved add/remove")
+}
+
+// TestApplySyncDiff_DuplicateResultForSameApprovedEntry pins that ITX reporting two results for
+// the same approved entry fails the whole request rather than silently keeping only one.
+func TestApplySyncDiff_DuplicateResultForSameApprovedEntry(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			postApplyJobID: "apply-1",
+			applyJob: &port.SyncApplyJob{
+				ID:     "apply-1",
+				Status: port.SyncJobStatusCompleted,
+				Results: []port.SyncApplyJobResult{
+					{Email: "alice@example.com", Action: "add", Status: "success"},
+					{Email: "alice@example.com", Action: "add", Status: "error"},
+				},
+			},
+		},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "more than one result")
+}
+
+// TestApplySyncDiff_UnrecognizedResultAction pins that an unrecognized action in ITX's result
+// (neither "add" nor "remove") fails the request instead of being silently ignored.
+func TestApplySyncDiff_UnrecognizedResultAction(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			postApplyJobID: "apply-1",
+			applyJob: &port.SyncApplyJob{
+				ID:     "apply-1",
+				Status: port.SyncJobStatusCompleted,
+				Results: []port.SyncApplyJobResult{
+					{Email: "alice@example.com", Action: "update", Status: "success"},
+				},
+			},
+		},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unrecognized action")
+}
+
 // TestApplySyncDiff_CommitteeChangedWhileJobRunning pins that if the mailing list's linked
 // committee changes between the sync-apply job starting and completing, the request fails
 // instead of attributing the (stale) job's results to the newly-linked committee.
