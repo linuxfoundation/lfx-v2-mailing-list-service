@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -101,8 +102,13 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 	diff, err := o.syncDiffComputer.ComputeSyncDiff(ctx, mailingListID)
 	if err != nil {
 		var validationErr errs.Validation
-		if errors.As(err, &validationErr) {
-			// Not linked to a committee, or sync_mode is manual: nothing to auto-sync.
+		if errors.As(err, &validationErr) && isNothingToReconcileValidation(validationErr) {
+			// Not linked to a committee, or sync_mode is manual/unrecognized: nothing to
+			// auto-sync. Any other Validation — notably ITX's PostSyncDiff reporting a sync job
+			// already in progress for this mailing list — is a real, if transient, failure to
+			// process this event and must not be swallowed as a successful no-op (per
+			// @greptile-apps/@copilot-pull-request-reviewer): it falls through to the
+			// "return err" below so the subscriber logs why the sync was missed.
 			return nil
 		}
 		return err
@@ -142,6 +148,19 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 	}
 	o.logFailedOutcomes(mailingListID, result)
 	return nil
+}
+
+// isNothingToReconcileValidation reports whether validationErr is one of the three
+// Validation errors ComputeSyncDiff/syncJobDirectionForMode itself produce for a mailing list
+// with nothing to reconcile (not linked to a committee, sync_mode is manual, or sync_mode is
+// unrecognized) — as opposed to a Validation error ITX's PostSyncDiff returns for an unrelated
+// reason, most notably a sync job already in progress for this mailing list. The message is the
+// only distinguishing signal the port.ITXSyncClient/errs.Validation contract exposes.
+func isNothingToReconcileValidation(validationErr errs.Validation) bool {
+	msg := validationErr.Error()
+	return msg == notLinkedToCommitteeValidationMsg ||
+		msg == syncModeManualValidationMsg ||
+		strings.HasPrefix(msg, syncModeUnrecognizedValidationMsgPrefix)
 }
 
 // filterCrossListRemoves drops any removal whose email is still subscribed to another mailing

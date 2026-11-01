@@ -129,6 +129,23 @@ func TestTriggerAutoSync_NoLinkedCommitteeOrManual_NoOp(t *testing.T) {
 	assert.False(t, applier.called, "apply must not be attempted when there is nothing to auto-sync")
 }
 
+// TestTriggerAutoSync_BusyJobValidation_Propagates pins that a Validation error ITX's
+// PostSyncDiff returns for a sync job already in progress for this mailing list is not mistaken
+// for the "nothing to reconcile" Validation this orchestrator's own checks produce — it must
+// propagate as a real error so the subscriber logs that the sync was missed, not silently treated
+// as a successful no-op (per @greptile-apps/@copilot-pull-request-reviewer).
+func TestTriggerAutoSync_BusyJobValidation_Propagates(t *testing.T) {
+	mlReader := &stubMLReader{ml: mlWithCommittee("committee-1")}
+	diffComputer := &stubSyncDiffComputer{err: errs.NewValidation("a sync job is already in progress for this mailing list")}
+	applier := &stubSyncApplier{}
+
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.Error(t, err)
+	assert.False(t, applier.called)
+}
+
 func TestTriggerAutoSync_ComputeDiffUnexpectedError_Propagates(t *testing.T) {
 	mlReader := &stubMLReader{ml: mlWithCommittee("committee-1")}
 	diffComputer := &stubSyncDiffComputer{err: errors.New("itx unavailable")}

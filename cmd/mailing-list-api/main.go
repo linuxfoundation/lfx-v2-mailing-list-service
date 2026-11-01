@@ -315,9 +315,10 @@ func run() int {
 	cancel()
 
 	// Stop the invite_accepted subscriber so that in-flight AcceptInvite calls can
-	// complete gracefully. Runs concurrently with HTTP shutdown (triggered above).
+	// complete gracefully. Bounded by the same shutdownCtx deadline so a stuck drain cannot
+	// run past it either. Runs concurrently with HTTP shutdown (triggered above).
 	if inviteAccSub != nil {
-		inviteAccSub.Stop()
+		inviteAccSub.Stop(shutdownCtx)
 	}
 	// Stop the committee_member subscriber so that an in-flight TriggerAutoSync call is
 	// not aborted mid-ITX-job-poll. Bounded by the same shutdownCtx deadline so a stuck
