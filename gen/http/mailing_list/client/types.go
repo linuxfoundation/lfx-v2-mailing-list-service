@@ -832,6 +832,14 @@ type CreateGroupsioMailingListServiceUnavailableResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// CreateGroupsioMailingListUnauthorizedResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
+// body for the "Unauthorized" error.
+type CreateGroupsioMailingListUnauthorizedResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // GetGroupsioMailingListInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "get-groupsio-mailing-list" endpoint HTTP response
 // body for the "InternalServerError" error.
@@ -884,6 +892,14 @@ type UpdateGroupsioMailingListNotFoundResponseBody struct {
 // "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
 type UpdateGroupsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateGroupsioMailingListUnauthorizedResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
+// body for the "Unauthorized" error.
+type UpdateGroupsioMailingListUnauthorizedResponseBody struct {
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
@@ -2122,6 +2138,16 @@ func NewCreateGroupsioMailingListServiceUnavailable(body *CreateGroupsioMailingL
 	return v
 }
 
+// NewCreateGroupsioMailingListUnauthorized builds a mailing-list service
+// create-groupsio-mailing-list endpoint Unauthorized error.
+func NewCreateGroupsioMailingListUnauthorized(body *CreateGroupsioMailingListUnauthorizedResponseBody) *mailinglist.UnauthorizedError {
+	v := &mailinglist.UnauthorizedError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewGetGroupsioMailingListGroupsioSubgroupOK builds a "mailing-list" service
 // "get-groupsio-mailing-list" endpoint result from a HTTP "OK" response.
 func NewGetGroupsioMailingListGroupsioSubgroupOK(body *GetGroupsioMailingListResponseBody) *mailinglist.GroupsioSubgroup {
@@ -2229,6 +2255,16 @@ func NewUpdateGroupsioMailingListNotFound(body *UpdateGroupsioMailingListNotFoun
 // update-groupsio-mailing-list endpoint ServiceUnavailable error.
 func NewUpdateGroupsioMailingListServiceUnavailable(body *UpdateGroupsioMailingListServiceUnavailableResponseBody) *mailinglist.ServiceUnavailableError {
 	v := &mailinglist.ServiceUnavailableError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateGroupsioMailingListUnauthorized builds a mailing-list service
+// update-groupsio-mailing-list endpoint Unauthorized error.
+func NewUpdateGroupsioMailingListUnauthorized(body *UpdateGroupsioMailingListUnauthorizedResponseBody) *mailinglist.UnauthorizedError {
+	v := &mailinglist.UnauthorizedError{
 		Message: *body.Message,
 	}
 
@@ -3580,6 +3616,16 @@ func ValidateCreateGroupsioMailingListServiceUnavailableResponseBody(body *Creat
 	return
 }
 
+// ValidateCreateGroupsioMailingListUnauthorizedResponseBody runs the
+// validations defined on
+// create-groupsio-mailing-list_Unauthorized_response_body
+func ValidateCreateGroupsioMailingListUnauthorizedResponseBody(body *CreateGroupsioMailingListUnauthorizedResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateGetGroupsioMailingListInternalServerErrorResponseBody runs the
 // validations defined on
 // get-groupsio-mailing-list_InternalServerError_response_body
@@ -3641,6 +3687,16 @@ func ValidateUpdateGroupsioMailingListNotFoundResponseBody(body *UpdateGroupsioM
 // validations defined on
 // update-groupsio-mailing-list_ServiceUnavailable_response_body
 func ValidateUpdateGroupsioMailingListServiceUnavailableResponseBody(body *UpdateGroupsioMailingListServiceUnavailableResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateGroupsioMailingListUnauthorizedResponseBody runs the
+// validations defined on
+// update-groupsio-mailing-list_Unauthorized_response_body
+func ValidateUpdateGroupsioMailingListUnauthorizedResponseBody(body *UpdateGroupsioMailingListUnauthorizedResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

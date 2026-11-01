@@ -832,6 +832,14 @@ type CreateGroupsioMailingListServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// CreateGroupsioMailingListUnauthorizedResponseBody is the type of the
+// "mailing-list" service "create-groupsio-mailing-list" endpoint HTTP response
+// body for the "Unauthorized" error.
+type CreateGroupsioMailingListUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetGroupsioMailingListInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "get-groupsio-mailing-list" endpoint HTTP response
 // body for the "InternalServerError" error.
@@ -884,6 +892,14 @@ type UpdateGroupsioMailingListNotFoundResponseBody struct {
 // "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
 // body for the "ServiceUnavailable" error.
 type UpdateGroupsioMailingListServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateGroupsioMailingListUnauthorizedResponseBody is the type of the
+// "mailing-list" service "update-groupsio-mailing-list" endpoint HTTP response
+// body for the "Unauthorized" error.
+type UpdateGroupsioMailingListUnauthorizedResponseBody struct {
 	// Error message
 	Message string `form:"message" json:"message" xml:"message"`
 }
@@ -2246,6 +2262,16 @@ func NewCreateGroupsioMailingListServiceUnavailableResponseBody(res *mailinglist
 	return body
 }
 
+// NewCreateGroupsioMailingListUnauthorizedResponseBody builds the HTTP
+// response body from the result of the "create-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewCreateGroupsioMailingListUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *CreateGroupsioMailingListUnauthorizedResponseBody {
+	body := &CreateGroupsioMailingListUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewGetGroupsioMailingListInternalServerErrorResponseBody builds the HTTP
 // response body from the result of the "get-groupsio-mailing-list" endpoint of
 // the "mailing-list" service.
@@ -2311,6 +2337,16 @@ func NewUpdateGroupsioMailingListNotFoundResponseBody(res *mailinglist.NotFoundE
 // of the "mailing-list" service.
 func NewUpdateGroupsioMailingListServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *UpdateGroupsioMailingListServiceUnavailableResponseBody {
 	body := &UpdateGroupsioMailingListServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateGroupsioMailingListUnauthorizedResponseBody builds the HTTP
+// response body from the result of the "update-groupsio-mailing-list" endpoint
+// of the "mailing-list" service.
+func NewUpdateGroupsioMailingListUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *UpdateGroupsioMailingListUnauthorizedResponseBody {
+	body := &UpdateGroupsioMailingListUnauthorizedResponseBody{
 		Message: res.Message,
 	}
 	return body

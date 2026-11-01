@@ -231,6 +231,7 @@ func (c *Client) ListGroupsioMailingLists(ctx context.Context, p *ListGroupsioMa
 // of the "mailing-list" service.
 // CreateGroupsioMailingList may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
 //   - "Conflict" (type *ConflictError): Conflict
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
@@ -265,6 +266,7 @@ func (c *Client) GetGroupsioMailingList(ctx context.Context, p *GetGroupsioMaili
 // UpdateGroupsioMailingList may return the following errors:
 //   - "BadRequest" (type *BadRequestError): Bad request
 //   - "NotFound" (type *NotFoundError): Subgroup not found
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
 //   - "InternalServerError" (type *InternalServerError): Internal server error
 //   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
 //   - error: internal error
