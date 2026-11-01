@@ -85,7 +85,7 @@ func (s *CommitteeMemberSubscriber) Start(ctx context.Context) error {
 	for _, subject := range committeeMemberSubjects {
 		sub, err := s.nc.QueueSubscribe(subject, committeeMemberQueueGroup, s.handle)
 		if err != nil {
-			s.stopSubs()
+			s.stopSubs(context.Background())
 			if s.cancel != nil {
 				s.cancel()
 			}
@@ -109,25 +109,31 @@ func (s *CommitteeMemberSubscriber) Start(ctx context.Context) error {
 const committeeMemberDrainTimeout = committeeMemberEventCallTimeout + 10*time.Second
 
 // Stop drains all subscriptions (allowing an in-flight handler to finish its current list, up to
-// committeeMemberDrainTimeout), then cancels the context. Drain must precede cancel so an
-// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll by context cancellation:
-// *nats.Subscription.Drain only *starts* an asynchronous drain and returns immediately, so
-// stopSubs polls IsDraining until it clears (or the timeout elapses) instead of treating Drain's
-// return as completion.
-func (s *CommitteeMemberSubscriber) Stop() {
-	s.stopSubs()
+// committeeMemberDrainTimeout, further bounded by deadlineCtx's own deadline if it is sooner), then
+// cancels the context. deadlineCtx should be the same shutdown deadline shared with the HTTP server
+// shutdown, so this drain cannot by itself run the process past the pod's termination grace period
+// — pass context.Background() to fall back to committeeMemberDrainTimeout alone.
+// Drain must precede cancel so an in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll by
+// context cancellation: *nats.Subscription.Drain only *starts* an asynchronous drain and returns
+// immediately, so stopSubs polls IsDraining until it clears (or the deadline elapses) instead of
+// treating Drain's return as completion.
+func (s *CommitteeMemberSubscriber) Stop(deadlineCtx context.Context) {
+	s.stopSubs(deadlineCtx)
 	if s.cancel != nil {
 		s.cancel()
 	}
 }
 
-func (s *CommitteeMemberSubscriber) stopSubs() {
+func (s *CommitteeMemberSubscriber) stopSubs(deadlineCtx context.Context) {
+	deadline := time.Now().Add(committeeMemberDrainTimeout)
+	if d, ok := deadlineCtx.Deadline(); ok && d.Before(deadline) {
+		deadline = d
+	}
 	for _, sub := range s.subs {
 		if err := sub.Drain(); err != nil {
 			s.logger.Warn("error draining committee_member subscription", "subject", sub.Subject, "error", err)
 			continue
 		}
-		deadline := time.Now().Add(committeeMemberDrainTimeout)
 		for sub.IsDraining() && time.Now().Before(deadline) {
 			time.Sleep(10 * time.Millisecond)
 		}

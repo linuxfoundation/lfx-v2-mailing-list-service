@@ -299,23 +299,28 @@ func run() int {
 		httpFailure = true
 	}
 
+	// Create the shutdown deadline once and share it with the HTTP goroutine via
+	// shutdownCtxC before draining any subscriber below, so HTTP graceful shutdown
+	// can proceed concurrently with subscriber draining instead of waiting for it
+	// to finish first — each subscriber drain can take up to tens of seconds, and
+	// starting it before sharing this deadline left HTTP shutdown unable to even
+	// begin until both drains completed, risking the pod's termination grace
+	// period expiring (SIGKILL) before HTTP shutdown ever started.
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
+	defer shutdownCancel()
+	shutdownCtxC <- shutdownCtx
+
 	// Stop the invite_accepted subscriber before cancelling the context so that
 	// in-flight AcceptInvite calls can complete gracefully.
 	if inviteAccSub != nil {
 		inviteAccSub.Stop()
 	}
 	// Stop the committee_member subscriber before cancelling the context so that an
-	// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll.
+	// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll. Bounded by the
+	// same shutdownCtx deadline so a stuck drain cannot run past it either.
 	if committeeMemberSub != nil {
-		committeeMemberSub.Stop()
+		committeeMemberSub.Stop(shutdownCtx)
 	}
-
-	// Create the shutdown deadline once and share it with the HTTP goroutine via
-	// shutdownCtxC, so both srv.Shutdown and the wg.Wait below use the same
-	// absolute deadline rather than two separate relative timers.
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
-	defer shutdownCancel()
-	shutdownCtxC <- shutdownCtx
 
 	cancel()
 
