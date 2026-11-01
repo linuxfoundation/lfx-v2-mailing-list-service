@@ -184,6 +184,7 @@ func run() int {
 
 	realtimeAutoSyncOrchestrator := orchestrator.NewRealtimeAutoSyncOrchestrator(
 		orchestrator.WithRealtimeAutoSyncMailingListReader(mailingListReaderOrchestrator),
+		orchestrator.WithRealtimeAutoSyncMemberReader(memberReaderOrchestrator),
 		orchestrator.WithRealtimeAutoSyncDiffComputer(syncDiffOrchestrator),
 		orchestrator.WithRealtimeAutoSyncApplier(syncApplyOrchestrator),
 	)

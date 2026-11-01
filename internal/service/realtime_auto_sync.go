@@ -29,6 +29,7 @@ import (
 // into sync is never destructive.
 type RealtimeAutoSyncOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
+	memberReader      port.GroupsIOMailingListMemberReader
 	syncDiffComputer  port.SyncDiffComputer
 	syncApplier       port.SyncApplier
 	logger            *slog.Logger
@@ -41,6 +42,12 @@ type RealtimeAutoSyncOption func(*RealtimeAutoSyncOrchestrator)
 // committee and visibility (Public) for the gates described above.
 func WithRealtimeAutoSyncMailingListReader(r port.GroupsIOMailingListReader) RealtimeAutoSyncOption {
 	return func(o *RealtimeAutoSyncOrchestrator) { o.mailingListReader = r }
+}
+
+// WithRealtimeAutoSyncMemberReader sets the reader used to check whether a removed email is still
+// subscribed to a sibling mailing list linked to the same committee, before approving its removal.
+func WithRealtimeAutoSyncMemberReader(r port.GroupsIOMailingListMemberReader) RealtimeAutoSyncOption {
+	return func(o *RealtimeAutoSyncOrchestrator) { o.memberReader = r }
 }
 
 // WithRealtimeAutoSyncDiffComputer sets the computer used to recompute the mailing list's
@@ -95,15 +102,27 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 		return err
 	}
 
+	// The mailing list's committee link stays the same but sync_mode can flip between the snapshot
+	// that decided whether to call TriggerAutoSync at all and the diff actually computed here; only
+	// auto_c_to_ml diffs are relevant to this (committee -> mailing list) path.
+	if diff.SyncMode != model.SyncModeAutoCommitteeToMailingList {
+		return nil
+	}
+
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return err
 	}
 
-	// Public mailing lists never auto-propagate removals (issue #4023 visibility rule); adds
-	// always propagate regardless of visibility.
+	// Removals only auto-propagate on a known-private mailing list; public, empty, or unrecognized
+	// audience_access values fail closed (no auto-remove) rather than fail open. Adds always
+	// propagate regardless of visibility.
 	approvedRemoves := diff.Removes
-	if ml.Public {
+	switch ml.AudienceAccess {
+	case model.AudienceAccessApprovalRequired, model.AudienceAccessInviteOnly:
+		// private: removes may propagate, subject to the cross-list guard below.
+		approvedRemoves = o.filterCrossListRemoves(ctx, ml, approvedRemoves)
+	default:
 		approvedRemoves = nil
 	}
 
@@ -111,12 +130,71 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 		return nil
 	}
 
-	result, err := o.syncApplier.ApplySyncDiff(ctx, mailingListID, diff.Adds, approvedRemoves)
+	result, err := o.syncApplier.ApplySyncDiff(ctx, mailingListID, diff.CommitteeUID, diff.Adds, approvedRemoves)
 	if err != nil {
 		return err
 	}
 	o.logFailedOutcomes(mailingListID, result)
 	return nil
+}
+
+// filterCrossListRemoves drops any removal whose email is still subscribed to another mailing
+// list linked to the same committee as ml — removing it here would otherwise immediately conflict
+// with that sibling list's own membership, which this mailing list's removal has no say over.
+func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
+	ctx context.Context,
+	ml *model.GroupsIOMailingList,
+	removes []model.SyncDiffRemove,
+) []model.SyncDiffRemove {
+	if len(removes) == 0 || len(ml.Committees) == 0 {
+		return removes
+	}
+
+	siblingLists, _, err := o.mailingListReader.ListMailingLists(ctx, "", ml.Committees[0].UID)
+	if err != nil {
+		o.logger.Warn("realtime auto-sync: failed to list sibling mailing lists for cross-list removal guard; skipping all removes",
+			"mailing_list_id", ml.UID,
+			"committee_uid", ml.Committees[0].UID,
+			"error", err,
+		)
+		return nil
+	}
+
+	var siblingIDs []string
+	for _, sibling := range siblingLists {
+		if sibling.UID != ml.UID {
+			siblingIDs = append(siblingIDs, sibling.UID)
+		}
+	}
+	if len(siblingIDs) == 0 {
+		return removes
+	}
+
+	approved := make([]model.SyncDiffRemove, 0, len(removes))
+	for _, remove := range removes {
+		stillLinked := false
+		for _, siblingID := range siblingIDs {
+			subscribed, err := o.memberReader.CheckSubscriber(ctx, siblingID, remove.Email)
+			if err != nil {
+				o.logger.Warn("realtime auto-sync: failed to check sibling list subscription; skipping remove",
+					"mailing_list_id", ml.UID,
+					"sibling_mailing_list_id", siblingID,
+					"email", redaction.RedactEmail(remove.Email),
+					"error", err,
+				)
+				stillLinked = true
+				break
+			}
+			if subscribed {
+				stillLinked = true
+				break
+			}
+		}
+		if !stillLinked {
+			approved = append(approved, remove)
+		}
+	}
+	return approved
 }
 
 // logFailedOutcomes surfaces per-entry add/remove failures from an otherwise-successful

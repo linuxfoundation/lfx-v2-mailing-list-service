@@ -37,9 +37,12 @@ func (s *stubAutoSyncer) TriggerAutoSync(_ context.Context, mailingListID string
 type stubCommitteeMailingListReader struct {
 	lists []*model.GroupsIOMailingList
 	err   error
+
+	gotCtxHadDeadline bool
 }
 
-func (r *stubCommitteeMailingListReader) ListMailingLists(_ context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
+func (r *stubCommitteeMailingListReader) ListMailingLists(ctx context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
+	_, r.gotCtxHadDeadline = ctx.Deadline()
 	return r.lists, len(r.lists), r.err
 }
 func (r *stubCommitteeMailingListReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
@@ -148,6 +151,16 @@ func TestProcessCommitteeMemberEvent_OneListFails_OthersStillAttempted(t *testin
 
 	require.Error(t, err, "a failure should be reported so the caller can log it")
 	assert.ElementsMatch(t, []string{"ml-1", "ml-2"}, syncer.calls, "a failure on one list must not block attempting the others")
+}
+
+func TestProcessCommitteeMemberEvent_ListMailingListsLookup_HasBoundedDeadline(t *testing.T) {
+	reader := &stubCommitteeMailingListReader{lists: []*model.GroupsIOMailingList{autoC2MList("ml-1")}}
+	syncer := &stubAutoSyncer{}
+
+	err := processCommitteeMemberEvent(context.Background(), "committee-1", reader, syncer, silentLog())
+
+	require.NoError(t, err)
+	assert.True(t, reader.gotCtxHadDeadline, "the ListMailingLists lookup must run under its own bounded timeout, not the subscriber's unbounded background context")
 }
 
 func TestProcessCommitteeMemberEvent_NoLinkedLists_NoOp(t *testing.T) {

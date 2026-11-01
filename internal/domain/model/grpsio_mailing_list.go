@@ -17,6 +17,13 @@ const (
 	TypeDiscussionOpen      = "discussion_open"
 )
 
+// Mailing list audience_access constants.
+const (
+	AudienceAccessPublic           = "public"
+	AudienceAccessApprovalRequired = "approval_required"
+	AudienceAccessInviteOnly       = "invite_only"
+)
+
 // GroupsIOMailingList represents a GroupsIO mailing list entity with committee support
 type GroupsIOMailingList struct {
 	UID             string `json:"uid"`

@@ -18,6 +18,11 @@ import (
 
 const committeeMemberEventCallTimeout = 30 * time.Second
 
+// committeeMemberListTimeout bounds the ListMailingLists lookup that resolves a committee's
+// linked mailing lists, separately from the per-list committeeMemberEventCallTimeout budget spent
+// on each list's own TriggerAutoSync call.
+const committeeMemberListTimeout = 10 * time.Second
+
 // committeeMemberQueueGroup is the NATS queue group used by the mailing list service for
 // committee-member event subscriptions, so only one replica of this service processes a given
 // event.
@@ -95,16 +100,20 @@ func (s *CommitteeMemberSubscriber) Start(ctx context.Context) error {
 	return nil
 }
 
-// committeeMemberDrainTimeout bounds how long Stop waits for in-flight handlers to finish
-// draining before cancelling the context regardless, so a stuck drain cannot hang shutdown
-// forever.
-const committeeMemberDrainTimeout = 5 * time.Second
+// committeeMemberDrainTimeout bounds, per subscription, how long Stop waits for an in-flight
+// handler to finish draining before moving on and cancelling the context regardless, so a stuck
+// drain cannot hang shutdown forever. Set comfortably above committeeMemberEventCallTimeout (the
+// budget for a single linked list's TriggerAutoSync call) so a handler that is partway through
+// one list's ITX round-trip when Stop is called is not routinely cut off by the drain deadline
+// itself; it is not a guarantee that every list in a multi-list batch finishes draining.
+const committeeMemberDrainTimeout = committeeMemberEventCallTimeout + 10*time.Second
 
-// Stop drains all subscriptions (allowing in-flight handlers to complete), then cancels the
-// context. Drain must precede cancel so an in-flight TriggerAutoSync call is not aborted mid-ITX-
-// job-poll by context cancellation: *nats.Subscription.Drain only *starts* an asynchronous drain
-// and returns immediately, so stopSubs polls IsDraining until it clears (or the timeout elapses)
-// instead of treating Drain's return as completion.
+// Stop drains all subscriptions (allowing an in-flight handler to finish its current list, up to
+// committeeMemberDrainTimeout), then cancels the context. Drain must precede cancel so an
+// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll by context cancellation:
+// *nats.Subscription.Drain only *starts* an asynchronous drain and returns immediately, so
+// stopSubs polls IsDraining until it clears (or the timeout elapses) instead of treating Drain's
+// return as completion.
 func (s *CommitteeMemberSubscriber) Stop() {
 	s.stopSubs()
 	if s.cancel != nil {
@@ -195,7 +204,9 @@ func processCommitteeMemberEvent(
 	autoSyncer autoSyncTrigger,
 	logger *slog.Logger,
 ) error {
-	linkedLists, _, err := mailingListReader.ListMailingLists(ctx, "", committeeUID)
+	listLookupCtx, listLookupCancel := context.WithTimeout(ctx, committeeMemberListTimeout)
+	linkedLists, _, err := mailingListReader.ListMailingLists(listLookupCtx, "", committeeUID)
+	listLookupCancel()
 	if err != nil {
 		return err
 	}
