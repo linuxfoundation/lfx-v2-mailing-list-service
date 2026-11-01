@@ -123,13 +123,20 @@ func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.C
 		return errs.NewValidation("committee does not belong to the service's project")
 	}
 
-	// auto_ml_to_c means a future sync-apply will write mailing-list members into the committee's
-	// own roster. The gateway has only confirmed mailing-list writer access by this point — without
-	// this check, a caller with mailing-list writer access but no committee access could configure
-	// a committee they don't control to receive automatic membership writes from this list merely
-	// by setting sync_mode, even though actually triggering that apply still requires committee
-	// writer access (checkCommitteeWriterAccess in sync_job_poll.go).
-	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee {
+	// Both automatic sync directions require committee writer access on the caller, not just
+	// mailing-list writer access (which is all the gateway has confirmed by this point):
+	//   - auto_ml_to_c writes mailing-list members into the committee's own roster, so without this
+	//     check a mailing-list-only writer could configure a committee they don't control to receive
+	//     automatic membership writes from this list merely by setting sync_mode.
+	//   - auto_c_to_ml writes the committee's roster (names/emails) into the mailing list, so without
+	//     this check a mailing-list-only writer could point sync_mode at a committee they don't
+	//     control and have its membership PII copied into a list they do control, via the trusted
+	//     background auto-sync path (RealtimeAutoSyncOrchestrator.TriggerAutoSync) which bypasses the
+	//     caller-identity check that would otherwise catch this at apply time.
+	// Actually triggering an apply still separately requires committee writer access
+	// (checkCommitteeWriterAccess in sync_job_poll.go) for a manual Sync Now; this check closes the
+	// same gap for the automatic path, which runs as a trusted system caller.
+	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee || ml.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList {
 		if o.accessChecker == nil {
 			return errs.NewServiceUnavailable("committee access validation is not configured")
 		}
