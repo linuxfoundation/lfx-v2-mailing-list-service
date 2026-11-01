@@ -20,6 +20,7 @@ type SyncDiffOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
 	itxSyncClient     port.ITXSyncClient
 	accessChecker     port.AccessChecker
+	translator        port.Translator
 }
 
 // SyncDiffOrchestratorOption configures a SyncDiffOrchestrator.
@@ -48,6 +49,14 @@ func WithSyncDiffITXSyncClient(c port.ITXSyncClient) SyncDiffOrchestratorOption 
 func WithSyncDiffAccessChecker(c port.AccessChecker) SyncDiffOrchestratorOption {
 	return func(o *SyncDiffOrchestrator) {
 		o.accessChecker = c
+	}
+}
+
+// WithSyncDiffTranslator sets the ID translator used to compare ITX's job-reported committee ID
+// (v1) against the mailing list's linked committee UID (v2) in the job-completion recheck below.
+func WithSyncDiffTranslator(t port.Translator) SyncDiffOrchestratorOption {
+	return func(o *SyncDiffOrchestrator) {
+		o.translator = t
 	}
 }
 
@@ -92,6 +101,10 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	}
 	if job.Status == port.SyncJobStatusFailed {
 		return nil, errs.NewServiceUnavailable("ITX sync-diff job failed: " + job.ErrorMessage)
+	}
+
+	if err := verifyJobCommitteeMatch(ctx, o.translator, job.CommitteeID, committeeUID); err != nil {
+		return nil, err
 	}
 
 	// job.ToAdd/ToRemove reflect the committee that was linked when PostSyncDiff was called

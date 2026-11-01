@@ -40,8 +40,12 @@ type SyncJobConflict struct {
 
 // SyncDiffJob is the state of an ITX sync-diff job, as returned by its GET endpoint.
 type SyncDiffJob struct {
-	ID             string
-	Status         string
+	ID     string
+	Status string
+	// CommitteeID is the v1 committee ID ITX actually computed this diff against — not
+	// necessarily the mailing list's currently-linked committee, since the list may have been
+	// relinked while the job ran. Empty if ITX's response omitted it.
+	CommitteeID    string
 	ToAdd          []SyncJobMember
 	ToRemove       []SyncJobMember
 	EmailConflicts []SyncJobConflict
@@ -58,8 +62,12 @@ type SyncApplyJobResult struct {
 
 // SyncApplyJob is the state of an ITX sync-apply job, as returned by its GET endpoint.
 type SyncApplyJob struct {
-	ID           string
-	Status       string
+	ID     string
+	Status string
+	// CommitteeID is the v1 committee ID ITX actually applied this job against — not necessarily
+	// the mailing list's currently-linked committee, since the list may have been relinked while
+	// the job ran. Empty if ITX's response omitted it.
+	CommitteeID  string
 	Results      []SyncApplyJobResult
 	ErrorMessage string
 }
