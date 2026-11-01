@@ -222,6 +222,14 @@ paths:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
                                 message: The request was invalid.
+                "403":
+                    description: 'Unauthorized: Caller lacks writer access to the linked committee'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
                 "409":
                     description: 'Conflict: Conflict'
                     content:
@@ -417,6 +425,14 @@ paths:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
                                 message: The request was invalid.
+                "403":
+                    description: 'Unauthorized: Caller lacks writer access to the linked committee'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
                 "404":
                     description: 'NotFound: Subgroup not found'
                     content:
