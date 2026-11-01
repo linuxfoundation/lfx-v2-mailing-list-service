@@ -147,6 +147,13 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 // filterCrossListRemoves drops any removal whose email is still subscribed to another mailing
 // list linked to the same committee as ml — removing it here would otherwise immediately conflict
 // with that sibling list's own membership, which this mailing list's removal has no say over.
+//
+// A sibling whose own sync_mode is also auto_c_to_ml for the same committee is excluded from this
+// check: that sibling is driven by the same committee roster ml is, so when the person leaves the
+// committee the sibling independently removes them too — it is not an independent membership this
+// removal would conflict with. Without this exclusion, two private auto_c_to_ml lists sharing a
+// committee would each see the person "still subscribed" on the other and neither would ever
+// remove them (reported by @lfx-one).
 func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
 	ctx context.Context,
 	ml *model.GroupsIOMailingList,
@@ -168,9 +175,13 @@ func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
 
 	var siblingIDs []string
 	for _, sibling := range siblingLists {
-		if sibling.UID != ml.UID {
-			siblingIDs = append(siblingIDs, sibling.UID)
+		if sibling.UID == ml.UID {
+			continue
 		}
+		if len(sibling.Committees) > 0 && sibling.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList {
+			continue
+		}
+		siblingIDs = append(siblingIDs, sibling.UID)
 	}
 	if len(siblingIDs) == 0 {
 		return removes

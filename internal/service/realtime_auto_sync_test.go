@@ -19,15 +19,20 @@ import (
 )
 
 // stubSyncDiffComputer returns a configured diff/err, recording the mailingListID it was called
-// with.
+// with and whether ctx was marked by withTrustedSystemCaller.
 type stubSyncDiffComputer struct {
 	diff  *model.SyncDiff
 	err   error
 	calls []string
+
+	sawTrusted bool
 }
 
-func (c *stubSyncDiffComputer) ComputeSyncDiff(_ context.Context, mailingListID string) (*model.SyncDiff, error) {
+func (c *stubSyncDiffComputer) ComputeSyncDiff(ctx context.Context, mailingListID string) (*model.SyncDiff, error) {
 	c.calls = append(c.calls, mailingListID)
+	if isTrustedSystemCaller(ctx) {
+		c.sawTrusted = true
+	}
 	return c.diff, c.err
 }
 
@@ -42,10 +47,11 @@ type stubSyncApplier struct {
 	gotExpectedCommittee string
 	gotAdds              []model.SyncDiffAdd
 	gotRemoves           []model.SyncDiffRemove
+	sawTrusted           bool
 }
 
 func (a *stubSyncApplier) ApplySyncDiff(
-	_ context.Context,
+	ctx context.Context,
 	mailingListID string,
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
@@ -56,6 +62,9 @@ func (a *stubSyncApplier) ApplySyncDiff(
 	a.gotExpectedCommittee = expectedCommitteeUID
 	a.gotAdds = approvedAdds
 	a.gotRemoves = approvedRemoves
+	if isTrustedSystemCaller(ctx) {
+		a.sawTrusted = true
+	}
 	return a.result, a.err
 }
 
@@ -288,6 +297,49 @@ func TestTriggerAutoSync_CrossListGuard_AllowsRemoveNotOnAnySiblingList(t *testi
 	assert.Equal(t, diff.Removes, applier.gotRemoves)
 }
 
+func TestTriggerAutoSync_CrossListGuard_AllowsRemoveWhenSiblingIsAlsoAutoCToML(t *testing.T) {
+	ml := mlWithAudienceAccess("committee-1", model.AudienceAccessInviteOnly)
+	mlReader := &stubMLReader{
+		ml: ml,
+		listMLs: []*model.GroupsIOMailingList{
+			ml,
+			// ml-2 is also auto_c_to_ml for the same committee: it independently removes this
+			// person on its own TriggerAutoSync run, so it is not an independent membership ml-1's
+			// removal would conflict with. Without excluding it, ml-1 and ml-2 would each see the
+			// person "still subscribed" on the other and neither would ever remove them.
+			{
+				UID: "ml-2",
+				Committees: []model.Committee{
+					{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList},
+				},
+			},
+		},
+	}
+	diff := autoCToMLDiff(nil,
+		[]model.SyncDiffRemove{{Email: "left-committee@example.com", MemberType: model.MemberTypeCommitteeMember}},
+	)
+	diffComputer := &stubSyncDiffComputer{diff: diff}
+	applier := &stubSyncApplier{}
+	memberReader := &stubMemberReader{
+		subscribed: map[string]map[string]bool{
+			"ml-2": {"left-committee@example.com": true},
+		},
+	}
+
+	o := NewRealtimeAutoSyncOrchestrator(
+		WithRealtimeAutoSyncMailingListReader(mlReader),
+		WithRealtimeAutoSyncMemberReader(memberReader),
+		WithRealtimeAutoSyncDiffComputer(diffComputer),
+		WithRealtimeAutoSyncApplier(applier),
+	)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	require.True(t, applier.called, "ml-2 is also auto_c_to_ml for the same committee and removes this person on its own; it must not block ml-1's removal")
+	assert.Equal(t, diff.Removes, applier.gotRemoves)
+	assert.Empty(t, memberReader.calls, "auto_c_to_ml siblings for the same committee are excluded before any CheckSubscriber call")
+}
+
 func TestTriggerAutoSync_GetMailingListError_Propagates(t *testing.T) {
 	mlReader := &stubMLReader{err: errors.New("not found")}
 	diffComputer := &stubSyncDiffComputer{diff: autoCToMLDiff(
@@ -330,6 +382,24 @@ func TestTriggerAutoSync_PerEntryFailure_LoggedNotDropped(t *testing.T) {
 	assert.Contains(t, logBuf.String(), "add failed")
 	assert.Contains(t, logBuf.String(), "subscriber add rejected")
 	assert.NotContains(t, logBuf.String(), "bounced@example.com", "the raw email must not be logged")
+}
+
+func TestTriggerAutoSync_MarksContextAsTrustedSystemCaller(t *testing.T) {
+	ml := mlWithCommittee("committee-1")
+	mlReader := &stubMLReader{ml: ml}
+	diffComputer := &stubSyncDiffComputer{diff: autoCToMLDiff(
+		[]model.SyncDiffAdd{{Email: "a@example.com"}}, nil,
+	)}
+	applier := &stubSyncApplier{}
+
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
+	// Starting from context.Background() mirrors a NATS event handler's context, which carries no
+	// end-user caller principal.
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	assert.True(t, diffComputer.sawTrusted, "ComputeSyncDiff must see a trusted-system-caller-marked context")
+	assert.True(t, applier.sawTrusted, "ApplySyncDiff must see a trusted-system-caller-marked context")
 }
 
 func TestTriggerAutoSync_ApplySyncDiffError_Propagates(t *testing.T) {
