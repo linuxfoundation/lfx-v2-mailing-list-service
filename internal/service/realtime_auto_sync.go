@@ -148,12 +148,16 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 // list linked to the same committee as ml — removing it here would otherwise immediately conflict
 // with that sibling list's own membership, which this mailing list's removal has no say over.
 //
-// A sibling whose own sync_mode is also auto_c_to_ml for the same committee is excluded from this
-// check: that sibling is driven by the same committee roster ml is, so when the person leaves the
-// committee the sibling independently removes them too — it is not an independent membership this
-// removal would conflict with. Without this exclusion, two private auto_c_to_ml lists sharing a
-// committee would each see the person "still subscribed" on the other and neither would ever
-// remove them (reported by @lfx-one).
+// A sibling whose own sync_mode is also auto_c_to_ml for the same committee, AND is itself private,
+// is excluded from this check: that sibling is driven by the same committee roster ml is, so when
+// the person leaves the committee the sibling independently removes them too — it is not an
+// independent membership this removal would conflict with. Without this exclusion, two private
+// auto_c_to_ml lists sharing a committee would each see the person "still subscribed" on the other
+// and neither would ever remove them (reported by @lfx-one). A public auto_c_to_ml sibling is NOT
+// excluded: TriggerAutoSync never auto-propagates removals on a public list (see the visibility
+// switch above), so that sibling's subscription never gets cleaned up on its own — excluding it
+// here would let a private list remove the member while they remain subscribed on the public
+// sibling, silently bypassing the cross-list guard (reported by @copilot-pull-request-reviewer).
 func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
 	ctx context.Context,
 	ml *model.GroupsIOMailingList,
@@ -178,7 +182,8 @@ func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
 		if sibling.UID == ml.UID {
 			continue
 		}
-		if len(sibling.Committees) > 0 && sibling.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList {
+		if len(sibling.Committees) > 0 && sibling.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList &&
+			(sibling.AudienceAccess == model.AudienceAccessApprovalRequired || sibling.AudienceAccess == model.AudienceAccessInviteOnly) {
 			continue
 		}
 		siblingIDs = append(siblingIDs, sibling.UID)

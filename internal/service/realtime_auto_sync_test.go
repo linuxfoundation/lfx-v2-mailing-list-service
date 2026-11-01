@@ -303,12 +303,14 @@ func TestTriggerAutoSync_CrossListGuard_AllowsRemoveWhenSiblingIsAlsoAutoCToML(t
 		ml: ml,
 		listMLs: []*model.GroupsIOMailingList{
 			ml,
-			// ml-2 is also auto_c_to_ml for the same committee: it independently removes this
-			// person on its own TriggerAutoSync run, so it is not an independent membership ml-1's
-			// removal would conflict with. Without excluding it, ml-1 and ml-2 would each see the
-			// person "still subscribed" on the other and neither would ever remove them.
+			// ml-2 is also private and auto_c_to_ml for the same committee: it independently
+			// removes this person on its own TriggerAutoSync run, so it is not an independent
+			// membership ml-1's removal would conflict with. Without excluding it, ml-1 and ml-2
+			// would each see the person "still subscribed" on the other and neither would ever
+			// remove them.
 			{
-				UID: "ml-2",
+				UID:            "ml-2",
+				AudienceAccess: model.AudienceAccessInviteOnly,
 				Committees: []model.Committee{
 					{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList},
 				},
@@ -338,6 +340,52 @@ func TestTriggerAutoSync_CrossListGuard_AllowsRemoveWhenSiblingIsAlsoAutoCToML(t
 	require.True(t, applier.called, "ml-2 is also auto_c_to_ml for the same committee and removes this person on its own; it must not block ml-1's removal")
 	assert.Equal(t, diff.Removes, applier.gotRemoves)
 	assert.Empty(t, memberReader.calls, "auto_c_to_ml siblings for the same committee are excluded before any CheckSubscriber call")
+}
+
+// TestTriggerAutoSync_CrossListGuard_ChecksPublicAutoCToMLSibling pins that a *public* auto_c_to_ml
+// sibling is NOT excluded from the cross-list guard: TriggerAutoSync never auto-propagates removals
+// on a public list, so a public auto_c_to_ml sibling's subscription is never cleaned up on its own.
+// Excluding it would let a private sibling remove the member while they remain subscribed on the
+// public list, bypassing the guard entirely (per @copilot-pull-request-reviewer).
+func TestTriggerAutoSync_CrossListGuard_ChecksPublicAutoCToMLSibling(t *testing.T) {
+	ml := mlWithAudienceAccess("committee-1", model.AudienceAccessInviteOnly)
+	mlReader := &stubMLReader{
+		ml: ml,
+		listMLs: []*model.GroupsIOMailingList{
+			ml,
+			{
+				UID:            "ml-2",
+				AudienceAccess: model.AudienceAccessPublic,
+				Committees: []model.Committee{
+					{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList},
+				},
+			},
+		},
+	}
+	diff := autoCToMLDiff(nil,
+		[]model.SyncDiffRemove{{Email: "left-committee@example.com", MemberType: model.MemberTypeCommitteeMember}},
+	)
+	diffComputer := &stubSyncDiffComputer{diff: diff}
+	applier := &stubSyncApplier{}
+	memberReader := &stubMemberReader{
+		subscribed: map[string]map[string]bool{
+			"ml-2": {"left-committee@example.com": true},
+		},
+	}
+
+	o := NewRealtimeAutoSyncOrchestrator(
+		WithRealtimeAutoSyncMailingListReader(mlReader),
+		WithRealtimeAutoSyncMemberReader(memberReader),
+		WithRealtimeAutoSyncDiffComputer(diffComputer),
+		WithRealtimeAutoSyncApplier(applier),
+	)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, memberReader.calls, "public auto_c_to_ml siblings are not excluded from the CheckSubscriber check")
+	// Still subscribed to the public ml-2 sibling (which never auto-removes it on its own), so the
+	// cross-list guard drops the remove; with no adds either, TriggerAutoSync never calls ApplySyncDiff.
+	assert.False(t, applier.called, "ml-1 must not remove the member while they remain subscribed on the public sibling")
 }
 
 func TestTriggerAutoSync_GetMailingListError_Propagates(t *testing.T) {

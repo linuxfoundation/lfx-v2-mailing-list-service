@@ -203,6 +203,77 @@ func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 	assert.Equal(t, "boom", result.Removed[0].Error)
 }
 
+// TestApplySyncDiff_TrustedCallerDropsRemovesWhenListIsPublic pins that a trusted-system-caller
+// (realtime auto-sync) apply re-checks the mailing list's visibility against the configuration it
+// is about to submit against, and drops previously-approved removes if the list is public by then
+// — closing the window where RealtimeAutoSyncOrchestrator approved the removes against a stale
+// private snapshot but the list was made public before ApplySyncDiff actually ran (per
+// @copilot-pull-request-reviewer).
+func TestApplySyncDiff_TrustedCallerDropsRemovesWhenListIsPublic(t *testing.T) {
+	ml := mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)
+	ml.AudienceAccess = model.AudienceAccessPublic
+	stub := &stubITXSyncClient{postApplyJobID: "apply-1", applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusCompleted}}
+	o := newApplyOrchestrator(&stubMLReader{ml: ml}, stub)
+
+	result, err := o.ApplySyncDiff(withTrustedSystemCaller(context.Background()), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
+		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	})
+	require.NoError(t, err)
+	assert.Empty(t, result.Removed)
+	assert.Empty(t, stub.postApplyRemoves, "the public list's removes must not be submitted to ITX")
+}
+
+// TestApplySyncDiff_TrustedCallerKeepsRemovesWhenListIsPrivate pins that the trusted-caller
+// visibility recheck does not drop removes when the list is (still) private.
+func TestApplySyncDiff_TrustedCallerKeepsRemovesWhenListIsPrivate(t *testing.T) {
+	ml := mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)
+	ml.AudienceAccess = model.AudienceAccessInviteOnly
+	stub := &stubITXSyncClient{
+		postApplyJobID: "apply-1",
+		applyJob: &port.SyncApplyJob{
+			ID:     "apply-1",
+			Status: port.SyncJobStatusCompleted,
+			Results: []port.SyncApplyJobResult{
+				{Email: "carol@example.com", Action: "remove", Status: "success"},
+			},
+		},
+	}
+	o := newApplyOrchestrator(&stubMLReader{ml: ml}, stub)
+
+	result, err := o.ApplySyncDiff(withTrustedSystemCaller(context.Background()), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
+		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeMailingListMember},
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Removed, 1)
+	assert.Equal(t, []string{"cm-1"}, stub.postApplyRemoves)
+}
+
+// TestApplySyncDiff_NonTrustedCallerKeepsRemovesEvenWhenPublic pins that an ordinary (HTTP, manual
+// Sync Now) caller's approved removes are never filtered by visibility — a human already reviewed
+// and approved them via the diff, regardless of the list's audience_access.
+func TestApplySyncDiff_NonTrustedCallerKeepsRemovesEvenWhenPublic(t *testing.T) {
+	ml := mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)
+	ml.AudienceAccess = model.AudienceAccessPublic
+	stub := &stubITXSyncClient{
+		postApplyJobID: "apply-1",
+		applyJob: &port.SyncApplyJob{
+			ID:     "apply-1",
+			Status: port.SyncJobStatusCompleted,
+			Results: []port.SyncApplyJobResult{
+				{Email: "carol@example.com", Action: "remove", Status: "success"},
+			},
+		},
+	}
+	o := newApplyOrchestrator(&stubMLReader{ml: ml}, stub)
+
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
+		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeMailingListMember},
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Removed, 1)
+	assert.Equal(t, []string{"cm-1"}, stub.postApplyRemoves)
+}
+
 // TestApplySyncDiff_AddMemberTypeMismatch pins that an approved add whose MemberType doesn't
 // match the roster the mailing list's *current* sync_mode direction expects is rejected up front,
 // rather than silently applied as if it were for the direction it was actually approved under.
