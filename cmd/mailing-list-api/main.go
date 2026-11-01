@@ -300,29 +300,32 @@ func run() int {
 	}
 
 	// Create the shutdown deadline once and share it with the HTTP goroutine via
-	// shutdownCtxC before draining any subscriber below, so HTTP graceful shutdown
-	// can proceed concurrently with subscriber draining instead of waiting for it
-	// to finish first — each subscriber drain can take up to tens of seconds, and
-	// starting it before sharing this deadline left HTTP shutdown unable to even
-	// begin until both drains completed, risking the pod's termination grace
-	// period expiring (SIGKILL) before HTTP shutdown ever started.
+	// shutdownCtxC, then cancel ctx immediately so setupHTTPServer's goroutine (which
+	// blocks on <-ctx.Done() before ever reading shutdownCtxC) can start srv.Shutdown
+	// right away instead of waiting for the subscriber drains below to finish first —
+	// each drain can take up to tens of seconds, and cancelling only after both drains
+	// completed left HTTP shutdown unable to even begin until then, risking the pod's
+	// termination grace period expiring (SIGKILL) before HTTP shutdown ever started.
+	// inviteAccSub and committeeMemberSub each manage their own context/deadline
+	// internally (see Stop/Stop(deadlineCtx)), so cancelling ctx here does not cut
+	// their drains short.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
 	shutdownCtxC <- shutdownCtx
+	cancel()
 
-	// Stop the invite_accepted subscriber before cancelling the context so that
-	// in-flight AcceptInvite calls can complete gracefully.
+	// Stop the invite_accepted subscriber so that in-flight AcceptInvite calls can
+	// complete gracefully. Runs concurrently with HTTP shutdown (triggered above).
 	if inviteAccSub != nil {
 		inviteAccSub.Stop()
 	}
-	// Stop the committee_member subscriber before cancelling the context so that an
-	// in-flight TriggerAutoSync call is not aborted mid-ITX-job-poll. Bounded by the
-	// same shutdownCtx deadline so a stuck drain cannot run past it either.
+	// Stop the committee_member subscriber so that an in-flight TriggerAutoSync call is
+	// not aborted mid-ITX-job-poll. Bounded by the same shutdownCtx deadline so a stuck
+	// drain cannot run past it either. Runs concurrently with HTTP shutdown and the
+	// invite_accepted drain above.
 	if committeeMemberSub != nil {
 		committeeMemberSub.Stop(shutdownCtx)
 	}
-
-	cancel()
 
 	done := make(chan struct{})
 	go func() {
