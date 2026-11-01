@@ -92,6 +92,12 @@ func NewRealtimeAutoSyncOrchestrator(opts ...RealtimeAutoSyncOption) port.Realti
 // unavailable) is returned so the caller can log/alert on it; callers in this package treat auto
 // sync as best-effort and do not retry a failed event.
 func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mailingListID string) error {
+	// ctx here comes from a committee-api NATS event, not an end-user HTTP request, so it carries
+	// no caller principal — mark it as a trusted system caller so ComputeSyncDiff/ApplySyncDiff's
+	// checkCommitteeWriterAccess doesn't reject it for "missing caller identity". mailingListID
+	// (and the committeeUID resolved from it) come from the triggering event, not end-user input.
+	ctx = withTrustedSystemCaller(ctx)
+
 	diff, err := o.syncDiffComputer.ComputeSyncDiff(ctx, mailingListID)
 	if err != nil {
 		var validationErr errs.Validation
