@@ -6,13 +6,42 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
+
+// checkCommitteeWriterAccess verifies that the caller in ctx holds writer access on
+// committee:committeeUID. Both sync-diff (reads committee roster emails/names into its response)
+// and sync-apply (for auto_ml_to_c, mutates committee membership) only ever get here after the
+// gateway has already confirmed the caller is a writer on the mailing list — but the ITX call
+// that actually reads/mutates the committee uses service-level M2M credentials, not the caller's
+// own, so a caller with mailing-list writer access but no committee access would otherwise be
+// able to read committee roster PII or mutate committee membership through this path alone.
+func checkCommitteeWriterAccess(ctx context.Context, accessChecker port.AccessChecker, committeeUID string) error {
+	principal, _ := ctx.Value(constants.PrincipalContextID).(string)
+	if principal == "" {
+		return errs.NewUnauthorized("missing caller identity")
+	}
+
+	object := fmt.Sprintf("%s:%s", constants.ObjectTypeCommittee, committeeUID)
+	user := fmt.Sprintf("%s:%s", constants.ObjectTypeUser, principal)
+	isWriter, err := accessChecker.HasRelation(ctx, user, constants.RelationWriter, object)
+	if err != nil {
+		slog.ErrorContext(ctx, "access check failed for committee sync access", "error", err, "object", object)
+		return errs.NewServiceUnavailable("unable to verify committee writer access", err)
+	}
+	if !isWriter {
+		return errs.NewUnauthorized("caller does not have writer access to the mailing list's linked committee")
+	}
+	return nil
+}
 
 // normalizeEmail returns email in the canonical form used to match an ITX sync job result back
 // to the approvedAdds/approvedRemoves entry it came from: trimmed and lowercased.

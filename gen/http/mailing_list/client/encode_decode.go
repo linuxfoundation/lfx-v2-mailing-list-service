@@ -2060,6 +2060,7 @@ func EncodeGetGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) goa
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *mailinglist.UnauthorizedError): http.StatusForbidden
 //   - error: internal error
 func DecodeGetGroupsioMailingListSyncDiffResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -2161,6 +2162,20 @@ func DecodeGetGroupsioMailingListSyncDiffResponse(decoder func(*http.Response) g
 				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
 			}
 			return nil, NewGetGroupsioMailingListSyncDiffServiceUnavailable(&body)
+		case http.StatusForbidden:
+			var (
+				body GetGroupsioMailingListSyncDiffUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncDiffUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncDiffUnauthorized(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("mailing-list", "get-groupsio-mailing-list-sync-diff", resp.StatusCode, string(body))
@@ -2230,6 +2245,7 @@ func EncodeApplyGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) g
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *mailinglist.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *mailinglist.UnauthorizedError): http.StatusForbidden
 //   - error: internal error
 func DecodeApplyGroupsioMailingListSyncDiffResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -2331,6 +2347,20 @@ func DecodeApplyGroupsioMailingListSyncDiffResponse(decoder func(*http.Response)
 				return nil, goahttp.ErrValidationError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
 			}
 			return nil, NewApplyGroupsioMailingListSyncDiffServiceUnavailable(&body)
+		case http.StatusForbidden:
+			var (
+				body ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
+			}
+			err = ValidateApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
+			}
+			return nil, NewApplyGroupsioMailingListSyncDiffUnauthorized(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("mailing-list", "apply-groupsio-mailing-list-sync-diff", resp.StatusCode, string(body))

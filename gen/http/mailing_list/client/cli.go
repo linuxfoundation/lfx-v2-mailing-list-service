@@ -435,7 +435,7 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 	{
 		err = json.Unmarshal([]byte(mailingListApplyGroupsioMailingListSyncDiffBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
 		}
 		if body.Adds == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
@@ -443,6 +443,7 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 		if body.Removes == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
 		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", body.CommitteeUID, goa.FormatUUID))
 		for _, e := range body.Adds {
 			if e != nil {
 				if err2 := ValidateGroupsioSyncDiffAddRequestBody(e); err2 != nil {
@@ -471,7 +472,9 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 			bearerToken = &mailingListApplyGroupsioMailingListSyncDiffBearerToken
 		}
 	}
-	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{}
+	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{
+		CommitteeUID: body.CommitteeUID,
+	}
 	if body.Adds != nil {
 		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
 		for i, val := range body.Adds {

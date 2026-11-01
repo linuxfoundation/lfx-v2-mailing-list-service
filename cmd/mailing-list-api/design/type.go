@@ -239,9 +239,13 @@ var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
 // get-groupsio-mailing-list-sync-diff returned for the ones they want applied now.
 var GroupsioSyncApplyRequestType = dsl.Type("groupsio-sync-apply-request", func() {
 	dsl.Description("Admin-approved subset of a sync-diff to apply")
+	dsl.Attribute("committee_uid", dsl.String, "committee_uid from the sync-diff this apply is approving — rejected "+
+		"with Conflict if the mailing list is no longer linked to this committee", func() {
+		dsl.Format(dsl.FormatUUID)
+	})
 	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Members to add, as returned by sync-diff")
 	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Members to remove, as returned by sync-diff")
-	dsl.Required("adds", "removes")
+	dsl.Required("committee_uid", "adds", "removes")
 })
 
 // GroupsioSyncApplyAddResultType reports what happened applying one approved add.

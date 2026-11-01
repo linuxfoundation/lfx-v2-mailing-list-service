@@ -53,6 +53,9 @@ const (
 
 	// ObjectTypeUser defines the object type for users
 	ObjectTypeUser = "user"
+
+	// ObjectTypeCommittee defines the object type for committees
+	ObjectTypeCommittee = "committee"
 )
 
 // Member moderation status constants

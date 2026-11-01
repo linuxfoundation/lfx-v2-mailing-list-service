@@ -13,8 +13,16 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
+
+// ctxWithPrincipal returns a context carrying a test principal, needed for the committee
+// writer-access check both sync orchestrators now perform.
+func ctxWithPrincipal() context.Context {
+	return context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+}
 
 // stubITXSyncClient returns configured responses for the ITXSyncClient methods used by the
 // sync-diff/sync-apply orchestrators.
@@ -58,6 +66,19 @@ func (c *stubITXSyncClient) GetSyncApplyJob(_ context.Context, _, _ string) (*po
 
 var _ port.ITXSyncClient = (*stubITXSyncClient)(nil)
 
+// stubAccessChecker lets tests control the HasRelation outcome, unlike mock.MockAccessChecker
+// which always allows.
+type stubAccessChecker struct {
+	allow bool
+	err   error
+}
+
+func (c *stubAccessChecker) HasRelation(_ context.Context, _, _, _ string) (bool, error) {
+	return c.allow, c.err
+}
+
+var _ port.AccessChecker = (*stubAccessChecker)(nil)
+
 func mlWithCommittee(committeeUID string) *model.GroupsIOMailingList {
 	return &model.GroupsIOMailingList{
 		UID:        "ml-1",
@@ -76,8 +97,9 @@ func TestComputeSyncDiff_NoLinkedCommittee(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -87,8 +109,9 @@ func TestComputeSyncDiff_ManualSyncMode(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeManual)}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -98,8 +121,9 @@ func TestComputeSyncDiff_EmptySyncModeTreatedAsManual(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommittee("committee-1")}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -109,8 +133,9 @@ func TestComputeSyncDiff_UnrecognizedSyncMode(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", "bogus")}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -120,8 +145,9 @@ func TestComputeSyncDiff_MailingListReaderError(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{err: errors.New("not found")}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 }
 
@@ -129,8 +155,9 @@ func TestComputeSyncDiff_PostSyncDiffError(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
 		WithSyncDiffITXSyncClient(&stubITXSyncClient{postDiffErr: errs.NewServiceUnavailable("itx down")}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -143,8 +170,9 @@ func TestComputeSyncDiff_GetSyncDiffJobError(t *testing.T) {
 			postDiffJobID: "job-1",
 			diffJobErr:    errors.New("itx unreachable"),
 		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 }
 
@@ -155,8 +183,9 @@ func TestComputeSyncDiff_JobFailed(t *testing.T) {
 			postDiffJobID: "job-1",
 			diffJob:       &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusFailed, ErrorMessage: "subgroup not found"},
 		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
-	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -181,9 +210,10 @@ func TestComputeSyncDiff_Reconciliation(t *testing.T) {
 				},
 			},
 		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
 
-	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	diff, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.NoError(t, err)
 
 	require.Len(t, diff.Adds, 1)
@@ -218,9 +248,10 @@ func TestComputeSyncDiff_MailingListToCommitteeDirection(t *testing.T) {
 	o := NewSyncDiffOrchestrator(
 		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)}),
 		WithSyncDiffITXSyncClient(stub),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
 
-	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	diff, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, stub.postDiffDirection)
 	assert.Equal(t, model.SyncModeAutoMailingListToCommittee, diff.SyncMode)
@@ -236,9 +267,10 @@ func TestComputeSyncDiff_NoChangesNeeded(t *testing.T) {
 			postDiffJobID: "job-1",
 			diffJob:       &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusCompleted},
 		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
 
-	diff, err := o.ComputeSyncDiff(context.Background(), "ml-1")
+	diff, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
 	require.NoError(t, err)
 	assert.Empty(t, diff.Adds)
 	assert.Empty(t, diff.Removes)
@@ -257,10 +289,41 @@ func TestComputeSyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 			postDiffJobID: "job-1",
 			diffJob:       &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusCompleted},
 		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
+	)
+
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
+}
+
+// TestComputeSyncDiff_AccessDenied pins that a caller with mailing-list access but no writer
+// access on the linked committee cannot read the diff (which includes committee roster PII).
+func TestComputeSyncDiff_AccessDenied(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(&stubAccessChecker{allow: false}),
+	)
+
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
+	require.Error(t, err)
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
+}
+
+// TestComputeSyncDiff_NoPrincipal pins that a caller with no principal in context (e.g. a
+// missing/misconfigured auth middleware) is rejected before any access check is attempted.
+func TestComputeSyncDiff_NoPrincipal(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffITXSyncClient(&stubITXSyncClient{}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
 	)
 
 	_, err := o.ComputeSyncDiff(context.Background(), "ml-1")
 	require.Error(t, err)
-	var conflict errs.Conflict
-	assert.True(t, errors.As(err, &conflict))
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
 }

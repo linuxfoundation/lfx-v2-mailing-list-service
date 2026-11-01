@@ -1192,6 +1192,7 @@ paths:
                                   member_id: Rerum sequi fuga consequatur.
                                   member_type: committee_member
                                   name: Debitis neque labore autem.
+                            committee_uid: 3f60f542-7044-4e09-b924-ee567a39a62f
                             removes:
                                 - email: cory.dubuque@haag.net
                                   member_id: Error rem tenetur.
@@ -1241,6 +1242,14 @@ paths:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
                                 message: The request was invalid.
+                "403":
+                    description: 'Unauthorized: Caller lacks writer access to the linked committee'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
                 "404":
                     description: 'NotFound: Subgroup or linked committee not found'
                     content:
@@ -1250,7 +1259,7 @@ paths:
                             example:
                                 message: The resource was not found.
                 "409":
-                    description: 'Conflict: Mailing list''s linked committee changed while the sync-apply job was running'
+                    description: 'Conflict: Mailing list''s linked committee changed since the diff was computed or while the sync-apply job was running'
                     content:
                         application/json:
                             schema:
@@ -1340,6 +1349,14 @@ paths:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
                                 message: The request was invalid.
+                "403":
+                    description: 'Unauthorized: Caller lacks writer access to the linked committee'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                message: Unauthorized access.
                 "404":
                     description: 'NotFound: Subgroup or linked committee not found'
                     content:
@@ -1992,6 +2009,11 @@ components:
                           member_id: Rerum sequi fuga consequatur.
                           member_type: committee_member
                           name: Debitis neque labore autem.
+                committee_uid:
+                    type: string
+                    description: committee_uid from the sync-diff this apply is approving — rejected with Conflict if the mailing list is no longer linked to this committee
+                    example: 3f60f542-7044-4e09-b924-ee567a39a62f
+                    format: uuid
                 removes:
                     type: array
                     items:
@@ -2019,6 +2041,7 @@ components:
                       member_id: Rerum sequi fuga consequatur.
                       member_type: committee_member
                       name: Debitis neque labore autem.
+                committee_uid: 3f60f542-7044-4e09-b924-ee567a39a62f
                 removes:
                     - email: cory.dubuque@haag.net
                       member_id: Error rem tenetur.
@@ -2027,6 +2050,7 @@ components:
                       member_id: Error rem tenetur.
                       member_type: mailing_list_member
             required:
+                - committee_uid
                 - adds
                 - removes
         BadRequestError:
@@ -3328,7 +3352,7 @@ components:
                     type: string
                     description: Error message
                     example: Unauthorized access.
-            description: Self-service subscription not permitted
+            description: Caller lacks writer access to the linked committee
             example:
                 message: Unauthorized access.
             required:
