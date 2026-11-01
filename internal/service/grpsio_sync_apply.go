@@ -20,6 +20,7 @@ type SyncApplyOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
 	itxSyncClient     port.ITXSyncClient
 	accessChecker     port.AccessChecker
+	translator        port.Translator
 }
 
 // SyncApplyOrchestratorOption configures a SyncApplyOrchestrator.
@@ -42,6 +43,12 @@ func WithSyncApplyITXSyncClient(c port.ITXSyncClient) SyncApplyOrchestratorOptio
 // caller with mailing-list writer access but no committee access apart from one with both.
 func WithSyncApplyAccessChecker(c port.AccessChecker) SyncApplyOrchestratorOption {
 	return func(o *SyncApplyOrchestrator) { o.accessChecker = c }
+}
+
+// WithSyncApplyTranslator sets the ID translator used to compare ITX's job-reported committee ID
+// (v1) against the mailing list's linked committee UID (v2) in the job-completion recheck below.
+func WithSyncApplyTranslator(t port.Translator) SyncApplyOrchestratorOption {
+	return func(o *SyncApplyOrchestrator) { o.translator = t }
 }
 
 // NewSyncApplyOrchestrator creates a SyncApplyOrchestrator with the given options.
@@ -139,6 +146,10 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 	if job.Status == port.SyncJobStatusFailed {
 		return nil, errs.NewServiceUnavailable("ITX sync-apply job failed: " + job.ErrorMessage)
+	}
+
+	if err := verifyJobCommitteeMatch(ctx, o.translator, job.CommitteeID, committeeUID); err != nil {
+		return nil, err
 	}
 
 	// job.Results reflect the committee that was linked when PostSyncApply was called

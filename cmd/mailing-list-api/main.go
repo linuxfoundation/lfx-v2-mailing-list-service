@@ -146,6 +146,13 @@ func run() int {
 		orchestrator.WithMailingListReader(proxyClient),
 		orchestrator.WithMailingListReaderTranslator(translator),
 	)
+	// Initialize access checker.
+	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
+		return 1
+	}
+
 	mailingListOrchestrator := orchestrator.NewGroupsIOMailingListOrchestrator(
 		orchestrator.WithMailingListWriter(proxyClient),
 		orchestrator.WithMailingListTranslator(translator),
@@ -153,6 +160,7 @@ func run() int {
 		orchestrator.WithMailingListPublisher(publisher),
 		orchestrator.WithMailingListServiceReader(serviceReaderOrchestrator),
 		orchestrator.WithMailingListCommitteeProjectLookup(committeeLookup),
+		orchestrator.WithMailingListAccessChecker(accessChecker),
 	)
 	memberReaderOrchestrator := orchestrator.NewGroupsIOMailingListMemberReaderOrchestrator(
 		orchestrator.WithMemberReader(proxyClient),
@@ -163,23 +171,19 @@ func run() int {
 	artifactReaderOrchestrator := orchestrator.NewGroupsIOArtifactReaderOrchestrator(
 		orchestrator.WithArtifactReader(proxyClient),
 	)
-	// Initialize access checker.
-	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
-	if err != nil {
-		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
-		return 1
-	}
 
 	syncDiffOrchestrator := orchestrator.NewSyncDiffOrchestrator(
 		orchestrator.WithSyncDiffMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncDiffITXSyncClient(proxyClient),
 		orchestrator.WithSyncDiffAccessChecker(accessChecker),
+		orchestrator.WithSyncDiffTranslator(translator),
 	)
 
 	syncApplyOrchestrator := orchestrator.NewSyncApplyOrchestrator(
 		orchestrator.WithSyncApplyMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncApplyITXSyncClient(proxyClient),
 		orchestrator.WithSyncApplyAccessChecker(accessChecker),
+		orchestrator.WithSyncApplyTranslator(translator),
 	)
 
 	realtimeAutoSyncOrchestrator := orchestrator.NewRealtimeAutoSyncOrchestrator(

@@ -24,6 +24,7 @@ type GroupsIOMailingListOrchestrator struct {
 	publisher              port.MessagePublisher
 	serviceReader          port.GroupsIOServiceReader
 	committeeProjectLookup port.CommitteeProjectLookup
+	accessChecker          port.AccessChecker
 }
 
 // MailingListOrchestratorOption configures a GroupsIOMailingListOrchestrator.
@@ -72,6 +73,14 @@ func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) Mailin
 	}
 }
 
+// WithMailingListAccessChecker sets the checker used to verify committee writer access when
+// sync_mode is being set to auto_ml_to_c (see validateCommitteeProject).
+func WithMailingListAccessChecker(c port.AccessChecker) MailingListOrchestratorOption {
+	return func(o *GroupsIOMailingListOrchestrator) {
+		o.accessChecker = c
+	}
+}
+
 // validateCommitteeProject checks that the supplied committee belongs to the same project as
 // the parent service. No-op when no committee is present. Returns ServiceUnavailable when
 // required dependencies are not configured. On success it sets ml.ProjectUID from the
@@ -112,6 +121,21 @@ func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.C
 
 	if committeeProject != svc.ProjectUID {
 		return errs.NewValidation("committee does not belong to the service's project")
+	}
+
+	// auto_ml_to_c means a future sync-apply will write mailing-list members into the committee's
+	// own roster. The gateway has only confirmed mailing-list writer access by this point — without
+	// this check, a caller with mailing-list writer access but no committee access could configure
+	// a committee they don't control to receive automatic membership writes from this list merely
+	// by setting sync_mode, even though actually triggering that apply still requires committee
+	// writer access (checkCommitteeWriterAccess in sync_job_poll.go).
+	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee {
+		if o.accessChecker == nil {
+			return errs.NewServiceUnavailable("committee access validation is not configured")
+		}
+		if err := checkCommitteeWriterAccess(ctx, o.accessChecker, ml.Committees[0].UID); err != nil {
+			return err
+		}
 	}
 
 	ml.ProjectUID = svc.ProjectUID

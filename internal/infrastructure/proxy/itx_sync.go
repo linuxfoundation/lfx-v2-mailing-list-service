@@ -113,6 +113,7 @@ func fromWireSyncDiffJob(w *syncDiffJobWire) *port.SyncDiffJob {
 	job := &port.SyncDiffJob{
 		ID:           w.ID,
 		Status:       w.Status,
+		CommitteeID:  w.CommitteeID,
 		ToAdd:        make([]port.SyncJobMember, len(w.ToAdd)),
 		ToRemove:     make([]port.SyncJobMember, len(w.ToRemove)),
 		ErrorMessage: w.ErrorMessage,
@@ -142,6 +143,7 @@ func fromWireSyncApplyJob(w *syncApplyJobWire) *port.SyncApplyJob {
 	job := &port.SyncApplyJob{
 		ID:           w.ID,
 		Status:       w.Status,
+		CommitteeID:  w.CommitteeID,
 		Results:      make([]port.SyncApplyJobResult, len(w.Results)),
 		ErrorMessage: w.ErrorMessage,
 	}
