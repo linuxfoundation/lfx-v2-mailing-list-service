@@ -77,7 +77,7 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, err
 	}
 	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
-		return nil, errs.NewValidation("mailing list is not linked to a committee")
+		return nil, errs.NewValidation(notLinkedToCommitteeValidationMsg)
 	}
 	committeeUID := ml.Committees[0].UID
 

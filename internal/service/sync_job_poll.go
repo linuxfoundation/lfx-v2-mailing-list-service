@@ -180,6 +180,19 @@ func memberTypesForDirection(direction string) (addType, removeType model.Member
 	return model.MemberTypeCommitteeMember, model.MemberTypeMailingListMember
 }
 
+// syncModeManualValidationMsg and syncModeUnrecognizedValidationMsgPrefix identify, by exact
+// message (or prefix), the two Validation errors syncJobDirectionForMode itself produces for a
+// mailing list with nothing to reconcile. RealtimeAutoSyncOrchestrator.TriggerAutoSync matches
+// against these (and notLinkedToCommitteeValidationMsg below) to tell "nothing to reconcile" apart
+// from a Validation that ITX's PostSyncDiff/PostSyncApply returns for an unrelated reason — most
+// notably a sync job already in progress for this mailing list (see port.ITXSyncClient.PostSyncDiff)
+// — which must not be swallowed as a successful no-op (per @greptile-apps/@copilot-pull-request-reviewer).
+const (
+	notLinkedToCommitteeValidationMsg       = "mailing list is not linked to a committee"
+	syncModeManualValidationMsg             = "mailing list sync_mode is manual; there is nothing to reconcile"
+	syncModeUnrecognizedValidationMsgPrefix = "mailing list has an unrecognized sync_mode: "
+)
+
 // syncJobDirectionForMode maps a committee's configured sync_mode to the direction ITX's
 // sync-diff/sync-apply jobs expect. Only auto_c_to_ml and auto_ml_to_c have a direction; manual
 // (or unset) means there is nothing to reconcile.
@@ -190,8 +203,8 @@ func syncJobDirectionForMode(syncMode string) (string, error) {
 	case model.SyncModeAutoMailingListToCommittee:
 		return port.SyncJobDirectionMailingListToCommittee, nil
 	case "", model.SyncModeManual:
-		return "", errs.NewValidation("mailing list sync_mode is manual; there is nothing to reconcile")
+		return "", errs.NewValidation(syncModeManualValidationMsg)
 	default:
-		return "", errs.NewValidation("mailing list has an unrecognized sync_mode: " + syncMode)
+		return "", errs.NewValidation(syncModeUnrecognizedValidationMsgPrefix + syncMode)
 	}
 }
