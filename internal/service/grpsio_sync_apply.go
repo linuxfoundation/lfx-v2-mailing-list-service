@@ -19,6 +19,7 @@ import (
 type SyncApplyOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
 	itxSyncClient     port.ITXSyncClient
+	accessChecker     port.AccessChecker
 }
 
 // SyncApplyOrchestratorOption configures a SyncApplyOrchestrator.
@@ -33,6 +34,14 @@ func WithSyncApplyMailingListReader(r port.GroupsIOMailingListReader) SyncApplyO
 // WithSyncApplyITXSyncClient sets the client used to start and poll ITX's sync-apply job.
 func WithSyncApplyITXSyncClient(c port.ITXSyncClient) SyncApplyOrchestratorOption {
 	return func(o *SyncApplyOrchestrator) { o.itxSyncClient = c }
+}
+
+// WithSyncApplyAccessChecker sets the checker used to verify the caller holds writer access on
+// the mailing list's linked committee before ITX applies changes on the service's behalf — the
+// ITX call itself uses service-level M2M credentials, so this is the only place that can tell a
+// caller with mailing-list writer access but no committee access apart from one with both.
+func WithSyncApplyAccessChecker(c port.AccessChecker) SyncApplyOrchestratorOption {
+	return func(o *SyncApplyOrchestrator) { o.accessChecker = c }
 }
 
 // NewSyncApplyOrchestrator creates a SyncApplyOrchestrator with the given options.
@@ -50,6 +59,7 @@ func NewSyncApplyOrchestrator(opts ...SyncApplyOrchestratorOption) port.SyncAppl
 func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	ctx context.Context,
 	mailingListID string,
+	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
 ) (*model.SyncApplyResult, error) {
@@ -61,6 +71,19 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		return nil, errs.NewValidation("mailing list is not linked to a committee")
 	}
 	committeeUID := ml.Committees[0].UID
+
+	// The caller's approved adds/removes were vetted against the diff computed for
+	// expectedCommitteeUID — if the list was relinked to a different committee between that diff
+	// being fetched and this apply call, applying them now would attribute committee A's approved
+	// changes to committee B. This only catches a relink that already happened before the call;
+	// the re-check after the ITX job completes (below) catches one that happens during it.
+	if expectedCommitteeUID != committeeUID {
+		return nil, errs.NewConflict("mailing list's linked committee no longer matches the sync-diff this apply was approved against; request a fresh diff and re-apply")
+	}
+
+	if err := checkCommitteeWriterAccess(ctx, o.accessChecker, committeeUID); err != nil {
+		return nil, err
+	}
 
 	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
 	if err != nil {
@@ -84,15 +107,25 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	addEmailByNormalized := make(map[string]model.SyncDiffAdd, len(approvedAdds))
 	approvedAddEmails := make([]string, 0, len(approvedAdds))
 	for _, add := range approvedAdds {
+		normalized := normalizeEmail(add.Email)
+		if existing, ok := addEmailByNormalized[normalized]; ok {
+			return nil, errs.NewValidation("approved adds contain duplicate normalized email " + normalized +
+				" (" + existing.Email + " and " + add.Email + "); submit each add at most once")
+		}
 		approvedAddEmails = append(approvedAddEmails, add.Email)
-		addEmailByNormalized[normalizeEmail(add.Email)] = add
+		addEmailByNormalized[normalized] = add
 	}
 
 	removeByNormalized := make(map[string]model.SyncDiffRemove, len(approvedRemoves))
 	approvedRemoveIDs := make([]string, 0, len(approvedRemoves))
 	for _, remove := range approvedRemoves {
+		normalized := normalizeEmail(remove.Email)
+		if existing, ok := removeByNormalized[normalized]; ok {
+			return nil, errs.NewValidation("approved removes contain duplicate normalized email " + normalized +
+				" (" + existing.Email + " and " + remove.Email + "); submit each remove at most once")
+		}
 		approvedRemoveIDs = append(approvedRemoveIDs, remove.MemberID)
-		removeByNormalized[normalizeEmail(remove.Email)] = remove
+		removeByNormalized[normalized] = remove
 	}
 
 	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, direction, approvedAddEmails, approvedRemoveIDs, "")

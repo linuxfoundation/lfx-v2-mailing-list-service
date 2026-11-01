@@ -19,6 +19,7 @@ import (
 type SyncDiffOrchestrator struct {
 	mailingListReader port.GroupsIOMailingListReader
 	itxSyncClient     port.ITXSyncClient
+	accessChecker     port.AccessChecker
 }
 
 // SyncDiffOrchestratorOption configures a SyncDiffOrchestrator.
@@ -36,6 +37,17 @@ func WithSyncDiffMailingListReader(r port.GroupsIOMailingListReader) SyncDiffOrc
 func WithSyncDiffITXSyncClient(c port.ITXSyncClient) SyncDiffOrchestratorOption {
 	return func(o *SyncDiffOrchestrator) {
 		o.itxSyncClient = c
+	}
+}
+
+// WithSyncDiffAccessChecker sets the checker used to verify the caller holds writer access on
+// the mailing list's linked committee before computing a diff — the diff response (ToAdd/ToRemove
+// /EmailConflicts) includes committee roster emails and names regardless of sync direction, so
+// without this check a caller with mailing-list writer access but no committee access could read
+// committee roster PII through this endpoint alone.
+func WithSyncDiffAccessChecker(c port.AccessChecker) SyncDiffOrchestratorOption {
+	return func(o *SyncDiffOrchestrator) {
+		o.accessChecker = c
 	}
 }
 
@@ -59,6 +71,10 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, errs.NewValidation("mailing list is not linked to a committee")
 	}
 	committeeUID := ml.Committees[0].UID
+
+	if err := checkCommitteeWriterAccess(ctx, o.accessChecker, committeeUID); err != nil {
+		return nil, err
+	}
 
 	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
 	if err != nil {

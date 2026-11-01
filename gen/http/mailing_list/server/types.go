@@ -99,6 +99,9 @@ type UpdateGroupsioMailingListRequestBody struct {
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // request body.
 type ApplyGroupsioMailingListSyncDiffRequestBody struct {
+	// committee_uid from the sync-diff this apply is approving — rejected with
+	// Conflict if the mailing list is no longer linked to this committee
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Members to add, as returned by sync-diff
 	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
 	// Members to remove, as returned by sync-diff
@@ -997,6 +1000,14 @@ type GetGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetGroupsioMailingListSyncDiffUnauthorizedResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Unauthorized" error.
+type GetGroupsioMailingListSyncDiffUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // ApplyGroupsioMailingListSyncDiffBadRequestResponseBody is the type of the
 // "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
 // response body for the "BadRequest" error.
@@ -1033,6 +1044,14 @@ type ApplyGroupsioMailingListSyncDiffNotFoundResponseBody struct {
 // of the "mailing-list" service "apply-groupsio-mailing-list-sync-diff"
 // endpoint HTTP response body for the "ServiceUnavailable" error.
 type ApplyGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody is the type of the
+// "mailing-list" service "apply-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Unauthorized" error.
+type ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody struct {
 	// Error message
 	Message string `form:"message" json:"message" xml:"message"`
 }
@@ -2440,6 +2459,16 @@ func NewGetGroupsioMailingListSyncDiffServiceUnavailableResponseBody(res *mailin
 	return body
 }
 
+// NewGetGroupsioMailingListSyncDiffUnauthorizedResponseBody builds the HTTP
+// response body from the result of the "get-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewGetGroupsioMailingListSyncDiffUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *GetGroupsioMailingListSyncDiffUnauthorizedResponseBody {
+	body := &GetGroupsioMailingListSyncDiffUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewApplyGroupsioMailingListSyncDiffBadRequestResponseBody builds the HTTP
 // response body from the result of the "apply-groupsio-mailing-list-sync-diff"
 // endpoint of the "mailing-list" service.
@@ -2487,6 +2516,16 @@ func NewApplyGroupsioMailingListSyncDiffNotFoundResponseBody(res *mailinglist.No
 // service.
 func NewApplyGroupsioMailingListSyncDiffServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *ApplyGroupsioMailingListSyncDiffServiceUnavailableResponseBody {
 	body := &ApplyGroupsioMailingListSyncDiffServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody builds the HTTP
+// response body from the result of the "apply-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody {
+	body := &ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody{
 		Message: res.Message,
 	}
 	return body
@@ -2997,7 +3036,9 @@ func NewGetGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *st
 // NewApplyGroupsioMailingListSyncDiffPayload builds a mailing-list service
 // apply-groupsio-mailing-list-sync-diff endpoint payload.
 func NewApplyGroupsioMailingListSyncDiffPayload(body *ApplyGroupsioMailingListSyncDiffRequestBody, subgroupID string, bearerToken *string) *mailinglist.ApplyGroupsioMailingListSyncDiffPayload {
-	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{}
+	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{
+		CommitteeUID: *body.CommitteeUID,
+	}
 	v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
 	for i, val := range body.Adds {
 		if val == nil {
@@ -3207,6 +3248,12 @@ func ValidateApplyGroupsioMailingListSyncDiffRequestBody(body *ApplyGroupsioMail
 	}
 	if body.Removes == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+	}
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
 	for _, e := range body.Adds {
 		if e != nil {

@@ -12,13 +12,17 @@ import (
 // SyncApplier applies an admin-approved subset of a mailing list's sync-diff: adding resolved
 // committee members and removing members who have dropped off the linked committee.
 type SyncApplier interface {
-	// ApplySyncDiff applies approvedAdds and approvedRemoves — both expected to be drawn from a
-	// SyncDiff previously computed for mailingListID — and reports the outcome of each. Returns
-	// NotFound when the mailing list or its linked committee does not exist. Returns Validation
-	// when the mailing list has no linked committee or its sync_mode does not support apply.
+	// ApplySyncDiff applies approvedAdds and approvedRemoves — both expected to be drawn from the
+	// SyncDiff previously computed for mailingListID with committee_uid expectedCommitteeUID — and
+	// reports the outcome of each. Returns NotFound when the mailing list or its linked committee
+	// does not exist. Returns Validation when the mailing list has no linked committee or its
+	// sync_mode does not support apply. Returns Conflict when the mailing list's currently-linked
+	// committee no longer matches expectedCommitteeUID. Returns Unauthorized when the caller lacks
+	// writer access to the linked committee.
 	ApplySyncDiff(
 		ctx context.Context,
 		mailingListID string,
+		expectedCommitteeUID string,
 		approvedAdds []model.SyncDiffAdd,
 		approvedRemoves []model.SyncDiffRemove,
 	) (*model.SyncApplyResult, error)

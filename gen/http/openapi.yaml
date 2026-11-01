@@ -727,6 +727,7 @@ paths:
                     required:
                         - adds
                         - removes
+                        - committee_uid
             responses:
                 "200":
                     description: OK response.
@@ -741,6 +742,12 @@ paths:
                     description: Bad Request response.
                     schema:
                         $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
                         required:
                             - message
                 "404":
@@ -800,6 +807,12 @@ paths:
                     description: Bad Request response.
                     schema:
                         $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
                         required:
                             - message
                 "404":
@@ -2428,6 +2441,11 @@ definitions:
                       member_id: Rerum sequi fuga consequatur.
                       member_type: committee_member
                       name: Debitis neque labore autem.
+            committee_uid:
+                type: string
+                description: committee_uid from the sync-diff this apply is approving — rejected with Conflict if the mailing list is no longer linked to this committee
+                example: 3f60f542-7044-4e09-b924-ee567a39a62f
+                format: uuid
             removes:
                 type: array
                 items:
@@ -2454,6 +2472,7 @@ definitions:
                   member_id: Rerum sequi fuga consequatur.
                   member_type: committee_member
                   name: Debitis neque labore autem.
+            committee_uid: 3f60f542-7044-4e09-b924-ee567a39a62f
             removes:
                 - email: cory.dubuque@haag.net
                   member_id: Error rem tenetur.
@@ -2464,6 +2483,7 @@ definitions:
         required:
             - adds
             - removes
+            - committee_uid
     MailingListCheckGroupsioSubscriberRequestBody:
         title: MailingListCheckGroupsioSubscriberRequestBody
         type: object
@@ -2790,7 +2810,7 @@ definitions:
                 type: string
                 description: Error message
                 example: Unauthorized access.
-        description: Self-service subscription not permitted
+        description: Caller lacks writer access to the linked committee
         example:
             message: Unauthorized access.
         required:

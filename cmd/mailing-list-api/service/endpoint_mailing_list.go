@@ -103,6 +103,7 @@ func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p
 	result, err := s.syncApplier.ApplySyncDiff(
 		ctx,
 		p.SubgroupID,
+		p.CommitteeUID,
 		convertSyncApplyAddPayload(p.Adds),
 		convertSyncApplyRemovePayload(p.Removes),
 	)

@@ -163,14 +163,24 @@ func run() int {
 	artifactReaderOrchestrator := orchestrator.NewGroupsIOArtifactReaderOrchestrator(
 		orchestrator.WithArtifactReader(proxyClient),
 	)
+
+	// Initialize access checker.
+	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
+		return 1
+	}
+
 	syncDiffOrchestrator := orchestrator.NewSyncDiffOrchestrator(
 		orchestrator.WithSyncDiffMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncDiffITXSyncClient(proxyClient),
+		orchestrator.WithSyncDiffAccessChecker(accessChecker),
 	)
 
 	syncApplyOrchestrator := orchestrator.NewSyncApplyOrchestrator(
 		orchestrator.WithSyncApplyMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncApplyITXSyncClient(proxyClient),
+		orchestrator.WithSyncApplyAccessChecker(accessChecker),
 	)
 
 	// userReader resolves an LFX account by email for the invite-acceptance data stream handler.
@@ -197,13 +207,6 @@ func run() int {
 		}
 	} else {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
-	}
-
-	// Initialize access checker.
-	accessChecker, err := service.NewAccessChecker(ctx, env.AccessCheckSource, natsClient)
-	if err != nil {
-		slog.ErrorContext(ctx, "error initializing access checker", "error", err)
-		return 1
 	}
 
 	// Create the mailing list API service.

@@ -128,6 +128,9 @@ type ApplyGroupsioMailingListSyncDiffPayload struct {
 	BearerToken *string
 	// Subgroup ID
 	SubgroupID string
+	// committee_uid from the sync-diff this apply is approving — rejected with
+	// Conflict if the mailing list is no longer linked to this committee
+	CommitteeUID string
 	// Members to add, as returned by sync-diff
 	Adds []*GroupsioSyncDiffAdd
 	// Members to remove, as returned by sync-diff

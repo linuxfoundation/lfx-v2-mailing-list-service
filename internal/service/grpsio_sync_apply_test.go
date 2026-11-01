@@ -13,6 +13,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
@@ -20,6 +21,7 @@ func newApplyOrchestrator(mlReader port.GroupsIOMailingListReader, itxClient por
 	return NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(mlReader),
 		WithSyncApplyITXSyncClient(itxClient),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
 	)
 }
 
@@ -28,7 +30,7 @@ func TestApplySyncDiff_NoLinkedCommittee(t *testing.T) {
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -39,7 +41,7 @@ func TestApplySyncDiff_ManualSyncMode(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeManual)},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -50,7 +52,7 @@ func TestApplySyncDiff_PostSyncApplyError(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{postApplyErr: errs.NewServiceUnavailable("itx down")},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -64,7 +66,7 @@ func TestApplySyncDiff_JobFailed(t *testing.T) {
 			applyJob:       &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusFailed, ErrorMessage: "subgroup locked"},
 		},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -86,7 +88,7 @@ func TestApplySyncDiff_AddSuccess(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		stub,
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember, Name: "Alice Example"},
 	}, nil)
 	require.NoError(t, err)
@@ -114,7 +116,7 @@ func TestApplySyncDiff_AddFailure_ReportedAsFailed(t *testing.T) {
 			},
 		},
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.NoError(t, err)
@@ -138,7 +140,7 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		stub,
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	})
 	require.NoError(t, err)
@@ -169,7 +171,7 @@ func TestApplySyncDiff_MailingListToCommitteeDirection(t *testing.T) {
 		stub,
 	)
 
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "dana@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	}, nil)
 	require.NoError(t, err)
@@ -192,7 +194,7 @@ func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 			},
 		},
 	)
-	result, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	})
 	require.NoError(t, err)
@@ -209,7 +211,7 @@ func TestApplySyncDiff_AddMemberTypeMismatch(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	}, nil)
 	require.Error(t, err)
@@ -222,7 +224,7 @@ func TestApplySyncDiff_RemoveMemberTypeMismatch(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoMailingListToCommittee)},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", nil, []model.SyncDiffRemove{
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 	})
 	require.Error(t, err)
@@ -247,7 +249,7 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 			},
 		},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.Error(t, err)
@@ -274,10 +276,87 @@ func TestApplySyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 			},
 		},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", []model.SyncDiffAdd{
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
+}
+
+// TestApplySyncDiff_RelinkedBeforeApply pins that if the mailing list was relinked to a
+// different committee between the diff being fetched and this apply call (i.e. before
+// PostSyncApply is even called), the request fails instead of attributing the stale diff's
+// approved adds/removes to the newly-linked committee.
+func TestApplySyncDiff_RelinkedBeforeApply(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-2", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
+}
+
+// TestApplySyncDiff_DuplicateAddEmail pins that two approved adds normalizing to the same email
+// are rejected up front, rather than silently misattributing ITX's single per-email result to
+// whichever of the two happened to win the map-key overwrite.
+func TestApplySyncDiff_DuplicateAddEmail(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "Alice@Example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+		{Email: "alice@example.com", MemberID: "cm-2", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+// TestApplySyncDiff_DuplicateRemoveEmail is the remove-side counterpart of
+// TestApplySyncDiff_DuplicateAddEmail.
+func TestApplySyncDiff_DuplicateRemoveEmail(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
+		{Email: "Carol@Example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
+		{Email: "carol@example.com", MemberID: "mlm-2", MemberType: model.MemberTypeMailingListMember},
+	})
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+// TestApplySyncDiff_AccessDenied pins that a caller with mailing-list access but no writer
+// access on the linked committee cannot apply changes on the committee's behalf.
+func TestApplySyncDiff_AccessDenied(t *testing.T) {
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
+		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
+	)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	require.Error(t, err)
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
+}
+
+// TestApplySyncDiff_NoPrincipal pins that a caller with no principal in context is rejected
+// before any access check or apply is attempted.
+func TestApplySyncDiff_NoPrincipal(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", "committee-1", nil, nil)
+	require.Error(t, err)
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
 }
