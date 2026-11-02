@@ -34,6 +34,7 @@ type RealtimeAutoSyncOrchestrator struct {
 	syncDiffComputer  port.SyncDiffComputer
 	syncApplier       port.SyncApplier
 	logger            *slog.Logger
+	autoSyncEnabled   bool
 }
 
 // RealtimeAutoSyncOption configures a RealtimeAutoSyncOrchestrator.
@@ -69,9 +70,16 @@ func WithRealtimeAutoSyncLogger(logger *slog.Logger) RealtimeAutoSyncOption {
 	return func(o *RealtimeAutoSyncOrchestrator) { o.logger = logger }
 }
 
+// WithRealtimeAutoSyncEnabled sets the issue #4878 kill switch: when false, TriggerAutoSync is a
+// deliberate no-op regardless of caller, independent of the frontend LaunchDarkly flag that only
+// controls whether the UI offers the auto-sync setting. Defaults to true (enabled) if not set.
+func WithRealtimeAutoSyncEnabled(enabled bool) RealtimeAutoSyncOption {
+	return func(o *RealtimeAutoSyncOrchestrator) { o.autoSyncEnabled = enabled }
+}
+
 // NewRealtimeAutoSyncOrchestrator creates a RealtimeAutoSyncOrchestrator with the given options.
 func NewRealtimeAutoSyncOrchestrator(opts ...RealtimeAutoSyncOption) port.RealtimeAutoSyncer {
-	o := &RealtimeAutoSyncOrchestrator{}
+	o := &RealtimeAutoSyncOrchestrator{autoSyncEnabled: true}
 	for _, opt := range opts {
 		opt(o)
 	}
@@ -93,6 +101,16 @@ func NewRealtimeAutoSyncOrchestrator(opts ...RealtimeAutoSyncOption) port.Realti
 // unavailable) is returned so the caller can log/alert on it; callers in this package treat auto
 // sync as best-effort and do not retry a failed event.
 func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mailingListID string) error {
+	// Issue #4878 kill switch: disabling AUTO_SYNC_ENABLED must stop both the subscriber-driven
+	// trigger (this method is CommitteeMemberSubscriber's only path to auto-sync) and the
+	// auto-sync-driven ApplySyncDiff call below, independent of the frontend LD flag — a single
+	// guard here covers both without duplicating the check in committee_member_subscriber.go. A
+	// manual "Sync Now" HTTP call never goes through TriggerAutoSync, so it is unaffected.
+	if !o.autoSyncEnabled {
+		o.logger.Info("realtime auto-sync: skipped, AUTO_SYNC_ENABLED is disabled", "mailing_list_id", mailingListID)
+		return nil
+	}
+
 	// ctx here comes from a committee-api NATS event, not an end-user HTTP request, so it carries
 	// no caller principal — mark it as a trusted system caller so ComputeSyncDiff/ApplySyncDiff's
 	// checkCommitteeWriterAccess doesn't reject it for "missing caller identity". mailingListID

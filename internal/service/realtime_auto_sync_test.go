@@ -467,6 +467,51 @@ func TestTriggerAutoSync_MarksContextAsTrustedSystemCaller(t *testing.T) {
 	assert.True(t, applier.sawTrusted, "ApplySyncDiff must see a trusted-system-caller-marked context")
 }
 
+// TestTriggerAutoSync_DisabledByKillSwitch_NoOp pins issue #4878: AUTO_SYNC_ENABLED=false (wired
+// through WithRealtimeAutoSyncEnabled(false)) must stop TriggerAutoSync before it touches
+// ComputeSyncDiff/ApplySyncDiff at all, regardless of what the diff would have been — this is the
+// single choke point CommitteeMemberSubscriber and the auto-sync-driven ApplySyncDiff path both go
+// through, independent of the frontend LaunchDarkly flag.
+func TestTriggerAutoSync_DisabledByKillSwitch_NoOp(t *testing.T) {
+	ml := mlWithCommittee("committee-1")
+	mlReader := &stubMLReader{ml: ml}
+	diffComputer := &stubSyncDiffComputer{diff: autoCToMLDiff(
+		[]model.SyncDiffAdd{{Email: "a@example.com", MemberType: model.MemberTypeMailingListMember}}, nil,
+	)}
+	applier := &stubSyncApplier{}
+
+	o := NewRealtimeAutoSyncOrchestrator(
+		WithRealtimeAutoSyncMailingListReader(mlReader),
+		WithRealtimeAutoSyncMemberReader(&stubMemberReader{}),
+		WithRealtimeAutoSyncDiffComputer(diffComputer),
+		WithRealtimeAutoSyncApplier(applier),
+		WithRealtimeAutoSyncEnabled(false),
+	)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	assert.Empty(t, diffComputer.calls, "a disabled kill switch must short-circuit before ComputeSyncDiff is even called")
+	assert.False(t, applier.called)
+}
+
+// TestTriggerAutoSync_EnabledByDefault_WhenOptionOmitted pins that omitting
+// WithRealtimeAutoSyncEnabled entirely (as every pre-#4878 test in this file does via
+// newTestRealtimeAutoSyncOrchestrator) still runs auto-sync — the kill switch fails open.
+func TestTriggerAutoSync_EnabledByDefault_WhenOptionOmitted(t *testing.T) {
+	ml := mlWithCommittee("committee-1")
+	mlReader := &stubMLReader{ml: ml}
+	diffComputer := &stubSyncDiffComputer{diff: autoCToMLDiff(
+		[]model.SyncDiffAdd{{Email: "a@example.com", MemberType: model.MemberTypeMailingListMember}}, nil,
+	)}
+	applier := &stubSyncApplier{}
+
+	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	require.True(t, applier.called)
+}
+
 func TestTriggerAutoSync_ApplySyncDiffError_Propagates(t *testing.T) {
 	ml := mlWithCommittee("committee-1")
 	mlReader := &stubMLReader{ml: ml}
