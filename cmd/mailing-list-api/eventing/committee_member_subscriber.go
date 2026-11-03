@@ -13,10 +13,20 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 )
 
-const committeeMemberEventCallTimeout = 30 * time.Second
+// committeeMemberEventCallTimeout bounds a single linked mailing list's TriggerAutoSync call.
+// TriggerAutoSync runs a sync-diff job and then, if there's anything to apply, a sync-apply job —
+// each of which can itself block for up to service.SyncJobPollTimeout while ITX processes it (see
+// pollSyncDiffJob/pollSyncApplyJob). A 30s budget here was shorter than either job's own polling
+// window, so context.WithTimeout silently clipped the *earlier* of the two deadlines: the ITX job
+// would still be running when this context expired, and TriggerAutoSync would report a timeout
+// failure with no retry, even though the job itself hadn't actually failed. Sized to 2x
+// SyncJobPollTimeout (diff then apply, worst case) plus a fixed buffer for the ListMailingLists
+// lookup, GetMailingList call, and the cross-list CheckSubscriber guard in between.
+const committeeMemberEventCallTimeout = 2*service.SyncJobPollTimeout + 30*time.Second
 
 // committeeMemberListTimeout bounds the ListMailingLists lookup that resolves a committee's
 // linked mailing lists, separately from the per-list committeeMemberEventCallTimeout budget spent
