@@ -258,8 +258,9 @@ app:
       value: "true"
 
     # AUTO_SYNC_ENABLED is the kill switch for realtime committee->mailing-list auto-sync
-    # (issue #4878): set to "false" to stop CommitteeMemberSubscriber from triggering auto-sync
-    # execution, independent of the frontend LaunchDarkly flag. Does not affect manual "Sync Now".
-    # Optional, defaults to "true" (enabled); any value other than "false" is treated as enabled.
+    # (issue #4878): set to "false" (or "0", "no", "off" — case/whitespace-insensitive) to stop
+    # CommitteeMemberSubscriber from triggering auto-sync execution, independent of the frontend
+    # LaunchDarkly flag. Does not affect manual "Sync Now". Optional; defaults to enabled, and an
+    # unrecognized value also falls back to enabled (with a warning logged).
     AUTO_SYNC_ENABLED:
       value: "true"

@@ -172,7 +172,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"project_uid":"<uuid>","group_name":"my-list","description":"My list","type":"private","audience_access":"member"}' \
+  -d '{"project_uid":"<uuid>","group_name":"my-list","description":"My list","type":"discussion_open","audience_access":"invite_only"}' \
   "$BASE/groupsio/mailing-lists"
 ```
 
@@ -186,7 +186,7 @@ it to decide how to reconcile membership.
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"project_uid":"<uuid>","service_id":"<service-uuid>","committee_uid":"<committee-uuid>","name":"my-list","description":"My list","type":"private","audience_access":"member","sync_mode":"auto_c_to_ml"}' \
+  -d '{"project_uid":"<uuid>","service_id":"<service-uuid>","committee_uid":"<committee-uuid>","name":"my-list","description":"My list","type":"discussion_open","audience_access":"invite_only","sync_mode":"auto_c_to_ml"}' \
   "$BASE/groupsio/mailing-lists"
 ```
 

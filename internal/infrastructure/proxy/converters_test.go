@@ -216,6 +216,12 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			expectCommittees: []model.Committee{{UID: "committee-uuid", AllowedVotingStatuses: []string{"Voting Rep"}}},
 		},
 		{
+			name:             "SyncMode is mapped onto the Committee entry",
+			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", SyncMode: "auto_c_to_ml"},
+			expectUID:        "1",
+			expectCommittees: []model.Committee{{UID: "committee-uuid", SyncMode: "auto_c_to_ml"}},
+		},
+		{
 			name:            "valid RFC3339 timestamps are parsed",
 			input:           &subgroupWire{GroupID: 1, CreatedAt: "2024-01-01T00:00:00Z", UpdatedAt: "2024-06-01T12:00:00Z"},
 			expectUID:       "1",
@@ -320,6 +326,7 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 		expectDescription string
 		expectType        string
 		expectAccess      string
+		expectSyncMode    string
 	}{
 		{
 			name:              "nil committees produces empty CommitteeID",
@@ -337,6 +344,14 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 				Committees: []model.Committee{{UID: "first"}, {UID: "second"}},
 			},
 			expectCommitteeID: "first",
+		},
+		{
+			name: "first committee's SyncMode is serialized",
+			input: &model.GroupsIOMailingList{
+				Committees: []model.Committee{{UID: "c-1", SyncMode: "auto_ml_to_c"}},
+			},
+			expectCommitteeID: "c-1",
+			expectSyncMode:    "auto_ml_to_c",
 		},
 		{
 			name: "fields map correctly",
@@ -370,6 +385,7 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 			s.Equal(tt.expectDescription, got.Description)
 			s.Equal(tt.expectType, got.Type)
 			s.Equal(tt.expectAccess, got.AudienceAccess)
+			s.Equal(tt.expectSyncMode, got.SyncMode)
 		})
 	}
 }
