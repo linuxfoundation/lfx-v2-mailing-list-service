@@ -196,7 +196,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	oldCUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
+	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
 
 	toSend, err := o.mapMailingListRequest(ctx, ml)
 	if err != nil {
@@ -227,7 +227,7 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 // that a mailing list was removed. Only publishes has_mailing_list=false if no other
 // mailing lists reference the committee.
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	cUID, _ := o.fetchCommitteeUID(ctx, mailingListID)
+	cUID := o.fetchCommitteeUID(ctx, mailingListID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
 		return err
@@ -279,21 +279,20 @@ func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx
 	}
 }
 
-// fetchCommitteeUID reads the current committee UID for a mailing list. ok is false when the
-// reader is unavailable or the read failed — callers that treat "" as "no committee" (safe to
-// no-op on) must not treat a failed read the same way when "" vs "unknown" changes behavior,
-// e.g. cleanupStaleSyncMode's live-association re-check.
-func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) (string, bool) {
+// fetchCommitteeUID reads the current committee UID for a mailing list. Returns "" when the
+// reader is unavailable, the read failed, or the mailing list has no linked committee — callers
+// treat all three the same (safe to no-op the committee-change notification on).
+func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) string {
 	if o.reader == nil {
-		return "", false
+		return ""
 	}
 	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		slog.WarnContext(ctx, "failed to fetch mailing list for committee UID lookup — committee event may be skipped",
 			"mailing_list_id", mailingListID, "error", err)
-		return "", false
+		return ""
 	}
-	return committeeUID(ml), true
+	return committeeUID(ml)
 }
 
 // committeeHasRemainingMailingLists checks whether the committee still has other mailing lists

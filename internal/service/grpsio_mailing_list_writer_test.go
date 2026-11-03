@@ -236,35 +236,31 @@ func TestPublishCommitteeMailingListChanged_ValidUID_PublishesFalse(t *testing.T
 
 // ---- fetchCommitteeUID ----
 
-func TestFetchCommitteeUID_NilReader_ReturnsEmptyNotOK(t *testing.T) {
+func TestFetchCommitteeUID_NilReader_ReturnsEmpty(t *testing.T) {
 	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
-	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
-	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_ReaderError_ReturnsEmptyNotOK(t *testing.T) {
+func TestFetchCommitteeUID_ReaderError_ReturnsEmpty(t *testing.T) {
 	reader := &stubMLReader{err: errors.New("not found")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
-	assert.False(t, ok)
 }
 
-func TestFetchCommitteeUID_NoCommittees_ReturnsEmptyOK(t *testing.T) {
+func TestFetchCommitteeUID_NoCommittees_ReturnsEmpty(t *testing.T) {
 	reader := &stubMLReader{ml: &model.GroupsIOMailingList{}}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Empty(t, uid)
-	assert.True(t, ok)
 }
 
 func TestFetchCommitteeUID_WithCommittee_ReturnsUID(t *testing.T) {
 	reader := &stubMLReader{ml: mlWith("committee-abc")}
 	o := newTestOrchestrator(&stubMLWriter{}, reader, nil)
-	uid, ok := o.fetchCommitteeUID(context.Background(), "ml-1")
+	uid := o.fetchCommitteeUID(context.Background(), "ml-1")
 	assert.Equal(t, "committee-abc", uid)
-	assert.True(t, ok)
 }
 
 // ---- CreateMailingList ----
