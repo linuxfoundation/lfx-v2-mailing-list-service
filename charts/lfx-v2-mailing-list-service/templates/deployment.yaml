@@ -43,11 +43,11 @@ spec:
           env:
             {{- range $name, $config := .Values.app.environment }}
             - name: {{ $name }}
-              {{- if hasKey $config "value" }}
-              value: {{ $config.value | quote }}
-              {{- else if $config.valueFrom }}
+              {{- if $config.valueFrom }}
               valueFrom:
                 {{- toYaml $config.valueFrom | nindent 16 }}
+              {{- else if hasKey $config "value" }}
+              value: {{ $config.value | quote }}
               {{- end }}
             {{- end }}
             {{- with .Values.app.extraEnv }}
