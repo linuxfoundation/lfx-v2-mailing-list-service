@@ -737,9 +737,9 @@ paths:
                   schema:
                     $ref: '#/definitions/MailingListApplyGroupsioMailingListSyncDiffRequestBody'
                     required:
+                        - committee_uid
                         - adds
                         - removes
-                        - committee_uid
             responses:
                 "200":
                     description: OK response.
@@ -2493,9 +2493,9 @@ definitions:
                   member_id: Error rem tenetur.
                   member_type: mailing_list_member
         required:
+            - committee_uid
             - adds
             - removes
-            - committee_uid
     MailingListCheckGroupsioSubscriberRequestBody:
         title: MailingListCheckGroupsioSubscriberRequestBody
         type: object

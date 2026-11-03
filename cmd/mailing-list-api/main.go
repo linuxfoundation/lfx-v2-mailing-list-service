@@ -186,6 +186,13 @@ func run() int {
 		orchestrator.WithSyncApplyTranslator(translator),
 	)
 
+	realtimeAutoSyncOrchestrator := orchestrator.NewRealtimeAutoSyncOrchestrator(
+		orchestrator.WithRealtimeAutoSyncMailingListReader(mailingListReaderOrchestrator),
+		orchestrator.WithRealtimeAutoSyncMemberReader(memberReaderOrchestrator),
+		orchestrator.WithRealtimeAutoSyncDiffComputer(syncDiffOrchestrator),
+		orchestrator.WithRealtimeAutoSyncApplier(syncApplyOrchestrator),
+	)
+
 	// userReader resolves an LFX account by email for the invite-acceptance data stream handler.
 	userReader := infraNATS.NewUserReader(natsClient, slog.Default())
 
@@ -210,6 +217,22 @@ func run() int {
 		}
 	} else {
 		slog.InfoContext(ctx, "LFID invite feature disabled (INVITES_ENABLED not set to true)")
+	}
+
+	// Real-time auto sync (issue #4023): react to committee-member events so that a
+	// committee membership change on a mailing list configured with sync_mode auto_c_to_ml
+	// propagates without a manual "Sync Now". The Groups.io-side (auto_ml_to_c) direction is
+	// not this service's concern: ITX's committee-association webhook handler already
+	// propagates Groups.io subscribe/unsubscribe events straight to the LFX committee API in
+	// real time for any subgroup in auto_ml_to_c mode, regardless of how it was configured.
+	committeeMemberSub := eventing.NewCommitteeMemberSubscriber(
+		natsClient, mailingListReaderOrchestrator, realtimeAutoSyncOrchestrator, slog.Default())
+	if err := committeeMemberSub.Start(ctx); err != nil {
+		slog.ErrorContext(ctx, "failed to start committee_member subscriber; continuing without it",
+			"error", err)
+		committeeMemberSub = nil
+	} else {
+		slog.InfoContext(ctx, "committee_member subscriber started")
 	}
 
 	// Create the mailing list API service.
@@ -276,20 +299,43 @@ func run() int {
 		httpFailure = true
 	}
 
-	// Stop the invite_accepted subscriber before cancelling the context so that
-	// in-flight AcceptInvite calls can complete gracefully.
-	if inviteAccSub != nil {
-		inviteAccSub.Stop()
-	}
-
 	// Create the shutdown deadline once and share it with the HTTP goroutine via
-	// shutdownCtxC, so both srv.Shutdown and the wg.Wait below use the same
-	// absolute deadline rather than two separate relative timers.
+	// shutdownCtxC, then cancel ctx immediately so setupHTTPServer's goroutine (which
+	// blocks on <-ctx.Done() before ever reading shutdownCtxC) can start srv.Shutdown
+	// right away instead of waiting for the subscriber drains below to finish first —
+	// each drain can take up to tens of seconds, and cancelling only after both drains
+	// completed left HTTP shutdown unable to even begin until then, risking the pod's
+	// termination grace period expiring (SIGKILL) before HTTP shutdown ever started.
+	// inviteAccSub and committeeMemberSub each manage their own context/deadline
+	// internally (see Stop/Stop(deadlineCtx)), so cancelling ctx here does not cut
+	// their drains short.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
 	defer shutdownCancel()
 	shutdownCtxC <- shutdownCtx
-
 	cancel()
+
+	// Stop the invite_accepted and committee_member subscribers concurrently, each bounded by
+	// the same shutdownCtx deadline so a stuck drain cannot run past it either. Both run
+	// concurrently with HTTP shutdown (triggered above). Calling these sequentially would let a
+	// slow invite_accepted drain consume the whole shutdown budget before the committee_member
+	// drain even starts, leaving its subscriptions live and still accepting events the entire
+	// time.
+	var subWG sync.WaitGroup
+	if inviteAccSub != nil {
+		subWG.Add(1)
+		go func() {
+			defer subWG.Done()
+			inviteAccSub.Stop(shutdownCtx)
+		}()
+	}
+	if committeeMemberSub != nil {
+		subWG.Add(1)
+		go func() {
+			defer subWG.Done()
+			committeeMemberSub.Stop(shutdownCtx)
+		}()
+	}
+	subWG.Wait()
 
 	done := make(chan struct{})
 	go func() {

@@ -79,6 +79,24 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 	committeeUID := ml.Committees[0].UID
 
+	// Realtime auto-sync (RealtimeAutoSyncOrchestrator.TriggerAutoSync) only approves removes when
+	// the mailing list is private at the time it computes the diff — removals must never
+	// auto-propagate on a public list. That snapshot can go stale between TriggerAutoSync computing
+	// approvedRemoves and this call actually submitting them (e.g. the list is made public in
+	// between); re-enforce the same restriction here against ml, the configuration this call is
+	// about to submit against, so a stale approval can't still remove someone from a now-public
+	// list. isTrustedSystemCaller(ctx) is true only for TriggerAutoSync's own background calls (see
+	// withTrustedSystemCaller) — an HTTP caller's approvedRemoves come from a human reviewing the
+	// diff via a manual Sync Now, which is deliberately allowed to remove regardless of visibility.
+	if isTrustedSystemCaller(ctx) {
+		switch ml.AudienceAccess {
+		case model.AudienceAccessApprovalRequired, model.AudienceAccessInviteOnly:
+			// private: removes may proceed.
+		default:
+			approvedRemoves = nil
+		}
+	}
+
 	// The caller's approved adds/removes were vetted against the diff computed for
 	// expectedCommitteeUID — if the list was relinked to a different committee between that diff
 	// being fetched and this apply call, applying them now would attribute committee A's approved

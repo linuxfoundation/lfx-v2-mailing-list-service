@@ -182,6 +182,7 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 		expectDescription string
 		expectType        string
 		expectAccess      string
+		expectPublic      bool
 		expectCommittees  []model.Committee
 		expectCreatedAt   time.Time
 		expectUpdatedAt   time.Time
@@ -246,6 +247,42 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			expectDescription: "A description",
 			expectType:        "announcement",
 			expectAccess:      "public",
+			expectPublic:      true,
+		},
+		{
+			name:         "visibility public sets Public true",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "public"},
+			expectUID:    "1",
+			expectAccess: "public",
+			expectPublic: true,
+		},
+		{
+			name:         "visibility public is case-insensitive",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "PUBLIC"},
+			expectUID:    "1",
+			expectAccess: "PUBLIC",
+			expectPublic: true,
+		},
+		{
+			name:         "visibility approval_required sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "approval_required"},
+			expectUID:    "1",
+			expectAccess: "approval_required",
+			expectPublic: false,
+		},
+		{
+			name:         "visibility invite_only sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "invite_only"},
+			expectUID:    "1",
+			expectAccess: "invite_only",
+			expectPublic: false,
+		},
+		{
+			name:         "empty visibility sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: ""},
+			expectUID:    "1",
+			expectAccess: "",
+			expectPublic: false,
 		},
 	}
 
@@ -264,6 +301,7 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			s.Equal(tt.expectDescription, got.Description)
 			s.Equal(tt.expectType, got.Type)
 			s.Equal(tt.expectAccess, got.AudienceAccess)
+			s.Equal(tt.expectPublic, got.Public)
 			s.Equal(tt.expectCommittees, got.Committees)
 			s.Equal(tt.expectCreatedAt, got.CreatedAt)
 			s.Equal(tt.expectUpdatedAt, got.UpdatedAt)

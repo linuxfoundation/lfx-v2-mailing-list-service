@@ -82,15 +82,15 @@ func normalizeEmail(email string) string {
 // rather than removed.
 const (
 	syncJobPollInterval = 500 * time.Millisecond
-	syncJobPollTimeout  = 5 * time.Minute
+	SyncJobPollTimeout  = 5 * time.Minute
 )
 
 // pollSyncDiffJob polls GetSyncDiffJob until it reaches a terminal status (completed or failed),
-// or syncJobPollTimeout elapses. The deadline is bound into ctx itself (not just checked between
+// or SyncJobPollTimeout elapses. The deadline is bound into ctx itself (not just checked between
 // calls) so a GetSyncDiffJob call that hangs — rather than returning quickly — is also cancelled
 // at the deadline instead of blocking indefinitely.
 func pollSyncDiffJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncDiffJob, error) {
-	ctx, cancel := context.WithTimeout(ctx, syncJobPollTimeout)
+	ctx, cancel := context.WithTimeout(ctx, SyncJobPollTimeout)
 	defer cancel()
 	for {
 		job, err := client.GetSyncDiffJob(ctx, mailingListID, jobID)
@@ -116,10 +116,10 @@ func pollSyncDiffJob(ctx context.Context, client port.ITXSyncClient, mailingList
 }
 
 // pollSyncApplyJob polls GetSyncApplyJob until it reaches a terminal status (completed or
-// failed), or syncJobPollTimeout elapses. See pollSyncDiffJob for why the deadline is bound into
+// failed), or SyncJobPollTimeout elapses. See pollSyncDiffJob for why the deadline is bound into
 // ctx rather than only checked between calls.
 func pollSyncApplyJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncApplyJob, error) {
-	ctx, cancel := context.WithTimeout(ctx, syncJobPollTimeout)
+	ctx, cancel := context.WithTimeout(ctx, SyncJobPollTimeout)
 	defer cancel()
 	for {
 		job, err := client.GetSyncApplyJob(ctx, mailingListID, jobID)

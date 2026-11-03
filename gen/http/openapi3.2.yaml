@@ -2067,9 +2067,9 @@ components:
                       member_id: Error rem tenetur.
                       member_type: mailing_list_member
             required:
+                - committee_uid
                 - adds
                 - removes
-                - committee_uid
         BadRequestError:
             type: object
             properties:

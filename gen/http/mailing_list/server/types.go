@@ -3279,14 +3279,14 @@ func ValidateUpdateGroupsioMailingListRequestBody(body *UpdateGroupsioMailingLis
 // ValidateApplyGroupsioMailingListSyncDiffRequestBody runs the validations
 // defined on Apply-Groupsio-Mailing-List-Sync-DiffRequestBody
 func ValidateApplyGroupsioMailingListSyncDiffRequestBody(body *ApplyGroupsioMailingListSyncDiffRequestBody) (err error) {
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
 	if body.Adds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
 	}
 	if body.Removes == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
-	}
-	if body.CommitteeUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))

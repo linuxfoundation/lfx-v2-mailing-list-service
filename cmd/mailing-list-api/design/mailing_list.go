@@ -445,7 +445,7 @@ var _ = dsl.Service("mailing-list", func() {
 			BearerTokenAttribute()
 			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
 			dsl.Extend(GroupsioSyncApplyRequestType)
-			dsl.Required("subgroup_id", "adds", "removes")
+			dsl.Required("subgroup_id", "committee_uid", "adds", "removes")
 			dsl.Token("bearer_token", dsl.String)
 		})
 		dsl.Result(GroupsioSyncApplyResultType)
