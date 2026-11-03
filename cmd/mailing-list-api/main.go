@@ -191,7 +191,11 @@ func run() int {
 		orchestrator.WithRealtimeAutoSyncMemberReader(memberReaderOrchestrator),
 		orchestrator.WithRealtimeAutoSyncDiffComputer(syncDiffOrchestrator),
 		orchestrator.WithRealtimeAutoSyncApplier(syncApplyOrchestrator),
+		orchestrator.WithRealtimeAutoSyncEnabled(env.AutoSyncEnabled),
 	)
+	if !env.AutoSyncEnabled {
+		slog.Info("realtime committee->mailing-list auto-sync disabled via AUTO_SYNC_ENABLED")
+	}
 
 	// userReader resolves an LFX account by email for the invite-acceptance data stream handler.
 	userReader := infraNATS.NewUserReader(natsClient, slog.Default())

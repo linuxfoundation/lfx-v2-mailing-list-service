@@ -43,7 +43,7 @@ spec:
           env:
             {{- range $name, $config := .Values.app.environment }}
             - name: {{ $name }}
-              {{- if $config.value }}
+              {{- if hasKey $config "value" }}
               value: {{ $config.value | quote }}
               {{- else if $config.valueFrom }}
               valueFrom:
