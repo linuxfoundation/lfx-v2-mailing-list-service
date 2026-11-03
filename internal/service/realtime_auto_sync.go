@@ -229,22 +229,42 @@ func (o *RealtimeAutoSyncOrchestrator) filterCrossListRemoves(
 		return removes
 	}
 
+	// Load each sibling's full roster once (one ListMembers call per sibling) instead of calling
+	// CheckSubscriber per removal/sibling pair — with 250 removals and 4 siblings that would be up
+	// to 1,000 sequential ITX calls blocking this event callback (reported by
+	// @copilot-pull-request-reviewer). ListMembers and CheckSubscriber both read from ITX's live
+	// Groups.io-backed data, so batching to one roster fetch per sibling trades no staleness for
+	// the reduced call count. A sibling whose roster we failed to fetch keeps the same fail-closed
+	// behavior as before: every remove is treated as still-linked (and skipped) for that sibling,
+	// since an unreadable roster could be hiding a still-active subscription.
+	siblingEmailSets := make([]map[string]bool, 0, len(siblingIDs))
+	failedSiblings := make([]bool, 0, len(siblingIDs))
+	for _, siblingID := range siblingIDs {
+		members, _, err := o.memberReader.ListMembers(ctx, siblingID)
+		if err != nil {
+			o.logger.Warn("realtime auto-sync: failed to list sibling list roster; treating all removes as still-linked for this sibling",
+				"mailing_list_id", ml.UID,
+				"sibling_mailing_list_id", siblingID,
+				"error", err,
+			)
+			siblingEmailSets = append(siblingEmailSets, nil)
+			failedSiblings = append(failedSiblings, true)
+			continue
+		}
+		emails := make(map[string]bool, len(members))
+		for _, member := range members {
+			emails[normalizeEmail(member.Email)] = true
+		}
+		siblingEmailSets = append(siblingEmailSets, emails)
+		failedSiblings = append(failedSiblings, false)
+	}
+
 	approved := make([]model.SyncDiffRemove, 0, len(removes))
 	for _, remove := range removes {
 		stillLinked := false
-		for _, siblingID := range siblingIDs {
-			subscribed, err := o.memberReader.CheckSubscriber(ctx, siblingID, remove.Email)
-			if err != nil {
-				o.logger.Warn("realtime auto-sync: failed to check sibling list subscription; skipping remove",
-					"mailing_list_id", ml.UID,
-					"sibling_mailing_list_id", siblingID,
-					"email", redaction.RedactEmail(remove.Email),
-					"error", err,
-				)
-				stillLinked = true
-				break
-			}
-			if subscribed {
+		normalized := normalizeEmail(remove.Email)
+		for i := range siblingIDs {
+			if failedSiblings[i] || siblingEmailSets[i][normalized] {
 				stillLinked = true
 				break
 			}

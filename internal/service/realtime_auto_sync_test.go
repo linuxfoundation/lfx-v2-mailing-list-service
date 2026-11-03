@@ -68,14 +68,16 @@ func (a *stubSyncApplier) ApplySyncDiff(
 	return a.result, a.err
 }
 
-// stubMemberReader controls CheckSubscriber responses, keyed by mailingListID, for the cross-list
-// removal guard. subscribed maps mailingListID -> set of emails considered subscribed there.
+// stubMemberReader controls CheckSubscriber/ListMembers responses, keyed by mailingListID, for the
+// cross-list removal guard. subscribed maps mailingListID -> set of emails considered subscribed
+// there.
 type stubMemberReader struct {
 	port.GroupsIOMailingListMemberReader
 	subscribed map[string]map[string]bool
 	err        error
 
-	calls []struct{ mailingListID, email string }
+	calls            []struct{ mailingListID, email string }
+	listMembersCalls []string
 }
 
 func (r *stubMemberReader) CheckSubscriber(_ context.Context, mailingListID string, email string) (bool, error) {
@@ -84,6 +86,19 @@ func (r *stubMemberReader) CheckSubscriber(_ context.Context, mailingListID stri
 		return false, r.err
 	}
 	return r.subscribed[mailingListID][email], nil
+}
+
+func (r *stubMemberReader) ListMembers(_ context.Context, mailingListID string) ([]*model.GrpsIOMember, int, error) {
+	r.listMembersCalls = append(r.listMembersCalls, mailingListID)
+	if r.err != nil {
+		return nil, 0, r.err
+	}
+	emails := r.subscribed[mailingListID]
+	members := make([]*model.GrpsIOMember, 0, len(emails))
+	for email := range emails {
+		members = append(members, &model.GrpsIOMember{Email: email})
+	}
+	return members, len(members), nil
 }
 
 func newTestRealtimeAutoSyncOrchestrator(
@@ -356,7 +371,7 @@ func TestTriggerAutoSync_CrossListGuard_AllowsRemoveWhenSiblingIsAlsoAutoCToML(t
 	require.NoError(t, err)
 	require.True(t, applier.called, "ml-2 is also auto_c_to_ml for the same committee and removes this person on its own; it must not block ml-1's removal")
 	assert.Equal(t, diff.Removes, applier.gotRemoves)
-	assert.Empty(t, memberReader.calls, "auto_c_to_ml siblings for the same committee are excluded before any CheckSubscriber call")
+	assert.Empty(t, memberReader.listMembersCalls, "auto_c_to_ml siblings for the same committee are excluded before any ListMembers call")
 }
 
 // TestTriggerAutoSync_CrossListGuard_ChecksPublicAutoCToMLSibling pins that a *public* auto_c_to_ml
@@ -399,10 +414,43 @@ func TestTriggerAutoSync_CrossListGuard_ChecksPublicAutoCToMLSibling(t *testing.
 	err := o.TriggerAutoSync(context.Background(), "ml-1")
 
 	require.NoError(t, err)
-	assert.NotEmpty(t, memberReader.calls, "public auto_c_to_ml siblings are not excluded from the CheckSubscriber check")
+	assert.NotEmpty(t, memberReader.listMembersCalls, "public auto_c_to_ml siblings are not excluded from the ListMembers check")
 	// Still subscribed to the public ml-2 sibling (which never auto-removes it on its own), so the
 	// cross-list guard drops the remove; with no adds either, TriggerAutoSync never calls ApplySyncDiff.
 	assert.False(t, applier.called, "ml-1 must not remove the member while they remain subscribed on the public sibling")
+}
+
+// TestTriggerAutoSync_CrossListGuard_FailsClosedOnListMembersError pins that a sibling roster we
+// fail to fetch is treated as "the member might still be subscribed there" rather than silently
+// allowing the removal to proceed — an unreadable roster could be hiding a still-active
+// subscription (per @copilot-pull-request-reviewer).
+func TestTriggerAutoSync_CrossListGuard_FailsClosedOnListMembersError(t *testing.T) {
+	ml := mlWithAudienceAccess("committee-1", model.AudienceAccessInviteOnly)
+	mlReader := &stubMLReader{
+		ml: ml,
+		listMLs: []*model.GroupsIOMailingList{
+			ml,
+			{UID: "ml-2", Committees: []model.Committee{{UID: "committee-1"}}},
+		},
+	}
+	diff := autoCToMLDiff(nil,
+		[]model.SyncDiffRemove{{Email: "unknown-status@example.com", MemberType: model.MemberTypeMailingListMember}},
+	)
+	diffComputer := &stubSyncDiffComputer{diff: diff}
+	applier := &stubSyncApplier{}
+	memberReader := &stubMemberReader{err: errors.New("itx unavailable")}
+
+	o := NewRealtimeAutoSyncOrchestrator(
+		WithRealtimeAutoSyncMailingListReader(mlReader),
+		WithRealtimeAutoSyncMemberReader(memberReader),
+		WithRealtimeAutoSyncDiffComputer(diffComputer),
+		WithRealtimeAutoSyncApplier(applier),
+	)
+	err := o.TriggerAutoSync(context.Background(), "ml-1")
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, memberReader.listMembersCalls, "ListMembers must be attempted for the sibling")
+	assert.False(t, applier.called, "a failed sibling roster fetch must fail closed and skip the remove rather than allow it")
 }
 
 func TestTriggerAutoSync_GetMailingListError_Propagates(t *testing.T) {
