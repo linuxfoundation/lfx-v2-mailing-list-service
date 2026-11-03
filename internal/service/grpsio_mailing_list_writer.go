@@ -24,6 +24,7 @@ type GroupsIOMailingListOrchestrator struct {
 	publisher              port.MessagePublisher
 	serviceReader          port.GroupsIOServiceReader
 	committeeProjectLookup port.CommitteeProjectLookup
+	accessChecker          port.AccessChecker
 }
 
 // MailingListOrchestratorOption configures a GroupsIOMailingListOrchestrator.
@@ -72,13 +73,30 @@ func WithMailingListCommitteeProjectLookup(l port.CommitteeProjectLookup) Mailin
 	}
 }
 
+// WithMailingListAccessChecker sets the checker used to verify committee writer access when
+// sync_mode is being set to auto_ml_to_c (see validateCommitteeProject).
+func WithMailingListAccessChecker(c port.AccessChecker) MailingListOrchestratorOption {
+	return func(o *GroupsIOMailingListOrchestrator) {
+		o.accessChecker = c
+	}
+}
+
 // validateCommitteeProject checks that the supplied committee belongs to the same project as
 // the parent service. No-op when no committee is present. Returns ServiceUnavailable when
 // required dependencies are not configured. On success it sets ml.ProjectUID from the
 // authoritative service record.
 func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.Context, ml *model.GroupsIOMailingList) error {
-	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+	if len(ml.Committees) == 0 {
 		return nil
+	}
+	if ml.Committees[0].UID == "" {
+		if ml.Committees[0].SyncMode != "" {
+			return errs.NewValidation("sync_mode requires committee_uid")
+		}
+		return nil
+	}
+	if syncMode := ml.Committees[0].SyncMode; syncMode != "" && !isValidSyncMode(syncMode) {
+		return errs.NewValidation("invalid sync_mode")
 	}
 	if o.serviceReader == nil || o.committeeProjectLookup == nil {
 		return errs.NewServiceUnavailable("committee project validation is not configured")
@@ -103,6 +121,28 @@ func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.C
 
 	if committeeProject != svc.ProjectUID {
 		return errs.NewValidation("committee does not belong to the service's project")
+	}
+
+	// Both automatic sync directions require committee writer access on the caller, not just
+	// mailing-list writer access (which is all the gateway has confirmed by this point):
+	//   - auto_ml_to_c writes mailing-list members into the committee's own roster, so without this
+	//     check a mailing-list-only writer could configure a committee they don't control to receive
+	//     automatic membership writes from this list merely by setting sync_mode.
+	//   - auto_c_to_ml writes the committee's roster (names/emails) into the mailing list, so without
+	//     this check a mailing-list-only writer could point sync_mode at a committee they don't
+	//     control and have its membership PII copied into a list they do control, via the trusted
+	//     background auto-sync path (RealtimeAutoSyncOrchestrator.TriggerAutoSync) which bypasses the
+	//     caller-identity check that would otherwise catch this at apply time.
+	// Actually triggering an apply still separately requires committee writer access
+	// (checkCommitteeWriterAccess in sync_job_poll.go) for a manual Sync Now; this check closes the
+	// same gap for the automatic path, which runs as a trusted system caller.
+	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee || ml.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList {
+		if o.accessChecker == nil {
+			return errs.NewServiceUnavailable("committee access validation is not configured")
+		}
+		if err := checkCommitteeWriterAccess(ctx, o.accessChecker, ml.Committees[0].UID); err != nil {
+			return err
+		}
 	}
 
 	ml.ProjectUID = svc.ProjectUID
@@ -156,7 +196,6 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 		return nil, err
 	}
 
-	// Snapshot the current committee association before the update so we can detect changes.
 	oldCUID := o.fetchCommitteeUID(ctx, mailingListID)
 
 	toSend, err := o.mapMailingListRequest(ctx, ml)
@@ -188,7 +227,6 @@ func (o *GroupsIOMailingListOrchestrator) UpdateMailingList(ctx context.Context,
 // that a mailing list was removed. Only publishes has_mailing_list=false if no other
 // mailing lists reference the committee.
 func (o *GroupsIOMailingListOrchestrator) DeleteMailingList(ctx context.Context, mailingListID string) error {
-	// Fetch current state before delete so we know which committee to notify.
 	cUID := o.fetchCommitteeUID(ctx, mailingListID)
 
 	if err := o.writer.DeleteMailingList(ctx, mailingListID); err != nil {
@@ -241,15 +279,16 @@ func (o *GroupsIOMailingListOrchestrator) publishCommitteeMailingListChanged(ctx
 	}
 }
 
-// fetchCommitteeUID reads the current committee UID for a mailing list.
-// Returns "" if the reader is not configured or the fetch fails (non-fatal).
+// fetchCommitteeUID reads the current committee UID for a mailing list. Returns "" when the
+// reader is unavailable, the read failed, or the mailing list has no linked committee — callers
+// treat all three the same (safe to no-op the committee-change notification on).
 func (o *GroupsIOMailingListOrchestrator) fetchCommitteeUID(ctx context.Context, mailingListID string) string {
 	if o.reader == nil {
 		return ""
 	}
 	ml, err := o.reader.GetMailingList(ctx, mailingListID)
 	if err != nil {
-		slog.WarnContext(ctx, "failed to fetch mailing list before mutation — committee event may be skipped",
+		slog.WarnContext(ctx, "failed to fetch mailing list for committee UID lookup — committee event may be skipped",
 			"mailing_list_id", mailingListID, "error", err)
 		return ""
 	}
@@ -283,6 +322,16 @@ func committeeUID(ml *model.GroupsIOMailingList) string {
 		return ml.Committees[0].UID
 	}
 	return ""
+}
+
+// isValidSyncMode reports whether syncMode is one of model.ValidSyncModes.
+func isValidSyncMode(syncMode string) bool {
+	for _, valid := range model.ValidSyncModes {
+		if syncMode == valid {
+			return true
+		}
+	}
+	return false
 }
 
 // ---- ID mapping helpers ----

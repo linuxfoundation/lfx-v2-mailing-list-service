@@ -11,6 +11,110 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/converter"
 )
 
+// convertSyncDiff converts a domain sync diff into its Goa result type.
+func convertSyncDiff(d *model.SyncDiff) *mailinglist.GroupsioSyncDiff {
+	adds := make([]*mailinglist.GroupsioSyncDiffAdd, len(d.Adds))
+	for i, a := range d.Adds {
+		adds[i] = &mailinglist.GroupsioSyncDiffAdd{
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: string(a.MemberType),
+			Name:       converter.NonEmptyString(a.Name),
+		}
+	}
+	removes := make([]*mailinglist.GroupsioSyncDiffRemove, len(d.Removes))
+	for i, r := range d.Removes {
+		removes[i] = &mailinglist.GroupsioSyncDiffRemove{
+			Email:      r.Email,
+			MemberID:   r.MemberID,
+			MemberType: string(r.MemberType),
+		}
+	}
+	conflicts := make([]*mailinglist.GroupsioSyncDiffConflict, len(d.Conflicts))
+	for i, c := range d.Conflicts {
+		conflicts[i] = &mailinglist.GroupsioSyncDiffConflict{
+			CommitteeEmail:   c.CommitteeEmail,
+			MailingListEmail: c.MailingListEmail,
+			Name:             converter.NonEmptyString(c.Name),
+		}
+	}
+	return &mailinglist.GroupsioSyncDiff{
+		MailingListID: d.MailingListID,
+		CommitteeUID:  d.CommitteeUID,
+		SyncMode:      d.SyncMode,
+		Adds:          adds,
+		Removes:       removes,
+		Conflicts:     conflicts,
+	}
+}
+
+// convertSyncApplyResult converts a domain sync-apply result into its Goa result type.
+func convertSyncApplyResult(r *model.SyncApplyResult) *mailinglist.GroupsioSyncApplyResult {
+	added := make([]*mailinglist.GroupsioSyncApplyAddResult, len(r.Added))
+	for i, a := range r.Added {
+		added[i] = &mailinglist.GroupsioSyncApplyAddResult{
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: string(a.MemberType),
+			Outcome:    string(a.Outcome),
+			NameHint:   converter.NonEmptyString(a.NameHint),
+			Error:      converter.NonEmptyString(a.Error),
+		}
+	}
+	removed := make([]*mailinglist.GroupsioSyncApplyRemoveResult, len(r.Removed))
+	for i, rm := range r.Removed {
+		removed[i] = &mailinglist.GroupsioSyncApplyRemoveResult{
+			Email:      rm.Email,
+			MemberID:   rm.MemberID,
+			MemberType: string(rm.MemberType),
+			Outcome:    string(rm.Outcome),
+			Error:      converter.NonEmptyString(rm.Error),
+		}
+	}
+	return &mailinglist.GroupsioSyncApplyResult{
+		MailingListID: r.MailingListID,
+		CommitteeUID:  r.CommitteeUID,
+		Added:         added,
+		Removed:       removed,
+	}
+}
+
+// convertSyncApplyAddPayload converts Goa sync-apply add payload entries into domain adds. Nil
+// entries (Goa's generated validator allows an array element of {"adds":[null]} through) are
+// skipped rather than dereferenced.
+func convertSyncApplyAddPayload(adds []*mailinglist.GroupsioSyncDiffAdd) []model.SyncDiffAdd {
+	result := make([]model.SyncDiffAdd, 0, len(adds))
+	for _, a := range adds {
+		if a == nil {
+			continue
+		}
+		result = append(result, model.SyncDiffAdd{
+			Email:      a.Email,
+			MemberID:   a.MemberID,
+			MemberType: model.MemberType(a.MemberType),
+			Name:       converter.StringVal(a.Name),
+		})
+	}
+	return result
+}
+
+// convertSyncApplyRemovePayload converts Goa sync-apply remove payload entries into domain
+// removes. Nil entries are skipped, for the same reason as convertSyncApplyAddPayload.
+func convertSyncApplyRemovePayload(removes []*mailinglist.GroupsioSyncDiffRemove) []model.SyncDiffRemove {
+	result := make([]model.SyncDiffRemove, 0, len(removes))
+	for _, r := range removes {
+		if r == nil {
+			continue
+		}
+		result = append(result, model.SyncDiffRemove{
+			Email:      r.Email,
+			MemberID:   r.MemberID,
+			MemberType: model.MemberType(r.MemberType),
+		})
+	}
+	return result
+}
+
 // formatTime returns t formatted as RFC3339, or "" if t is zero.
 func formatTime(t time.Time) string {
 	if t.IsZero() {
@@ -55,8 +159,10 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		return nil
 	}
 	committeeUID := ""
+	syncMode := ""
 	if len(ml.Committees) > 0 {
 		committeeUID = ml.Committees[0].UID
+		syncMode = ml.Committees[0].SyncMode
 	}
 	return &mailinglist.GroupsioSubgroup{
 		ID:             &ml.UID,
@@ -68,6 +174,7 @@ func convertMailingList(ml *model.GroupsIOMailingList) *mailinglist.GroupsioSubg
 		Description:    &ml.Description,
 		Type:           &ml.Type,
 		AudienceAccess: &ml.AudienceAccess,
+		SyncMode:       converter.NonEmptyString(syncMode),
 		CreatedAt:      converter.NonEmptyString(formatTime(ml.CreatedAt)),
 		UpdatedAt:      converter.NonEmptyString(formatTime(ml.UpdatedAt)),
 	}

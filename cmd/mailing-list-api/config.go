@@ -57,6 +57,11 @@ type environment struct {
 	InvitesEnabled   bool
 	SelfServeBaseURL string
 
+	// Realtime committee->mailing-list auto-sync (issue #4023) kill switch. Independent of the
+	// frontend LaunchDarkly flag: this gates the backend execution path itself (CommitteeMemberSubscriber
+	// triggering TriggerAutoSync), not just whether the UI offers the auto-sync setting.
+	AutoSyncEnabled bool
+
 	// Data stream (eventing)
 	EventingEnabled       bool
 	EventingConsumerName  string
@@ -154,6 +159,19 @@ func parseEnv() environment {
 		eventingConsumerName = "mailing-list-service-kv-consumer"
 	}
 
+	// Fail open (enabled) unless explicitly disabled: AUTO_SYNC_ENABLED=false (or one of the
+	// other common "off" spellings below) is the deliberate kill switch for issue #4878, not an
+	// opt-in flag.
+	autoSyncEnabled := true
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("AUTO_SYNC_ENABLED"))) {
+	case "false", "0", "no", "off":
+		autoSyncEnabled = false
+	case "", "true", "1", "yes", "on":
+		// recognized "enabled" spellings and unset — no-op, stays enabled
+	default:
+		slog.Warn("unrecognized AUTO_SYNC_ENABLED value, defaulting to enabled", "value", os.Getenv("AUTO_SYNC_ENABLED"))
+	}
+
 	return environment{
 		Port:                  port,
 		NatsURL:               natsURL,
@@ -175,6 +193,7 @@ func parseEnv() environment {
 		AccessCheckSource:     accessCheckSource,
 		InvitesEnabled:        invitesEnabled,
 		SelfServeBaseURL:      selfServeBaseURL,
+		AutoSyncEnabled:       autoSyncEnabled,
 		EventingEnabled:       os.Getenv("EVENTING_ENABLED") == "true",
 		EventingConsumerName:  eventingConsumerName,
 		EventingMaxDeliver:    envInt("EVENTING_MAX_DELIVER", 3),

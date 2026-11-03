@@ -92,6 +92,16 @@ func GetGroupsioMailingListMemberCountMailingListPath(subgroupID string) string 
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/member_count", subgroupID)
 }
 
+// GetGroupsioMailingListSyncDiffMailingListPath returns the URL path to the mailing-list service get-groupsio-mailing-list-sync-diff HTTP endpoint.
+func GetGroupsioMailingListSyncDiffMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-diff", subgroupID)
+}
+
+// ApplyGroupsioMailingListSyncDiffMailingListPath returns the URL path to the mailing-list service apply-groupsio-mailing-list-sync-diff HTTP endpoint.
+func ApplyGroupsioMailingListSyncDiffMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-apply", subgroupID)
+}
+
 // ListGroupsioMembersMailingListPath returns the URL path to the mailing-list service list-groupsio-members HTTP endpoint.
 func ListGroupsioMembersMailingListPath(subgroupID string) string {
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/members", subgroupID)

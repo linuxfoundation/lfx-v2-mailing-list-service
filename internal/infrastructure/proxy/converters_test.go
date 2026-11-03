@@ -182,6 +182,7 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 		expectDescription string
 		expectType        string
 		expectAccess      string
+		expectPublic      bool
 		expectCommittees  []model.Committee
 		expectCreatedAt   time.Time
 		expectUpdatedAt   time.Time
@@ -207,6 +208,18 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			input:            &subgroupWire{GroupID: 1, CommitteeID: ""},
 			expectUID:        "1",
 			expectCommittees: nil,
+		},
+		{
+			name:             "CommitteeFilters populates AllowedVotingStatuses",
+			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", CommitteeFilters: []string{"Voting Rep"}},
+			expectUID:        "1",
+			expectCommittees: []model.Committee{{UID: "committee-uuid", AllowedVotingStatuses: []string{"Voting Rep"}}},
+		},
+		{
+			name:             "SyncMode is mapped onto the Committee entry",
+			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", SyncMode: "auto_c_to_ml"},
+			expectUID:        "1",
+			expectCommittees: []model.Committee{{UID: "committee-uuid", SyncMode: "auto_c_to_ml"}},
 		},
 		{
 			name:            "valid RFC3339 timestamps are parsed",
@@ -240,6 +253,42 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			expectDescription: "A description",
 			expectType:        "announcement",
 			expectAccess:      "public",
+			expectPublic:      true,
+		},
+		{
+			name:         "visibility public sets Public true",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "public"},
+			expectUID:    "1",
+			expectAccess: "public",
+			expectPublic: true,
+		},
+		{
+			name:         "visibility public is case-insensitive",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "PUBLIC"},
+			expectUID:    "1",
+			expectAccess: "PUBLIC",
+			expectPublic: true,
+		},
+		{
+			name:         "visibility approval_required sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "approval_required"},
+			expectUID:    "1",
+			expectAccess: "approval_required",
+			expectPublic: false,
+		},
+		{
+			name:         "visibility invite_only sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: "invite_only"},
+			expectUID:    "1",
+			expectAccess: "invite_only",
+			expectPublic: false,
+		},
+		{
+			name:         "empty visibility sets Public false",
+			input:        &subgroupWire{GroupID: 1, AudienceAccess: ""},
+			expectUID:    "1",
+			expectAccess: "",
+			expectPublic: false,
 		},
 	}
 
@@ -258,6 +307,7 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			s.Equal(tt.expectDescription, got.Description)
 			s.Equal(tt.expectType, got.Type)
 			s.Equal(tt.expectAccess, got.AudienceAccess)
+			s.Equal(tt.expectPublic, got.Public)
 			s.Equal(tt.expectCommittees, got.Committees)
 			s.Equal(tt.expectCreatedAt, got.CreatedAt)
 			s.Equal(tt.expectUpdatedAt, got.UpdatedAt)
@@ -276,6 +326,7 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 		expectDescription string
 		expectType        string
 		expectAccess      string
+		expectSyncMode    string
 	}{
 		{
 			name:              "nil committees produces empty CommitteeID",
@@ -293,6 +344,14 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 				Committees: []model.Committee{{UID: "first"}, {UID: "second"}},
 			},
 			expectCommitteeID: "first",
+		},
+		{
+			name: "first committee's SyncMode is serialized",
+			input: &model.GroupsIOMailingList{
+				Committees: []model.Committee{{UID: "c-1", SyncMode: "auto_ml_to_c"}},
+			},
+			expectCommitteeID: "c-1",
+			expectSyncMode:    "auto_ml_to_c",
 		},
 		{
 			name: "fields map correctly",
@@ -326,6 +385,7 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 			s.Equal(tt.expectDescription, got.Description)
 			s.Equal(tt.expectType, got.Type)
 			s.Equal(tt.expectAccess, got.AudienceAccess)
+			s.Equal(tt.expectSyncMode, got.SyncMode)
 		})
 	}
 }

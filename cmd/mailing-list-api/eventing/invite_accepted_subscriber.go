@@ -76,13 +76,34 @@ func (s *InviteAcceptedSubscriber) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop drains the subscription (allowing in-flight handlers to complete), then cancels
-// the context. Drain must precede cancel so that in-flight AcceptInvite calls are not
-// aborted mid-request by context cancellation.
-func (s *InviteAcceptedSubscriber) Stop() {
+// inviteAcceptedDrainTimeout bounds how long Stop waits for an in-flight handler to finish
+// draining before moving on and cancelling the context regardless, matching
+// CommitteeMemberSubscriber's committeeMemberDrainTimeout pattern so neither subscriber's drain
+// can by itself run shutdown past the pod's termination grace period (per
+// @lfx-one/@copilot-pull-request-reviewer: this Stop previously had no bound of its own and
+// relied entirely on NATS's internal default drain timeout).
+const inviteAcceptedDrainTimeout = inviteAcceptedCallTimeout + 10*time.Second
+
+// Stop drains the subscription (allowing an in-flight handler to complete, up to
+// inviteAcceptedDrainTimeout, further bounded by deadlineCtx's own deadline if it is sooner),
+// then cancels the context. deadlineCtx should be the same shutdown deadline shared with the
+// HTTP server shutdown — pass context.Background() to fall back to inviteAcceptedDrainTimeout
+// alone. Drain must precede cancel so that in-flight AcceptInvite calls are not aborted
+// mid-request by context cancellation: *nats.Subscription.Drain only *starts* an asynchronous
+// drain and returns immediately, so Stop polls IsDraining until it clears (or the deadline
+// elapses) instead of treating Drain's return as completion.
+func (s *InviteAcceptedSubscriber) Stop(deadlineCtx context.Context) {
 	if s.sub != nil {
 		if err := s.sub.Drain(); err != nil {
 			s.logger.Warn("error draining invite_accepted subscription", "error", err)
+		} else {
+			deadline := time.Now().Add(inviteAcceptedDrainTimeout)
+			if d, ok := deadlineCtx.Deadline(); ok && d.Before(deadline) {
+				deadline = d
+			}
+			for s.sub.IsDraining() && time.Now().Before(deadline) {
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
 	}
 	if s.cancel != nil {

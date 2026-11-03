@@ -45,6 +45,10 @@ type stubMLWriter struct {
 	createErr  error
 	updateErr  error
 	deleteErr  error
+	// onUpdate, when set, is invoked during UpdateMailingList — used to simulate a concurrent
+	// write landing in the window between the orchestrator's pre-mutation snapshot and this
+	// call returning.
+	onUpdate func()
 }
 
 func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
@@ -55,6 +59,9 @@ func (w *stubMLWriter) CreateMailingList(_ context.Context, ml *model.GroupsIOMa
 }
 
 func (w *stubMLWriter) UpdateMailingList(_ context.Context, _ string, ml *model.GroupsIOMailingList) (*model.GroupsIOMailingList, error) {
+	if w.onUpdate != nil {
+		w.onUpdate()
+	}
 	if w.updateResp != nil {
 		return w.updateResp, w.updateErr
 	}
@@ -67,14 +74,23 @@ var _ port.GroupsIOMailingListWriter = (*stubMLWriter)(nil)
 
 // stubMLReader always returns the configured ml/err from GetMailingList.
 // listMLs/listErr control ListMailingLists responses for the count check.
+// mlOnSecondCall, if set, is returned starting from the second GetMailingList call instead of ml —
+// lets a test simulate the mailing list's committee link changing between an orchestrator's
+// initial read and a later re-read (e.g. after an async ITX job completes).
 type stubMLReader struct {
-	ml      *model.GroupsIOMailingList
-	err     error
-	listMLs []*model.GroupsIOMailingList
-	listErr error
+	ml             *model.GroupsIOMailingList
+	err            error
+	mlOnSecondCall *model.GroupsIOMailingList
+	calls          int
+	listMLs        []*model.GroupsIOMailingList
+	listErr        error
 }
 
 func (r *stubMLReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
+	r.calls++
+	if r.calls > 1 && r.mlOnSecondCall != nil {
+		return r.mlOnSecondCall, r.err
+	}
 	return r.ml, r.err
 }
 func (r *stubMLReader) ListMailingLists(_ context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
@@ -674,3 +690,172 @@ func TestUpdateMailingList_CrossProjectCommittee_ReturnsError(t *testing.T) {
 	assert.IsType(t, errs.Validation{}, err)
 	assert.Empty(t, spy.calls, "no event published on validation failure")
 }
+
+// ---- sync_mode validation ----
+
+func TestValidateCommitteeProject_SyncModeWithoutCommitteeUID_ReturnsValidationError(t *testing.T) {
+	o := newTestOrchestrator(&stubMLWriter{}, nil, nil)
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{SyncMode: "auto_c_to_ml"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_InvalidSyncMode_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: "bogus"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_ValidSyncMode_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: true}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	require.NoError(t, o.validateCommitteeProject(ctxWithPrincipal(), ml))
+}
+
+// ---- sync_mode authorization: both auto_ml_to_c and auto_c_to_ml require committee writer
+// access, since each direction lets a mailing-list-only writer cause automatic writes
+// into/out of a committee they may not control (see validateCommitteeProject's comment).
+
+func TestValidateCommitteeProject_AutoMLToC_AllowedCaller_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: true}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoMailingListToCommittee}},
+	}
+	require.NoError(t, o.validateCommitteeProject(ctxWithPrincipal(), ml))
+}
+
+func TestValidateCommitteeProject_AutoMLToC_DeniedCaller_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: false}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoMailingListToCommittee}},
+	}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_AutoMLToC_NoAccessChecker_ReturnsServiceUnavailable(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoMailingListToCommittee}},
+	}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+func TestValidateCommitteeProject_AutoMLToC_MissingPrincipal_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: true}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoMailingListToCommittee}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_AutoCToML_AllowedCaller_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: true}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	require.NoError(t, o.validateCommitteeProject(ctxWithPrincipal(), ml))
+}
+
+func TestValidateCommitteeProject_AutoCToML_DeniedCaller_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: false}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_AutoCToML_NoAccessChecker_ReturnsServiceUnavailable(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+func TestValidateCommitteeProject_AutoCToML_AccessCheckError_ReturnsServiceUnavailable(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &erroringAccessChecker{err: errors.New("fga unavailable")}
+
+	ml := &model.GroupsIOMailingList{
+		ServiceUID: "svc-1",
+		Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeAutoCommitteeToMailingList}},
+	}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+// erroringAccessChecker always returns err from HasRelation, simulating an FGA outage.
+type erroringAccessChecker struct {
+	err error
+}
+
+func (c *erroringAccessChecker) HasRelation(_ context.Context, _, _, _ string) (bool, error) {
+	return false, c.err
+}
+
+var _ port.AccessChecker = (*erroringAccessChecker)(nil)

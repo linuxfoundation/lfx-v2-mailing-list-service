@@ -26,4 +26,10 @@ const (
 
 	// GrpsIOWebhookBodyContextKey is the context key for raw GroupsIO webhook body
 	GrpsIOWebhookBodyContextKey ContextKey = "grpsio-webhook-body"
+
+	// TrustedSystemCallerContextID marks a context as originating from an internal background
+	// process (e.g. a NATS event subscriber) rather than an end-user HTTP request. Only code paths
+	// that are themselves reacting to an already-trusted, committee-scoped system event may set
+	// this — it must never be set from, or derived from, request-handling middleware.
+	TrustedSystemCallerContextID ContextKey = "trusted-system-caller"
 )
