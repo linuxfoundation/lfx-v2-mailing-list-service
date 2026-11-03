@@ -9,8 +9,9 @@ import (
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 )
 
-// SyncApplier applies an admin-approved subset of a mailing list's sync-diff: adding resolved
-// committee members and removing members who have dropped off the linked committee.
+// SyncApplier applies an admin-approved subset of a mailing list's sync-diff: adding and removing
+// members on the sync-diff's target side (committee or mailing list, per the linked committee's
+// sync_mode) to reconcile it against the source side.
 type SyncApplier interface {
 	// ApplySyncDiff applies approvedAdds and approvedRemoves — both expected to be drawn from the
 	// SyncDiff previously computed for mailingListID with committee_uid expectedCommitteeUID — and

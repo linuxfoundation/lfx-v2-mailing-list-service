@@ -1425,8 +1425,8 @@ type GroupsioSyncApplyAddResultResponseBody struct {
 	MemberType string `form:"member_type" json:"member_type" xml:"member_type"`
 	// What happened
 	Outcome string `form:"outcome" json:"outcome" xml:"outcome"`
-	// Member's display name, present only when outcome is 'invited' — not a
-	// resolved identity match, just the name already known from the source roster
+	// Member's display name, echoed from the source roster to help an admin
+	// confirm identity — not a resolved identity match
 	NameHint *string `form:"name_hint,omitempty" json:"name_hint,omitempty" xml:"name_hint,omitempty"`
 	// Failure detail, present only when outcome is 'failed'
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`

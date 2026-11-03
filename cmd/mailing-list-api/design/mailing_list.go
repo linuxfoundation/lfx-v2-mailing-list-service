@@ -438,8 +438,9 @@ var _ = dsl.Service("mailing-list", func() {
 	})
 
 	dsl.Method("apply-groupsio-mailing-list-sync-diff", func() {
-		dsl.Description("Apply an admin-approved subset of a previously computed sync-diff: add resolved " +
-			"committee members and remove members who dropped off the linked committee")
+		dsl.Description("Apply an admin-approved subset of a previously computed sync-diff: add and remove " +
+			"members on the sync-diff's target side (committee or mailing list, per the linked committee's " +
+			"sync_mode) to reconcile it against the source side")
 		dsl.Security(JWTAuth)
 		dsl.Payload(func() {
 			BearerTokenAttribute()

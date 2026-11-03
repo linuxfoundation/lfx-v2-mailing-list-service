@@ -1449,8 +1449,8 @@ type GroupsioSyncApplyAddResultResponseBody struct {
 	MemberType *string `form:"member_type,omitempty" json:"member_type,omitempty" xml:"member_type,omitempty"`
 	// What happened
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty" xml:"outcome,omitempty"`
-	// Member's display name, present only when outcome is 'invited' — not a
-	// resolved identity match, just the name already known from the source roster
+	// Member's display name, echoed from the source roster to help an admin
+	// confirm identity — not a resolved identity match
 	NameHint *string `form:"name_hint,omitempty" json:"name_hint,omitempty" xml:"name_hint,omitempty"`
 	// Failure detail, present only when outcome is 'failed'
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
@@ -4346,8 +4346,8 @@ func ValidateGroupsioSyncApplyAddResultResponseBody(body *GroupsioSyncApplyAddRe
 		}
 	}
 	if body.Outcome != nil {
-		if !(*body.Outcome == "added" || *body.Outcome == "invited" || *body.Outcome == "failed") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.outcome", *body.Outcome, []any{"added", "invited", "failed"}))
+		if !(*body.Outcome == "added" || *body.Outcome == "failed") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.outcome", *body.Outcome, []any{"added", "failed"}))
 		}
 	}
 	return
@@ -4377,8 +4377,8 @@ func ValidateGroupsioSyncApplyRemoveResultResponseBody(body *GroupsioSyncApplyRe
 		}
 	}
 	if body.Outcome != nil {
-		if !(*body.Outcome == "removed" || *body.Outcome == "skipped_cross_list" || *body.Outcome == "failed") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.outcome", *body.Outcome, []any{"removed", "skipped_cross_list", "failed"}))
+		if !(*body.Outcome == "removed" || *body.Outcome == "failed") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.outcome", *body.Outcome, []any{"removed", "failed"}))
 		}
 	}
 	return

@@ -442,7 +442,7 @@ func mailingListUsage() {
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-count: Get count of GroupsIO subgroups for a project`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-member-count: Get count of members in a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-sync-diff: Compute the membership reconciliation diff between a GroupsIO subgroup and its linked committee`)
-	fmt.Fprintln(os.Stderr, `    apply-groupsio-mailing-list-sync-diff: Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee`)
+	fmt.Fprintln(os.Stderr, `    apply-groupsio-mailing-list-sync-diff: Apply an admin-approved subset of a previously computed sync-diff: add and remove members on the sync-diff's target side (committee or mailing list, per the linked committee's sync_mode) to reconcile it against the source side`)
 	fmt.Fprintln(os.Stderr, `    list-groupsio-members: List members of a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    add-groupsio-member: Add a member to a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-member: Get a member of a GroupsIO subgroup by ID`)
@@ -802,7 +802,7 @@ func mailingListApplyGroupsioMailingListSyncDiffUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Apply an admin-approved subset of a previously computed sync-diff: add resolved committee members and remove members who dropped off the linked committee`)
+	fmt.Fprintln(os.Stderr, `Apply an admin-approved subset of a previously computed sync-diff: add and remove members on the sync-diff's target side (committee or mailing list, per the linked committee's sync_mode) to reconcile it against the source side`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)

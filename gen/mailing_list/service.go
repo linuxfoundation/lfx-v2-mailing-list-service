@@ -52,9 +52,9 @@ type Service interface {
 	// Compute the membership reconciliation diff between a GroupsIO subgroup and
 	// its linked committee
 	GetGroupsioMailingListSyncDiff(context.Context, *GetGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncDiff, err error)
-	// Apply an admin-approved subset of a previously computed sync-diff: add
-	// resolved committee members and remove members who dropped off the linked
-	// committee
+	// Apply an admin-approved subset of a previously computed sync-diff: add and
+	// remove members on the sync-diff's target side (committee or mailing list,
+	// per the linked committee's sync_mode) to reconcile it against the source side
 	ApplyGroupsioMailingListSyncDiff(context.Context, *ApplyGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncApplyResult, err error)
 	// List members of a GroupsIO subgroup
 	ListGroupsioMembers(context.Context, *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error)
@@ -528,8 +528,8 @@ type GroupsioSyncApplyAddResult struct {
 	MemberType string
 	// What happened
 	Outcome string
-	// Member's display name, present only when outcome is 'invited' — not a
-	// resolved identity match, just the name already known from the source roster
+	// Member's display name, echoed from the source roster to help an admin
+	// confirm identity — not a resolved identity match
 	NameHint *string
 	// Failure detail, present only when outcome is 'failed'
 	Error *string

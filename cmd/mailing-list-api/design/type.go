@@ -260,10 +260,10 @@ var GroupsioSyncApplyAddResultType = dsl.Type("groupsio-sync-apply-add-result", 
 		dsl.Example("committee_member")
 	})
 	dsl.Attribute("outcome", dsl.String, "What happened", func() {
-		dsl.Enum("added", "invited", "failed")
+		dsl.Enum("added", "failed")
 	})
-	dsl.Attribute("name_hint", dsl.String, "Member's display name, present only when outcome is 'invited' "+
-		"— not a resolved identity match, just the name already known from the source roster")
+	dsl.Attribute("name_hint", dsl.String, "Member's display name, echoed from the source roster "+
+		"to help an admin confirm identity — not a resolved identity match")
 	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
 	dsl.Required("email", "member_id", "member_type", "outcome")
 })
@@ -280,7 +280,7 @@ var GroupsioSyncApplyRemoveResultType = dsl.Type("groupsio-sync-apply-remove-res
 		dsl.Example("mailing_list_member")
 	})
 	dsl.Attribute("outcome", dsl.String, "What happened", func() {
-		dsl.Enum("removed", "skipped_cross_list", "failed")
+		dsl.Enum("removed", "failed")
 	})
 	dsl.Attribute("error", dsl.String, "Failure detail, present only when outcome is 'failed'")
 	dsl.Required("email", "member_id", "member_type", "outcome")
