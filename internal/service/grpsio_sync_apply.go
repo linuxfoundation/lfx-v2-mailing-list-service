@@ -142,18 +142,22 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 
 	removeByNormalized := make(map[string]model.SyncDiffRemove, len(approvedRemoves))
-	approvedRemoveIDs := make([]string, 0, len(approvedRemoves))
+	approvedRemoveEmails := make([]string, 0, len(approvedRemoves))
 	for _, remove := range approvedRemoves {
 		normalized := normalizeEmail(remove.Email)
 		if existing, ok := removeByNormalized[normalized]; ok {
 			return nil, errs.NewValidation("approved removes contain duplicate normalized email " + normalized +
 				" (" + existing.Email + " and " + remove.Email + "); submit each remove at most once")
 		}
-		approvedRemoveIDs = append(approvedRemoveIDs, remove.MemberID)
+		// ITX's apply workers match each approved_removes entry by email, not member ID — the
+		// worker looks up the row with strings.EqualFold(m.Email, email) in both directions
+		// (PR #101 review). remove.MemberID is retained only for translating ITX's echoed
+		// email back to a per-entry outcome in fromSyncApplyJob below.
+		approvedRemoveEmails = append(approvedRemoveEmails, remove.Email)
 		removeByNormalized[normalized] = remove
 	}
 
-	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, direction, approvedAddEmails, approvedRemoveIDs, "")
+	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, direction, approvedAddEmails, approvedRemoveEmails, "")
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +175,9 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 
 	// job.Results reflect the committee that was linked when PostSyncApply was called
-	// (committeeUID) — ITX's job response carries no committee identifier of its own to confirm
-	// this against. Re-check the link after the (potentially long-running) job completes: if it
+	// (committeeUID). verifyJobCommitteeMatch above already checked job.CommitteeID when ITX's
+	// response included one; this re-check covers the mailing list being relinked after the
+	// (potentially long-running) job completed, which job.CommitteeID alone cannot catch — if it
 	// changed, the job's results no longer describe the currently-linked committee, so reject the
 	// result instead of attributing committee A's membership changes to committee B.
 	refreshedML, err := o.mailingListReader.GetMailingList(ctx, mailingListID)

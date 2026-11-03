@@ -179,22 +179,6 @@ type artifactDownloadResponseWire struct {
 // endpoint polls the job's status/results. See pkg/subgroups/sync_diff.go and
 // groups_subgroups_sync.go in itx-service-groupsio.
 
-// syncDiffDirectionCToML and syncDiffDirectionMLToC are ITX's values for the sync-diff/sync-apply
-// "direction" field — distinct from the subgroup-level sync_mode values (auto_c_to_ml/
-// auto_ml_to_c/manual).
-const (
-	syncDiffDirectionCToML = "c_to_ml"
-	syncDiffDirectionMLToC = "ml_to_c"
-)
-
-// ITX sync job status values, shared by sync-diff and sync-apply jobs.
-const (
-	syncJobStatusPending   = "pending"
-	syncJobStatusOngoing   = "ongoing"
-	syncJobStatusCompleted = "completed"
-	syncJobStatusFailed    = "failed"
-)
-
 // postSyncDiffRequestWire is the POST .../sync-diff request body.
 type postSyncDiffRequestWire struct {
 	Direction string `json:"direction"`
@@ -235,10 +219,9 @@ type syncDiffJobWire struct {
 	ErrorMessage   string                 `json:"error_message,omitempty"`
 }
 
-// postSyncApplyRequestWire is the POST .../sync-apply request body. ApprovedAdds carries emails
-// (matching a to_add entry's email); ApprovedRemoves carries mailing-list member IDs (matching a
-// to_remove entry's member_id) — ITX has no other way to identify which existing list row to
-// delete.
+// postSyncApplyRequestWire is the POST .../sync-apply request body. Both ApprovedAdds and
+// ApprovedRemoves carry emails — ITX's apply workers match each approved_removes entry against
+// the target roster by strings.EqualFold(email), not by member ID.
 type postSyncApplyRequestWire struct {
 	Direction       string   `json:"direction"`
 	ApprovedAdds    []string `json:"approved_adds,omitempty"`

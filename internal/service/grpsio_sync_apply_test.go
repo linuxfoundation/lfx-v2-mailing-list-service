@@ -149,7 +149,7 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 	assert.Equal(t, "mlm-1", result.Removed[0].MemberID)
 	assert.Equal(t, model.MemberTypeMailingListMember, result.Removed[0].MemberType)
 	assert.Empty(t, result.Removed[0].Error)
-	assert.Equal(t, []string{"mlm-1"}, stub.postApplyRemoves)
+	assert.Equal(t, []string{"carol@example.com"}, stub.postApplyRemoves)
 	assert.Empty(t, stub.postApplyAdds)
 }
 
@@ -245,7 +245,7 @@ func TestApplySyncDiff_TrustedCallerKeepsRemovesWhenListIsPrivate(t *testing.T) 
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
-	assert.Equal(t, []string{"cm-1"}, stub.postApplyRemoves)
+	assert.Equal(t, []string{"carol@example.com"}, stub.postApplyRemoves)
 }
 
 // TestApplySyncDiff_NonTrustedCallerKeepsRemovesEvenWhenPublic pins that an ordinary (HTTP, manual
@@ -271,7 +271,7 @@ func TestApplySyncDiff_NonTrustedCallerKeepsRemovesEvenWhenPublic(t *testing.T) 
 	})
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
-	assert.Equal(t, []string{"cm-1"}, stub.postApplyRemoves)
+	assert.Equal(t, []string{"carol@example.com"}, stub.postApplyRemoves)
 }
 
 // TestApplySyncDiff_AddMemberTypeMismatch pins that an approved add whose MemberType doesn't

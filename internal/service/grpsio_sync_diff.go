@@ -108,8 +108,9 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	}
 
 	// job.ToAdd/ToRemove reflect the committee that was linked when PostSyncDiff was called
-	// (committeeUID) — ITX's job response carries no committee identifier of its own to confirm
-	// this against. Re-check the link after the (potentially long-running) job completes: if it
+	// (committeeUID). verifyJobCommitteeMatch above already checked job.CommitteeID when ITX's
+	// response included one; this re-check covers the mailing list being relinked after the
+	// (potentially long-running) job completed, which job.CommitteeID alone cannot catch — if it
 	// changed, the job's data no longer describes the currently-linked committee, so reject the
 	// result instead of mislabeling committee A's diff as committee B's.
 	refreshedML, err := o.mailingListReader.GetMailingList(ctx, mailingListID)

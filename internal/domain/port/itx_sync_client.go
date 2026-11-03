@@ -85,9 +85,10 @@ type ITXSyncClient interface {
 	GetSyncDiffJob(ctx context.Context, mailingListID, jobID string) (*SyncDiffJob, error)
 
 	// PostSyncApply starts a sync-apply job for mailingListID in the given direction, applying
-	// approvedAdds (emails) and approvedRemoves (mailing-list member IDs). diffJobID, when set,
-	// links the apply job back to the sync-diff job it was approved from. Returns the new job's
-	// ID.
+	// approvedAdds and approvedRemoves (both emails — ITX's apply workers match each
+	// approved_removes entry by email against the target roster, not by member ID). diffJobID,
+	// when set, links the apply job back to the sync-diff job it was approved from. Returns the
+	// new job's ID.
 	PostSyncApply(ctx context.Context, mailingListID, direction string, approvedAdds, approvedRemoves []string, diffJobID string) (jobID string, err error)
 
 	// GetSyncApplyJob returns the current state of a sync-apply job started by PostSyncApply.
