@@ -83,64 +83,103 @@ func normalizeEmail(email string) string {
 const (
 	syncJobPollInterval = 500 * time.Millisecond
 	SyncJobPollTimeout  = 5 * time.Minute
+
+	// maxConsecutiveTransientPollErrs bounds how many consecutive transient errors (per
+	// errs.IsTransient — network failures, timeouts, unavailability) pollSyncDiffJob/
+	// pollSyncApplyJob tolerate from the ITX client before giving up. Without this, a single
+	// transient blip anywhere in the ~600-call polling window (5 minutes at 500ms) aborted the
+	// whole wait even though the ITX job itself kept running — worst for sync-apply, where the
+	// caller then sees an error for a job that may already have applied the changes, and for
+	// auto-sync, where the event is dropped entirely (per @andrest50). A non-transient error (per
+	// errs.IsPermanent, or unclassified) still fails immediately — retrying it cannot help.
+	maxConsecutiveTransientPollErrs = 3
 )
 
 // pollSyncDiffJob polls GetSyncDiffJob until it reaches a terminal status (completed or failed),
 // or SyncJobPollTimeout elapses. The deadline is bound into ctx itself (not just checked between
 // calls) so a GetSyncDiffJob call that hangs — rather than returning quickly — is also cancelled
-// at the deadline instead of blocking indefinitely.
+// at the deadline instead of blocking indefinitely. Up to maxConsecutiveTransientPollErrs
+// consecutive transient errors are tolerated before giving up; the job keeps running on ITX's side
+// regardless of a transient poll failure here.
 func pollSyncDiffJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncDiffJob, error) {
 	ctx, cancel := context.WithTimeout(ctx, SyncJobPollTimeout)
 	defer cancel()
+	consecutiveTransientErrs := 0
 	for {
 		job, err := client.GetSyncDiffJob(ctx, mailingListID, jobID)
 		if err != nil {
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-diff job to complete")
 			}
+			if errs.IsTransient(err) {
+				consecutiveTransientErrs++
+				if consecutiveTransientErrs < maxConsecutiveTransientPollErrs {
+					if waitErr := waitForNextPoll(ctx); waitErr != nil {
+						return nil, waitErr
+					}
+					continue
+				}
+			}
 			return nil, err
 		}
+		consecutiveTransientErrs = 0
 		switch job.Status {
 		case port.SyncJobStatusCompleted, port.SyncJobStatusFailed:
 			return job, nil
 		}
-		select {
-		case <-ctx.Done():
-			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-diff job to complete")
-			}
-			return nil, ctx.Err()
-		case <-time.After(syncJobPollInterval):
+		if waitErr := waitForNextPoll(ctx); waitErr != nil {
+			return nil, waitErr
 		}
 	}
 }
 
 // pollSyncApplyJob polls GetSyncApplyJob until it reaches a terminal status (completed or
 // failed), or SyncJobPollTimeout elapses. See pollSyncDiffJob for why the deadline is bound into
-// ctx rather than only checked between calls.
+// ctx rather than only checked between calls, and for the transient-error tolerance.
 func pollSyncApplyJob(ctx context.Context, client port.ITXSyncClient, mailingListID, jobID string) (*port.SyncApplyJob, error) {
 	ctx, cancel := context.WithTimeout(ctx, SyncJobPollTimeout)
 	defer cancel()
+	consecutiveTransientErrs := 0
 	for {
 		job, err := client.GetSyncApplyJob(ctx, mailingListID, jobID)
 		if err != nil {
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-apply job to complete")
 			}
+			if errs.IsTransient(err) {
+				consecutiveTransientErrs++
+				if consecutiveTransientErrs < maxConsecutiveTransientPollErrs {
+					if waitErr := waitForNextPoll(ctx); waitErr != nil {
+						return nil, waitErr
+					}
+					continue
+				}
+			}
 			return nil, err
 		}
+		consecutiveTransientErrs = 0
 		switch job.Status {
 		case port.SyncJobStatusCompleted, port.SyncJobStatusFailed:
 			return job, nil
 		}
-		select {
-		case <-ctx.Done():
-			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return nil, errs.NewServiceUnavailable("timed out waiting for ITX sync-apply job to complete")
-			}
-			return nil, ctx.Err()
-		case <-time.After(syncJobPollInterval):
+		if waitErr := waitForNextPoll(ctx); waitErr != nil {
+			return nil, waitErr
 		}
+	}
+}
+
+// waitForNextPoll blocks for syncJobPollInterval, or returns ctx's error (translated to a
+// ServiceUnavailable timeout, as pollSyncDiffJob/pollSyncApplyJob's own deadline handling does) if
+// ctx is done first.
+func waitForNextPoll(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return errs.NewServiceUnavailable("timed out waiting for ITX sync job to complete")
+		}
+		return ctx.Err()
+	case <-time.After(syncJobPollInterval):
+		return nil
 	}
 }
 
@@ -180,18 +219,28 @@ func memberTypesForDirection(direction string) (addType, removeType model.Member
 	return model.MemberTypeCommitteeMember, model.MemberTypeMailingListMember
 }
 
-// syncModeManualValidationMsg and syncModeUnrecognizedValidationMsgPrefix identify, by exact
-// message (or prefix), the two Validation errors syncJobDirectionForMode itself produces for a
-// mailing list with nothing to reconcile. RealtimeAutoSyncOrchestrator.TriggerAutoSync matches
-// against these (and notLinkedToCommitteeValidationMsg below) to tell "nothing to reconcile" apart
-// from a Validation that ITX's PostSyncDiff/PostSyncApply returns for an unrelated reason — most
-// notably a sync job already in progress for this mailing list (see port.ITXSyncClient.PostSyncDiff)
-// — which must not be swallowed as a successful no-op (per @greptile-apps/@copilot-pull-request-reviewer).
+// notLinkedToCommitteeValidationMsg and syncModeManualValidationMsg/
+// syncModeUnrecognizedValidationMsgPrefix are the human-readable messages for the three
+// "nothing to reconcile" Validation errors ComputeSyncDiff/syncJobDirectionForMode produce (not
+// linked to a committee, sync_mode is manual, or sync_mode is unrecognized). ErrNothingToReconcile
+// below — not these message strings — is what RealtimeAutoSyncOrchestrator.TriggerAutoSync
+// actually matches on via errors.Is, so a reworded message here can never change that behavior.
 const (
 	notLinkedToCommitteeValidationMsg       = "mailing list is not linked to a committee"
 	syncModeManualValidationMsg             = "mailing list sync_mode is manual; there is nothing to reconcile"
 	syncModeUnrecognizedValidationMsgPrefix = "mailing list has an unrecognized sync_mode: "
 )
+
+// ErrNothingToReconcile is joined into the three Validation errors above so
+// RealtimeAutoSyncOrchestrator.TriggerAutoSync can identify a "nothing to reconcile" case via
+// errors.Is instead of comparing the Validation's message text — which would otherwise have to
+// stay byte-for-byte in sync across this file and realtime_auto_sync.go, and could never
+// distinguish a locally-produced "nothing to reconcile" Validation from an ITX-originated one that
+// happened to carry a matching message (most notably ITX's "a sync job is already in progress for
+// this mailing list", which must not be swallowed as a successful no-op — per
+// @greptile-apps/@copilot-pull-request-reviewer/@andrest50). Since ITX never has a reference to
+// this sentinel, errors.Is can never match it against an ITX-originated Validation error.
+var ErrNothingToReconcile = errors.New("nothing to reconcile")
 
 // syncJobDirectionForMode maps a committee's configured sync_mode to the direction ITX's
 // sync-diff/sync-apply jobs expect. Only auto_c_to_ml and auto_ml_to_c have a direction; manual
@@ -203,8 +252,8 @@ func syncJobDirectionForMode(syncMode string) (string, error) {
 	case model.SyncModeAutoMailingListToCommittee:
 		return port.SyncJobDirectionMailingListToCommittee, nil
 	case "", model.SyncModeManual:
-		return "", errs.NewValidation(syncModeManualValidationMsg)
+		return "", errs.NewValidation(syncModeManualValidationMsg, ErrNothingToReconcile)
 	default:
-		return "", errs.NewValidation(syncModeUnrecognizedValidationMsgPrefix + syncMode)
+		return "", errs.NewValidation(syncModeUnrecognizedValidationMsgPrefix+syncMode, ErrNothingToReconcile)
 	}
 }

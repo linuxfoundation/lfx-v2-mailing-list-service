@@ -6,7 +6,9 @@ package eventing
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -171,4 +173,88 @@ func TestProcessCommitteeMemberEvent_NoLinkedLists_NoOp(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Empty(t, syncer.calls)
+}
+
+// blockingAutoSyncer's TriggerAutoSync blocks on release until it is closed, letting a test hold
+// one call "in flight" while issuing a second concurrent call for the same mailing list.
+type blockingAutoSyncer struct {
+	mu      sync.Mutex
+	calls   int
+	release chan struct{}
+}
+
+func (s *blockingAutoSyncer) TriggerAutoSync(ctx context.Context, _ string) error {
+	s.mu.Lock()
+	s.calls++
+	s.mu.Unlock()
+	select {
+	case <-s.release:
+	case <-ctx.Done():
+	}
+	return nil
+}
+
+func (s *blockingAutoSyncer) callCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.calls
+}
+
+// TestAutoSyncCoalescer_ConcurrentCallsForSameList_Coalesced pins the fix for the Major finding
+// (per @andrest50): two concurrent TriggerAutoSync calls for the same mailing list must not both
+// reach the wrapped autoSyncTrigger at once — the second must be coalesced into a dirty re-run of
+// the first instead of racing it (which would otherwise hit ITX's "a sync job is already in
+// progress for this mailing list" Validation error and be silently dropped by handle's
+// best-effort/no-retry logging).
+func TestAutoSyncCoalescer_ConcurrentCallsForSameList_Coalesced(t *testing.T) {
+	syncer := &blockingAutoSyncer{release: make(chan struct{})}
+	c := newAutoSyncCoalescer(syncer)
+
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- c.TriggerAutoSync(context.Background(), "ml-1")
+	}()
+
+	require.Eventually(t, func() bool { return syncer.callCount() == 1 }, time.Second, time.Millisecond,
+		"first call should reach the wrapped syncer")
+
+	// Second call arrives while the first is still running: it must be coalesced (return
+	// immediately, nil error) rather than block or race the in-flight call.
+	err := c.TriggerAutoSync(context.Background(), "ml-1")
+	require.NoError(t, err)
+	assert.Equal(t, 1, syncer.callCount(), "a coalesced call must not reach the wrapped syncer immediately")
+
+	close(syncer.release)
+	require.NoError(t, <-firstDone)
+
+	// The in-flight call, finding itself marked dirty, must re-run once more on the coalesced
+	// call's behalf.
+	require.Eventually(t, func() bool { return syncer.callCount() == 2 }, time.Second, time.Millisecond,
+		"the dirty flag must trigger exactly one re-run after the in-flight call finishes")
+}
+
+// TestAutoSyncCoalescer_DifferentLists_NotCoalesced pins that coalescing is scoped per mailing
+// list: a concurrent call for a different list must run independently, not be swallowed by another
+// list's in-flight run.
+func TestAutoSyncCoalescer_DifferentLists_NotCoalesced(t *testing.T) {
+	syncer := &stubAutoSyncer{}
+	c := newAutoSyncCoalescer(syncer)
+
+	require.NoError(t, c.TriggerAutoSync(context.Background(), "ml-1"))
+	require.NoError(t, c.TriggerAutoSync(context.Background(), "ml-2"))
+
+	assert.ElementsMatch(t, []string{"ml-1", "ml-2"}, syncer.calls)
+}
+
+// TestAutoSyncCoalescer_SequentialCalls_BothRun pins that coalescing only short-circuits a call
+// that arrives while another is running for the same list — two calls that do not overlap must
+// both reach the wrapped syncer.
+func TestAutoSyncCoalescer_SequentialCalls_BothRun(t *testing.T) {
+	syncer := &stubAutoSyncer{}
+	c := newAutoSyncCoalescer(syncer)
+
+	require.NoError(t, c.TriggerAutoSync(context.Background(), "ml-1"))
+	require.NoError(t, c.TriggerAutoSync(context.Background(), "ml-1"))
+
+	assert.Equal(t, []string{"ml-1", "ml-1"}, syncer.calls)
 }

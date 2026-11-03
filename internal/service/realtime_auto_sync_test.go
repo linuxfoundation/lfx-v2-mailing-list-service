@@ -134,7 +134,7 @@ func autoCToMLDiff(adds []model.SyncDiffAdd, removes []model.SyncDiffRemove) *mo
 
 func TestTriggerAutoSync_NoLinkedCommitteeOrManual_NoOp(t *testing.T) {
 	mlReader := &stubMLReader{ml: mlWithCommittee("")}
-	diffComputer := &stubSyncDiffComputer{err: errs.NewValidation("mailing list is not linked to a committee")}
+	diffComputer := &stubSyncDiffComputer{err: errs.NewValidation("mailing list is not linked to a committee", ErrNothingToReconcile)}
 	applier := &stubSyncApplier{}
 
 	o := newTestRealtimeAutoSyncOrchestrator(mlReader, diffComputer, applier)

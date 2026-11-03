@@ -328,8 +328,10 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 }
 
 // TestApplySyncDiff_IncompleteResultSet pins that a job completing with fewer results than
-// approved entries fails the whole request instead of silently reporting success for a subset
-// (per @copilot-pull-request-reviewer).
+// approved entries reports the results ITX did return, plus a SyncApplyOutcomeFailed for each
+// approved entry ITX omitted, instead of discarding everything behind a single request-level error
+// (per @andrest50 — the earlier behavior turned a job that partly succeeded into an opaque 503 and
+// invited a caller retry that re-submitted entries that had already taken effect).
 func TestApplySyncDiff_IncompleteResultSet(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
@@ -345,12 +347,21 @@ func TestApplySyncDiff_IncompleteResultSet(t *testing.T) {
 			},
 		},
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 		{Email: "bob@example.com", MemberID: "cm-2", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "every approved add/remove")
+	require.NoError(t, err)
+	require.Len(t, result.Added, 2)
+
+	byEmail := make(map[string]model.SyncApplyAddResult, len(result.Added))
+	for _, a := range result.Added {
+		byEmail[a.Email] = a
+	}
+	assert.Equal(t, model.SyncApplyOutcomeAdded, byEmail["alice@example.com"].Outcome)
+	assert.Equal(t, model.SyncApplyOutcomeFailed, byEmail["bob@example.com"].Outcome)
+	assert.Equal(t, "cm-2", byEmail["bob@example.com"].MemberID)
+	assert.NotEmpty(t, byEmail["bob@example.com"].Error)
 }
 
 // TestApplySyncDiff_DuplicateResultForSameApprovedEntry pins that ITX reporting two results for

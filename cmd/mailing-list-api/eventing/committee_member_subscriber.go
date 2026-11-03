@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -44,6 +45,74 @@ type autoSyncTrigger interface {
 	TriggerAutoSync(ctx context.Context, mailingListID string) error
 }
 
+// autoSyncCoalescer wraps an autoSyncTrigger so that concurrent TriggerAutoSync calls for the same
+// mailing list are coalesced instead of racing. The three committeeMemberSubjects subscriptions each
+// get their own delivery goroutine, so two committee_member events for the same committee (or two
+// different committees linked to the same mailing list) can otherwise call TriggerAutoSync for that
+// list at the same time; the second call reaches ITX while the first is still in flight, ITX rejects
+// it with a Validation error ("a sync job is already in progress for this mailing list" -- see
+// sync_job_poll.go), and handle's best-effort/no-retry logging silently drops it. A sync-diff
+// recompute is idempotent, so marking the in-flight run "dirty" and having it re-run once more after
+// it finishes is always enough to pick up whatever the dropped call would have applied, without
+// needing a queue, retry/backoff, or external coordination.
+type autoSyncCoalescer struct {
+	next autoSyncTrigger
+
+	mu    sync.Mutex
+	state map[string]*coalescerState
+}
+
+// coalescerState tracks, per mailing list, whether a TriggerAutoSync call is currently running and
+// whether another call arrived while it was running.
+type coalescerState struct {
+	running bool
+	dirty   bool
+}
+
+// newAutoSyncCoalescer wraps next so TriggerAutoSync calls are coalesced per mailing list.
+func newAutoSyncCoalescer(next autoSyncTrigger) *autoSyncCoalescer {
+	return &autoSyncCoalescer{
+		next:  next,
+		state: make(map[string]*coalescerState),
+	}
+}
+
+// TriggerAutoSync runs next.TriggerAutoSync for mailingListID. If a call for that same list is
+// already running (on another goroutine), this call marks it dirty and returns nil immediately
+// instead of racing it -- the running call re-runs once more after it finishes, so the dirty call's
+// effect is not lost. The calling goroutine's ctx governs whichever TriggerAutoSync call it actually
+// performs, be it the initial run or a dirty-triggered re-run.
+func (c *autoSyncCoalescer) TriggerAutoSync(ctx context.Context, mailingListID string) error {
+	c.mu.Lock()
+	st, ok := c.state[mailingListID]
+	if !ok {
+		st = &coalescerState{}
+		c.state[mailingListID] = st
+	}
+	if st.running {
+		st.dirty = true
+		c.mu.Unlock()
+		return nil
+	}
+	st.running = true
+	c.mu.Unlock()
+
+	var err error
+	for {
+		err = c.next.TriggerAutoSync(ctx, mailingListID)
+
+		c.mu.Lock()
+		if !st.dirty {
+			st.running = false
+			c.mu.Unlock()
+			break
+		}
+		st.dirty = false
+		c.mu.Unlock()
+	}
+	return err
+}
+
 // CommitteeMemberSubscriber subscribes to committee-api's committee_member created/updated/deleted
 // events (see pkg/constants.CommitteeMemberCreatedSubject et al.) and, for each mailing list
 // linked to the affected committee with sync_mode "auto_c_to_ml", triggers an immediate
@@ -73,7 +142,7 @@ func NewCommitteeMemberSubscriber(
 	return &CommitteeMemberSubscriber{
 		nc:                nc,
 		mailingListReader: mailingListReader,
-		autoSyncer:        autoSyncer,
+		autoSyncer:        newAutoSyncCoalescer(autoSyncer),
 		logger:            logger,
 	}
 }

@@ -197,12 +197,16 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 // concept (its own sync-mode conflict validation differs from this service's former bespoke
 // guard) — those outcomes never appear here, only added/removed/failed. ITX's results only carry
 // email, not the member ID/type that was approved, so both are recovered from the original
-// request by (normalized) email. A result email that matches no approved add/remove has no valid
-// MemberType to report — the response schema requires one of the two enum values, so such a
-// result can't be represented as a (even failed) per-entry outcome without violating it. That
-// case, an unrecognized Action, and a short result set (ITX silently dropping an approved entry)
-// are all treated as ITX protocol violations and fail the whole request — the API promises exactly
-// one outcome per approved add/remove, so a partial result set must not be reported as success.
+// request by (normalized) email. A result email that matches no approved add/remove, or a result
+// with an unrecognized Action, has no valid MemberType to report — the response schema requires
+// one of the two enum values, so neither can be represented as a (even failed) per-entry outcome
+// without violating it; those two cases are treated as ITX protocol violations and fail the whole
+// request. A short result set (ITX silently omitting a result for an approved add/remove) is
+// handled differently: each missing entry DOES have a valid MemberType (from the original
+// request), so it is reported as its own SyncApplyOutcomeFailed instead of discarding the results
+// ITX did report — per @andrest50, failing the whole request there would turn a response where
+// ITX already applied some changes into an opaque 503 with no record of what succeeded, and
+// invite a caller retry that re-submits entries that already took effect.
 func fromSyncApplyJob(
 	mailingListID, committeeUID string,
 	job *port.SyncApplyJob,
@@ -273,9 +277,30 @@ func fromSyncApplyJob(
 		}
 	}
 
-	if len(seenAdds) != len(addByNormalized) || len(seenRemoves) != len(removeByNormalized) {
-		return nil, errs.NewServiceUnavailable(
-			"ITX sync-apply job completed without reporting a result for every approved add/remove")
+	for normalized, add := range addByNormalized {
+		if seenAdds[normalized] {
+			continue
+		}
+		result.Added = append(result.Added, model.SyncApplyAddResult{
+			Email:      add.Email,
+			MemberID:   add.MemberID,
+			MemberType: add.MemberType,
+			Outcome:    model.SyncApplyOutcomeFailed,
+			NameHint:   add.Name,
+			Error:      "no result reported by ITX",
+		})
+	}
+	for normalized, remove := range removeByNormalized {
+		if seenRemoves[normalized] {
+			continue
+		}
+		result.Removed = append(result.Removed, model.SyncApplyRemoveResult{
+			Email:      remove.Email,
+			MemberID:   remove.MemberID,
+			MemberType: remove.MemberType,
+			Outcome:    model.SyncApplyOutcomeFailed,
+			Error:      "no result reported by ITX",
+		})
 	}
 
 	return result, nil
