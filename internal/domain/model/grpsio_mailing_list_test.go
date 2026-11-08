@@ -203,6 +203,47 @@ func TestGroupsIOMailingList_Tags(t *testing.T) {
 			},
 		},
 		{
+			name: "mailing list with single committee - with role filters",
+			mailingList: &GroupsIOMailingList{
+				UID:    "ml-444",
+				Public: true,
+				Committees: []Committee{
+					{
+						UID:                  "committee-eee",
+						CommitteeRoleFilters: []string{"Chair", "Vice Chair"},
+					},
+				},
+			},
+			expectedTags: []string{
+				"public:true",
+				"committee_uid:committee-eee",
+				"committee_role_filter:Chair",
+				"committee_role_filter:Vice Chair",
+				"groupsio_mailing_list_uid:ml-444",
+			},
+		},
+		{
+			name: "mailing list with single committee - both voting status and role filters",
+			mailingList: &GroupsIOMailingList{
+				UID:    "ml-555",
+				Public: true,
+				Committees: []Committee{
+					{
+						UID:                   "committee-fff",
+						AllowedVotingStatuses: []string{"Voting Rep"},
+						CommitteeRoleFilters:  []string{"Chair"},
+					},
+				},
+			},
+			expectedTags: []string{
+				"public:true",
+				"committee_uid:committee-fff",
+				"committee_voting_status:Voting Rep",
+				"committee_role_filter:Chair",
+				"groupsio_mailing_list_uid:ml-555",
+			},
+		},
+		{
 			name: "tag order - committees appear after audience_access and before uid",
 			mailingList: &GroupsIOMailingList{
 				UID:            "ml-order",

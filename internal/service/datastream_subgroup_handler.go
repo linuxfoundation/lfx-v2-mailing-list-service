@@ -457,6 +457,7 @@ func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.Grou
 		list.Committees = []model.Committee{{
 			UID:                   committeeUID,
 			AllowedVotingStatuses: mapconv.StringSliceVal(data, "committee_filters"),
+			CommitteeRoleFilters:  mapconv.StringSliceVal(data, "committee_role_filters"),
 		}}
 	}
 
