@@ -77,14 +77,19 @@ type autoSyncTrigger interface {
 // this coalescer exists to rescue, which is the same "timed out, not retried" failure mode the
 // committeeMemberEventCallTimeout sizing fix (see its doc comment) closed for a single call.
 //
-// Cross-replica note: this is an in-process mutex, not a distributed lock. It is sufficient today
-// because charts/lfx-v2-mailing-list-service/values.yaml pins replicaCount to 1 -- there is only one
-// process handling committee_member events, so there is no cross-replica interleaving to guard
-// against. If this service is ever run with replicaCount > 1, this in-process coalescing alone would
-// not prevent two different replicas from running the compute/apply cycle for the same mailing list
-// concurrently (the committeeMemberQueueGroup only balances load within a single subject's
-// deliveries, it does not serialize across the three committeeMemberSubjects or across replicas for
-// the same list); a distributed lock or single-writer design would be needed at that point.
+// Cross-replica note: this is an in-process mutex, not a distributed lock, and only guards against
+// interleaving within a single process. charts/lfx-v2-mailing-list-service/values.yaml pins
+// replicaCount to 1, which bounds the *steady-state* number of processes handling committee_member
+// events to one -- but the Deployment has no explicit rollout strategy, so a default Kubernetes
+// RollingUpdate can still run the old and new pod concurrently for the duration of a deploy. During
+// that overlap window, two processes each with their own coalescer can reconcile the same mailing
+// list at the same time, so this guarantee is single-process only, not an absolute guarantee that
+// only one process ever runs. If this service is ever run with replicaCount > 1 (or needs the
+// rollout overlap window closed), this in-process coalescing alone would not prevent two different
+// replicas from running the compute/apply cycle for the same mailing list concurrently (the
+// committeeMemberQueueGroup only balances load within a single subject's deliveries, it does not
+// serialize across the three committeeMemberSubjects or across replicas for the same list); a
+// distributed lock or single-writer design would be needed at that point.
 type autoSyncCoalescer struct {
 	next autoSyncTrigger
 
