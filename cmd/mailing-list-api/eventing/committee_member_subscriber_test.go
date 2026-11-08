@@ -258,3 +258,90 @@ func TestAutoSyncCoalescer_SequentialCalls_BothRun(t *testing.T) {
 
 	assert.Equal(t, []string{"ml-1", "ml-1"}, syncer.calls)
 }
+
+// deadlineRecordingAutoSyncer records the remaining time-until-deadline on the ctx it is called
+// with for every call, so a test can assert each attempt got a fresh budget. It also records
+// whether the ctx had a deadline at all, so a test can fail loudly (rather than silently passing
+// on a recorded zero) if the fix under test is reverted and no per-attempt deadline is set.
+type deadlineRecordingAutoSyncer struct {
+	mu          sync.Mutex
+	remainings  []time.Duration
+	hadDeadline []bool
+	block       chan struct{}
+}
+
+func (s *deadlineRecordingAutoSyncer) TriggerAutoSync(ctx context.Context, _ string) error {
+	deadline, ok := ctx.Deadline()
+	remaining := time.Duration(0)
+	if ok {
+		remaining = time.Until(deadline)
+	}
+
+	s.mu.Lock()
+	s.remainings = append(s.remainings, remaining)
+	s.hadDeadline = append(s.hadDeadline, ok)
+	n := len(s.remainings)
+	s.mu.Unlock()
+
+	if s.block != nil && n == 1 {
+		<-s.block
+	}
+	return nil
+}
+
+// TestAutoSyncCoalescer_DirtyRerun_GetsFreshBudget pins that a dirty-triggered re-run derives its
+// own fresh committeeMemberEventCallTimeout deadline from the caller's ctx, rather than continuing
+// to run under whatever remains of the first attempt's deadline. Without this, a re-run triggered
+// close to the first attempt's deadline could itself be starved mid-poll, silently dropping the
+// very update the coalescer exists to rescue (see autoSyncCoalescer's doc comment).
+func TestAutoSyncCoalescer_DirtyRerun_GetsFreshBudget(t *testing.T) {
+	syncer := &deadlineRecordingAutoSyncer{block: make(chan struct{})}
+	c := newAutoSyncCoalescer(syncer)
+
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- c.TriggerAutoSync(context.Background(), "ml-1")
+	}()
+
+	require.Eventually(t, func() bool {
+		syncer.mu.Lock()
+		defer syncer.mu.Unlock()
+		return len(syncer.remainings) == 1
+	}, time.Second, time.Millisecond, "first attempt should reach the wrapped syncer")
+
+	// Simulate some of the first attempt's budget elapsing before the dirty call arrives. This
+	// must be longer than the tolerance used below, or a shared-deadline regression (the re-run
+	// inheriting the first attempt's already-ticking deadline) would still pass.
+	const firstAttemptElapsed = 50 * time.Millisecond
+	time.Sleep(firstAttemptElapsed)
+	require.NoError(t, c.TriggerAutoSync(context.Background(), "ml-1"))
+
+	close(syncer.block)
+	require.NoError(t, <-firstDone)
+
+	require.Eventually(t, func() bool {
+		syncer.mu.Lock()
+		defer syncer.mu.Unlock()
+		return len(syncer.remainings) == 2
+	}, time.Second, time.Millisecond, "the dirty flag must trigger exactly one re-run")
+
+	syncer.mu.Lock()
+	defer syncer.mu.Unlock()
+	require.Len(t, syncer.remainings, 2)
+	// Both attempts must actually carry a deadline. Without the fix, deadlineRecordingAutoSyncer
+	// records a zero remaining budget for a ctx with no deadline at all, which would otherwise pass
+	// the InDelta check below vacuously.
+	require.True(t, syncer.hadDeadline[0] && syncer.hadDeadline[1],
+		"every attempt must derive a committeeMemberEventCallTimeout deadline from ctx")
+	// Each attempt's budget must be close to the full committeeMemberEventCallTimeout window, not
+	// just "close to each other" -- otherwise two attempts sharing one already-exhausted deadline
+	// would still pass.
+	assert.Greater(t, syncer.remainings[0], committeeMemberEventCallTimeout-time.Second)
+	// The re-run's remaining budget must not be meaningfully smaller than the first attempt's — it
+	// must be a fresh committeeMemberEventCallTimeout window, not the first attempt's deadline minus
+	// however long the first attempt had already been running. The tolerance here is deliberately
+	// smaller than firstAttemptElapsed, so a shared-deadline regression (which would show up as a
+	// ~firstAttemptElapsed gap) is caught.
+	assert.Greater(t, syncer.remainings[1], syncer.remainings[0]-firstAttemptElapsed/2,
+		"re-run should get a fresh budget, not the first attempt's already-elapsed deadline")
+}
