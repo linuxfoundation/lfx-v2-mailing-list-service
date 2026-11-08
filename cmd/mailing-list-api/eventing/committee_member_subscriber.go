@@ -45,16 +45,46 @@ type autoSyncTrigger interface {
 	TriggerAutoSync(ctx context.Context, mailingListID string) error
 }
 
-// autoSyncCoalescer wraps an autoSyncTrigger so that concurrent TriggerAutoSync calls for the same
-// mailing list are coalesced instead of racing. The three committeeMemberSubjects subscriptions each
-// get their own delivery goroutine, so two committee_member events for the same committee (or two
-// different committees linked to the same mailing list) can otherwise call TriggerAutoSync for that
-// list at the same time; the second call reaches ITX while the first is still in flight, ITX rejects
-// it with a Validation error ("a sync job is already in progress for this mailing list" -- see
-// sync_job_poll.go), and handle's best-effort/no-retry logging silently drops it. A sync-diff
-// recompute is idempotent, so marking the in-flight run "dirty" and having it re-run once more after
-// it finishes is always enough to pick up whatever the dropped call would have applied, without
-// needing a queue, retry/backoff, or external coordination.
+// autoSyncCoalescer wraps an autoSyncTrigger so that the full compute-and-apply reconciliation
+// cycle for a given mailing list is serialized per mailing list UID: two reconciliations for the
+// same list can never have their ITX compute/apply phases interleaved, whether they originate from
+// different committeeMemberSubjects subscriptions (each gets its own delivery goroutine), from two
+// different committees linked to the same mailing list, or from a dirty re-run of an in-flight call
+// (see below). This also closes the specific race reported on PR #104 by
+// @copilot-pull-request-reviewer: a created-event reconciliation computes an add, a deleted-event
+// reconciliation for the same list runs to completion as a no-op before the add is applied, and the
+// first call then applies its now-stale add afterward, leaving a removed member subscribed. With
+// calls for the same list serialized, the deleted-event run either happens entirely before the
+// created-event run starts (and is superseded by it, which recomputes from current state), or is
+// coalesced into a dirty re-run that happens entirely after the created-event run finishes (also
+// recomputing from current state) -- never interleaved with it.
+//
+// Serializing without a naive blocking mutex matters here because TriggerAutoSync recomputes a full
+// ComputeSyncDiff+ApplySyncDiff reconciliation rather than applying a point delta: if a call arrives
+// while another is already running for the same list, blocking it until the first finishes and then
+// running it anyway would just repeat the same ITX round-trip the first call already made redundant.
+// Instead, a call that arrives while one is running marks the in-flight run "dirty" and returns
+// immediately; the in-flight run re-runs once more on the dirty call's behalf after it finishes. A
+// sync-diff recompute is idempotent and always reflects ITX's current state, so this is always
+// enough to pick up whatever the coalesced call would have applied, without needing a queue,
+// retry/backoff, or external coordination.
+//
+// Each attempt (the initial run and every dirty-triggered re-run) gets its own fresh
+// committeeMemberEventCallTimeout budget off the caller's ctx, rather than the whole loop sharing one
+// deadline computed from when the first attempt started: that budget is sized for exactly one
+// TriggerAutoSync call, so a re-run sharing the first call's already-ticking (and possibly
+// near-exhausted) deadline could itself be starved mid-poll -- silently dropping the very update
+// this coalescer exists to rescue, which is the same "timed out, not retried" failure mode the
+// committeeMemberEventCallTimeout sizing fix (see its doc comment) closed for a single call.
+//
+// Cross-replica note: this is an in-process mutex, not a distributed lock. It is sufficient today
+// because charts/lfx-v2-mailing-list-service/values.yaml pins replicaCount to 1 -- there is only one
+// process handling committee_member events, so there is no cross-replica interleaving to guard
+// against. If this service is ever run with replicaCount > 1, this in-process coalescing alone would
+// not prevent two different replicas from running the compute/apply cycle for the same mailing list
+// concurrently (the committeeMemberQueueGroup only balances load within a single subject's
+// deliveries, it does not serialize across the three committeeMemberSubjects or across replicas for
+// the same list); a distributed lock or single-writer design would be needed at that point.
 type autoSyncCoalescer struct {
 	next autoSyncTrigger
 
@@ -80,8 +110,10 @@ func newAutoSyncCoalescer(next autoSyncTrigger) *autoSyncCoalescer {
 // TriggerAutoSync runs next.TriggerAutoSync for mailingListID. If a call for that same list is
 // already running (on another goroutine), this call marks it dirty and returns nil immediately
 // instead of racing it -- the running call re-runs once more after it finishes, so the dirty call's
-// effect is not lost. The calling goroutine's ctx governs whichever TriggerAutoSync call it actually
-// performs, be it the initial run or a dirty-triggered re-run.
+// effect is not lost. ctx is the long-lived, caller-scoped parent context (not pre-bounded by
+// committeeMemberEventCallTimeout): each attempt -- the initial run and every dirty-triggered
+// re-run -- derives its own fresh committeeMemberEventCallTimeout deadline from it, so a re-run is
+// never starved by a deadline that was already ticking down during a previous attempt.
 func (c *autoSyncCoalescer) TriggerAutoSync(ctx context.Context, mailingListID string) error {
 	c.mu.Lock()
 	st, ok := c.state[mailingListID]
@@ -99,7 +131,9 @@ func (c *autoSyncCoalescer) TriggerAutoSync(ctx context.Context, mailingListID s
 
 	var err error
 	for {
-		err = c.next.TriggerAutoSync(ctx, mailingListID)
+		attemptCtx, cancel := context.WithTimeout(ctx, committeeMemberEventCallTimeout)
+		err = c.next.TriggerAutoSync(attemptCtx, mailingListID)
+		cancel()
 
 		c.mu.Lock()
 		if !st.dirty {
@@ -300,7 +334,10 @@ func committeeUIDFromEvent(data []byte) (string, error) {
 // Each linked list gets its own committeeMemberEventCallTimeout budget rather than sharing one
 // deadline for the whole batch: a committee linked to several mailing lists would otherwise have
 // its later lists starved (or outright skipped) by the earlier ones' ITX round-trips eating into a
-// single shared window.
+// single shared window. That per-list budget is applied by autoSyncer itself (see autoSyncCoalescer),
+// not here: autoSyncer may coalesce this call into a dirty re-run of an already-in-flight call for
+// the same list, and that re-run needs its own fresh budget rather than inheriting whatever remains
+// of a deadline bound before this call was even made.
 func processCommitteeMemberEvent(
 	ctx context.Context,
 	committeeUID string,
@@ -320,9 +357,7 @@ func processCommitteeMemberEvent(
 		if len(ml.Committees) == 0 || ml.Committees[0].SyncMode != model.SyncModeAutoCommitteeToMailingList {
 			continue
 		}
-		listCtx, cancel := context.WithTimeout(ctx, committeeMemberEventCallTimeout)
-		err := autoSyncer.TriggerAutoSync(listCtx, ml.UID)
-		cancel()
+		err := autoSyncer.TriggerAutoSync(ctx, ml.UID)
 		if err != nil {
 			logger.Warn("auto-sync failed for mailing list linked to committee",
 				"mailing_list_id", ml.UID,
