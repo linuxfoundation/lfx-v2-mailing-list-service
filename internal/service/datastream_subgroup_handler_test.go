@@ -547,3 +547,18 @@ func TestTransformV1ToGrpsIOMailingList_VisibilityMapping(t *testing.T) {
 		})
 	}
 }
+
+func TestTransformV1ToGrpsIOMailingList_CommitteeFilters(t *testing.T) {
+	data := map[string]any{
+		"committee":              "committee-uid-1",
+		"committee_filters":      []any{"Voting Rep"},
+		"committee_role_filters": []any{"Chair", "Vice Chair"},
+	}
+
+	list := transformV1ToGrpsIOMailingList("sg-1", data)
+
+	require.Len(t, list.Committees, 1)
+	assert.Equal(t, "committee-uid-1", list.Committees[0].UID)
+	assert.Equal(t, []string{"Voting Rep"}, list.Committees[0].AllowedVotingStatuses)
+	assert.Equal(t, []string{"Chair", "Vice Chair"}, list.Committees[0].CommitteeRoleFilters)
+}

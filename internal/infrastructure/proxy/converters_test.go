@@ -216,6 +216,27 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 			expectCommittees: []model.Committee{{UID: "committee-uuid", AllowedVotingStatuses: []string{"Voting Rep"}}},
 		},
 		{
+			name:             "CommitteeRoleFilters populates CommitteeRoleFilters",
+			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", CommitteeRoleFilters: []string{"Chair"}},
+			expectUID:        "1",
+			expectCommittees: []model.Committee{{UID: "committee-uuid", CommitteeRoleFilters: []string{"Chair"}}},
+		},
+		{
+			name: "CommitteeFilters and CommitteeRoleFilters both populate, additively",
+			input: &subgroupWire{
+				GroupID:              1,
+				CommitteeID:          "committee-uuid",
+				CommitteeFilters:     []string{"Voting Rep"},
+				CommitteeRoleFilters: []string{"Chair", "Vice Chair"},
+			},
+			expectUID: "1",
+			expectCommittees: []model.Committee{{
+				UID:                   "committee-uuid",
+				AllowedVotingStatuses: []string{"Voting Rep"},
+				CommitteeRoleFilters:  []string{"Chair", "Vice Chair"},
+			}},
+		},
+		{
 			name:             "SyncMode is mapped onto the Committee entry",
 			input:            &subgroupWire{GroupID: 1, CommitteeID: "committee-uuid", SyncMode: "auto_c_to_ml"},
 			expectUID:        "1",

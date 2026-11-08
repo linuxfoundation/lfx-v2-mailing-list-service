@@ -17,6 +17,13 @@ type Committee struct {
 	// are synced to the mailing list (e.g., "Voting Rep", "Alternate Voting Rep").
 	AllowedVotingStatuses []string `json:"allowed_voting_statuses,omitempty"`
 
+	// CommitteeRoleFilters are the committee member roles that determine which members are
+	// synced to the mailing list for the committee->mailing-list sync direction (plain string
+	// match against the member's role; there is no fixed role taxonomy). When set, a member
+	// must match one of these roles in addition to satisfying AllowedVotingStatuses; an empty
+	// list means no role restriction.
+	CommitteeRoleFilters []string `json:"committee_role_filters,omitempty"`
+
 	// SyncMode controls the direction of automatic membership synchronization between this
 	// committee and the mailing list it's attached to. One of the SyncMode* constants below;
 	// empty is treated the same as SyncModeManual. ITX is the system of record for this value;

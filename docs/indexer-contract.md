@@ -172,7 +172,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
 | `type` | string | List type: `announcement`, `discussion_moderated`, or `discussion_open` |
 | `subscriber_count` | int | Current number of subscribers |
-| `committees` | []object (optional) | Associated committees. Each has `uid` (string) and `allowed_voting_statuses` ([]string) |
+| `committees` | []object (optional) | Associated committees. Each has `uid` (string), `allowed_voting_statuses` ([]string), and `committee_role_filters` ([]string) |
 | `description` | string | Mailing list description |
 | `title` | string | Mailing list title |
 | `subject_tag` | string | Email subject tag; emitted as empty string when not populated |
@@ -201,6 +201,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `audience_access:{value}` | `audience_access:public` | Find mailing lists by audience access |
 | `committee_uid:{value}` | `committee_uid:061a110a-...` | Find mailing lists associated with a committee (one tag per committee) |
 | `committee_voting_status:{value}` | `committee_voting_status:Voting Rep` | Find mailing lists by committee voting status filter |
+| `committee_role_filter:{value}` | `committee_role_filter:Chair` | Find mailing lists by committee role filter (C->ML sync direction) |
 | `group_name:{value}` | `group_name:my-project` | Find mailing lists by Groups.io group name |
 
 ### Access Control (AccessMessage)

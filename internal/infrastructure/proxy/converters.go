@@ -71,6 +71,7 @@ func fromWireSubgroup(w *subgroupWire) *model.GroupsIOMailingList {
 		ml.Committees = []model.Committee{{
 			UID:                   w.CommitteeID,
 			AllowedVotingStatuses: w.CommitteeFilters,
+			CommitteeRoleFilters:  w.CommitteeRoleFilters,
 			SyncMode:              w.SyncMode,
 		}}
 	}

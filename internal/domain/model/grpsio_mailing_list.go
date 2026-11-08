@@ -201,6 +201,10 @@ func (ml *GroupsIOMailingList) Tags() []string {
 		for _, status := range committee.AllowedVotingStatuses {
 			tags = append(tags, fmt.Sprintf("committee_voting_status:%s", status))
 		}
+		// Add role filter tags for each committee
+		for _, role := range committee.CommitteeRoleFilters {
+			tags = append(tags, fmt.Sprintf("committee_role_filter:%s", role))
+		}
 	}
 
 	if ml.UID != "" {
