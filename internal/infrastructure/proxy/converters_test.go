@@ -4,12 +4,22 @@
 package proxy
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/stretchr/testify/suite"
 )
+
+// strSlicePtr returns a pointer to a []string built from the given values, to
+// distinguish "field not set" (nil pointer) from "field explicitly set, possibly
+// empty" (non-nil pointer) in subgroupRequestWire test expectations.
+func strSlicePtr(values ...string) *[]string {
+	s := make([]string, len(values))
+	copy(s, values)
+	return &s
+}
 
 type ProxyConvertersSuite struct {
 	suite.Suite
@@ -348,8 +358,8 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 		expectType               string
 		expectAccess             string
 		expectSyncMode           string
-		expectCommitteeFilters   []string
-		expectCommitteeRoleFltrs []string
+		expectCommitteeFilters   *[]string
+		expectCommitteeRoleFltrs *[]string
 	}{
 		{
 			name:              "nil committees produces empty CommitteeID",
@@ -386,13 +396,26 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 				}},
 			},
 			expectCommitteeID:        "c-1",
-			expectCommitteeFilters:   []string{"Voting Rep", "Alternate Voting Rep"},
-			expectCommitteeRoleFltrs: []string{"chair"},
+			expectCommitteeFilters:   strSlicePtr("Voting Rep", "Alternate Voting Rep"),
+			expectCommitteeRoleFltrs: strSlicePtr("chair"),
 		},
 		{
 			name:              "nil committees produces nil filters",
 			input:             &model.GroupsIOMailingList{Committees: nil},
 			expectCommitteeID: "",
+		},
+		{
+			name: "explicitly empty filters (clearing a restriction) are preserved as non-nil",
+			input: &model.GroupsIOMailingList{
+				Committees: []model.Committee{{
+					UID:                   "c-1",
+					AllowedVotingStatuses: []string{},
+					CommitteeRoleFilters:  []string{},
+				}},
+			},
+			expectCommitteeID:        "c-1",
+			expectCommitteeFilters:   strSlicePtr(),
+			expectCommitteeRoleFltrs: strSlicePtr(),
 		},
 		{
 			name: "fields map correctly",
@@ -817,6 +840,66 @@ func (s *ProxyConvertersSuite) TestFromWireMember() {
 			} else {
 				s.Require().NotNil(got.MemberID)
 				s.Equal(*tt.expectMemberID, *got.MemberID)
+			}
+		})
+	}
+}
+
+// TestToWireSubgroupRequestFilterSerialization proves the actual wire bytes for the
+// omitted/empty/populated committee_filters and committee_role_filters cases, since
+// the omitempty behavior depends on pointer-nilness in a way field-by-field struct
+// comparisons don't directly demonstrate.
+func (s *ProxyConvertersSuite) TestToWireSubgroupRequestFilterSerialization() {
+	tests := []struct {
+		name          string
+		votingStatus  []string
+		roleFilters   []string
+		expectAbsent  []string
+		expectPresent map[string]string
+	}{
+		{
+			name:         "nil filters are omitted from the wire payload",
+			votingStatus: nil,
+			roleFilters:  nil,
+			expectAbsent: []string{"committee_filters", "committee_role_filters"},
+		},
+		{
+			name:         "explicitly empty filters are serialized as empty arrays",
+			votingStatus: []string{},
+			roleFilters:  []string{},
+			expectPresent: map[string]string{
+				"committee_filters":      `"committee_filters":[]`,
+				"committee_role_filters": `"committee_role_filters":[]`,
+			},
+		},
+		{
+			name:         "populated filters are serialized with their values",
+			votingStatus: []string{"Voting Rep"},
+			roleFilters:  []string{"chair"},
+			expectPresent: map[string]string{
+				"committee_filters":      `"committee_filters":["Voting Rep"]`,
+				"committee_role_filters": `"committee_role_filters":["chair"]`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			ml := &model.GroupsIOMailingList{
+				Committees: []model.Committee{{
+					UID:                   "c-1",
+					AllowedVotingStatuses: tt.votingStatus,
+					CommitteeRoleFilters:  tt.roleFilters,
+				}},
+			}
+			b, err := json.Marshal(toWireSubgroupRequest(ml))
+			s.Require().NoError(err)
+			body := string(b)
+			for _, key := range tt.expectAbsent {
+				s.NotContains(body, key)
+			}
+			for key, want := range tt.expectPresent {
+				s.Contains(body, want, "expected %s to be serialized", key)
 			}
 		})
 	}

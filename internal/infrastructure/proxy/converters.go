@@ -90,8 +90,14 @@ func toWireSubgroupRequest(ml *model.GroupsIOMailingList) *subgroupRequestWire {
 	if len(ml.Committees) > 0 {
 		req.CommitteeID = ml.Committees[0].UID
 		req.SyncMode = ml.Committees[0].SyncMode
-		req.CommitteeFilters = ml.Committees[0].AllowedVotingStatuses
-		req.CommitteeRoleFilters = ml.Committees[0].CommitteeRoleFilters
+		// Preserve nil (field not touched) vs. non-nil-empty (explicitly cleared) through
+		// to the wire: see the omitempty note on subgroupRequestWire.
+		if votingStatuses := ml.Committees[0].AllowedVotingStatuses; votingStatuses != nil {
+			req.CommitteeFilters = &votingStatuses
+		}
+		if roleFilters := ml.Committees[0].CommitteeRoleFilters; roleFilters != nil {
+			req.CommitteeRoleFilters = &roleFilters
+		}
 	}
 	return req
 }
