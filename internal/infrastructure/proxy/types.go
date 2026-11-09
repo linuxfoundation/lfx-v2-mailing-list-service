@@ -53,14 +53,16 @@ type subgroupWire struct {
 
 // subgroupRequestWire represents a create/update request for a GroupsIO subgroup.
 type subgroupRequestWire struct {
-	ProjectID      string `json:"project_id,omitempty"` // v1 SFID
-	CommitteeID    string `json:"committee,omitempty"`  // v1 UUID
-	SyncMode       string `json:"sync_mode,omitempty"`  // auto_c_to_ml, auto_ml_to_c, or manual
-	ParentID       string `json:"parent_id,omitempty"`  // v1 Service ID
-	Name           string `json:"group_name,omitempty"`
-	Description    string `json:"description,omitempty"`
-	Type           string `json:"type,omitempty"`
-	AudienceAccess string `json:"visibility,omitempty"`
+	ProjectID            string   `json:"project_id,omitempty"`             // v1 SFID
+	CommitteeID          string   `json:"committee,omitempty"`              // v1 UUID
+	SyncMode             string   `json:"sync_mode,omitempty"`              // auto_c_to_ml, auto_ml_to_c, or manual
+	CommitteeFilters     []string `json:"committee_filters,omitempty"`      // allowed voting statuses, if the committee link is filtered
+	CommitteeRoleFilters []string `json:"committee_role_filters,omitempty"` // allowed committee roles, if the committee link is role-filtered
+	ParentID             string   `json:"parent_id,omitempty"`              // v1 Service ID
+	Name                 string   `json:"group_name,omitempty"`
+	Description          string   `json:"description,omitempty"`
+	Type                 string   `json:"type,omitempty"`
+	AudienceAccess       string   `json:"visibility,omitempty"`
 }
 
 // subgroupListResponseWire represents a list response of GroupsIO subgroups from the ITX API.

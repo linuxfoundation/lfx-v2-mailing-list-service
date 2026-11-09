@@ -93,6 +93,9 @@ func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.C
 		if ml.Committees[0].SyncMode != "" {
 			return errs.NewValidation("sync_mode requires committee_uid")
 		}
+		if len(ml.Committees[0].AllowedVotingStatuses) > 0 || len(ml.Committees[0].CommitteeRoleFilters) > 0 {
+			return errs.NewValidation("committee_filters and committee_role_filters require committee_uid")
+		}
 		return nil
 	}
 	if syncMode := ml.Committees[0].SyncMode; syncMode != "" && !isValidSyncMode(syncMode) {

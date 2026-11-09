@@ -97,16 +97,18 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 	nonZeroTime := time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name                string
-		input               *model.GroupsIOMailingList
-		expectNil           bool
-		expectCommitteeUID  *string
-		expectCreatedAt     *string
-		expectUpdatedAt     *string
-		expectName          string
-		expectProjectUID    string
-		expectProjectUIDNil bool
-		expectServiceID     string
+		name                     string
+		input                    *model.GroupsIOMailingList
+		expectNil                bool
+		expectCommitteeUID       *string
+		expectCreatedAt          *string
+		expectUpdatedAt          *string
+		expectName               string
+		expectProjectUID         string
+		expectProjectUIDNil      bool
+		expectServiceID          string
+		expectCommitteeFilters   []string
+		expectCommitteeRoleFltrs []string
 	}{
 		{
 			name:      "nil input returns nil",
@@ -162,6 +164,27 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 			input:               &model.GroupsIOMailingList{ProjectUID: ""},
 			expectProjectUIDNil: true,
 		},
+		{
+			name: "committee filters and role filters are extracted from first committee",
+			input: &model.GroupsIOMailingList{
+				Committees: []model.Committee{{
+					UID:                   "c-1",
+					AllowedVotingStatuses: []string{"Voting Rep", "Alternate Voting Rep"},
+					CommitteeRoleFilters:  []string{"chair"},
+				}},
+			},
+			expectCommitteeUID:       ptr("c-1"),
+			expectCommitteeFilters:   []string{"Voting Rep", "Alternate Voting Rep"},
+			expectCommitteeRoleFltrs: []string{"chair"},
+		},
+		{
+			name: "no committees produces nil filter slices",
+			input: &model.GroupsIOMailingList{
+				Committees: nil,
+			},
+			expectCommitteeFilters:   nil,
+			expectCommitteeRoleFltrs: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -186,6 +209,8 @@ func (s *ServiceConvertersSuite) TestConvertMailingList() {
 			if tt.expectServiceID != "" {
 				s.Equal(tt.expectServiceID, ptrVal(got.ServiceID))
 			}
+			s.Equal(tt.expectCommitteeFilters, got.CommitteeFilters)
+			s.Equal(tt.expectCommitteeRoleFltrs, got.CommitteeRoleFilters)
 		})
 	}
 }

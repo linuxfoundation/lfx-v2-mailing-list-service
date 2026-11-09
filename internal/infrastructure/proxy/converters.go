@@ -90,6 +90,8 @@ func toWireSubgroupRequest(ml *model.GroupsIOMailingList) *subgroupRequestWire {
 	if len(ml.Committees) > 0 {
 		req.CommitteeID = ml.Committees[0].UID
 		req.SyncMode = ml.Committees[0].SyncMode
+		req.CommitteeFilters = ml.Committees[0].AllowedVotingStatuses
+		req.CommitteeRoleFilters = ml.Committees[0].CommitteeRoleFilters
 	}
 	return req
 }

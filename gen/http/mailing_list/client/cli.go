@@ -245,7 +245,7 @@ func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListCreateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Distinctio totam vero.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Natus odit illum perspiciatis quia.\",\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_role_filters\": [\n         \"chair\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Est ut quibusdam quae qui iste aut.\",\n      \"group_id\": 2674994533507187893,\n      \"name\": \"Totam aut voluptas architecto eum cupiditate et.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Autem tempora at architecto consectetur voluptatum ullam.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Distinctio totam vero.\"\n   }'")
 		}
 	}
 	var bearerToken *string
@@ -264,6 +264,18 @@ func BuildCreateGroupsioMailingListPayload(mailingListCreateGroupsioMailingListB
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
 		SyncMode:       body.SyncMode,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.CommitteeRoleFilters != nil {
+		v.CommitteeRoleFilters = make([]string, len(body.CommitteeRoleFilters))
+		for i, val := range body.CommitteeRoleFilters {
+			v.CommitteeRoleFilters[i] = val
+		}
 	}
 	v.BearerToken = bearerToken
 
@@ -298,7 +310,7 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 	{
 		err = json.Unmarshal([]byte(mailingListUpdateGroupsioMailingListBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"audience_access\": \"Est sed est.\",\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_role_filters\": [\n         \"chair\"\n      ],\n      \"committee_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"description\": \"Nostrum quia nam perferendis aut.\",\n      \"group_id\": 4112760391318865184,\n      \"name\": \"Sunt optio.\",\n      \"project_uid\": \"7cad5a8d-19d0-41a4-81a6-043453daf9ee\",\n      \"service_id\": \"Qui aut sunt modi.\",\n      \"sync_mode\": \"manual\",\n      \"type\": \"Blanditiis occaecati impedit.\"\n   }'")
 		}
 		if body.ProjectUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
@@ -335,6 +347,18 @@ func BuildUpdateGroupsioMailingListPayload(mailingListUpdateGroupsioMailingListB
 		Type:           body.Type,
 		AudienceAccess: body.AudienceAccess,
 		SyncMode:       body.SyncMode,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.CommitteeRoleFilters != nil {
+		v.CommitteeRoleFilters = make([]string, len(body.CommitteeRoleFilters))
+		for i, val := range body.CommitteeRoleFilters {
+			v.CommitteeRoleFilters[i] = val
+		}
 	}
 	v.SubgroupID = subgroupID
 	v.BearerToken = bearerToken

@@ -34,8 +34,13 @@ func (s *mailingListAPI) CreateGroupsioMailingList(ctx context.Context, p *maili
 		Type:           converter.StringVal(p.Type),
 		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
-	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" {
-		ml.Committees = []model.Committee{{UID: committeeUID, SyncMode: syncMode}}
+	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" || len(p.CommitteeFilters) > 0 || len(p.CommitteeRoleFilters) > 0 {
+		ml.Committees = []model.Committee{{
+			UID:                   committeeUID,
+			SyncMode:              syncMode,
+			AllowedVotingStatuses: p.CommitteeFilters,
+			CommitteeRoleFilters:  p.CommitteeRoleFilters,
+		}}
 	}
 	resp, err := s.mailingListWriter.CreateMailingList(ctx, ml)
 	if err != nil {
@@ -61,8 +66,13 @@ func (s *mailingListAPI) UpdateGroupsioMailingList(ctx context.Context, p *maili
 		Type:           converter.StringVal(p.Type),
 		AudienceAccess: converter.StringVal(p.AudienceAccess),
 	}
-	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" {
-		ml.Committees = []model.Committee{{UID: committeeUID, SyncMode: syncMode}}
+	if committeeUID, syncMode := converter.StringVal(p.CommitteeUID), converter.StringVal(p.SyncMode); committeeUID != "" || syncMode != "" || len(p.CommitteeFilters) > 0 || len(p.CommitteeRoleFilters) > 0 {
+		ml.Committees = []model.Committee{{
+			UID:                   committeeUID,
+			SyncMode:              syncMode,
+			AllowedVotingStatuses: p.CommitteeFilters,
+			CommitteeRoleFilters:  p.CommitteeRoleFilters,
+		}}
 	}
 	resp, err := s.mailingListWriter.UpdateMailingList(ctx, p.SubgroupID, ml)
 	if err != nil {

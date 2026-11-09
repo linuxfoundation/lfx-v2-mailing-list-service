@@ -338,16 +338,18 @@ func (s *ProxyConvertersSuite) TestFromWireSubgroup() {
 
 func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 	tests := []struct {
-		name              string
-		input             *model.GroupsIOMailingList
-		expectCommitteeID string
-		expectProjectID   string
-		expectParentID    string
-		expectName        string
-		expectDescription string
-		expectType        string
-		expectAccess      string
-		expectSyncMode    string
+		name                     string
+		input                    *model.GroupsIOMailingList
+		expectCommitteeID        string
+		expectProjectID          string
+		expectParentID           string
+		expectName               string
+		expectDescription        string
+		expectType               string
+		expectAccess             string
+		expectSyncMode           string
+		expectCommitteeFilters   []string
+		expectCommitteeRoleFltrs []string
 	}{
 		{
 			name:              "nil committees produces empty CommitteeID",
@@ -373,6 +375,24 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 			},
 			expectCommitteeID: "c-1",
 			expectSyncMode:    "auto_ml_to_c",
+		},
+		{
+			name: "first committee's filters and role filters are serialized",
+			input: &model.GroupsIOMailingList{
+				Committees: []model.Committee{{
+					UID:                   "c-1",
+					AllowedVotingStatuses: []string{"Voting Rep", "Alternate Voting Rep"},
+					CommitteeRoleFilters:  []string{"chair"},
+				}},
+			},
+			expectCommitteeID:        "c-1",
+			expectCommitteeFilters:   []string{"Voting Rep", "Alternate Voting Rep"},
+			expectCommitteeRoleFltrs: []string{"chair"},
+		},
+		{
+			name:              "nil committees produces nil filters",
+			input:             &model.GroupsIOMailingList{Committees: nil},
+			expectCommitteeID: "",
 		},
 		{
 			name: "fields map correctly",
@@ -407,6 +427,8 @@ func (s *ProxyConvertersSuite) TestToWireSubgroupRequest() {
 			s.Equal(tt.expectType, got.Type)
 			s.Equal(tt.expectAccess, got.AudienceAccess)
 			s.Equal(tt.expectSyncMode, got.SyncMode)
+			s.Equal(tt.expectCommitteeFilters, got.CommitteeFilters)
+			s.Equal(tt.expectCommitteeRoleFltrs, got.CommitteeRoleFilters)
 		})
 	}
 }

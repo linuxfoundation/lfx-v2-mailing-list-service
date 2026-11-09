@@ -172,6 +172,15 @@ type CreateGroupsioMailingListPayload struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Requires committee_uid to be set.
 	SyncMode *string
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires
+	// committee_uid to be set; an empty list means no voting-status restriction.
+	CommitteeFilters []string
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Requires committee_uid
+	// to be set; an empty list means no role restriction.
+	CommitteeRoleFilters []string
 }
 
 // CreateGroupsioServicePayload is the payload type of the mailing-list service
@@ -503,6 +512,17 @@ type GroupsioSubgroup struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Only meaningful when committee_uid is set.
 	SyncMode *string
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only
+	// meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty
+	// list means no voting-status restriction.
+	CommitteeFilters []string
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Only meaningful when
+	// committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no
+	// role restriction.
+	CommitteeRoleFilters []string
 	// Creation timestamp
 	CreatedAt *string
 	// Last update timestamp
@@ -677,6 +697,15 @@ type UpdateGroupsioMailingListPayload struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Requires committee_uid to be set.
 	SyncMode *string
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires
+	// committee_uid to be set; an empty list means no voting-status restriction.
+	CommitteeFilters []string
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Requires committee_uid
+	// to be set; an empty list means no role restriction.
+	CommitteeRoleFilters []string
 }
 
 // UpdateGroupsioMemberPayload is the payload type of the mailing-list service
