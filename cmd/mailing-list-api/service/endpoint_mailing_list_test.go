@@ -84,6 +84,38 @@ func TestCreateGroupsioMailingListNoCommitteeFieldsLeavesCommitteesEmpty(t *test
 	require.Empty(t, writer.captured.Committees)
 }
 
+// An explicit, non-nil empty committee_filters array (distinct from an omitted field) must still
+// populate Committees so the orchestrator's "requires committee_uid" guard can reject it —
+// len(...) > 0 would treat this identically to an omitted field and silently drop it (PR #110).
+func TestCreateGroupsioMailingListEmptyCommitteeFiltersWithoutCommitteeUID(t *testing.T) {
+	writer := &fakeMailingListWriter{}
+	s := &mailingListAPI{mailingListWriter: writer}
+
+	payload := &mailinglist.CreateGroupsioMailingListPayload{
+		CommitteeFilters: []string{},
+	}
+
+	_, err := s.CreateGroupsioMailingList(context.Background(), payload)
+	require.NoError(t, err)
+	require.Len(t, writer.captured.Committees, 1)
+	require.NotNil(t, writer.captured.Committees[0].AllowedVotingStatuses)
+}
+
+func TestUpdateGroupsioMailingListEmptyCommitteeFiltersWithoutCommitteeUID(t *testing.T) {
+	writer := &fakeMailingListWriter{}
+	s := &mailingListAPI{mailingListWriter: writer}
+
+	payload := &mailinglist.UpdateGroupsioMailingListPayload{
+		SubgroupID:           "ml-1",
+		CommitteeRoleFilters: []string{},
+	}
+
+	_, err := s.UpdateGroupsioMailingList(context.Background(), payload)
+	require.NoError(t, err)
+	require.Len(t, writer.captured.Committees, 1)
+	require.NotNil(t, writer.captured.Committees[0].CommitteeRoleFilters)
+}
+
 func TestUpdateGroupsioMailingListCommitteeFilters(t *testing.T) {
 	writer := &fakeMailingListWriter{}
 	s := &mailingListAPI{mailingListWriter: writer}

@@ -611,6 +611,35 @@ func TestValidateCommitteeProject_NoCommitteeUID_NoOtherFields_Passes(t *testing
 	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
 }
 
+// An explicit, non-nil empty filter array (as opposed to an omitted field) must still be
+// rejected without committee_uid — len(...) > 0 would silently let this through since an empty
+// slice has length 0, indistinguishable from "not set" (see PR #110 review).
+func TestValidateCommitteeProject_NoCommitteeUID_EmptyCommitteeFilters_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{AllowedVotingStatuses: []string{}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_NoCommitteeUID_EmptyCommitteeRoleFilters_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{CommitteeRoleFilters: []string{}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
 func TestValidateCommitteeProject_WithCommitteeUID_FiltersAllowed(t *testing.T) {
 	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
 	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
