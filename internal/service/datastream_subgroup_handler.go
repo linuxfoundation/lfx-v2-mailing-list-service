@@ -458,6 +458,10 @@ func transformV1ToGrpsIOMailingList(uid string, data map[string]any) *model.Grou
 			UID:                   committeeUID,
 			AllowedVotingStatuses: mapconv.StringSliceVal(data, "committee_filters"),
 			CommitteeRoleFilters:  mapconv.StringSliceVal(data, "committee_role_filters"),
+			// ITX is the system of record for sync_mode and proxies it through on the wire under
+			// this same key (proxy.subgroupWire.SyncMode) — mirror that here so indexed reads
+			// carry it too, instead of only the live ITX-proxied read path.
+			SyncMode: mapconv.StringVal(data, "sync_mode"),
 		}}
 	}
 

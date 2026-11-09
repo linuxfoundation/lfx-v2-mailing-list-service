@@ -172,7 +172,7 @@ Published to `lfx.fga-sync.update_access` on create/update. Deleted via `lfx.fga
 | `source` | string | Source system identifier; always `"v1-sync"` for v1 datastream records |
 | `type` | string | List type: `announcement`, `discussion_moderated`, or `discussion_open` |
 | `subscriber_count` | int | Current number of subscribers |
-| `committees` | []object (optional) | Associated committees. Each has `uid` (string), `allowed_voting_statuses` ([]string), and `committee_role_filters` ([]string) |
+| `committees` | []object (optional) | Associated committees. Each has `uid` (string), `allowed_voting_statuses` ([]string), `committee_role_filters` ([]string), and `sync_mode` (string: `manual`, `auto_c_to_ml`, or `auto_ml_to_c`; empty when unset) |
 | `description` | string | Mailing list description |
 | `title` | string | Mailing list title |
 | `subject_tag` | string | Email subject tag; emitted as empty string when not populated |
