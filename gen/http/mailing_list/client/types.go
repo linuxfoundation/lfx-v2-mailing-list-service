@@ -69,6 +69,15 @@ type CreateGroupsioMailingListRequestBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Requires committee_uid to be set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires
+	// committee_uid to be set; an empty list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Requires committee_uid
+	// to be set; an empty list means no role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 }
 
 // UpdateGroupsioMailingListRequestBody is the type of the "mailing-list"
@@ -93,6 +102,15 @@ type UpdateGroupsioMailingListRequestBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Requires committee_uid to be set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires
+	// committee_uid to be set; an empty list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Requires committee_uid
+	// to be set; an empty list means no role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 }
 
 // ApplyGroupsioMailingListSyncDiffRequestBody is the type of the
@@ -303,6 +321,17 @@ type CreateGroupsioMailingListResponseBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Only meaningful when committee_uid is set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only
+	// meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty
+	// list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Only meaningful when
+	// committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no
+	// role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -333,6 +362,17 @@ type GetGroupsioMailingListResponseBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Only meaningful when committee_uid is set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only
+	// meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty
+	// list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Only meaningful when
+	// committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no
+	// role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -363,6 +403,17 @@ type UpdateGroupsioMailingListResponseBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Only meaningful when committee_uid is set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only
+	// meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty
+	// list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Only meaningful when
+	// committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no
+	// role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1373,6 +1424,17 @@ type GroupsioSubgroupResponseBody struct {
 	// Automatic membership sync direction between the committee and this mailing
 	// list. Only meaningful when committee_uid is set.
 	SyncMode *string `form:"sync_mode,omitempty" json:"sync_mode,omitempty" xml:"sync_mode,omitempty"`
+	// Committee member voting statuses that determine which members are synced to
+	// the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only
+	// meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty
+	// list means no voting-status restriction.
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee member roles that determine which members are synced to the
+	// mailing list, in addition to committee_filters. Plain string match against
+	// the member's role; there is no fixed role taxonomy. Only meaningful when
+	// committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no
+	// role restriction.
+	CommitteeRoleFilters []string `form:"committee_role_filters,omitempty" json:"committee_role_filters,omitempty" xml:"committee_role_filters,omitempty"`
 	// Creation timestamp
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// Last update timestamp
@@ -1563,6 +1625,18 @@ func NewCreateGroupsioMailingListRequestBody(p *mailinglist.CreateGroupsioMailin
 		AudienceAccess: p.AudienceAccess,
 		SyncMode:       p.SyncMode,
 	}
+	if p.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(p.CommitteeFilters))
+		for i, val := range p.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
+	}
+	if p.CommitteeRoleFilters != nil {
+		body.CommitteeRoleFilters = make([]string, len(p.CommitteeRoleFilters))
+		for i, val := range p.CommitteeRoleFilters {
+			body.CommitteeRoleFilters[i] = val
+		}
+	}
 	return body
 }
 
@@ -1580,6 +1654,18 @@ func NewUpdateGroupsioMailingListRequestBody(p *mailinglist.UpdateGroupsioMailin
 		Type:           p.Type,
 		AudienceAccess: p.AudienceAccess,
 		SyncMode:       p.SyncMode,
+	}
+	if p.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(p.CommitteeFilters))
+		for i, val := range p.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
+	}
+	if p.CommitteeRoleFilters != nil {
+		body.CommitteeRoleFilters = make([]string, len(p.CommitteeRoleFilters))
+		for i, val := range p.CommitteeRoleFilters {
+			body.CommitteeRoleFilters[i] = val
+		}
 	}
 	return body
 }
@@ -2094,6 +2180,18 @@ func NewCreateGroupsioMailingListGroupsioSubgroupCreated(body *CreateGroupsioMai
 		CreatedAt:      body.CreatedAt,
 		UpdatedAt:      body.UpdatedAt,
 	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.CommitteeRoleFilters != nil {
+		v.CommitteeRoleFilters = make([]string, len(body.CommitteeRoleFilters))
+		for i, val := range body.CommitteeRoleFilters {
+			v.CommitteeRoleFilters[i] = val
+		}
+	}
 
 	return v
 }
@@ -2165,6 +2263,18 @@ func NewGetGroupsioMailingListGroupsioSubgroupOK(body *GetGroupsioMailingListRes
 		CreatedAt:      body.CreatedAt,
 		UpdatedAt:      body.UpdatedAt,
 	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.CommitteeRoleFilters != nil {
+		v.CommitteeRoleFilters = make([]string, len(body.CommitteeRoleFilters))
+		for i, val := range body.CommitteeRoleFilters {
+			v.CommitteeRoleFilters[i] = val
+		}
+	}
 
 	return v
 }
@@ -2216,6 +2326,18 @@ func NewUpdateGroupsioMailingListGroupsioSubgroupOK(body *UpdateGroupsioMailingL
 		SyncMode:       body.SyncMode,
 		CreatedAt:      body.CreatedAt,
 		UpdatedAt:      body.UpdatedAt,
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.CommitteeRoleFilters != nil {
+		v.CommitteeRoleFilters = make([]string, len(body.CommitteeRoleFilters))
+		for i, val := range body.CommitteeRoleFilters {
+			v.CommitteeRoleFilters[i] = val
+		}
 	}
 
 	return v

@@ -2942,6 +2942,18 @@ func marshalMailinglistGroupsioSubgroupToGroupsioSubgroupResponseBody(v *mailing
 		CreatedAt:      v.CreatedAt,
 		UpdatedAt:      v.UpdatedAt,
 	}
+	if v.CommitteeFilters != nil {
+		res.CommitteeFilters = make([]string, len(v.CommitteeFilters))
+		for i, val := range v.CommitteeFilters {
+			res.CommitteeFilters[i] = val
+		}
+	}
+	if v.CommitteeRoleFilters != nil {
+		res.CommitteeRoleFilters = make([]string, len(v.CommitteeRoleFilters))
+		for i, val := range v.CommitteeRoleFilters {
+			res.CommitteeRoleFilters[i] = val
+		}
+	}
 
 	return res
 }

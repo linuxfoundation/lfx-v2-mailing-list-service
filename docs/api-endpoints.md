@@ -183,10 +183,20 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 through on the wire, not persisted locally — and the sync-diff and sync-apply endpoints below use
 it to decide how to reconcile membership.
 
+`committee_filters` (allowed voting statuses, e.g. `"Voting Rep"`, `"Alternate Voting Rep"`) and
+`committee_role_filters` (allowed committee roles, e.g. `"chair"`) narrow which committee members
+are considered for sync — both also require `committee_uid` to be set, and are only meaningful
+when `sync_mode` is `auto_c_to_ml`. Either field is a plain string list with no fixed taxonomy
+(matched by exact string, not an enum). On create, an empty or omitted list means no restriction
+on that dimension. On update, omit the field to leave the existing restriction unchanged, or send
+an explicit `[]` to clear it (subject to `itx-service-groupsio` honouring an explicit empty list
+as a clear). ITX is the system of record for these values as well, proxied through on the wire the
+same way as `sync_mode`.
+
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"project_uid":"<uuid>","service_id":"<service-uuid>","committee_uid":"<committee-uuid>","name":"my-list","description":"My list","type":"discussion_open","audience_access":"invite_only","sync_mode":"auto_c_to_ml"}' \
+  -d '{"project_uid":"<uuid>","service_id":"<service-uuid>","committee_uid":"<committee-uuid>","name":"my-list","description":"My list","type":"discussion_open","audience_access":"invite_only","sync_mode":"auto_c_to_ml","committee_filters":["Voting Rep","Alternate Voting Rep"],"committee_role_filters":["chair"]}' \
   "$BASE/groupsio/mailing-lists"
 ```
 

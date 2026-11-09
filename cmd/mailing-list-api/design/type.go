@@ -128,6 +128,12 @@ var GroupsioSubgroupType = dsl.Type("groupsio-subgroup", func() {
 		dsl.Enum("manual", "auto_c_to_ml", "auto_ml_to_c")
 		dsl.Example("manual")
 	})
+	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member voting statuses that determine which members are synced to the mailing list (e.g. \"Voting Rep\", \"Alternate Voting Rep\"). Only meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no voting-status restriction.", func() {
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
+	dsl.Attribute("committee_role_filters", dsl.ArrayOf(dsl.String), "Committee member roles that determine which members are synced to the mailing list, in addition to committee_filters. Plain string match against the member's role; there is no fixed role taxonomy. Only meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no role restriction.", func() {
+		dsl.Example([]string{"chair"})
+	})
 	dsl.Attribute("created_at", dsl.String, "Creation timestamp")
 	dsl.Attribute("updated_at", dsl.String, "Last update timestamp")
 })
@@ -152,6 +158,12 @@ var GroupsioSubgroupRequestType = dsl.Type("groupsio-subgroup-request", func() {
 	dsl.Attribute("sync_mode", dsl.String, "Automatic membership sync direction between the committee and this mailing list. Requires committee_uid to be set.", func() {
 		dsl.Enum("manual", "auto_c_to_ml", "auto_ml_to_c")
 		dsl.Example("manual")
+	})
+	dsl.Attribute("committee_filters", dsl.ArrayOf(dsl.String), "Committee member voting statuses that determine which members are synced to the mailing list (e.g. \"Voting Rep\", \"Alternate Voting Rep\"). Requires committee_uid to be set; an empty list means no voting-status restriction.", func() {
+		dsl.Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
+	dsl.Attribute("committee_role_filters", dsl.ArrayOf(dsl.String), "Committee member roles that determine which members are synced to the mailing list, in addition to committee_filters. Plain string match against the member's role; there is no fixed role taxonomy. Requires committee_uid to be set; an empty list means no role restriction.", func() {
+		dsl.Example([]string{"chair"})
 	})
 })
 

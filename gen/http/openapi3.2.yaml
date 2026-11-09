@@ -98,6 +98,11 @@ paths:
                             example:
                                 items:
                                     - audience_access: Ipsum temporibus.
+                                      committee_filters:
+                                        - Voting Rep
+                                        - Alternate Voting Rep
+                                      committee_role_filters:
+                                        - chair
                                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       created_at: Et dicta a.
                                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -110,6 +115,11 @@ paths:
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
+                                      committee_filters:
+                                        - Voting Rep
+                                        - Alternate Voting Rep
+                                      committee_role_filters:
+                                        - chair
                                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       created_at: Et dicta a.
                                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -122,6 +132,11 @@ paths:
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
+                                      committee_filters:
+                                        - Voting Rep
+                                        - Alternate Voting Rep
+                                      committee_role_filters:
+                                        - chair
                                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       created_at: Et dicta a.
                                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -134,6 +149,11 @@ paths:
                                       type: Rerum et quasi perspiciatis.
                                       updated_at: Dolores odit et velit.
                                     - audience_access: Ipsum temporibus.
+                                      committee_filters:
+                                        - Voting Rep
+                                        - Alternate Voting Rep
+                                      committee_role_filters:
+                                        - chair
                                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                       created_at: Et dicta a.
                                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -187,6 +207,11 @@ paths:
                             $ref: '#/components/schemas/CreateGroupsioMailingListRequestBody'
                         example:
                             audience_access: Natus odit illum perspiciatis quia.
+                            committee_filters:
+                                - Voting Rep
+                                - Alternate Voting Rep
+                            committee_role_filters:
+                                - chair
                             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             description: Est ut quibusdam quae qui iste aut.
                             group_id: 2674994533507187893
@@ -204,6 +229,11 @@ paths:
                                 $ref: '#/components/schemas/GroupsioSubgroup'
                             example:
                                 audience_access: Soluta quis omnis atque distinctio quibusdam.
+                                committee_filters:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                committee_role_filters:
+                                    - chair
                                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: Velit magnam est fuga quis et ut.
                                 description: Cumque consequatur aut voluptas.
@@ -328,6 +358,11 @@ paths:
                                 $ref: '#/components/schemas/GroupsioSubgroup'
                             example:
                                 audience_access: Dolorem voluptas aliquam recusandae.
+                                committee_filters:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                committee_role_filters:
+                                    - chair
                                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: Non et quibusdam ut ut consequatur.
                                 description: Ullam ad.
@@ -390,6 +425,11 @@ paths:
                             $ref: '#/components/schemas/UpdateGroupsioMailingListRequestBody'
                         example:
                             audience_access: Est sed est.
+                            committee_filters:
+                                - Voting Rep
+                                - Alternate Voting Rep
+                            committee_role_filters:
+                                - chair
                             committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                             description: Nostrum quia nam perferendis aut.
                             group_id: 4112760391318865184
@@ -407,6 +447,11 @@ paths:
                                 $ref: '#/components/schemas/GroupsioSubgroup'
                             example:
                                 audience_access: Repellat nostrum sint.
+                                committee_filters:
+                                    - Voting Rep
+                                    - Alternate Voting Rep
+                                committee_role_filters:
+                                    - chair
                                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 created_at: Voluptatem consequatur exercitationem.
                                 description: Quaerat consequatur autem est et.
@@ -2120,6 +2165,23 @@ components:
                     type: string
                     description: Audience access setting
                     example: Natus odit illum perspiciatis quia.
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Rem voluptatum placeat quia.
+                    description: Committee member voting statuses that determine which members are synced to the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires committee_uid to be set; an empty list means no voting-status restriction.
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_role_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Omnis voluptas omnis neque.
+                    description: Committee member roles that determine which members are synced to the mailing list, in addition to committee_filters. Plain string match against the member's role; there is no fixed role taxonomy. Requires committee_uid to be set; an empty list means no role restriction.
+                    example:
+                        - chair
                 committee_uid:
                     type: string
                     description: LFX v2 committee UID
@@ -2162,6 +2224,11 @@ components:
             description: Request body for create-groupsio-mailing-list.
             example:
                 audience_access: Natus odit illum perspiciatis quia.
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_role_filters:
+                    - chair
                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description: Est ut quibusdam quae qui iste aut.
                 group_id: 2674994533507187893
@@ -2764,6 +2831,23 @@ components:
                     type: string
                     description: Audience access setting
                     example: Ipsum temporibus.
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Accusamus asperiores aliquam est.
+                    description: Committee member voting statuses that determine which members are synced to the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Only meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no voting-status restriction.
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_role_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Dignissimos ea nulla repudiandae.
+                    description: Committee member roles that determine which members are synced to the mailing list, in addition to committee_filters. Plain string match against the member's role; there is no fixed role taxonomy. Only meaningful when committee_uid is set and sync_mode is auto_c_to_ml; an empty list means no role restriction.
+                    example:
+                        - chair
                 committee_uid:
                     type: string
                     description: LFX v2 committee UID
@@ -2818,6 +2902,11 @@ components:
             description: A GroupsIO subgroup (mailing list) managed via ITX
             example:
                 audience_access: Ipsum temporibus.
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_role_filters:
+                    - chair
                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 created_at: Et dicta a.
                 description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2839,6 +2928,11 @@ components:
                     description: List of subgroups
                     example:
                         - audience_access: Ipsum temporibus.
+                          committee_filters:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                          committee_role_filters:
+                            - chair
                           committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           created_at: Et dicta a.
                           description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2851,6 +2945,11 @@ components:
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
+                          committee_filters:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                          committee_role_filters:
+                            - chair
                           committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           created_at: Et dicta a.
                           description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2863,6 +2962,11 @@ components:
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
+                          committee_filters:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                          committee_role_filters:
+                            - chair
                           committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           created_at: Et dicta a.
                           description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2875,6 +2979,11 @@ components:
                           type: Rerum et quasi perspiciatis.
                           updated_at: Dolores odit et velit.
                         - audience_access: Ipsum temporibus.
+                          committee_filters:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                          committee_role_filters:
+                            - chair
                           committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                           created_at: Et dicta a.
                           description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2895,6 +3004,11 @@ components:
             example:
                 items:
                     - audience_access: Ipsum temporibus.
+                      committee_filters:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      committee_role_filters:
+                        - chair
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       created_at: Et dicta a.
                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2907,6 +3021,11 @@ components:
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
+                      committee_filters:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      committee_role_filters:
+                        - chair
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       created_at: Et dicta a.
                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2919,6 +3038,11 @@ components:
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
+                      committee_filters:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      committee_role_filters:
+                        - chair
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       created_at: Et dicta a.
                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -2931,6 +3055,11 @@ components:
                       type: Rerum et quasi perspiciatis.
                       updated_at: Dolores odit et velit.
                     - audience_access: Ipsum temporibus.
+                      committee_filters:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                      committee_role_filters:
+                        - chair
                       committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                       created_at: Et dicta a.
                       description: Deserunt omnis voluptatem qui dolores alias id.
@@ -3379,6 +3508,23 @@ components:
                     type: string
                     description: Audience access setting
                     example: Est sed est.
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Qui provident ut nemo accusamus.
+                    description: Committee member voting statuses that determine which members are synced to the mailing list (e.g. "Voting Rep", "Alternate Voting Rep"). Requires committee_uid to be set; an empty list means no voting-status restriction.
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_role_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Sunt eos nulla laborum omnis soluta.
+                    description: Committee member roles that determine which members are synced to the mailing list, in addition to committee_filters. Plain string match against the member's role; there is no fixed role taxonomy. Requires committee_uid to be set; an empty list means no role restriction.
+                    example:
+                        - chair
                 committee_uid:
                     type: string
                     description: LFX v2 committee UID
@@ -3421,6 +3567,11 @@ components:
             description: Request body for update-groupsio-mailing-list.
             example:
                 audience_access: Est sed est.
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_role_filters:
+                    - chair
                 committee_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 description: Nostrum quia nam perferendis aut.
                 group_id: 4112760391318865184

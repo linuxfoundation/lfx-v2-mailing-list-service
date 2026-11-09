@@ -561,6 +561,167 @@ func TestValidateCommitteeProject_NoCommittee_Skips(t *testing.T) {
 	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
 }
 
+func TestValidateCommitteeProject_NoCommitteeUID_SyncModeSet_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{SyncMode: "auto_c_to_ml"}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_NoCommitteeUID_CommitteeFiltersSet_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{AllowedVotingStatuses: []string{"Voting Rep"}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_NoCommitteeUID_CommitteeRoleFiltersSet_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{CommitteeRoleFilters: []string{"chair"}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_NoCommitteeUID_NoOtherFields_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{}},
+	}
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
+// An explicit, non-nil empty filter array (as opposed to an omitted field) must still be
+// rejected without committee_uid — len(...) > 0 would silently let this through since an empty
+// slice has length 0, indistinguishable from "not set" (see PR #110 review).
+func TestValidateCommitteeProject_NoCommitteeUID_EmptyCommitteeFilters_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{AllowedVotingStatuses: []string{}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_NoCommitteeUID_EmptyCommitteeRoleFilters_ReturnsValidationError(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := &model.GroupsIOMailingList{
+		Committees: []model.Committee{{CommitteeRoleFilters: []string{}}},
+	}
+	err := o.validateCommitteeProject(context.Background(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Validation{}, err)
+}
+
+func TestValidateCommitteeProject_WithCommitteeUID_FiltersAllowed(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: true}
+
+	ml := mlWithService("committee-1", "svc-1")
+	ml.Committees[0].AllowedVotingStatuses = []string{"Voting Rep"}
+	ml.Committees[0].CommitteeRoleFilters = []string{"chair"}
+	require.NoError(t, o.validateCommitteeProject(ctxWithPrincipal(), ml))
+}
+
+// ---- filters require committee writer access even when sync_mode is omitted from the
+// request: an existing auto_c_to_ml list's stored sync_mode is never re-validated here, so
+// without this check a mailing-list-only writer could widen or clear committee_filters /
+// committee_role_filters by supplying committee_uid and omitting sync_mode (see
+// validateCommitteeProject's comment).
+
+func TestValidateCommitteeProject_FiltersWithoutSyncMode_DeniedCaller_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: false}
+
+	ml := mlWithService("committee-1", "svc-1")
+	ml.Committees[0].AllowedVotingStatuses = []string{"Voting Rep"}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_RoleFiltersWithoutSyncMode_DeniedCaller_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: false}
+
+	ml := mlWithService("committee-1", "svc-1")
+	ml.Committees[0].CommitteeRoleFilters = []string{"chair"}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_FiltersWithoutSyncMode_NoAccessChecker_ReturnsServiceUnavailable(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	ml := mlWithService("committee-1", "svc-1")
+	ml.Committees[0].AllowedVotingStatuses = []string{"Voting Rep"}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.ServiceUnavailable{}, err)
+}
+
+func TestValidateCommitteeProject_EmptyFiltersWithoutSyncMode_DeniedCaller_ReturnsUnauthorized(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+	o.accessChecker = &stubAccessChecker{allow: false}
+
+	// An explicit empty slice (clearing a restriction) must be checked too, not just a
+	// non-empty one — len()>0 would miss this, which is why the check is a nil check.
+	ml := mlWithService("committee-1", "svc-1")
+	ml.Committees[0].AllowedVotingStatuses = []string{}
+	err := o.validateCommitteeProject(ctxWithPrincipal(), ml)
+	require.Error(t, err)
+	assert.IsType(t, errs.Unauthorized{}, err)
+}
+
+func TestValidateCommitteeProject_NoFiltersNoSyncMode_NoAccessChecker_Passes(t *testing.T) {
+	svcReader := &stubServiceReader{svc: &model.GroupsIOService{ProjectUID: "proj-A"}}
+	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
+	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, svcReader, lookup)
+
+	// committee_uid alone (no filters, no sync_mode touched) must not require committee
+	// writer access — e.g. a mailing-list-only writer updating unrelated fields.
+	ml := mlWithService("committee-1", "svc-1")
+	require.NoError(t, o.validateCommitteeProject(context.Background(), ml))
+}
+
 func TestValidateCommitteeProject_NilServiceReader_ReturnsServiceUnavailable(t *testing.T) {
 	lookup := &stubCommitteeProjectLookup{projectUID: "proj-A"}
 	o := newTestOrchestratorWithValidation(&stubMLWriter{}, nil, nil, nil, lookup)
