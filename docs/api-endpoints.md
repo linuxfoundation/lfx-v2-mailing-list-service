@@ -187,8 +187,10 @@ it to decide how to reconcile membership.
 `committee_role_filters` (allowed committee roles, e.g. `"chair"`) narrow which committee members
 are considered for sync — both also require `committee_uid` to be set, and are only meaningful
 when `sync_mode` is `auto_c_to_ml`. Either field is a plain string list with no fixed taxonomy
-(matched by exact string, not an enum); an empty or omitted list means no restriction on that
-dimension. ITX is the system of record for these values as well, proxied through on the wire the
+(matched by exact string, not an enum). On create, an empty or omitted list means no restriction
+on that dimension. On update, omit the field to leave the existing restriction unchanged, or send
+an explicit `[]` to clear it (subject to `itx-service-groupsio` honouring an explicit empty list
+as a clear). ITX is the system of record for these values as well, proxied through on the wire the
 same way as `sync_mode`.
 
 ```bash

@@ -139,7 +139,16 @@ func (o *GroupsIOMailingListOrchestrator) validateCommitteeProject(ctx context.C
 	// Actually triggering an apply still separately requires committee writer access
 	// (checkCommitteeWriterAccess in sync_job_poll.go) for a manual Sync Now; this check closes the
 	// same gap for the automatic path, which runs as a trusted system caller.
-	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee || ml.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList {
+	//
+	// committee_filters/committee_role_filters are gated the same way, even when sync_mode is
+	// omitted from this request: on an existing auto_c_to_ml list, a mailing-list-only writer
+	// could otherwise widen or clear those filters (and so the set of committee members whose
+	// PII gets copied into the list via the trusted background auto-sync path) by supplying
+	// committee_uid but leaving sync_mode unset, since the retained mode is never re-validated.
+	if ml.Committees[0].SyncMode == model.SyncModeAutoMailingListToCommittee ||
+		ml.Committees[0].SyncMode == model.SyncModeAutoCommitteeToMailingList ||
+		ml.Committees[0].AllowedVotingStatuses != nil ||
+		ml.Committees[0].CommitteeRoleFilters != nil {
 		if o.accessChecker == nil {
 			return errs.NewServiceUnavailable("committee access validation is not configured")
 		}
