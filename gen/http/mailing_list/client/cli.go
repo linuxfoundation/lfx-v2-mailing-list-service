@@ -529,6 +529,156 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 	return v, nil
 }
 
+// BuildStartGroupsioMailingListSyncDiffPayload builds the payload for the
+// mailing-list start-groupsio-mailing-list-sync-diff endpoint from CLI flags.
+func BuildStartGroupsioMailingListSyncDiffPayload(mailingListStartGroupsioMailingListSyncDiffSubgroupID string, mailingListStartGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.StartGroupsioMailingListSyncDiffPayload, error) {
+	var subgroupID string
+	{
+		subgroupID = mailingListStartGroupsioMailingListSyncDiffSubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListStartGroupsioMailingListSyncDiffBearerToken != "" {
+			bearerToken = &mailingListStartGroupsioMailingListSyncDiffBearerToken
+		}
+	}
+	v := &mailinglist.StartGroupsioMailingListSyncDiffPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildGetGroupsioMailingListSyncDiffStatusPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-sync-diff-status endpoint from CLI
+// flags.
+func BuildGetGroupsioMailingListSyncDiffStatusPayload(mailingListGetGroupsioMailingListSyncDiffStatusSubgroupID string, mailingListGetGroupsioMailingListSyncDiffStatusJobID string, mailingListGetGroupsioMailingListSyncDiffStatusBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffStatusPayload, error) {
+	var subgroupID string
+	{
+		subgroupID = mailingListGetGroupsioMailingListSyncDiffStatusSubgroupID
+	}
+	var jobID string
+	{
+		jobID = mailingListGetGroupsioMailingListSyncDiffStatusJobID
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGroupsioMailingListSyncDiffStatusBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListSyncDiffStatusBearerToken
+		}
+	}
+	v := &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{}
+	v.SubgroupID = subgroupID
+	v.JobID = jobID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildStartGroupsioMailingListSyncApplyPayload builds the payload for the
+// mailing-list start-groupsio-mailing-list-sync-apply endpoint from CLI flags.
+func BuildStartGroupsioMailingListSyncApplyPayload(mailingListStartGroupsioMailingListSyncApplyBody string, mailingListStartGroupsioMailingListSyncApplySubgroupID string, mailingListStartGroupsioMailingListSyncApplyBearerToken string) (*mailinglist.StartGroupsioMailingListSyncApplyPayload, error) {
+	var err error
+	var body StartGroupsioMailingListSyncApplyRequestBody
+	{
+		err = json.Unmarshal([]byte(mailingListStartGroupsioMailingListSyncApplyBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
+		}
+		if body.Adds == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
+		}
+		if body.Removes == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", body.CommitteeUID, goa.FormatUUID))
+		for _, e := range body.Adds {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffAddRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.Removes {
+			if e != nil {
+				if err2 := ValidateGroupsioSyncDiffRemoveRequestBody(e); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var subgroupID string
+	{
+		subgroupID = mailingListStartGroupsioMailingListSyncApplySubgroupID
+	}
+	var bearerToken *string
+	{
+		if mailingListStartGroupsioMailingListSyncApplyBearerToken != "" {
+			bearerToken = &mailingListStartGroupsioMailingListSyncApplyBearerToken
+		}
+	}
+	v := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
+		CommitteeUID: body.CommitteeUID,
+	}
+	if body.Adds != nil {
+		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
+		for i, val := range body.Adds {
+			if val == nil {
+				v.Adds[i] = nil
+				continue
+			}
+			v.Adds[i] = marshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(val)
+		}
+	} else {
+		v.Adds = []*mailinglist.GroupsioSyncDiffAdd{}
+	}
+	if body.Removes != nil {
+		v.Removes = make([]*mailinglist.GroupsioSyncDiffRemove, len(body.Removes))
+		for i, val := range body.Removes {
+			if val == nil {
+				v.Removes[i] = nil
+				continue
+			}
+			v.Removes[i] = marshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(val)
+		}
+	} else {
+		v.Removes = []*mailinglist.GroupsioSyncDiffRemove{}
+	}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
+// BuildGetGroupsioMailingListSyncApplyStatusPayload builds the payload for the
+// mailing-list get-groupsio-mailing-list-sync-apply-status endpoint from CLI
+// flags.
+func BuildGetGroupsioMailingListSyncApplyStatusPayload(mailingListGetGroupsioMailingListSyncApplyStatusSubgroupID string, mailingListGetGroupsioMailingListSyncApplyStatusJobID string, mailingListGetGroupsioMailingListSyncApplyStatusBearerToken string) (*mailinglist.GetGroupsioMailingListSyncApplyStatusPayload, error) {
+	var subgroupID string
+	{
+		subgroupID = mailingListGetGroupsioMailingListSyncApplyStatusSubgroupID
+	}
+	var jobID string
+	{
+		jobID = mailingListGetGroupsioMailingListSyncApplyStatusJobID
+	}
+	var bearerToken *string
+	{
+		if mailingListGetGroupsioMailingListSyncApplyStatusBearerToken != "" {
+			bearerToken = &mailingListGetGroupsioMailingListSyncApplyStatusBearerToken
+		}
+	}
+	v := &mailinglist.GetGroupsioMailingListSyncApplyStatusPayload{}
+	v.SubgroupID = subgroupID
+	v.JobID = jobID
+	v.BearerToken = bearerToken
+
+	return v, nil
+}
+
 // BuildListGroupsioMembersPayload builds the payload for the mailing-list
 // list-groupsio-members endpoint from CLI flags.
 func BuildListGroupsioMembersPayload(mailingListListGroupsioMembersSubgroupID string, mailingListListGroupsioMembersBearerToken string) (*mailinglist.ListGroupsioMembersPayload, error) {

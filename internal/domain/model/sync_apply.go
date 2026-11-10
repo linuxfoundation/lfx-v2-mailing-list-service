@@ -48,3 +48,32 @@ type SyncApplyResult struct {
 	Added         []SyncApplyAddResult    `json:"added"`
 	Removed       []SyncApplyRemoveResult `json:"removed"`
 }
+
+// SyncJobResultEntry is one add/remove outcome from an async sync-apply job, as reported directly
+// by ITX (flat email/action/status/error) — unlike SyncApplyAddResult/SyncApplyRemoveResult, it
+// carries no MemberID/MemberType/NameHint enrichment, since GetSyncApplyStatus has no persisted
+// state linking a result's email back to the request-time add/remove entry it came from (see
+// StartSyncApply/GetSyncApplyStatus doc comments).
+type SyncJobResultEntry struct {
+	Email  string `json:"email"`
+	Action string `json:"action"`
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+// SyncApplyJobStatus is a point-in-time progress/result snapshot of an async sync-apply job
+// started by StartSyncApply, as returned by GetSyncApplyStatus. AddedCount/RemovedCount/ErrorCount
+// are ITX's own pre-aggregated tallies of Results by outcome. Results is populated once Status
+// reaches a terminal state ("completed" or "failed") — ITX records partial results for entries
+// processed before a mid-job failure, so Results and ErrorMessage can both be present.
+type SyncApplyJobStatus struct {
+	JobID          string               `json:"job_id"`
+	Status         string               `json:"status"`
+	ProcessedCount int                  `json:"processed_count"`
+	TotalCount     int                  `json:"total_count"`
+	AddedCount     int                  `json:"added_count"`
+	RemovedCount   int                  `json:"removed_count"`
+	ErrorCount     int                  `json:"error_count"`
+	ErrorMessage   string               `json:"error_message,omitempty"`
+	Results        []SyncJobResultEntry `json:"results,omitempty"`
+}

@@ -790,6 +790,146 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-apply/{job_id}/status:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-sync-apply-status mailing-list
+            description: Get the progress/result of a sync-apply job started by start-groupsio-mailing-list-sync-apply
+            operationId: mailing-list#get-groupsio-mailing-list-sync-apply-status
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: job_id
+                  in: path
+                  description: Sync-apply job ID
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncApplyStatus'
+                        required:
+                            - job_id
+                            - status
+                            - processed_count
+                            - total_count
+                            - added_count
+                            - removed_count
+                            - error_count
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-apply/start:
+        post:
+            tags:
+                - mailing-list
+            summary: start-groupsio-mailing-list-sync-apply mailing-list
+            description: Start applying an admin-approved subset of a previously computed sync-diff asynchronously, returning a job ID to poll instead of waiting for it to complete
+            operationId: mailing-list#start-groupsio-mailing-list-sync-apply
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: Start-Groupsio-Mailing-List-Sync-ApplyRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/MailingListStartGroupsioMailingListSyncApplyRequestBody'
+                    required:
+                        - committee_uid
+                        - adds
+                        - removes
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncJobStart'
+                        required:
+                            - job_id
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
     /groupsio/mailing-lists/{subgroup_id}/sync-diff:
         get:
             tags:
@@ -837,6 +977,128 @@ paths:
                     description: Conflict response.
                     schema:
                         $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status:
+        get:
+            tags:
+                - mailing-list
+            summary: get-groupsio-mailing-list-sync-diff-status mailing-list
+            description: Get the progress/result of a sync-diff job started by start-groupsio-mailing-list-sync-diff
+            operationId: mailing-list#get-groupsio-mailing-list-sync-diff-status
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+                - name: job_id
+                  in: path
+                  description: Sync-diff job ID
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncDiffStatus'
+                        required:
+                            - job_id
+                            - status
+                            - processed_count
+                            - total_count
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /groupsio/mailing-lists/{subgroup_id}/sync-diff/start:
+        post:
+            tags:
+                - mailing-list
+            summary: start-groupsio-mailing-list-sync-diff mailing-list
+            description: Start computing the membership reconciliation diff between a GroupsIO subgroup and its linked committee asynchronously, returning a job ID to poll instead of waiting for it to complete
+            operationId: mailing-list#start-groupsio-mailing-list-sync-diff
+            parameters:
+                - name: subgroup_id
+                  in: path
+                  description: Subgroup ID
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/GroupsioSyncJobStart'
+                        required:
+                            - job_id
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
                         required:
                             - message
                 "500":
@@ -2230,6 +2492,101 @@ definitions:
             - committee_uid
             - added
             - removed
+    GroupsioSyncApplyStatus:
+        title: GroupsioSyncApplyStatus
+        type: object
+        properties:
+            added_count:
+                type: integer
+                description: Number of adds ITX reported as successful
+                example: 7629086967926754157
+                format: int64
+            error_count:
+                type: integer
+                description: Number of adds/removes ITX reported as failed
+                example: 1960795877604291843
+                format: int64
+            error_message:
+                type: string
+                description: Failure detail, present only when status is 'failed'
+                example: Voluptates sed occaecati qui at odit.
+            job_id:
+                type: string
+                description: ID of the sync-apply job
+                example: Enim quisquam accusantium.
+            processed_count:
+                type: integer
+                description: Number of approved adds/removes ITX has processed so far
+                example: 84703028735024887
+                format: int64
+            removed_count:
+                type: integer
+                description: Number of removes ITX reported as successful
+                example: 6490183788054358713
+                format: int64
+            results:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncJobResultEntry'
+                description: Flat per-entry outcomes — present only once status is 'completed' or 'failed'
+                example:
+                    - action: remove
+                      email: hassan@goodwin.name
+                      error: Nisi voluptate.
+                      status: success
+                    - action: remove
+                      email: hassan@goodwin.name
+                      error: Nisi voluptate.
+                      status: success
+                    - action: remove
+                      email: hassan@goodwin.name
+                      error: Nisi voluptate.
+                      status: success
+            status:
+                type: string
+                description: Current job status
+                example: pending
+                enum:
+                    - pending
+                    - ongoing
+                    - completed
+                    - failed
+            total_count:
+                type: integer
+                description: Total number of approved adds/removes ITX expects to process
+                example: 3598322195785480135
+                format: int64
+        description: Progress/result of an asynchronously started sync-apply job
+        example:
+            added_count: 7629086967926754157
+            error_count: 1960795877604291843
+            error_message: Voluptates sed occaecati qui at odit.
+            job_id: Enim quisquam accusantium.
+            processed_count: 84703028735024887
+            removed_count: 6490183788054358713
+            results:
+                - action: remove
+                  email: hassan@goodwin.name
+                  error: Nisi voluptate.
+                  status: success
+                - action: remove
+                  email: hassan@goodwin.name
+                  error: Nisi voluptate.
+                  status: success
+                - action: remove
+                  email: hassan@goodwin.name
+                  error: Nisi voluptate.
+                  status: success
+            status: pending
+            total_count: 3598322195785480135
+        required:
+            - job_id
+            - status
+            - processed_count
+            - total_count
+            - added_count
+            - removed_count
+            - error_count
     GroupsioSyncDiff:
         title: GroupsioSyncDiff
         type: object
@@ -2424,6 +2781,138 @@ definitions:
             - email
             - member_id
             - member_type
+    GroupsioSyncDiffStatus:
+        title: GroupsioSyncDiffStatus
+        type: object
+        properties:
+            diff:
+                $ref: '#/definitions/GroupsioSyncDiff'
+            error_message:
+                type: string
+                description: Failure detail, present only when status is 'failed'
+                example: Nisi magnam occaecati qui rerum et.
+            job_id:
+                type: string
+                description: ID of the sync-diff job
+                example: Ipsam et.
+            processed_count:
+                type: integer
+                description: Number of roster entries ITX has processed so far
+                example: 4913336391455502150
+                format: int64
+            status:
+                type: string
+                description: Current job status
+                example: ongoing
+                enum:
+                    - pending
+                    - ongoing
+                    - completed
+                    - failed
+            total_count:
+                type: integer
+                description: Total number of roster entries ITX expects to process
+                example: 7053389528921450561
+                format: int64
+        description: Progress/result of an asynchronously started sync-diff job
+        example:
+            diff:
+                adds:
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
+                      name: Corrupti tempore optio animi corrupti.
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
+                      name: Corrupti tempore optio animi corrupti.
+                    - email: fannie.wuckert@lockman.biz
+                      member_id: Cumque quisquam omnis dolore.
+                      member_type: committee_member
+                      name: Corrupti tempore optio animi corrupti.
+                committee_uid: e509d021-ec42-4a26-b53f-6a5d2af55973
+                conflicts:
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                    - committee_email: kacey@quitzon.org
+                      mailing_list_email: percy@boscomuller.info
+                      name: Est eum quisquam officiis numquam.
+                mailing_list_id: Beatae ad nesciunt nam.
+                removes:
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                    - email: dax_heaney@sporer.net
+                      member_id: Ut cum quam nemo tenetur rerum sed.
+                      member_type: mailing_list_member
+                sync_mode: auto_c_to_ml
+            error_message: Nisi magnam occaecati qui rerum et.
+            job_id: Ipsam et.
+            processed_count: 4913336391455502150
+            status: ongoing
+            total_count: 7053389528921450561
+        required:
+            - job_id
+            - status
+            - processed_count
+            - total_count
+    GroupsioSyncJobResultEntry:
+        title: GroupsioSyncJobResultEntry
+        type: object
+        properties:
+            action:
+                type: string
+                description: Whether this entry was an add or a remove
+                example: remove
+                enum:
+                    - add
+                    - remove
+            email:
+                type: string
+                description: Member's email address
+                example: hassan@goodwin.name
+                format: email
+            error:
+                type: string
+                description: Failure detail, present only when status is 'error'
+                example: Nisi voluptate.
+            status:
+                type: string
+                description: Whether this entry succeeded
+                example: success
+                enum:
+                    - success
+                    - error
+        description: Outcome of one add or remove within a sync-apply job, as reported by ITX
+        example:
+            action: remove
+            email: hassan@goodwin.name
+            error: Nisi voluptate.
+            status: success
+        required:
+            - email
+            - action
+            - status
+    GroupsioSyncJobStart:
+        title: GroupsioSyncJobStart
+        type: object
+        properties:
+            job_id:
+                type: string
+                description: ID of the started job, to be polled via the corresponding status endpoint
+                example: Et assumenda hic.
+        description: ID of a sync-diff or sync-apply job started asynchronously
+        example:
+            job_id: Et assumenda hic.
+        required:
+            - job_id
     InternalServerError:
         title: InternalServerError
         type: object
@@ -2718,6 +3207,63 @@ definitions:
                 - Et fuga.
         required:
             - emails
+    MailingListStartGroupsioMailingListSyncApplyRequestBody:
+        title: MailingListStartGroupsioMailingListSyncApplyRequestBody
+        type: object
+        properties:
+            adds:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffAdd'
+                description: Members to add, as returned by sync-diff
+                example:
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
+                      name: Debitis neque labore autem.
+                    - email: jane_metz@olson.info
+                      member_id: Rerum sequi fuga consequatur.
+                      member_type: committee_member
+                      name: Debitis neque labore autem.
+            committee_uid:
+                type: string
+                description: committee_uid from the sync-diff this apply is approving — rejected with Conflict if the mailing list is no longer linked to this committee
+                example: c62d9a6d-33be-4350-bd1e-0fba38ce699b
+                format: uuid
+            removes:
+                type: array
+                items:
+                    $ref: '#/definitions/GroupsioSyncDiffRemove'
+                description: Members to remove, as returned by sync-diff
+                example:
+                    - email: cory.dubuque@haag.net
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
+                    - email: cory.dubuque@haag.net
+                      member_id: Error rem tenetur.
+                      member_type: mailing_list_member
+        example:
+            adds:
+                - email: jane_metz@olson.info
+                  member_id: Rerum sequi fuga consequatur.
+                  member_type: committee_member
+                  name: Debitis neque labore autem.
+                - email: jane_metz@olson.info
+                  member_id: Rerum sequi fuga consequatur.
+                  member_type: committee_member
+                  name: Debitis neque labore autem.
+            committee_uid: c62d9a6d-33be-4350-bd1e-0fba38ce699b
+            removes:
+                - email: cory.dubuque@haag.net
+                  member_id: Error rem tenetur.
+                  member_type: mailing_list_member
+                - email: cory.dubuque@haag.net
+                  member_id: Error rem tenetur.
+                  member_type: mailing_list_member
+        required:
+            - committee_uid
+            - adds
+            - removes
     MailingListUpdateGroupsioMailingListRequestBody:
         title: MailingListUpdateGroupsioMailingListRequestBody
         type: object

@@ -122,3 +122,41 @@ func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p
 	}
 	return convertSyncApplyResult(result), nil
 }
+
+func (s *mailingListAPI) StartGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.StartGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncJobStart, error) {
+	jobID, err := s.syncDiffComputer.StartSyncDiff(ctx, p.SubgroupID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return &mailinglist.GroupsioSyncJobStart{JobID: jobID}, nil
+}
+
+func (s *mailingListAPI) GetGroupsioMailingListSyncDiffStatus(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncDiffStatusPayload) (*mailinglist.GroupsioSyncDiffStatus, error) {
+	status, err := s.syncDiffComputer.GetSyncDiffStatus(ctx, p.SubgroupID, p.JobID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncDiffJobStatus(status), nil
+}
+
+func (s *mailingListAPI) StartGroupsioMailingListSyncApply(ctx context.Context, p *mailinglist.StartGroupsioMailingListSyncApplyPayload) (*mailinglist.GroupsioSyncJobStart, error) {
+	jobID, err := s.syncApplier.StartSyncApply(
+		ctx,
+		p.SubgroupID,
+		p.CommitteeUID,
+		convertSyncApplyAddPayload(p.Adds),
+		convertSyncApplyRemovePayload(p.Removes),
+	)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return &mailinglist.GroupsioSyncJobStart{JobID: jobID}, nil
+}
+
+func (s *mailingListAPI) GetGroupsioMailingListSyncApplyStatus(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncApplyStatusPayload) (*mailinglist.GroupsioSyncApplyStatus, error) {
+	status, err := s.syncApplier.GetSyncApplyStatus(ctx, p.SubgroupID, p.JobID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return convertSyncApplyJobStatus(status), nil
+}

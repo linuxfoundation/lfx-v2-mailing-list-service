@@ -310,6 +310,67 @@ var GroupsioSyncApplyResultType = dsl.Type("groupsio-sync-apply-result", func() 
 	dsl.Required("mailing_list_id", "committee_uid", "added", "removed")
 })
 
+// GroupsioSyncJobStartType is returned when a sync-diff or sync-apply job is started
+// asynchronously, instead of waiting for it to complete.
+var GroupsioSyncJobStartType = dsl.Type("groupsio-sync-job-start", func() {
+	dsl.Description("ID of a sync-diff or sync-apply job started asynchronously")
+	dsl.Attribute("job_id", dsl.String, "ID of the started job, to be polled via the corresponding status endpoint")
+	dsl.Required("job_id")
+})
+
+// GroupsioSyncDiffStatusType is the current progress/result of a sync-diff job started
+// asynchronously via start-groupsio-mailing-list-sync-diff.
+var GroupsioSyncDiffStatusType = dsl.Type("groupsio-sync-diff-status", func() {
+	dsl.Description("Progress/result of an asynchronously started sync-diff job")
+	dsl.Attribute("job_id", dsl.String, "ID of the sync-diff job")
+	dsl.Attribute("status", dsl.String, "Current job status", func() {
+		dsl.Enum("pending", "ongoing", "completed", "failed")
+	})
+	dsl.Attribute("processed_count", dsl.Int, "Number of roster entries ITX has processed so far")
+	dsl.Attribute("total_count", dsl.Int, "Total number of roster entries ITX expects to process")
+	dsl.Attribute("error_message", dsl.String, "Failure detail, present only when status is 'failed'")
+	dsl.Attribute("diff", GroupsioSyncDiffType, "The computed diff — present only once status is 'completed'")
+	dsl.Required("job_id", "status", "processed_count", "total_count")
+})
+
+// GroupsioSyncJobResultEntryType is a single add/remove outcome from a sync-apply job, as reported
+// directly by ITX — without the MemberID/MemberType/NameHint enrichment
+// GroupsioSyncApplyAddResultType/GroupsioSyncApplyRemoveResultType carry, since that enrichment
+// requires the request-time approved-adds/removes, which aren't available to a status poll.
+var GroupsioSyncJobResultEntryType = dsl.Type("groupsio-sync-job-result-entry", func() {
+	dsl.Description("Outcome of one add or remove within a sync-apply job, as reported by ITX")
+	dsl.Attribute("email", dsl.String, "Member's email address", func() {
+		dsl.Format(dsl.FormatEmail)
+	})
+	dsl.Attribute("action", dsl.String, "Whether this entry was an add or a remove", func() {
+		dsl.Enum("add", "remove")
+	})
+	dsl.Attribute("status", dsl.String, "Whether this entry succeeded", func() {
+		dsl.Enum("success", "error")
+	})
+	dsl.Attribute("error", dsl.String, "Failure detail, present only when status is 'error'")
+	dsl.Required("email", "action", "status")
+})
+
+// GroupsioSyncApplyStatusType is the current progress/result of a sync-apply job started
+// asynchronously via start-groupsio-mailing-list-sync-apply.
+var GroupsioSyncApplyStatusType = dsl.Type("groupsio-sync-apply-status", func() {
+	dsl.Description("Progress/result of an asynchronously started sync-apply job")
+	dsl.Attribute("job_id", dsl.String, "ID of the sync-apply job")
+	dsl.Attribute("status", dsl.String, "Current job status", func() {
+		dsl.Enum("pending", "ongoing", "completed", "failed")
+	})
+	dsl.Attribute("processed_count", dsl.Int, "Number of approved adds/removes ITX has processed so far")
+	dsl.Attribute("total_count", dsl.Int, "Total number of approved adds/removes ITX expects to process")
+	dsl.Attribute("added_count", dsl.Int, "Number of adds ITX reported as successful")
+	dsl.Attribute("removed_count", dsl.Int, "Number of removes ITX reported as successful")
+	dsl.Attribute("error_count", dsl.Int, "Number of adds/removes ITX reported as failed")
+	dsl.Attribute("error_message", dsl.String, "Failure detail, present only when status is 'failed'")
+	dsl.Attribute("results", dsl.ArrayOf(GroupsioSyncJobResultEntryType),
+		"Flat per-entry outcomes — present only once status is 'completed' or 'failed'")
+	dsl.Required("job_id", "status", "processed_count", "total_count", "added_count", "removed_count", "error_count")
+})
+
 // GroupsioMemberType represents an ITX GroupsIO member.
 var GroupsioMemberType = dsl.Type("groupsio-member", func() {
 	dsl.Description("A member of a GroupsIO subgroup")

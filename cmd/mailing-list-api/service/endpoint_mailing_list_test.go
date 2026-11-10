@@ -9,8 +9,145 @@ import (
 
 	mailinglist "github.com/linuxfoundation/lfx-v2-mailing-list-service/gen/mailing_list"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
+
+// fakeSyncDiffComputer is a test double for port.SyncDiffComputer that captures its call
+// arguments and returns canned results.
+type fakeSyncDiffComputer struct {
+	startJobID      string
+	startErr        error
+	startCalledWith string
+
+	status         *model.SyncDiffJobStatus
+	statusErr      error
+	statusJobIDArg string
+}
+
+func (f *fakeSyncDiffComputer) ComputeSyncDiff(_ context.Context, _ string) (*model.SyncDiff, error) {
+	return nil, nil
+}
+
+func (f *fakeSyncDiffComputer) StartSyncDiff(_ context.Context, mailingListID string) (string, error) {
+	f.startCalledWith = mailingListID
+	return f.startJobID, f.startErr
+}
+
+func (f *fakeSyncDiffComputer) GetSyncDiffStatus(_ context.Context, _, jobID string) (*model.SyncDiffJobStatus, error) {
+	f.statusJobIDArg = jobID
+	return f.status, f.statusErr
+}
+
+// fakeSyncApplier is a test double for port.SyncApplier that captures its call arguments and
+// returns canned results.
+type fakeSyncApplier struct {
+	startJobID      string
+	startErr        error
+	startAddsArg    []model.SyncDiffAdd
+	startRemovesArg []model.SyncDiffRemove
+
+	status         *model.SyncApplyJobStatus
+	statusErr      error
+	statusJobIDArg string
+}
+
+func (f *fakeSyncApplier) ApplySyncDiff(_ context.Context, _, _ string, _ []model.SyncDiffAdd, _ []model.SyncDiffRemove) (*model.SyncApplyResult, error) {
+	return nil, nil
+}
+
+func (f *fakeSyncApplier) StartSyncApply(_ context.Context, _, _ string, approvedAdds []model.SyncDiffAdd, approvedRemoves []model.SyncDiffRemove) (string, error) {
+	f.startAddsArg = approvedAdds
+	f.startRemovesArg = approvedRemoves
+	return f.startJobID, f.startErr
+}
+
+func (f *fakeSyncApplier) GetSyncApplyStatus(_ context.Context, _, jobID string) (*model.SyncApplyJobStatus, error) {
+	f.statusJobIDArg = jobID
+	return f.status, f.statusErr
+}
+
+func TestStartGroupsioMailingListSyncDiff(t *testing.T) {
+	computer := &fakeSyncDiffComputer{startJobID: "job-1"}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	got, err := s.StartGroupsioMailingListSyncDiff(context.Background(), &mailinglist.StartGroupsioMailingListSyncDiffPayload{SubgroupID: "ml-1"})
+	require.NoError(t, err)
+	require.Equal(t, "job-1", got.JobID)
+	require.Equal(t, "ml-1", computer.startCalledWith)
+}
+
+func TestStartGroupsioMailingListSyncDiff_Error(t *testing.T) {
+	computer := &fakeSyncDiffComputer{startErr: errs.NewServiceUnavailable("itx down")}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	_, err := s.StartGroupsioMailingListSyncDiff(context.Background(), &mailinglist.StartGroupsioMailingListSyncDiffPayload{SubgroupID: "ml-1"})
+	require.Error(t, err)
+}
+
+func TestGetGroupsioMailingListSyncDiffStatus(t *testing.T) {
+	computer := &fakeSyncDiffComputer{status: &model.SyncDiffJobStatus{JobID: "job-1", Status: "ongoing"}}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	got, err := s.GetGroupsioMailingListSyncDiffStatus(context.Background(), &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{SubgroupID: "ml-1", JobID: "job-1"})
+	require.NoError(t, err)
+	require.Equal(t, "job-1", got.JobID)
+	require.Equal(t, "ongoing", got.Status)
+	require.Equal(t, "job-1", computer.statusJobIDArg)
+}
+
+func TestGetGroupsioMailingListSyncDiffStatus_Error(t *testing.T) {
+	computer := &fakeSyncDiffComputer{statusErr: errs.NewConflict("relinked")}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	_, err := s.GetGroupsioMailingListSyncDiffStatus(context.Background(), &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{SubgroupID: "ml-1", JobID: "job-1"})
+	require.Error(t, err)
+}
+
+func TestStartGroupsioMailingListSyncApply(t *testing.T) {
+	applier := &fakeSyncApplier{startJobID: "apply-1"}
+	s := &mailingListAPI{syncApplier: applier}
+
+	payload := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
+		SubgroupID:   "ml-1",
+		CommitteeUID: "c-1",
+		Adds: []*mailinglist.GroupsioSyncDiffAdd{
+			{Email: "alice@example.com", MemberID: "cm-1", MemberType: "committee_member"},
+		},
+	}
+	got, err := s.StartGroupsioMailingListSyncApply(context.Background(), payload)
+	require.NoError(t, err)
+	require.Equal(t, "apply-1", got.JobID)
+	require.Len(t, applier.startAddsArg, 1)
+	require.Equal(t, "alice@example.com", applier.startAddsArg[0].Email)
+}
+
+func TestStartGroupsioMailingListSyncApply_Error(t *testing.T) {
+	applier := &fakeSyncApplier{startErr: errs.NewValidation("mismatch")}
+	s := &mailingListAPI{syncApplier: applier}
+
+	_, err := s.StartGroupsioMailingListSyncApply(context.Background(), &mailinglist.StartGroupsioMailingListSyncApplyPayload{SubgroupID: "ml-1", CommitteeUID: "c-1"})
+	require.Error(t, err)
+}
+
+func TestGetGroupsioMailingListSyncApplyStatus(t *testing.T) {
+	applier := &fakeSyncApplier{status: &model.SyncApplyJobStatus{JobID: "apply-1", Status: "completed", AddedCount: 1}}
+	s := &mailingListAPI{syncApplier: applier}
+
+	got, err := s.GetGroupsioMailingListSyncApplyStatus(context.Background(), &mailinglist.GetGroupsioMailingListSyncApplyStatusPayload{SubgroupID: "ml-1", JobID: "apply-1"})
+	require.NoError(t, err)
+	require.Equal(t, "apply-1", got.JobID)
+	require.Equal(t, 1, got.AddedCount)
+	require.Equal(t, "apply-1", applier.statusJobIDArg)
+}
+
+func TestGetGroupsioMailingListSyncApplyStatus_Error(t *testing.T) {
+	applier := &fakeSyncApplier{statusErr: errs.NewConflict("relinked")}
+	s := &mailingListAPI{syncApplier: applier}
+
+	_, err := s.GetGroupsioMailingListSyncApplyStatus(context.Background(), &mailinglist.GetGroupsioMailingListSyncApplyStatusPayload{SubgroupID: "ml-1", JobID: "apply-1"})
+	require.Error(t, err)
+}
 
 // fakeMailingListWriter is a test double for port.GroupsIOMailingListWriter that
 // captures the domain model it was called with.

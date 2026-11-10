@@ -12,6 +12,12 @@ const (
 	KVBucketV1Objects = "v1-objects"
 	// KVBucketSubgroupServiceIndex stores the service-to-subgroup lookup and each subgroup's current parent.
 	KVBucketSubgroupServiceIndex = "groupsio-subgroup-service-index"
+	// KVBucketSyncApplyJobBindings stores the mailing list and committee a sync-apply job was
+	// started against, keyed by the ITX job ID, so GetSyncApplyStatus can authenticate a poll
+	// request's job_id against a server-recorded binding instead of trusting a value an API caller
+	// could supply or tamper with (see internal/service/grpsio_sync_apply.go). Bucket-level TTL
+	// expires bindings once a job is long past any plausible poll window.
+	KVBucketSyncApplyJobBindings = "sync-apply-job-bindings"
 
 	// KVTombstoneMarker marks deleted or superseded entries in v1-mappings and
 	// groupsio-subgroup-service-index.

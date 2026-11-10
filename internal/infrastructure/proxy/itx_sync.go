@@ -111,12 +111,15 @@ func fromWireSyncDiffJob(w *syncDiffJobWire) *port.SyncDiffJob {
 		return nil
 	}
 	job := &port.SyncDiffJob{
-		ID:           w.ID,
-		Status:       w.Status,
-		CommitteeID:  w.CommitteeID,
-		ToAdd:        make([]port.SyncJobMember, len(w.ToAdd)),
-		ToRemove:     make([]port.SyncJobMember, len(w.ToRemove)),
-		ErrorMessage: w.ErrorMessage,
+		ID:             w.ID,
+		Status:         w.Status,
+		CommitteeID:    w.CommitteeID,
+		Direction:      w.Direction,
+		ToAdd:          make([]port.SyncJobMember, len(w.ToAdd)),
+		ToRemove:       make([]port.SyncJobMember, len(w.ToRemove)),
+		ErrorMessage:   w.ErrorMessage,
+		ProcessedCount: w.ProcessedCount,
+		TotalCount:     w.TotalCount,
 	}
 	for i, m := range w.ToAdd {
 		job.ToAdd[i] = port.SyncJobMember{MemberID: m.MemberID, Email: m.Email, FullName: m.FullName}
@@ -141,11 +144,16 @@ func fromWireSyncApplyJob(w *syncApplyJobWire) *port.SyncApplyJob {
 		return nil
 	}
 	job := &port.SyncApplyJob{
-		ID:           w.ID,
-		Status:       w.Status,
-		CommitteeID:  w.CommitteeID,
-		Results:      make([]port.SyncApplyJobResult, len(w.Results)),
-		ErrorMessage: w.ErrorMessage,
+		ID:             w.ID,
+		Status:         w.Status,
+		CommitteeID:    w.CommitteeID,
+		Results:        make([]port.SyncApplyJobResult, len(w.Results)),
+		ErrorMessage:   w.ErrorMessage,
+		ProcessedCount: w.ProcessedCount,
+		TotalCount:     w.TotalCount,
+		AddedCount:     w.AddedCount,
+		RemovedCount:   w.RemovedCount,
+		ErrorCount:     w.ErrorCount,
 	}
 	for i, r := range w.Results {
 		job.Results[i] = port.SyncApplyJobResult{Email: r.Email, Action: r.Action, Status: r.Status, Error: r.Error}

@@ -102,6 +102,26 @@ func ApplyGroupsioMailingListSyncDiffMailingListPath(subgroupID string) string {
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-apply", subgroupID)
 }
 
+// StartGroupsioMailingListSyncDiffMailingListPath returns the URL path to the mailing-list service start-groupsio-mailing-list-sync-diff HTTP endpoint.
+func StartGroupsioMailingListSyncDiffMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-diff/start", subgroupID)
+}
+
+// GetGroupsioMailingListSyncDiffStatusMailingListPath returns the URL path to the mailing-list service get-groupsio-mailing-list-sync-diff-status HTTP endpoint.
+func GetGroupsioMailingListSyncDiffStatusMailingListPath(subgroupID string, jobID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-diff/%v/status", subgroupID, jobID)
+}
+
+// StartGroupsioMailingListSyncApplyMailingListPath returns the URL path to the mailing-list service start-groupsio-mailing-list-sync-apply HTTP endpoint.
+func StartGroupsioMailingListSyncApplyMailingListPath(subgroupID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-apply/start", subgroupID)
+}
+
+// GetGroupsioMailingListSyncApplyStatusMailingListPath returns the URL path to the mailing-list service get-groupsio-mailing-list-sync-apply-status HTTP endpoint.
+func GetGroupsioMailingListSyncApplyStatusMailingListPath(subgroupID string, jobID string) string {
+	return fmt.Sprintf("/groupsio/mailing-lists/%v/sync-apply/%v/status", subgroupID, jobID)
+}
+
 // ListGroupsioMembersMailingListPath returns the URL path to the mailing-list service list-groupsio-members HTTP endpoint.
 func ListGroupsioMembersMailingListPath(subgroupID string) string {
 	return fmt.Sprintf("/groupsio/mailing-lists/%v/members", subgroupID)

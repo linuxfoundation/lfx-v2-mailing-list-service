@@ -88,6 +88,22 @@ type Client struct {
 	// requests to the apply-groupsio-mailing-list-sync-diff endpoint.
 	ApplyGroupsioMailingListSyncDiffDoer goahttp.Doer
 
+	// StartGroupsioMailingListSyncDiff Doer is the HTTP client used to make
+	// requests to the start-groupsio-mailing-list-sync-diff endpoint.
+	StartGroupsioMailingListSyncDiffDoer goahttp.Doer
+
+	// GetGroupsioMailingListSyncDiffStatus Doer is the HTTP client used to make
+	// requests to the get-groupsio-mailing-list-sync-diff-status endpoint.
+	GetGroupsioMailingListSyncDiffStatusDoer goahttp.Doer
+
+	// StartGroupsioMailingListSyncApply Doer is the HTTP client used to make
+	// requests to the start-groupsio-mailing-list-sync-apply endpoint.
+	StartGroupsioMailingListSyncApplyDoer goahttp.Doer
+
+	// GetGroupsioMailingListSyncApplyStatus Doer is the HTTP client used to make
+	// requests to the get-groupsio-mailing-list-sync-apply-status endpoint.
+	GetGroupsioMailingListSyncApplyStatusDoer goahttp.Doer
+
 	// ListGroupsioMembers Doer is the HTTP client used to make requests to the
 	// list-groupsio-members endpoint.
 	ListGroupsioMembersDoer goahttp.Doer
@@ -144,38 +160,42 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		LivezDoer:                             doer,
-		ReadyzDoer:                            doer,
-		ListGroupsioServicesDoer:              doer,
-		CreateGroupsioServiceDoer:             doer,
-		GetGroupsioServiceDoer:                doer,
-		UpdateGroupsioServiceDoer:             doer,
-		DeleteGroupsioServiceDoer:             doer,
-		GetGroupsioServiceProjectsDoer:        doer,
-		FindParentGroupsioServiceDoer:         doer,
-		ListGroupsioMailingListsDoer:          doer,
-		CreateGroupsioMailingListDoer:         doer,
-		GetGroupsioMailingListDoer:            doer,
-		UpdateGroupsioMailingListDoer:         doer,
-		DeleteGroupsioMailingListDoer:         doer,
-		GetGroupsioMailingListCountDoer:       doer,
-		GetGroupsioMailingListMemberCountDoer: doer,
-		GetGroupsioMailingListSyncDiffDoer:    doer,
-		ApplyGroupsioMailingListSyncDiffDoer:  doer,
-		ListGroupsioMembersDoer:               doer,
-		AddGroupsioMemberDoer:                 doer,
-		GetGroupsioMemberDoer:                 doer,
-		UpdateGroupsioMemberDoer:              doer,
-		DeleteGroupsioMemberDoer:              doer,
-		InviteGroupsioMembersDoer:             doer,
-		CheckGroupsioSubscriberDoer:           doer,
-		GetGroupsioArtifactDoer:               doer,
-		GetGroupsioArtifactDownloadDoer:       doer,
-		RestoreResponseBody:                   restoreBody,
-		scheme:                                scheme,
-		host:                                  host,
-		decoder:                               dec,
-		encoder:                               enc,
+		LivezDoer:                                 doer,
+		ReadyzDoer:                                doer,
+		ListGroupsioServicesDoer:                  doer,
+		CreateGroupsioServiceDoer:                 doer,
+		GetGroupsioServiceDoer:                    doer,
+		UpdateGroupsioServiceDoer:                 doer,
+		DeleteGroupsioServiceDoer:                 doer,
+		GetGroupsioServiceProjectsDoer:            doer,
+		FindParentGroupsioServiceDoer:             doer,
+		ListGroupsioMailingListsDoer:              doer,
+		CreateGroupsioMailingListDoer:             doer,
+		GetGroupsioMailingListDoer:                doer,
+		UpdateGroupsioMailingListDoer:             doer,
+		DeleteGroupsioMailingListDoer:             doer,
+		GetGroupsioMailingListCountDoer:           doer,
+		GetGroupsioMailingListMemberCountDoer:     doer,
+		GetGroupsioMailingListSyncDiffDoer:        doer,
+		ApplyGroupsioMailingListSyncDiffDoer:      doer,
+		StartGroupsioMailingListSyncDiffDoer:      doer,
+		GetGroupsioMailingListSyncDiffStatusDoer:  doer,
+		StartGroupsioMailingListSyncApplyDoer:     doer,
+		GetGroupsioMailingListSyncApplyStatusDoer: doer,
+		ListGroupsioMembersDoer:                   doer,
+		AddGroupsioMemberDoer:                     doer,
+		GetGroupsioMemberDoer:                     doer,
+		UpdateGroupsioMemberDoer:                  doer,
+		DeleteGroupsioMemberDoer:                  doer,
+		InviteGroupsioMembersDoer:                 doer,
+		CheckGroupsioSubscriberDoer:               doer,
+		GetGroupsioArtifactDoer:                   doer,
+		GetGroupsioArtifactDownloadDoer:           doer,
+		RestoreResponseBody:                       restoreBody,
+		scheme:                                    scheme,
+		host:                                      host,
+		decoder:                                   dec,
+		encoder:                                   enc,
 	}
 }
 
@@ -598,6 +618,106 @@ func (c *Client) ApplyGroupsioMailingListSyncDiff() goa.Endpoint {
 		resp, err := c.ApplyGroupsioMailingListSyncDiffDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("mailing-list", "apply-groupsio-mailing-list-sync-diff", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// StartGroupsioMailingListSyncDiff returns an endpoint that makes HTTP
+// requests to the mailing-list service start-groupsio-mailing-list-sync-diff
+// server.
+func (c *Client) StartGroupsioMailingListSyncDiff() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeStartGroupsioMailingListSyncDiffRequest(c.encoder)
+		decodeResponse = DecodeStartGroupsioMailingListSyncDiffResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildStartGroupsioMailingListSyncDiffRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.StartGroupsioMailingListSyncDiffDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "start-groupsio-mailing-list-sync-diff", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGroupsioMailingListSyncDiffStatus returns an endpoint that makes HTTP
+// requests to the mailing-list service
+// get-groupsio-mailing-list-sync-diff-status server.
+func (c *Client) GetGroupsioMailingListSyncDiffStatus() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGroupsioMailingListSyncDiffStatusRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioMailingListSyncDiffStatusResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGroupsioMailingListSyncDiffStatusRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGroupsioMailingListSyncDiffStatusDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-mailing-list-sync-diff-status", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// StartGroupsioMailingListSyncApply returns an endpoint that makes HTTP
+// requests to the mailing-list service start-groupsio-mailing-list-sync-apply
+// server.
+func (c *Client) StartGroupsioMailingListSyncApply() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeStartGroupsioMailingListSyncApplyRequest(c.encoder)
+		decodeResponse = DecodeStartGroupsioMailingListSyncApplyResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildStartGroupsioMailingListSyncApplyRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.StartGroupsioMailingListSyncApplyDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "start-groupsio-mailing-list-sync-apply", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetGroupsioMailingListSyncApplyStatus returns an endpoint that makes HTTP
+// requests to the mailing-list service
+// get-groupsio-mailing-list-sync-apply-status server.
+func (c *Client) GetGroupsioMailingListSyncApplyStatus() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetGroupsioMailingListSyncApplyStatusRequest(c.encoder)
+		decodeResponse = DecodeGetGroupsioMailingListSyncApplyStatusResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetGroupsioMailingListSyncApplyStatusRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetGroupsioMailingListSyncApplyStatusDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("mailing-list", "get-groupsio-mailing-list-sync-apply-status", err)
 		}
 		return decodeResponse(resp)
 	}

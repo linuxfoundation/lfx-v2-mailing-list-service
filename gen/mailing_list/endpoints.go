@@ -17,33 +17,37 @@ import (
 
 // Endpoints wraps the "mailing-list" service endpoints.
 type Endpoints struct {
-	Livez                             goa.Endpoint
-	Readyz                            goa.Endpoint
-	ListGroupsioServices              goa.Endpoint
-	CreateGroupsioService             goa.Endpoint
-	GetGroupsioService                goa.Endpoint
-	UpdateGroupsioService             goa.Endpoint
-	DeleteGroupsioService             goa.Endpoint
-	GetGroupsioServiceProjects        goa.Endpoint
-	FindParentGroupsioService         goa.Endpoint
-	ListGroupsioMailingLists          goa.Endpoint
-	CreateGroupsioMailingList         goa.Endpoint
-	GetGroupsioMailingList            goa.Endpoint
-	UpdateGroupsioMailingList         goa.Endpoint
-	DeleteGroupsioMailingList         goa.Endpoint
-	GetGroupsioMailingListCount       goa.Endpoint
-	GetGroupsioMailingListMemberCount goa.Endpoint
-	GetGroupsioMailingListSyncDiff    goa.Endpoint
-	ApplyGroupsioMailingListSyncDiff  goa.Endpoint
-	ListGroupsioMembers               goa.Endpoint
-	AddGroupsioMember                 goa.Endpoint
-	GetGroupsioMember                 goa.Endpoint
-	UpdateGroupsioMember              goa.Endpoint
-	DeleteGroupsioMember              goa.Endpoint
-	InviteGroupsioMembers             goa.Endpoint
-	CheckGroupsioSubscriber           goa.Endpoint
-	GetGroupsioArtifact               goa.Endpoint
-	GetGroupsioArtifactDownload       goa.Endpoint
+	Livez                                 goa.Endpoint
+	Readyz                                goa.Endpoint
+	ListGroupsioServices                  goa.Endpoint
+	CreateGroupsioService                 goa.Endpoint
+	GetGroupsioService                    goa.Endpoint
+	UpdateGroupsioService                 goa.Endpoint
+	DeleteGroupsioService                 goa.Endpoint
+	GetGroupsioServiceProjects            goa.Endpoint
+	FindParentGroupsioService             goa.Endpoint
+	ListGroupsioMailingLists              goa.Endpoint
+	CreateGroupsioMailingList             goa.Endpoint
+	GetGroupsioMailingList                goa.Endpoint
+	UpdateGroupsioMailingList             goa.Endpoint
+	DeleteGroupsioMailingList             goa.Endpoint
+	GetGroupsioMailingListCount           goa.Endpoint
+	GetGroupsioMailingListMemberCount     goa.Endpoint
+	GetGroupsioMailingListSyncDiff        goa.Endpoint
+	ApplyGroupsioMailingListSyncDiff      goa.Endpoint
+	StartGroupsioMailingListSyncDiff      goa.Endpoint
+	GetGroupsioMailingListSyncDiffStatus  goa.Endpoint
+	StartGroupsioMailingListSyncApply     goa.Endpoint
+	GetGroupsioMailingListSyncApplyStatus goa.Endpoint
+	ListGroupsioMembers                   goa.Endpoint
+	AddGroupsioMember                     goa.Endpoint
+	GetGroupsioMember                     goa.Endpoint
+	UpdateGroupsioMember                  goa.Endpoint
+	DeleteGroupsioMember                  goa.Endpoint
+	InviteGroupsioMembers                 goa.Endpoint
+	CheckGroupsioSubscriber               goa.Endpoint
+	GetGroupsioArtifact                   goa.Endpoint
+	GetGroupsioArtifactDownload           goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "mailing-list" service with endpoints.
@@ -51,33 +55,37 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		Livez:                             NewLivezEndpoint(s),
-		Readyz:                            NewReadyzEndpoint(s),
-		ListGroupsioServices:              NewListGroupsioServicesEndpoint(s, a.JWTAuth),
-		CreateGroupsioService:             NewCreateGroupsioServiceEndpoint(s, a.JWTAuth),
-		GetGroupsioService:                NewGetGroupsioServiceEndpoint(s, a.JWTAuth),
-		UpdateGroupsioService:             NewUpdateGroupsioServiceEndpoint(s, a.JWTAuth),
-		DeleteGroupsioService:             NewDeleteGroupsioServiceEndpoint(s, a.JWTAuth),
-		GetGroupsioServiceProjects:        NewGetGroupsioServiceProjectsEndpoint(s, a.JWTAuth),
-		FindParentGroupsioService:         NewFindParentGroupsioServiceEndpoint(s, a.JWTAuth),
-		ListGroupsioMailingLists:          NewListGroupsioMailingListsEndpoint(s, a.JWTAuth),
-		CreateGroupsioMailingList:         NewCreateGroupsioMailingListEndpoint(s, a.JWTAuth),
-		GetGroupsioMailingList:            NewGetGroupsioMailingListEndpoint(s, a.JWTAuth),
-		UpdateGroupsioMailingList:         NewUpdateGroupsioMailingListEndpoint(s, a.JWTAuth),
-		DeleteGroupsioMailingList:         NewDeleteGroupsioMailingListEndpoint(s, a.JWTAuth),
-		GetGroupsioMailingListCount:       NewGetGroupsioMailingListCountEndpoint(s, a.JWTAuth),
-		GetGroupsioMailingListMemberCount: NewGetGroupsioMailingListMemberCountEndpoint(s, a.JWTAuth),
-		GetGroupsioMailingListSyncDiff:    NewGetGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
-		ApplyGroupsioMailingListSyncDiff:  NewApplyGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
-		ListGroupsioMembers:               NewListGroupsioMembersEndpoint(s, a.JWTAuth),
-		AddGroupsioMember:                 NewAddGroupsioMemberEndpoint(s, a.JWTAuth),
-		GetGroupsioMember:                 NewGetGroupsioMemberEndpoint(s, a.JWTAuth),
-		UpdateGroupsioMember:              NewUpdateGroupsioMemberEndpoint(s, a.JWTAuth),
-		DeleteGroupsioMember:              NewDeleteGroupsioMemberEndpoint(s, a.JWTAuth),
-		InviteGroupsioMembers:             NewInviteGroupsioMembersEndpoint(s, a.JWTAuth),
-		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
-		GetGroupsioArtifact:               NewGetGroupsioArtifactEndpoint(s, a.JWTAuth),
-		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadEndpoint(s, a.JWTAuth),
+		Livez:                                 NewLivezEndpoint(s),
+		Readyz:                                NewReadyzEndpoint(s),
+		ListGroupsioServices:                  NewListGroupsioServicesEndpoint(s, a.JWTAuth),
+		CreateGroupsioService:                 NewCreateGroupsioServiceEndpoint(s, a.JWTAuth),
+		GetGroupsioService:                    NewGetGroupsioServiceEndpoint(s, a.JWTAuth),
+		UpdateGroupsioService:                 NewUpdateGroupsioServiceEndpoint(s, a.JWTAuth),
+		DeleteGroupsioService:                 NewDeleteGroupsioServiceEndpoint(s, a.JWTAuth),
+		GetGroupsioServiceProjects:            NewGetGroupsioServiceProjectsEndpoint(s, a.JWTAuth),
+		FindParentGroupsioService:             NewFindParentGroupsioServiceEndpoint(s, a.JWTAuth),
+		ListGroupsioMailingLists:              NewListGroupsioMailingListsEndpoint(s, a.JWTAuth),
+		CreateGroupsioMailingList:             NewCreateGroupsioMailingListEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingList:                NewGetGroupsioMailingListEndpoint(s, a.JWTAuth),
+		UpdateGroupsioMailingList:             NewUpdateGroupsioMailingListEndpoint(s, a.JWTAuth),
+		DeleteGroupsioMailingList:             NewDeleteGroupsioMailingListEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListCount:           NewGetGroupsioMailingListCountEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListMemberCount:     NewGetGroupsioMailingListMemberCountEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListSyncDiff:        NewGetGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
+		ApplyGroupsioMailingListSyncDiff:      NewApplyGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
+		StartGroupsioMailingListSyncDiff:      NewStartGroupsioMailingListSyncDiffEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListSyncDiffStatus:  NewGetGroupsioMailingListSyncDiffStatusEndpoint(s, a.JWTAuth),
+		StartGroupsioMailingListSyncApply:     NewStartGroupsioMailingListSyncApplyEndpoint(s, a.JWTAuth),
+		GetGroupsioMailingListSyncApplyStatus: NewGetGroupsioMailingListSyncApplyStatusEndpoint(s, a.JWTAuth),
+		ListGroupsioMembers:                   NewListGroupsioMembersEndpoint(s, a.JWTAuth),
+		AddGroupsioMember:                     NewAddGroupsioMemberEndpoint(s, a.JWTAuth),
+		GetGroupsioMember:                     NewGetGroupsioMemberEndpoint(s, a.JWTAuth),
+		UpdateGroupsioMember:                  NewUpdateGroupsioMemberEndpoint(s, a.JWTAuth),
+		DeleteGroupsioMember:                  NewDeleteGroupsioMemberEndpoint(s, a.JWTAuth),
+		InviteGroupsioMembers:                 NewInviteGroupsioMembersEndpoint(s, a.JWTAuth),
+		CheckGroupsioSubscriber:               NewCheckGroupsioSubscriberEndpoint(s, a.JWTAuth),
+		GetGroupsioArtifact:                   NewGetGroupsioArtifactEndpoint(s, a.JWTAuth),
+		GetGroupsioArtifactDownload:           NewGetGroupsioArtifactDownloadEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -101,6 +109,10 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetGroupsioMailingListMemberCount = m(e.GetGroupsioMailingListMemberCount)
 	e.GetGroupsioMailingListSyncDiff = m(e.GetGroupsioMailingListSyncDiff)
 	e.ApplyGroupsioMailingListSyncDiff = m(e.ApplyGroupsioMailingListSyncDiff)
+	e.StartGroupsioMailingListSyncDiff = m(e.StartGroupsioMailingListSyncDiff)
+	e.GetGroupsioMailingListSyncDiffStatus = m(e.GetGroupsioMailingListSyncDiffStatus)
+	e.StartGroupsioMailingListSyncApply = m(e.StartGroupsioMailingListSyncApply)
+	e.GetGroupsioMailingListSyncApplyStatus = m(e.GetGroupsioMailingListSyncApplyStatus)
 	e.ListGroupsioMembers = m(e.ListGroupsioMembers)
 	e.AddGroupsioMember = m(e.AddGroupsioMember)
 	e.GetGroupsioMember = m(e.GetGroupsioMember)
@@ -496,6 +508,102 @@ func NewApplyGroupsioMailingListSyncDiffEndpoint(s Service, authJWTFn security.A
 			return nil, err
 		}
 		return s.ApplyGroupsioMailingListSyncDiff(ctx, p)
+	}
+}
+
+// NewStartGroupsioMailingListSyncDiffEndpoint returns an endpoint function
+// that calls the method "start-groupsio-mailing-list-sync-diff" of service
+// "mailing-list".
+func NewStartGroupsioMailingListSyncDiffEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*StartGroupsioMailingListSyncDiffPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.StartGroupsioMailingListSyncDiff(ctx, p)
+	}
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusEndpoint returns an endpoint function
+// that calls the method "get-groupsio-mailing-list-sync-diff-status" of
+// service "mailing-list".
+func NewGetGroupsioMailingListSyncDiffStatusEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGroupsioMailingListSyncDiffStatusPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGroupsioMailingListSyncDiffStatus(ctx, p)
+	}
+}
+
+// NewStartGroupsioMailingListSyncApplyEndpoint returns an endpoint function
+// that calls the method "start-groupsio-mailing-list-sync-apply" of service
+// "mailing-list".
+func NewStartGroupsioMailingListSyncApplyEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*StartGroupsioMailingListSyncApplyPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.StartGroupsioMailingListSyncApply(ctx, p)
+	}
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusEndpoint returns an endpoint
+// function that calls the method "get-groupsio-mailing-list-sync-apply-status"
+// of service "mailing-list".
+func NewGetGroupsioMailingListSyncApplyStatusEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetGroupsioMailingListSyncApplyStatusPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.BearerToken != nil {
+			token = *p.BearerToken
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetGroupsioMailingListSyncApplyStatus(ctx, p)
 	}
 }
 
