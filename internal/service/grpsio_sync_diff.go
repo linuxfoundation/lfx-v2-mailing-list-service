@@ -159,6 +159,17 @@ func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID 
 // having been relinked or unlinked since the job started, without needing to persist the
 // committee UID StartSyncDiff saw.
 func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncDiffJobStatus, error) {
+	// jobID is attacker-controlled (an HTTP caller can send anything) and is proxied straight into
+	// an ITX URL path segment below via itxSyncClient.GetSyncDiffJob -> url.JoinPath — reject
+	// path-traversal payloads before it is used for anything. Unlike sync-apply, there is no
+	// per-job binding recorded server-side to authenticate jobID against mailingListID, so without
+	// this check a value like "../other-list/sync-diff/known-job" would redirect the lookup to a
+	// different mailing list's job while authorization here only covers the requested list (per
+	// @copilot-pull-request-reviewer).
+	if !isSafePathSegment(jobID) {
+		return nil, errs.NewValidation("invalid sync-diff job ID")
+	}
+
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return nil, err

@@ -395,6 +395,7 @@ func (c *Client) StartGroupsioMailingListSyncDiff(ctx context.Context, p *StartG
 // service.
 // GetGroupsioMailingListSyncDiffStatus may return the following errors:
 //   - "NotFound" (type *NotFoundError): Subgroup, linked committee, or job not found
+//   - "BadRequest" (type *BadRequestError): job_id is not a valid sync-diff job ID
 //   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
 //   - "Conflict" (type *ConflictError): Mailing list's linked committee changed since the job was started
 //   - "InternalServerError" (type *InternalServerError): Internal server error

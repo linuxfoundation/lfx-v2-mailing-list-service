@@ -489,3 +489,28 @@ func TestGetSyncDiffStatus_GetSyncDiffJobError(t *testing.T) {
 	_, err := o.GetSyncDiffStatus(ctxWithPrincipal(), "ml-1", "job-1")
 	require.Error(t, err)
 }
+
+// TestGetSyncDiffStatus_RejectsPathTraversalJobID pins that jobID is validated with
+// isSafePathSegment before it is proxied into an ITX URL path segment — sync-diff has no
+// server-side job binding (unlike sync-apply) to catch a cross-mailing-list job_id, so this guard
+// is the only thing standing between a malicious job_id and itxSyncClient.GetSyncDiffJob reaching
+// another mailing list's job (per @copilot-pull-request-reviewer).
+func TestGetSyncDiffStatus_RejectsPathTraversalJobID(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffITXSyncClient(&stubITXSyncClient{diffJob: &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusCompleted}}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
+	)
+	for _, jobID := range []string{
+		"../../other-list/sync-diff/known-job",
+		"..",
+		"foo/bar",
+		"foo%2f..%2fbar",
+		"",
+	} {
+		_, err := o.GetSyncDiffStatus(ctxWithPrincipal(), "ml-1", jobID)
+		require.Error(t, err, "jobID=%q", jobID)
+		var validation errs.Validation
+		assert.True(t, errors.As(err, &validation), "jobID=%q", jobID)
+	}
+}

@@ -2069,6 +2069,19 @@ func EncodeGetGroupsioMailingListSyncDiffStatusError(encoder func(context.Contex
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *mailinglist.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetGroupsioMailingListSyncDiffStatusBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "Conflict":
 			var res *mailinglist.ConflictError
 			errors.As(v, &res)

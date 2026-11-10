@@ -1734,6 +1734,14 @@ paths:
                                 processed_count: 4913336391455502150
                                 status: ongoing
                                 total_count: 7053389528921450561
+                "400":
+                    description: 'BadRequest: job_id is not a valid sync-diff job ID'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
                 "403":
                     description: 'Unauthorized: Caller lacks writer access to the linked committee'
                     content:

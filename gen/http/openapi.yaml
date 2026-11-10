@@ -1023,6 +1023,12 @@ paths:
                             - status
                             - processed_count
                             - total_count
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - message
                 "403":
                     description: Forbidden response.
                     schema:
