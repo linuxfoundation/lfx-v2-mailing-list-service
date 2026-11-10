@@ -628,6 +628,70 @@ func TestStartSyncApply_PostSyncApplyError(t *testing.T) {
 	assert.True(t, errors.As(err, &unavailable))
 }
 
+// flakyJobBindingStore fails the first failCount calls to Put with err, then delegates to an
+// underlying FakeSyncApplyJobBindingStore — used to exercise putJobBindingWithRetry's retry loop
+// without needing a real NATS KV bucket.
+type flakyJobBindingStore struct {
+	*mock.FakeSyncApplyJobBindingStore
+	err       error
+	failCount int
+	calls     int
+}
+
+func (f *flakyJobBindingStore) Put(ctx context.Context, itxJobID string, binding port.SyncApplyJobBinding) error {
+	f.calls++
+	if f.calls <= f.failCount {
+		return f.err
+	}
+	return f.FakeSyncApplyJobBindingStore.Put(ctx, itxJobID, binding)
+}
+
+func TestStartSyncApply_RetriesTransientBindingWriteFailure(t *testing.T) {
+	store := &flakyJobBindingStore{
+		FakeSyncApplyJobBindingStore: mock.NewFakeSyncApplyJobBindingStore(),
+		err:                          errs.MarkTransient(errors.New("kv temporarily unavailable")),
+		failCount:                    2,
+	}
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{postApplyJobID: "apply-1"}),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyJobBindingStore(store),
+	)
+
+	jobID, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.NoError(t, err, "a transient binding write failure must be retried, not surfaced as an orphaned job")
+	assert.Equal(t, "apply-1", jobID)
+	assert.Equal(t, 3, store.calls, "should retry twice before succeeding on the third attempt")
+
+	binding, found, err := store.Get(context.Background(), jobID)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, "ml-1", binding.MailingListID)
+}
+
+func TestStartSyncApply_PermanentBindingWriteFailureIsNotRetried(t *testing.T) {
+	store := &flakyJobBindingStore{
+		FakeSyncApplyJobBindingStore: mock.NewFakeSyncApplyJobBindingStore(),
+		err:                          errs.MarkPermanent(errors.New("invalid key")),
+		failCount:                    maxJobBindingPutAttempts,
+	}
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{postApplyJobID: "apply-1"}),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyJobBindingStore(store),
+	)
+
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	assert.Equal(t, 1, store.calls, "a permanent error must fail fast instead of burning all retry attempts")
+}
+
 func TestGetSyncApplyStatus_NoLongerLinked(t *testing.T) {
 	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},

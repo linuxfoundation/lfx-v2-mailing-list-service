@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -286,14 +287,49 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 	// (port.ITXSyncClient.GetSyncApplyJob -> url.JoinPath); binding it to mailingListID here means
 	// a poll for a job started against a different list is rejected by the MailingListID check in
 	// GetSyncApplyStatus even before isSafePathSegment's path-traversal guard is considered.
-	if err := o.jobBindingStore.Put(ctx, itxJobID, port.SyncApplyJobBinding{
+	//
+	// The ITX job itself is already running by this point and cannot be cancelled, so a binding
+	// write failure here must not silently discard itxJobID — that would leave a live job with no
+	// way for the admin to ever poll it, and no signal that it is still running (per @greptile-apps).
+	// putJobBindingWithRetry bounds a few attempts against transient store errors (mirroring
+	// maxConsecutiveTransientPollErrs in sync_job_poll.go) before giving up; if it still fails, the
+	// error below is logged with itxJobID so the job can be manually recovered (e.g. binding it by
+	// hand, or re-querying ITX directly by job ID) instead of only surfacing as a bare error to the
+	// HTTP caller.
+	if err := putJobBindingWithRetry(ctx, o.jobBindingStore, itxJobID, port.SyncApplyJobBinding{
 		MailingListID: mailingListID,
 		CommitteeUID:  prepared.committeeUID,
 	}); err != nil {
+		slog.ErrorContext(ctx, "sync-apply job started in ITX but its binding could not be saved; job is orphaned and must be recovered manually",
+			"itx_job_id", itxJobID, "mailing_list_id", mailingListID, "committee_uid", prepared.committeeUID, "error", err)
 		return "", err
 	}
 
 	return itxJobID, nil
+}
+
+// maxJobBindingPutAttempts bounds retries of a sync-apply job binding write against transient
+// store errors (per errs.IsTransient) before StartSyncApply gives up and logs the job as orphaned.
+// A non-transient error is not retried — it cannot be fixed by trying again.
+const maxJobBindingPutAttempts = 3
+
+// putJobBindingWithRetry retries store.Put up to maxJobBindingPutAttempts times while the error is
+// transient, to reduce the window in which a successfully-started ITX job ends up with no saved
+// binding (see StartSyncApply's call site for why that matters).
+func putJobBindingWithRetry(ctx context.Context, store port.SyncApplyJobBindingStore, itxJobID string, binding port.SyncApplyJobBinding) error {
+	var err error
+	for attempt := 1; attempt <= maxJobBindingPutAttempts; attempt++ {
+		if err = store.Put(ctx, itxJobID, binding); err == nil {
+			return nil
+		}
+		if !errs.IsTransient(err) {
+			return err
+		}
+		if attempt < maxJobBindingPutAttempts {
+			slog.WarnContext(ctx, "sync-apply job binding write failed, retrying", "itx_job_id", itxJobID, "attempt", attempt, "error", err)
+		}
+	}
+	return err
 }
 
 // GetSyncApplyStatus returns the current progress/result of a sync-apply job started by
