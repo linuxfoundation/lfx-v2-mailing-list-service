@@ -17,6 +17,15 @@ import (
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
+// syncApplyToken builds the opaque job_id GetSyncApplyStatus expects, as StartSyncApply would
+// have encoded it for a job started with committeeUID approved and itxJobID returned by ITX.
+func syncApplyToken(t *testing.T, committeeUID, itxJobID string) string {
+	t.Helper()
+	token, err := encodeSyncApplyJobToken(committeeUID, itxJobID)
+	require.NoError(t, err)
+	return token
+}
+
 func newApplyOrchestrator(mlReader port.GroupsIOMailingListReader, itxClient port.ITXSyncClient) port.SyncApplier {
 	return NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(mlReader),
@@ -564,7 +573,10 @@ func TestStartSyncApply_ReturnsJobID(t *testing.T) {
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "apply-1", jobID)
+	gotCommitteeUID, gotITXJobID, err := decodeSyncApplyJobToken(jobID)
+	require.NoError(t, err)
+	assert.Equal(t, "committee-1", gotCommitteeUID)
+	assert.Equal(t, "apply-1", gotITXJobID)
 	assert.Equal(t, []string{"alice@example.com"}, stub.postApplyAdds)
 	assert.Equal(t, port.SyncJobDirectionCommitteeToMailingList, stub.postApplyDirection)
 }
@@ -598,7 +610,7 @@ func TestGetSyncApplyStatus_NoLongerLinked(t *testing.T) {
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubITXSyncClient{},
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
@@ -610,7 +622,7 @@ func TestGetSyncApplyStatus_AccessDenied(t *testing.T) {
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
 		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.Error(t, err)
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
@@ -625,7 +637,7 @@ func TestGetSyncApplyStatus_Ongoing(t *testing.T) {
 			applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusOngoing, ProcessedCount: 1, TotalCount: 2},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusOngoing, status.Status)
 	assert.Equal(t, 1, status.ProcessedCount)
@@ -650,7 +662,7 @@ func TestGetSyncApplyStatus_Completed(t *testing.T) {
 			},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusCompleted, status.Status)
 	assert.Equal(t, 1, status.AddedCount)
@@ -673,10 +685,36 @@ func TestGetSyncApplyStatus_Failed(t *testing.T) {
 			},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusFailed, status.Status)
 	assert.Equal(t, "subgroup locked", status.ErrorMessage)
+}
+
+// TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification pins that a failed job
+// reporting neither a CommitteeID nor any Results (i.e. it never got far enough to process
+// anything committee-scoped) still returns its terminal Failed status successfully, even with a
+// translator configured — verifyJobCommitteeMatch would otherwise reject it as ServiceUnavailable
+// for the empty CommitteeID, turning a legitimate failure into an opaque polling error (per
+// @copilot-pull-request-reviewer).
+func TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification(t *testing.T) {
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{
+			applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusFailed,
+				ErrorMessage: "subgroup locked",
+			},
+		}),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+	)
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobStatusFailed, status.Status)
+	assert.Equal(t, "subgroup locked", status.ErrorMessage)
+	assert.Empty(t, status.Results)
 }
 
 func TestGetSyncApplyStatus_GetSyncApplyJobError(t *testing.T) {
@@ -684,6 +722,6 @@ func TestGetSyncApplyStatus_GetSyncApplyJobError(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{applyJobErr: errors.New("itx unreachable")},
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
 	require.Error(t, err)
 }

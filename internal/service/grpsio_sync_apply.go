@@ -5,11 +5,46 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
+
+// syncApplyJobToken binds an ITX sync-apply job ID to the committee UID the apply was approved
+// against, so GetSyncApplyStatus can detect a relink that happens between StartSyncApply's
+// approval-time check and ITX actually running the job — a case job.CommitteeID alone cannot
+// catch, since ITX may re-derive the committee it ran against at execution time and can
+// coincidentally agree with whatever is linked at poll time even after an intervening relink (per
+// @copilot-pull-request-reviewer). The token is opaque to API callers (docs/api-endpoints.md only
+// ever documents job_id as `<sync-apply-job-id>`, a placeholder, never a parseable format), so
+// encoding extra state into it does not change the public API contract.
+type syncApplyJobToken struct {
+	ExpectedCommitteeUID string `json:"c"`
+	ITXJobID             string `json:"j"`
+}
+
+func encodeSyncApplyJobToken(expectedCommitteeUID, itxJobID string) (string, error) {
+	data, err := json.Marshal(syncApplyJobToken{ExpectedCommitteeUID: expectedCommitteeUID, ITXJobID: itxJobID})
+	if err != nil {
+		return "", errs.NewUnexpected("failed to encode sync-apply job ID", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(data), nil
+}
+
+func decodeSyncApplyJobToken(token string) (expectedCommitteeUID, itxJobID string, err error) {
+	data, decodeErr := base64.RawURLEncoding.DecodeString(token)
+	if decodeErr != nil {
+		return "", "", errs.NewValidation("invalid sync-apply job ID")
+	}
+	var t syncApplyJobToken
+	if unmarshalErr := json.Unmarshal(data, &t); unmarshalErr != nil || t.ITXJobID == "" {
+		return "", "", errs.NewValidation("invalid sync-apply job ID")
+	}
+	return t.ExpectedCommitteeUID, t.ITXJobID, nil
+}
 
 // SyncApplyOrchestrator implements port.SyncApplier by delegating the actual apply to ITX's own
 // sync-apply job (itx-service-groupsio): ITX resolves and adds/removes Groups.io subscribers
@@ -253,15 +288,22 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 		return "", err
 	}
 
-	return o.itxSyncClient.PostSyncApply(ctx, mailingListID, prepared.direction, prepared.approvedAddEmails, prepared.approvedRemoveEmails, "")
+	itxJobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, prepared.direction, prepared.approvedAddEmails, prepared.approvedRemoveEmails, "")
+	if err != nil {
+		return "", err
+	}
+	return encodeSyncApplyJobToken(prepared.committeeUID, itxJobID)
 }
 
 // GetSyncApplyStatus returns the current progress/result of a sync-apply job started by
-// StartSyncApply. Like GetSyncDiffStatus, this has no job-start-time state to fall back on, so it
-// re-derives everything from the mailing list's CURRENT linked committee: the committee-writer
-// access check is re-run against it on every call, and a job reported against a different
-// committee (job.CommitteeID, translated v1->v2) than the one currently linked is rejected as
-// Conflict.
+// StartSyncApply. Like GetSyncDiffStatus, this has no job-start-time state to fall back on beyond
+// what StartSyncApply encoded into jobID itself (see syncApplyJobToken): the expectedCommitteeUID
+// it carries is checked against the mailing list's CURRENT linked committee on every call (a
+// relink between approval and this poll is rejected as Conflict even if ITX's own job.CommitteeID
+// happens to still agree — see syncApplyJobToken's doc comment), the committee-writer access check
+// is re-run against it on every call too, and a job reported against a different committee
+// (job.CommitteeID, translated v1->v2) than the one currently linked is separately rejected as
+// Conflict by verifyJobCommitteeMatch below (catching a relink ITX's job itself observed mid-run).
 //
 // Unlike ApplySyncDiff/fromSyncApplyJob, this does not reconstruct MemberID/MemberType/NameHint
 // enrichment for each result — that requires the request-time approved-adds/removes, which aren't
@@ -269,6 +311,11 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 // model.SyncJobResultEntry (a direct copy of ITX's own per-entry email/action/status/error), with
 // ITX's own pre-aggregated AddedCount/RemovedCount/ErrorCount in place of recomputing them.
 func (o *SyncApplyOrchestrator) GetSyncApplyStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncApplyJobStatus, error) {
+	expectedCommitteeUID, itxJobID, err := decodeSyncApplyJobToken(jobID)
+	if err != nil {
+		return nil, err
+	}
+
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return nil, err
@@ -282,13 +329,17 @@ func (o *SyncApplyOrchestrator) GetSyncApplyStatus(ctx context.Context, mailingL
 		return nil, err
 	}
 
-	job, err := o.itxSyncClient.GetSyncApplyJob(ctx, mailingListID, jobID)
+	if expectedCommitteeUID != committeeUID {
+		return nil, errs.NewConflict("mailing list's linked committee changed since this sync-apply job was started; request a fresh diff and re-apply")
+	}
+
+	job, err := o.itxSyncClient.GetSyncApplyJob(ctx, mailingListID, itxJobID)
 	if err != nil {
 		return nil, err
 	}
 
 	status := &model.SyncApplyJobStatus{
-		JobID:          job.ID,
+		JobID:          jobID,
 		Status:         job.Status,
 		ProcessedCount: job.ProcessedCount,
 		TotalCount:     job.TotalCount,
@@ -298,6 +349,14 @@ func (o *SyncApplyOrchestrator) GetSyncApplyStatus(ctx context.Context, mailingL
 		ErrorMessage:   job.ErrorMessage,
 	}
 	if job.Status != port.SyncJobStatusCompleted && job.Status != port.SyncJobStatusFailed {
+		return status, nil
+	}
+	if job.Status == port.SyncJobStatusFailed && len(job.Results) == 0 {
+		// A failed job that never got far enough to process any entries has nothing
+		// committee-scoped to protect — job.CommitteeID is typically empty in this case too, which
+		// would otherwise make verifyJobCommitteeMatch below reject a legitimate terminal failure
+		// (per @copilot-pull-request-reviewer). Status/ErrorMessage/counts carry no roster PII, so
+		// return them without the committee-verification gate.
 		return status, nil
 	}
 
