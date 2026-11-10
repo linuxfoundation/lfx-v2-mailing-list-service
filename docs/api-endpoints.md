@@ -319,7 +319,7 @@ Once ITX finishes computing the diff:
   "diff": {
     "mailing_list_id": "<subgroup-id>",
     "committee_uid": "<committee-uuid>",
-    "sync_mode": "auto_committee_to_mailing_list",
+    "sync_mode": "auto_c_to_ml",
     "adds": [
       {"email": "new-member@example.com", "member_id": "<committee-member-uuid>", "member_type": "committee_member", "name": "New Member"}
     ],

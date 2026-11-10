@@ -185,18 +185,24 @@ func waitForNextPoll(ctx context.Context) error {
 
 // verifyJobCommitteeMatch confirms that jobCommitteeID (v1, as reported by ITX on a completed
 // sync-diff/sync-apply job) is the same committee as committeeUID (v2, the one access was checked
-// against before the job was started). jobCommitteeID is "" when ITX's response omitted it, or
-// translator is nil (not wired) — in either case this is a no-op, relying solely on the
-// mailing-list-relink recheck the caller also performs.
+// against before the job was started). This catches a relink that ITX's job itself observed
+// mid-run (e.g. A -> B -> A, which a post-job GetMailingList call alone cannot distinguish from
+// "never changed", since both show A) — without it, a job that ITX actually ran against committee
+// B's roster could be attributed to committee A merely because the mailing list happens to be
+// linked back to A by the time the result is read.
 //
-// This catches a relink that ITX's job itself observed mid-run (e.g. A -> B -> A, which a
-// post-job GetMailingList call alone cannot distinguish from "never changed", since both show A)
-// — without it, a job that ITX actually ran against committee B's roster could be attributed to
-// committee A merely because the mailing list happens to be linked back to A by the time the
-// result is read.
+// translator is nil only when it was never wired up (real service wiring, per
+// cmd/mailing-list-api/service/providers.go, always supplies one) — this remains a no-op so tests
+// exercising unrelated behavior aren't forced to stub a translator. But once a translator IS
+// configured, an empty jobCommitteeID (ITX's response omitting it) is treated as a verification
+// failure rather than a silent pass-through: it is the one case this check exists to catch, and
+// trusting the job's data unverified would defeat the point.
 func verifyJobCommitteeMatch(ctx context.Context, translator port.Translator, jobCommitteeID, committeeUID string) error {
-	if jobCommitteeID == "" || translator == nil {
+	if translator == nil {
 		return nil
+	}
+	if jobCommitteeID == "" {
+		return errs.NewServiceUnavailable("sync job did not report which committee it ran against; unable to verify it still matches the mailing list's linked committee")
 	}
 	v2JobCommitteeUID, err := translator.MapID(ctx, constants.TranslationSubjectCommittee, constants.TranslationDirectionV1ToV2, jobCommitteeID)
 	if err != nil {

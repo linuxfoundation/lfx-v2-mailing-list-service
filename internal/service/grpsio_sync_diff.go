@@ -192,6 +192,15 @@ func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingLis
 		return nil, err
 	}
 
+	// job.Direction reflects the sync_mode in effect when the job was started; if sync_mode has
+	// since changed (including to manual), labeling the job's diff with the CURRENT sync_mode
+	// below would mismatch the direction the data was actually computed for — reject instead of
+	// mixing a stale direction's data with today's mode.
+	currentDirection, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	if err != nil || currentDirection != job.Direction {
+		return nil, errs.NewConflict("mailing list's sync mode changed while the sync-diff job was running; request a fresh diff")
+	}
+
 	status.Diff = fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, job.Direction, job)
 	return status, nil
 }

@@ -79,6 +79,21 @@ func (c *stubAccessChecker) HasRelation(_ context.Context, _, _, _ string) (bool
 
 var _ port.AccessChecker = (*stubAccessChecker)(nil)
 
+// stubTranslator is a fixed v1->v2 identity-style mapping for tests exercising
+// verifyJobCommitteeMatch's translated-ID comparison.
+type stubTranslator struct {
+	v2ByV1 map[string]string
+}
+
+func (t *stubTranslator) MapID(_ context.Context, _, _, fromID string) (string, error) {
+	if v2, ok := t.v2ByV1[fromID]; ok {
+		return v2, nil
+	}
+	return "", errors.New("no mapping for " + fromID)
+}
+
+var _ port.Translator = (*stubTranslator)(nil)
+
 func mlWithCommittee(committeeUID string) *model.GroupsIOMailingList {
 	return &model.GroupsIOMailingList{
 		UID:        "ml-1",
@@ -296,6 +311,25 @@ func TestComputeSyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
+}
+
+// TestComputeSyncDiff_JobOmittedCommitteeIDFailsClosed pins that once a translator is configured,
+// a completed job that didn't report which committee it ran against is rejected instead of being
+// trusted unverified — this is the one case verifyJobCommitteeMatch exists to catch.
+func TestComputeSyncDiff_JobOmittedCommitteeIDFailsClosed(t *testing.T) {
+	o := NewSyncDiffOrchestrator(
+		WithSyncDiffMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncDiffITXSyncClient(&stubITXSyncClient{
+			postDiffJobID: "job-1",
+			diffJob:       &port.SyncDiffJob{ID: "job-1", Status: port.SyncJobStatusCompleted},
+		}),
+		WithSyncDiffAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncDiffTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+	)
+	_, err := o.ComputeSyncDiff(ctxWithPrincipal(), "ml-1")
+	require.Error(t, err)
+	var unavailable errs.ServiceUnavailable
+	assert.True(t, errors.As(err, &unavailable))
 }
 
 // TestComputeSyncDiff_AccessDenied pins that a caller with mailing-list access but no writer
