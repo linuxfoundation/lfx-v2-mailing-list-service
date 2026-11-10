@@ -814,6 +814,86 @@ func TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification(t *tes
 	assert.Empty(t, status.Results)
 }
 
+// TestGetSyncApplyStatus_FailedWithPartialResultsAppliesCommitteeVerification pins that a failed
+// job reporting partial Results (unlike the no-results case above) still goes through
+// verifyJobCommitteeMatch, since those results carry committee-scoped roster PII — a matching
+// job.CommitteeID exposes them, a mismatched one is rejected as Conflict, and an empty one (with a
+// translator configured) is rejected as ServiceUnavailable rather than silently exposed (per
+// @copilot-pull-request-reviewer).
+func TestGetSyncApplyStatus_FailedWithPartialResultsAppliesCommitteeVerification(t *testing.T) {
+	partialResults := []port.SyncApplyJobResult{
+		{Email: "alice@example.com", Action: "add", Status: "success"},
+		{Email: "bob@example.com", Action: "add", Status: "failed", Error: "subgroup locked"},
+	}
+
+	t.Run("matching committee ID exposes partial results", func(t *testing.T) {
+		store := mock.NewFakeSyncApplyJobBindingStore()
+		o := NewSyncApplyOrchestrator(
+			WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+			WithSyncApplyITXSyncClient(&stubITXSyncClient{applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusFailed,
+				ErrorMessage: "subgroup locked",
+				CommitteeID:  "v1-committee-1",
+				Results:      partialResults,
+			}}),
+			WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+			WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+			WithSyncApplyJobBindingStore(store),
+		)
+		jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+		status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
+		require.NoError(t, err)
+		assert.Equal(t, port.SyncJobStatusFailed, status.Status)
+		require.Len(t, status.Results, 2)
+		assert.Equal(t, "alice@example.com", status.Results[0].Email)
+		assert.Equal(t, "bob@example.com", status.Results[1].Email)
+	})
+
+	t.Run("mismatched committee ID is rejected", func(t *testing.T) {
+		store := mock.NewFakeSyncApplyJobBindingStore()
+		o := NewSyncApplyOrchestrator(
+			WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+			WithSyncApplyITXSyncClient(&stubITXSyncClient{applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusFailed,
+				ErrorMessage: "subgroup locked",
+				CommitteeID:  "v1-committee-2",
+				Results:      partialResults,
+			}}),
+			WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+			WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-2": "committee-2"}}),
+			WithSyncApplyJobBindingStore(store),
+		)
+		jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+		_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
+		require.Error(t, err)
+		var conflict errs.Conflict
+		assert.True(t, errors.As(err, &conflict))
+	})
+
+	t.Run("omitted committee ID is rejected", func(t *testing.T) {
+		store := mock.NewFakeSyncApplyJobBindingStore()
+		o := NewSyncApplyOrchestrator(
+			WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+			WithSyncApplyITXSyncClient(&stubITXSyncClient{applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusFailed,
+				ErrorMessage: "subgroup locked",
+				Results:      partialResults,
+			}}),
+			WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+			WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+			WithSyncApplyJobBindingStore(store),
+		)
+		jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+		_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
+		require.Error(t, err)
+		var unavailable errs.ServiceUnavailable
+		assert.True(t, errors.As(err, &unavailable))
+	})
+}
+
 // TestGetSyncApplyStatus_RejectsPathTraversalJobID pins that jobID is rejected as a path-traversal
 // payload before it is ever used as a binding-store lookup key or ITX URL path segment.
 func TestGetSyncApplyStatus_RejectsPathTraversalJobID(t *testing.T) {

@@ -42,7 +42,12 @@ func (s *natsSyncApplyJobBindingStore) Put(ctx context.Context, itxJobID string,
 
 func (s *natsSyncApplyJobBindingStore) Get(ctx context.Context, itxJobID string) (port.SyncApplyJobBinding, bool, error) {
 	entry, err := s.kv.Get(ctx, itxJobID)
-	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
+	// isSafePathSegment (the caller's only pre-filter on itxJobID) rejects path-traversal
+	// payloads but not every string NATS considers an invalid KV key (e.g. "*"), which can never
+	// have been Put either — treat it the same as key-not-found instead of propagating a raw KV
+	// error that mapDomainError would otherwise turn into a 500 instead of the caller's 400 (per
+	// @copilot-pull-request-reviewer).
+	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) || errors.Is(err, jetstream.ErrInvalidKey) {
 		return port.SyncApplyJobBinding{}, false, nil
 	}
 	if err != nil {
