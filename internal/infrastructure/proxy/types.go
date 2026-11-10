@@ -226,6 +226,8 @@ type syncDiffJobWire struct {
 	ToRemove       []syncDiffMemberWire   `json:"to_remove"`
 	EmailConflicts []syncDiffConflictWire `json:"email_conflicts"`
 	ErrorMessage   string                 `json:"error_message,omitempty"`
+	ProcessedCount int                    `json:"processed_count"`
+	TotalCount     int                    `json:"total_count"`
 }
 
 // postSyncApplyRequestWire is the POST .../sync-apply request body. Both ApprovedAdds and
@@ -248,11 +250,16 @@ type syncApplyResultWire struct {
 
 // syncApplyJobWire is the GET .../sync-apply/:apply_job_id response body.
 type syncApplyJobWire struct {
-	ID           string                `json:"id"`
-	SubgroupID   uint64                `json:"subgroup_id"`
-	CommitteeID  string                `json:"committee_id,omitempty"`
-	Direction    string                `json:"direction"`
-	Status       string                `json:"status"`
-	Results      []syncApplyResultWire `json:"results"`
-	ErrorMessage string                `json:"error_message,omitempty"`
+	ID             string                `json:"id"`
+	SubgroupID     uint64                `json:"subgroup_id"`
+	CommitteeID    string                `json:"committee_id,omitempty"`
+	Direction      string                `json:"direction"`
+	Status         string                `json:"status"`
+	Results        []syncApplyResultWire `json:"results"`
+	ErrorMessage   string                `json:"error_message,omitempty"`
+	ProcessedCount int                   `json:"processed_count"`
+	TotalCount     int                   `json:"total_count"`
+	AddedCount     int                   `json:"added_count"`
+	RemovedCount   int                   `json:"removed_count"`
+	ErrorCount     int                   `json:"error_count"`
 }

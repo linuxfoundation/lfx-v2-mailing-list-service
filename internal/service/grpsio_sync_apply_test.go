@@ -515,3 +515,175 @@ func TestApplySyncDiff_NoPrincipal(t *testing.T) {
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
 }
+
+func TestStartSyncApply_NoLinkedCommittee(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
+		&stubITXSyncClient{},
+	)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+func TestStartSyncApply_RelinkedBeforeStart(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-2", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
+}
+
+func TestStartSyncApply_AccessDenied(t *testing.T) {
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
+		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
+	)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	require.Error(t, err)
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
+}
+
+// TestStartSyncApply_ReturnsJobID pins the happy path: it returns ITX's job ID directly without
+// polling for completion, unlike ApplySyncDiff, and submits the approved emails to ITX.
+func TestStartSyncApply_ReturnsJobID(t *testing.T) {
+	stub := &stubITXSyncClient{postApplyJobID: "apply-1"}
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		stub,
+	)
+	jobID, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+	}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "apply-1", jobID)
+	assert.Equal(t, []string{"alice@example.com"}, stub.postApplyAdds)
+	assert.Equal(t, port.SyncJobDirectionCommitteeToMailingList, stub.postApplyDirection)
+}
+
+func TestStartSyncApply_MemberTypeMismatch(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{},
+	)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
+		{Email: "alice@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
+	}, nil)
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+func TestStartSyncApply_PostSyncApplyError(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{postApplyErr: errs.NewServiceUnavailable("itx down")},
+	)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	require.Error(t, err)
+	var unavailable errs.ServiceUnavailable
+	assert.True(t, errors.As(err, &unavailable))
+}
+
+func TestGetSyncApplyStatus_NoLongerLinked(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
+		&stubITXSyncClient{},
+	)
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.Error(t, err)
+	var conflict errs.Conflict
+	assert.True(t, errors.As(err, &conflict))
+}
+
+func TestGetSyncApplyStatus_AccessDenied(t *testing.T) {
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
+		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
+	)
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.Error(t, err)
+	var unauthorized errs.Unauthorized
+	assert.True(t, errors.As(err, &unauthorized))
+}
+
+// TestGetSyncApplyStatus_Ongoing pins that an in-progress job returns progress counts without
+// Results.
+func TestGetSyncApplyStatus_Ongoing(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusOngoing, ProcessedCount: 1, TotalCount: 2},
+		},
+	)
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobStatusOngoing, status.Status)
+	assert.Equal(t, 1, status.ProcessedCount)
+	assert.Nil(t, status.Results)
+}
+
+// TestGetSyncApplyStatus_Completed pins that a completed job's flat results and pre-aggregated
+// counts are copied through without per-entry MemberID/MemberType/NameHint enrichment.
+func TestGetSyncApplyStatus_Completed(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusCompleted,
+				AddedCount:   1,
+				RemovedCount: 0,
+				ErrorCount:   0,
+				Results: []port.SyncApplyJobResult{
+					{Email: "alice@example.com", Action: "add", Status: "success"},
+				},
+			},
+		},
+	)
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobStatusCompleted, status.Status)
+	assert.Equal(t, 1, status.AddedCount)
+	require.Len(t, status.Results, 1)
+	assert.Equal(t, "alice@example.com", status.Results[0].Email)
+	assert.Equal(t, "add", status.Results[0].Action)
+	assert.Equal(t, "success", status.Results[0].Status)
+}
+
+// TestGetSyncApplyStatus_Failed pins that a failed job also surfaces its (possibly partial)
+// results rather than only succeeding for completed jobs.
+func TestGetSyncApplyStatus_Failed(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{
+			applyJob: &port.SyncApplyJob{
+				ID:           "apply-1",
+				Status:       port.SyncJobStatusFailed,
+				ErrorMessage: "subgroup locked",
+			},
+		},
+	)
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobStatusFailed, status.Status)
+	assert.Equal(t, "subgroup locked", status.ErrorMessage)
+}
+
+func TestGetSyncApplyStatus_GetSyncApplyJobError(t *testing.T) {
+	o := newApplyOrchestrator(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{applyJobErr: errors.New("itx unreachable")},
+	)
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.Error(t, err)
+}

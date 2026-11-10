@@ -50,3 +50,17 @@ type SyncDiff struct {
 	Removes       []SyncDiffRemove   `json:"removes"`
 	Conflicts     []SyncDiffConflict `json:"conflicts"`
 }
+
+// SyncDiffJobStatus is a point-in-time progress/result snapshot of an async sync-diff job started
+// by StartSyncDiff, as returned by GetSyncDiffStatus. Diff is nil until Status reaches a terminal
+// state ("completed"); a job that reaches "failed" never populates Diff, and ErrorMessage explains
+// why instead.
+type SyncDiffJobStatus struct {
+	JobID          string `json:"job_id"`
+	Status         string `json:"status"`
+	ProcessedCount int    `json:"processed_count"`
+	TotalCount     int    `json:"total_count"`
+	ErrorMessage   string `json:"error_message,omitempty"`
+	// Diff is populated only once Status is "completed".
+	Diff *SyncDiff `json:"diff,omitempty"`
+}

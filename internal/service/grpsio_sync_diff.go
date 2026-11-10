@@ -124,6 +124,78 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 	return fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, direction, job), nil
 }
 
+// StartSyncDiff resolves mailingListID's linked committee and sync_mode, checks committee-writer
+// access, and starts an ITX sync-diff job for the corresponding direction — returning its job ID
+// immediately instead of waiting for it to complete (see ComputeSyncDiff for the blocking
+// equivalent, and GetSyncDiffStatus for polling this job's progress/result).
+func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID string) (string, error) {
+	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
+	if err != nil {
+		return "", err
+	}
+	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+		return "", errs.NewValidation(notLinkedToCommitteeValidationMsg, ErrNothingToReconcile)
+	}
+	committeeUID := ml.Committees[0].UID
+
+	if err := checkCommitteeWriterAccess(ctx, o.accessChecker, committeeUID); err != nil {
+		return "", err
+	}
+
+	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	if err != nil {
+		return "", err
+	}
+
+	return o.itxSyncClient.PostSyncDiff(ctx, mailingListID, direction)
+}
+
+// GetSyncDiffStatus returns the current progress/result of a sync-diff job started by
+// StartSyncDiff. Unlike ComputeSyncDiff, this has no job-start-time state to fall back on, so it
+// re-derives everything ComputeSyncDiff's post-poll checks rely on from the mailing list's CURRENT
+// linked committee: the committee-writer access check is re-run against it on every call, and a
+// job reported against a different committee (job.CommitteeID, translated v1->v2) than the one
+// currently linked is rejected as Conflict — which also transitively catches the mailing list
+// having been relinked or unlinked since the job started, without needing to persist the
+// committee UID StartSyncDiff saw.
+func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncDiffJobStatus, error) {
+	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+		return nil, errs.NewConflict("mailing list is no longer linked to a committee; request a fresh diff")
+	}
+	committeeUID := ml.Committees[0].UID
+
+	if err := checkCommitteeWriterAccess(ctx, o.accessChecker, committeeUID); err != nil {
+		return nil, err
+	}
+
+	job, err := o.itxSyncClient.GetSyncDiffJob(ctx, mailingListID, jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	status := &model.SyncDiffJobStatus{
+		JobID:          job.ID,
+		Status:         job.Status,
+		ProcessedCount: job.ProcessedCount,
+		TotalCount:     job.TotalCount,
+		ErrorMessage:   job.ErrorMessage,
+	}
+	if job.Status != port.SyncJobStatusCompleted {
+		return status, nil
+	}
+
+	if err := verifyJobCommitteeMatch(ctx, o.translator, job.CommitteeID, committeeUID); err != nil {
+		return nil, err
+	}
+
+	status.Diff = fromSyncDiffJob(mailingListID, committeeUID, ml.Committees[0].SyncMode, job.Direction, job)
+	return status, nil
+}
+
 // fromSyncDiffJob translates a completed ITX sync-diff job into model.SyncDiff. direction decides
 // which roster each of ToAdd/ToRemove's IDs belongs to: for auto_c_to_ml, ToAdd holds committee
 // members and ToRemove holds mailing-list members; for auto_ml_to_c it is the reverse.

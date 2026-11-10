@@ -36,6 +36,21 @@ func (c *stubSyncDiffComputer) ComputeSyncDiff(ctx context.Context, mailingListI
 	return c.diff, c.err
 }
 
+func (c *stubSyncDiffComputer) StartSyncDiff(ctx context.Context, mailingListID string) (string, error) {
+	c.calls = append(c.calls, mailingListID)
+	if isTrustedSystemCaller(ctx) {
+		c.sawTrusted = true
+	}
+	return "", c.err
+}
+
+func (c *stubSyncDiffComputer) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncDiffJobStatus, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
+	return &model.SyncDiffJobStatus{JobID: jobID, Status: port.SyncJobStatusCompleted, Diff: c.diff}, nil
+}
+
 // stubSyncApplier records the adds/removes it was asked to apply and returns a configured
 // result/err.
 type stubSyncApplier struct {
@@ -66,6 +81,36 @@ func (a *stubSyncApplier) ApplySyncDiff(
 		a.sawTrusted = true
 	}
 	return a.result, a.err
+}
+
+func (a *stubSyncApplier) StartSyncApply(
+	ctx context.Context,
+	mailingListID string,
+	expectedCommitteeUID string,
+	approvedAdds []model.SyncDiffAdd,
+	approvedRemoves []model.SyncDiffRemove,
+) (string, error) {
+	a.called = true
+	a.gotMailingListID = mailingListID
+	a.gotExpectedCommittee = expectedCommitteeUID
+	a.gotAdds = approvedAdds
+	a.gotRemoves = approvedRemoves
+	if isTrustedSystemCaller(ctx) {
+		a.sawTrusted = true
+	}
+	return "", a.err
+}
+
+func (a *stubSyncApplier) GetSyncApplyStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncApplyJobStatus, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	status := &model.SyncApplyJobStatus{JobID: jobID, Status: port.SyncJobStatusCompleted}
+	if a.result != nil {
+		status.AddedCount = len(a.result.Added)
+		status.RemovedCount = len(a.result.Removed)
+	}
+	return status, nil
 }
 
 // stubMemberReader controls CheckSubscriber/ListMembers responses, keyed by mailingListID, for the

@@ -60,16 +60,33 @@ func NewSyncApplyOrchestrator(opts ...SyncApplyOrchestratorOption) port.SyncAppl
 	return o
 }
 
-// ApplySyncDiff resolves mailingListID's linked committee and sync_mode, starts an ITX
-// sync-apply job applying approvedAdds (by email) and approvedRemoves (by member ID), and waits
-// for it to complete.
-func (o *SyncApplyOrchestrator) ApplySyncDiff(
+// preparedSyncApply is the outcome of validating an apply request and resolving everything needed
+// to submit it to ITX, shared by ApplySyncDiff and StartSyncApply.
+type preparedSyncApply struct {
+	committeeUID         string
+	direction            string
+	approvedAddEmails    []string
+	approvedRemoveEmails []string
+	// addByNormalized/removeByNormalized are needed only by ApplySyncDiff, to reconstruct rich
+	// per-entry results (fromSyncApplyJob) from ITX's flat email/action/status results —
+	// StartSyncApply has no use for them, since GetSyncApplyStatus does not attempt that
+	// reconstruction (see its doc comment).
+	addByNormalized    map[string]model.SyncDiffAdd
+	removeByNormalized map[string]model.SyncDiffRemove
+}
+
+// prepareSyncApply resolves mailingListID's linked committee and sync_mode, applies the
+// trusted-system-caller public-list remove restriction, checks expectedCommitteeUID against the
+// currently-linked committee, checks committee-writer access, validates approvedAdds/
+// approvedRemoves against the resolved direction, and builds the normalized-email maps ITX's
+// apply request needs. See ApplySyncDiff for why each of these checks exists.
+func (o *SyncApplyOrchestrator) prepareSyncApply(
 	ctx context.Context,
 	mailingListID string,
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
-) (*model.SyncApplyResult, error) {
+) (*preparedSyncApply, error) {
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return nil, err
@@ -79,15 +96,6 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	}
 	committeeUID := ml.Committees[0].UID
 
-	// Realtime auto-sync (RealtimeAutoSyncOrchestrator.TriggerAutoSync) only approves removes when
-	// the mailing list is private at the time it computes the diff — removals must never
-	// auto-propagate on a public list. That snapshot can go stale between TriggerAutoSync computing
-	// approvedRemoves and this call actually submitting them (e.g. the list is made public in
-	// between); re-enforce the same restriction here against ml, the configuration this call is
-	// about to submit against, so a stale approval can't still remove someone from a now-public
-	// list. isTrustedSystemCaller(ctx) is true only for TriggerAutoSync's own background calls (see
-	// withTrustedSystemCaller) — an HTTP caller's approvedRemoves come from a human reviewing the
-	// diff via a manual Sync Now, which is deliberately allowed to remove regardless of visibility.
 	if isTrustedSystemCaller(ctx) {
 		switch ml.AudienceAccess {
 		case model.AudienceAccessApprovalRequired, model.AudienceAccessInviteOnly:
@@ -97,11 +105,6 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		}
 	}
 
-	// The caller's approved adds/removes were vetted against the diff computed for
-	// expectedCommitteeUID — if the list was relinked to a different committee between that diff
-	// being fetched and this apply call, applying them now would attribute committee A's approved
-	// changes to committee B. This only catches a relink that already happened before the call;
-	// the re-check after the ITX job completes (below) catches one that happens during it.
 	if expectedCommitteeUID != committeeUID {
 		return nil, errs.NewConflict("mailing list's linked committee no longer matches the sync-diff this apply was approved against; request a fresh diff and re-apply")
 	}
@@ -129,16 +132,16 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		}
 	}
 
-	addEmailByNormalized := make(map[string]model.SyncDiffAdd, len(approvedAdds))
+	addByNormalized := make(map[string]model.SyncDiffAdd, len(approvedAdds))
 	approvedAddEmails := make([]string, 0, len(approvedAdds))
 	for _, add := range approvedAdds {
 		normalized := normalizeEmail(add.Email)
-		if existing, ok := addEmailByNormalized[normalized]; ok {
+		if existing, ok := addByNormalized[normalized]; ok {
 			return nil, errs.NewValidation("approved adds contain duplicate normalized email " + normalized +
 				" (" + existing.Email + " and " + add.Email + "); submit each add at most once")
 		}
 		approvedAddEmails = append(approvedAddEmails, add.Email)
-		addEmailByNormalized[normalized] = add
+		addByNormalized[normalized] = add
 	}
 
 	removeByNormalized := make(map[string]model.SyncDiffRemove, len(approvedRemoves))
@@ -157,7 +160,50 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		removeByNormalized[normalized] = remove
 	}
 
-	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, direction, approvedAddEmails, approvedRemoveEmails, "")
+	return &preparedSyncApply{
+		committeeUID:         committeeUID,
+		direction:            direction,
+		approvedAddEmails:    approvedAddEmails,
+		approvedRemoveEmails: approvedRemoveEmails,
+		addByNormalized:      addByNormalized,
+		removeByNormalized:   removeByNormalized,
+	}, nil
+}
+
+// ApplySyncDiff resolves mailingListID's linked committee and sync_mode, starts an ITX
+// sync-apply job applying approvedAdds (by email) and approvedRemoves (by member ID), and waits
+// for it to complete.
+//
+// Realtime auto-sync (RealtimeAutoSyncOrchestrator.TriggerAutoSync) only approves removes when
+// the mailing list is private at the time it computes the diff — removals must never
+// auto-propagate on a public list. That snapshot can go stale between TriggerAutoSync computing
+// approvedRemoves and this call actually submitting them (e.g. the list is made public in
+// between); prepareSyncApply re-enforces the same restriction against the mailing list's
+// configuration at submission time, so a stale approval can't still remove someone from a
+// now-public list. isTrustedSystemCaller(ctx) is true only for TriggerAutoSync's own background
+// calls (see withTrustedSystemCaller) — an HTTP caller's approvedRemoves come from a human
+// reviewing the diff via a manual Sync Now, which is deliberately allowed to remove regardless of
+// visibility.
+//
+// The caller's approved adds/removes were vetted against the diff computed for
+// expectedCommitteeUID — if the list was relinked to a different committee between that diff
+// being fetched and this apply call, applying them now would attribute committee A's approved
+// changes to committee B. prepareSyncApply only catches a relink that already happened before the
+// call; the re-check after the ITX job completes (below) catches one that happens during it.
+func (o *SyncApplyOrchestrator) ApplySyncDiff(
+	ctx context.Context,
+	mailingListID string,
+	expectedCommitteeUID string,
+	approvedAdds []model.SyncDiffAdd,
+	approvedRemoves []model.SyncDiffRemove,
+) (*model.SyncApplyResult, error) {
+	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves)
+	if err != nil {
+		return nil, err
+	}
+	committeeUID := prepared.committeeUID
+
+	jobID, err := o.itxSyncClient.PostSyncApply(ctx, mailingListID, prepared.direction, prepared.approvedAddEmails, prepared.approvedRemoveEmails, "")
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +234,87 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 		return nil, errs.NewConflict("mailing list's linked committee changed while the sync-apply job was running; request a fresh diff and re-apply")
 	}
 
-	return fromSyncApplyJob(mailingListID, committeeUID, job, addEmailByNormalized, removeByNormalized)
+	return fromSyncApplyJob(mailingListID, committeeUID, job, prepared.addByNormalized, prepared.removeByNormalized)
+}
+
+// StartSyncApply performs the same validation as ApplySyncDiff (see its doc comment for why each
+// check exists) and starts the underlying ITX sync-apply job, returning its job ID immediately
+// instead of waiting for it to complete (see ApplySyncDiff for the blocking equivalent, and
+// GetSyncApplyStatus for polling this job's progress/result).
+func (o *SyncApplyOrchestrator) StartSyncApply(
+	ctx context.Context,
+	mailingListID string,
+	expectedCommitteeUID string,
+	approvedAdds []model.SyncDiffAdd,
+	approvedRemoves []model.SyncDiffRemove,
+) (string, error) {
+	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves)
+	if err != nil {
+		return "", err
+	}
+
+	return o.itxSyncClient.PostSyncApply(ctx, mailingListID, prepared.direction, prepared.approvedAddEmails, prepared.approvedRemoveEmails, "")
+}
+
+// GetSyncApplyStatus returns the current progress/result of a sync-apply job started by
+// StartSyncApply. Like GetSyncDiffStatus, this has no job-start-time state to fall back on, so it
+// re-derives everything from the mailing list's CURRENT linked committee: the committee-writer
+// access check is re-run against it on every call, and a job reported against a different
+// committee (job.CommitteeID, translated v1->v2) than the one currently linked is rejected as
+// Conflict.
+//
+// Unlike ApplySyncDiff/fromSyncApplyJob, this does not reconstruct MemberID/MemberType/NameHint
+// enrichment for each result — that requires the request-time approved-adds/removes, which aren't
+// persisted for an async caller to re-supply on every poll. Results are returned as a flat
+// model.SyncJobResultEntry (a direct copy of ITX's own per-entry email/action/status/error), with
+// ITX's own pre-aggregated AddedCount/RemovedCount/ErrorCount in place of recomputing them.
+func (o *SyncApplyOrchestrator) GetSyncApplyStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncApplyJobStatus, error) {
+	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
+	if err != nil {
+		return nil, err
+	}
+	if len(ml.Committees) == 0 || ml.Committees[0].UID == "" {
+		return nil, errs.NewConflict("mailing list is no longer linked to a committee; request a fresh diff and re-apply")
+	}
+	committeeUID := ml.Committees[0].UID
+
+	if err := checkCommitteeWriterAccess(ctx, o.accessChecker, committeeUID); err != nil {
+		return nil, err
+	}
+
+	job, err := o.itxSyncClient.GetSyncApplyJob(ctx, mailingListID, jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	status := &model.SyncApplyJobStatus{
+		JobID:          job.ID,
+		Status:         job.Status,
+		ProcessedCount: job.ProcessedCount,
+		TotalCount:     job.TotalCount,
+		AddedCount:     job.AddedCount,
+		RemovedCount:   job.RemovedCount,
+		ErrorCount:     job.ErrorCount,
+		ErrorMessage:   job.ErrorMessage,
+	}
+	if job.Status != port.SyncJobStatusCompleted && job.Status != port.SyncJobStatusFailed {
+		return status, nil
+	}
+
+	if err := verifyJobCommitteeMatch(ctx, o.translator, job.CommitteeID, committeeUID); err != nil {
+		return nil, err
+	}
+
+	status.Results = make([]model.SyncJobResultEntry, len(job.Results))
+	for i, r := range job.Results {
+		status.Results[i] = model.SyncJobResultEntry{
+			Email:  r.Email,
+			Action: r.Action,
+			Status: r.Status,
+			Error:  r.Error,
+		}
+	}
+	return status, nil
 }
 
 // fromSyncApplyJob translates a completed ITX sync-apply job's flat action/status results back

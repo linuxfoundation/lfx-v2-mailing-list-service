@@ -20,38 +20,42 @@ import (
 
 // Server lists the mailing-list service endpoint HTTP handlers.
 type Server struct {
-	Mounts                            []*MountPoint
-	Livez                             http.Handler
-	Readyz                            http.Handler
-	ListGroupsioServices              http.Handler
-	CreateGroupsioService             http.Handler
-	GetGroupsioService                http.Handler
-	UpdateGroupsioService             http.Handler
-	DeleteGroupsioService             http.Handler
-	GetGroupsioServiceProjects        http.Handler
-	FindParentGroupsioService         http.Handler
-	ListGroupsioMailingLists          http.Handler
-	CreateGroupsioMailingList         http.Handler
-	GetGroupsioMailingList            http.Handler
-	UpdateGroupsioMailingList         http.Handler
-	DeleteGroupsioMailingList         http.Handler
-	GetGroupsioMailingListCount       http.Handler
-	GetGroupsioMailingListMemberCount http.Handler
-	GetGroupsioMailingListSyncDiff    http.Handler
-	ApplyGroupsioMailingListSyncDiff  http.Handler
-	ListGroupsioMembers               http.Handler
-	AddGroupsioMember                 http.Handler
-	GetGroupsioMember                 http.Handler
-	UpdateGroupsioMember              http.Handler
-	DeleteGroupsioMember              http.Handler
-	InviteGroupsioMembers             http.Handler
-	CheckGroupsioSubscriber           http.Handler
-	GetGroupsioArtifact               http.Handler
-	GetGroupsioArtifactDownload       http.Handler
-	GenHTTPOpenapiJSON                http.Handler
-	GenHTTPOpenapi3JSON               http.Handler
-	GenHTTPOpenapiYaml                http.Handler
-	GenHTTPOpenapi3Yaml               http.Handler
+	Mounts                                []*MountPoint
+	Livez                                 http.Handler
+	Readyz                                http.Handler
+	ListGroupsioServices                  http.Handler
+	CreateGroupsioService                 http.Handler
+	GetGroupsioService                    http.Handler
+	UpdateGroupsioService                 http.Handler
+	DeleteGroupsioService                 http.Handler
+	GetGroupsioServiceProjects            http.Handler
+	FindParentGroupsioService             http.Handler
+	ListGroupsioMailingLists              http.Handler
+	CreateGroupsioMailingList             http.Handler
+	GetGroupsioMailingList                http.Handler
+	UpdateGroupsioMailingList             http.Handler
+	DeleteGroupsioMailingList             http.Handler
+	GetGroupsioMailingListCount           http.Handler
+	GetGroupsioMailingListMemberCount     http.Handler
+	GetGroupsioMailingListSyncDiff        http.Handler
+	ApplyGroupsioMailingListSyncDiff      http.Handler
+	StartGroupsioMailingListSyncDiff      http.Handler
+	GetGroupsioMailingListSyncDiffStatus  http.Handler
+	StartGroupsioMailingListSyncApply     http.Handler
+	GetGroupsioMailingListSyncApplyStatus http.Handler
+	ListGroupsioMembers                   http.Handler
+	AddGroupsioMember                     http.Handler
+	GetGroupsioMember                     http.Handler
+	UpdateGroupsioMember                  http.Handler
+	DeleteGroupsioMember                  http.Handler
+	InviteGroupsioMembers                 http.Handler
+	CheckGroupsioSubscriber               http.Handler
+	GetGroupsioArtifact                   http.Handler
+	GetGroupsioArtifactDownload           http.Handler
+	GenHTTPOpenapiJSON                    http.Handler
+	GenHTTPOpenapi3JSON                   http.Handler
+	GenHTTPOpenapiYaml                    http.Handler
+	GenHTTPOpenapi3Yaml                   http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -119,6 +123,10 @@ func New(
 			{"GetGroupsioMailingListMemberCount", "GET", "/groupsio/mailing-lists/{subgroup_id}/member_count"},
 			{"GetGroupsioMailingListSyncDiff", "GET", "/groupsio/mailing-lists/{subgroup_id}/sync-diff"},
 			{"ApplyGroupsioMailingListSyncDiff", "POST", "/groupsio/mailing-lists/{subgroup_id}/sync-apply"},
+			{"StartGroupsioMailingListSyncDiff", "POST", "/groupsio/mailing-lists/{subgroup_id}/sync-diff/start"},
+			{"GetGroupsioMailingListSyncDiffStatus", "GET", "/groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status"},
+			{"StartGroupsioMailingListSyncApply", "POST", "/groupsio/mailing-lists/{subgroup_id}/sync-apply/start"},
+			{"GetGroupsioMailingListSyncApplyStatus", "GET", "/groupsio/mailing-lists/{subgroup_id}/sync-apply/{job_id}/status"},
 			{"ListGroupsioMembers", "GET", "/groupsio/mailing-lists/{subgroup_id}/members"},
 			{"AddGroupsioMember", "POST", "/groupsio/mailing-lists/{subgroup_id}/members"},
 			{"GetGroupsioMember", "GET", "/groupsio/mailing-lists/{subgroup_id}/members/{member_id}"},
@@ -133,37 +141,41 @@ func New(
 			{"Serve gen/http/openapi.yaml", "GET", "/_groupsio/openapi.yaml"},
 			{"Serve gen/http/openapi3.yaml", "GET", "/_groupsio/openapi3.yaml"},
 		},
-		Livez:                             NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
-		Readyz:                            NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
-		ListGroupsioServices:              NewListGroupsioServicesHandler(e.ListGroupsioServices, mux, decoder, encoder, errhandler, formatter),
-		CreateGroupsioService:             NewCreateGroupsioServiceHandler(e.CreateGroupsioService, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioService:                NewGetGroupsioServiceHandler(e.GetGroupsioService, mux, decoder, encoder, errhandler, formatter),
-		UpdateGroupsioService:             NewUpdateGroupsioServiceHandler(e.UpdateGroupsioService, mux, decoder, encoder, errhandler, formatter),
-		DeleteGroupsioService:             NewDeleteGroupsioServiceHandler(e.DeleteGroupsioService, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioServiceProjects:        NewGetGroupsioServiceProjectsHandler(e.GetGroupsioServiceProjects, mux, decoder, encoder, errhandler, formatter),
-		FindParentGroupsioService:         NewFindParentGroupsioServiceHandler(e.FindParentGroupsioService, mux, decoder, encoder, errhandler, formatter),
-		ListGroupsioMailingLists:          NewListGroupsioMailingListsHandler(e.ListGroupsioMailingLists, mux, decoder, encoder, errhandler, formatter),
-		CreateGroupsioMailingList:         NewCreateGroupsioMailingListHandler(e.CreateGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioMailingList:            NewGetGroupsioMailingListHandler(e.GetGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		UpdateGroupsioMailingList:         NewUpdateGroupsioMailingListHandler(e.UpdateGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		DeleteGroupsioMailingList:         NewDeleteGroupsioMailingListHandler(e.DeleteGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioMailingListCount:       NewGetGroupsioMailingListCountHandler(e.GetGroupsioMailingListCount, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioMailingListMemberCount: NewGetGroupsioMailingListMemberCountHandler(e.GetGroupsioMailingListMemberCount, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioMailingListSyncDiff:    NewGetGroupsioMailingListSyncDiffHandler(e.GetGroupsioMailingListSyncDiff, mux, decoder, encoder, errhandler, formatter),
-		ApplyGroupsioMailingListSyncDiff:  NewApplyGroupsioMailingListSyncDiffHandler(e.ApplyGroupsioMailingListSyncDiff, mux, decoder, encoder, errhandler, formatter),
-		ListGroupsioMembers:               NewListGroupsioMembersHandler(e.ListGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
-		AddGroupsioMember:                 NewAddGroupsioMemberHandler(e.AddGroupsioMember, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioMember:                 NewGetGroupsioMemberHandler(e.GetGroupsioMember, mux, decoder, encoder, errhandler, formatter),
-		UpdateGroupsioMember:              NewUpdateGroupsioMemberHandler(e.UpdateGroupsioMember, mux, decoder, encoder, errhandler, formatter),
-		DeleteGroupsioMember:              NewDeleteGroupsioMemberHandler(e.DeleteGroupsioMember, mux, decoder, encoder, errhandler, formatter),
-		InviteGroupsioMembers:             NewInviteGroupsioMembersHandler(e.InviteGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
-		CheckGroupsioSubscriber:           NewCheckGroupsioSubscriberHandler(e.CheckGroupsioSubscriber, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioArtifact:               NewGetGroupsioArtifactHandler(e.GetGroupsioArtifact, mux, decoder, encoder, errhandler, formatter),
-		GetGroupsioArtifactDownload:       NewGetGroupsioArtifactDownloadHandler(e.GetGroupsioArtifactDownload, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapiJSON:                http.FileServer(fileSystemGenHTTPOpenapiJSON),
-		GenHTTPOpenapi3JSON:               http.FileServer(fileSystemGenHTTPOpenapi3JSON),
-		GenHTTPOpenapiYaml:                http.FileServer(fileSystemGenHTTPOpenapiYaml),
-		GenHTTPOpenapi3Yaml:               http.FileServer(fileSystemGenHTTPOpenapi3Yaml),
+		Livez:                                 NewLivezHandler(e.Livez, mux, decoder, encoder, errhandler, formatter),
+		Readyz:                                NewReadyzHandler(e.Readyz, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioServices:                  NewListGroupsioServicesHandler(e.ListGroupsioServices, mux, decoder, encoder, errhandler, formatter),
+		CreateGroupsioService:                 NewCreateGroupsioServiceHandler(e.CreateGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioService:                    NewGetGroupsioServiceHandler(e.GetGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioService:                 NewUpdateGroupsioServiceHandler(e.UpdateGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioService:                 NewDeleteGroupsioServiceHandler(e.DeleteGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioServiceProjects:            NewGetGroupsioServiceProjectsHandler(e.GetGroupsioServiceProjects, mux, decoder, encoder, errhandler, formatter),
+		FindParentGroupsioService:             NewFindParentGroupsioServiceHandler(e.FindParentGroupsioService, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioMailingLists:              NewListGroupsioMailingListsHandler(e.ListGroupsioMailingLists, mux, decoder, encoder, errhandler, formatter),
+		CreateGroupsioMailingList:             NewCreateGroupsioMailingListHandler(e.CreateGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingList:                NewGetGroupsioMailingListHandler(e.GetGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioMailingList:             NewUpdateGroupsioMailingListHandler(e.UpdateGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioMailingList:             NewDeleteGroupsioMailingListHandler(e.DeleteGroupsioMailingList, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingListCount:           NewGetGroupsioMailingListCountHandler(e.GetGroupsioMailingListCount, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingListMemberCount:     NewGetGroupsioMailingListMemberCountHandler(e.GetGroupsioMailingListMemberCount, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingListSyncDiff:        NewGetGroupsioMailingListSyncDiffHandler(e.GetGroupsioMailingListSyncDiff, mux, decoder, encoder, errhandler, formatter),
+		ApplyGroupsioMailingListSyncDiff:      NewApplyGroupsioMailingListSyncDiffHandler(e.ApplyGroupsioMailingListSyncDiff, mux, decoder, encoder, errhandler, formatter),
+		StartGroupsioMailingListSyncDiff:      NewStartGroupsioMailingListSyncDiffHandler(e.StartGroupsioMailingListSyncDiff, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingListSyncDiffStatus:  NewGetGroupsioMailingListSyncDiffStatusHandler(e.GetGroupsioMailingListSyncDiffStatus, mux, decoder, encoder, errhandler, formatter),
+		StartGroupsioMailingListSyncApply:     NewStartGroupsioMailingListSyncApplyHandler(e.StartGroupsioMailingListSyncApply, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMailingListSyncApplyStatus: NewGetGroupsioMailingListSyncApplyStatusHandler(e.GetGroupsioMailingListSyncApplyStatus, mux, decoder, encoder, errhandler, formatter),
+		ListGroupsioMembers:                   NewListGroupsioMembersHandler(e.ListGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
+		AddGroupsioMember:                     NewAddGroupsioMemberHandler(e.AddGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioMember:                     NewGetGroupsioMemberHandler(e.GetGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		UpdateGroupsioMember:                  NewUpdateGroupsioMemberHandler(e.UpdateGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		DeleteGroupsioMember:                  NewDeleteGroupsioMemberHandler(e.DeleteGroupsioMember, mux, decoder, encoder, errhandler, formatter),
+		InviteGroupsioMembers:                 NewInviteGroupsioMembersHandler(e.InviteGroupsioMembers, mux, decoder, encoder, errhandler, formatter),
+		CheckGroupsioSubscriber:               NewCheckGroupsioSubscriberHandler(e.CheckGroupsioSubscriber, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioArtifact:                   NewGetGroupsioArtifactHandler(e.GetGroupsioArtifact, mux, decoder, encoder, errhandler, formatter),
+		GetGroupsioArtifactDownload:           NewGetGroupsioArtifactDownloadHandler(e.GetGroupsioArtifactDownload, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapiJSON:                    http.FileServer(fileSystemGenHTTPOpenapiJSON),
+		GenHTTPOpenapi3JSON:                   http.FileServer(fileSystemGenHTTPOpenapi3JSON),
+		GenHTTPOpenapiYaml:                    http.FileServer(fileSystemGenHTTPOpenapiYaml),
+		GenHTTPOpenapi3Yaml:                   http.FileServer(fileSystemGenHTTPOpenapi3Yaml),
 	}
 }
 
@@ -190,6 +202,10 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetGroupsioMailingListMemberCount = m(s.GetGroupsioMailingListMemberCount)
 	s.GetGroupsioMailingListSyncDiff = m(s.GetGroupsioMailingListSyncDiff)
 	s.ApplyGroupsioMailingListSyncDiff = m(s.ApplyGroupsioMailingListSyncDiff)
+	s.StartGroupsioMailingListSyncDiff = m(s.StartGroupsioMailingListSyncDiff)
+	s.GetGroupsioMailingListSyncDiffStatus = m(s.GetGroupsioMailingListSyncDiffStatus)
+	s.StartGroupsioMailingListSyncApply = m(s.StartGroupsioMailingListSyncApply)
+	s.GetGroupsioMailingListSyncApplyStatus = m(s.GetGroupsioMailingListSyncApplyStatus)
 	s.ListGroupsioMembers = m(s.ListGroupsioMembers)
 	s.AddGroupsioMember = m(s.AddGroupsioMember)
 	s.GetGroupsioMember = m(s.GetGroupsioMember)
@@ -224,6 +240,10 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetGroupsioMailingListMemberCountHandler(mux, h.GetGroupsioMailingListMemberCount)
 	MountGetGroupsioMailingListSyncDiffHandler(mux, h.GetGroupsioMailingListSyncDiff)
 	MountApplyGroupsioMailingListSyncDiffHandler(mux, h.ApplyGroupsioMailingListSyncDiff)
+	MountStartGroupsioMailingListSyncDiffHandler(mux, h.StartGroupsioMailingListSyncDiff)
+	MountGetGroupsioMailingListSyncDiffStatusHandler(mux, h.GetGroupsioMailingListSyncDiffStatus)
+	MountStartGroupsioMailingListSyncApplyHandler(mux, h.StartGroupsioMailingListSyncApply)
+	MountGetGroupsioMailingListSyncApplyStatusHandler(mux, h.GetGroupsioMailingListSyncApplyStatus)
 	MountListGroupsioMembersHandler(mux, h.ListGroupsioMembers)
 	MountAddGroupsioMemberHandler(mux, h.AddGroupsioMember)
 	MountGetGroupsioMemberHandler(mux, h.GetGroupsioMember)
@@ -1176,6 +1196,224 @@ func NewApplyGroupsioMailingListSyncDiffHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "apply-groupsio-mailing-list-sync-diff")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountStartGroupsioMailingListSyncDiffHandler configures the mux to serve the
+// "mailing-list" service "start-groupsio-mailing-list-sync-diff" endpoint.
+func MountStartGroupsioMailingListSyncDiffHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/mailing-lists/{subgroup_id}/sync-diff/start", f)
+}
+
+// NewStartGroupsioMailingListSyncDiffHandler creates a HTTP handler which
+// loads the HTTP request and calls the "mailing-list" service
+// "start-groupsio-mailing-list-sync-diff" endpoint.
+func NewStartGroupsioMailingListSyncDiffHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeStartGroupsioMailingListSyncDiffRequest(mux, decoder)
+		encodeResponse = EncodeStartGroupsioMailingListSyncDiffResponse(encoder)
+		encodeError    = EncodeStartGroupsioMailingListSyncDiffError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "start-groupsio-mailing-list-sync-diff")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioMailingListSyncDiffStatusHandler configures the mux to serve
+// the "mailing-list" service "get-groupsio-mailing-list-sync-diff-status"
+// endpoint.
+func MountGetGroupsioMailingListSyncDiffStatusHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status", f)
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusHandler creates a HTTP handler which
+// loads the HTTP request and calls the "mailing-list" service
+// "get-groupsio-mailing-list-sync-diff-status" endpoint.
+func NewGetGroupsioMailingListSyncDiffStatusHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioMailingListSyncDiffStatusRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioMailingListSyncDiffStatusResponse(encoder)
+		encodeError    = EncodeGetGroupsioMailingListSyncDiffStatusError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-mailing-list-sync-diff-status")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountStartGroupsioMailingListSyncApplyHandler configures the mux to serve
+// the "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint.
+func MountStartGroupsioMailingListSyncApplyHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/groupsio/mailing-lists/{subgroup_id}/sync-apply/start", f)
+}
+
+// NewStartGroupsioMailingListSyncApplyHandler creates a HTTP handler which
+// loads the HTTP request and calls the "mailing-list" service
+// "start-groupsio-mailing-list-sync-apply" endpoint.
+func NewStartGroupsioMailingListSyncApplyHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeStartGroupsioMailingListSyncApplyRequest(mux, decoder)
+		encodeResponse = EncodeStartGroupsioMailingListSyncApplyResponse(encoder)
+		encodeError    = EncodeStartGroupsioMailingListSyncApplyError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "start-groupsio-mailing-list-sync-apply")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetGroupsioMailingListSyncApplyStatusHandler configures the mux to
+// serve the "mailing-list" service
+// "get-groupsio-mailing-list-sync-apply-status" endpoint.
+func MountGetGroupsioMailingListSyncApplyStatusHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/groupsio/mailing-lists/{subgroup_id}/sync-apply/{job_id}/status", f)
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusHandler creates a HTTP handler which
+// loads the HTTP request and calls the "mailing-list" service
+// "get-groupsio-mailing-list-sync-apply-status" endpoint.
+func NewGetGroupsioMailingListSyncApplyStatusHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetGroupsioMailingListSyncApplyStatusRequest(mux, decoder)
+		encodeResponse = EncodeGetGroupsioMailingListSyncApplyStatusResponse(encoder)
+		encodeError    = EncodeGetGroupsioMailingListSyncApplyStatusError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-groupsio-mailing-list-sync-apply-status")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "mailing-list")
 		payload, err := decodeRequest(r)
 		if err != nil {

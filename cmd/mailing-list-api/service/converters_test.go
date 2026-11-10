@@ -534,6 +534,102 @@ func (s *ServiceConvertersSuite) TestConvertArtifact() {
 	}
 }
 
+func (s *ServiceConvertersSuite) TestConvertSyncDiffJobStatus() {
+	s.Run("ongoing status has no diff", func() {
+		got := convertSyncDiffJobStatus(&model.SyncDiffJobStatus{
+			JobID:          "job-1",
+			Status:         "ongoing",
+			ProcessedCount: 5,
+			TotalCount:     10,
+		})
+		s.Require().NotNil(got)
+		s.Equal("job-1", got.JobID)
+		s.Equal("ongoing", got.Status)
+		s.Equal(5, got.ProcessedCount)
+		s.Equal(10, got.TotalCount)
+		s.Nil(got.Diff)
+		s.Nil(got.ErrorMessage)
+	})
+
+	s.Run("completed status includes converted diff", func() {
+		got := convertSyncDiffJobStatus(&model.SyncDiffJobStatus{
+			JobID:  "job-1",
+			Status: "completed",
+			Diff: &model.SyncDiff{
+				MailingListID: "ml-1",
+				CommitteeUID:  "c-1",
+				Adds: []model.SyncDiffAdd{
+					{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
+				},
+			},
+		})
+		s.Require().NotNil(got)
+		s.Require().NotNil(got.Diff)
+		s.Equal("ml-1", got.Diff.MailingListID)
+		s.Require().Len(got.Diff.Adds, 1)
+		s.Equal("alice@example.com", got.Diff.Adds[0].Email)
+	})
+
+	s.Run("failed status includes error message", func() {
+		got := convertSyncDiffJobStatus(&model.SyncDiffJobStatus{
+			JobID:        "job-1",
+			Status:       "failed",
+			ErrorMessage: "subgroup not found",
+		})
+		s.Require().NotNil(got)
+		s.Equal("subgroup not found", ptrVal(got.ErrorMessage))
+	})
+}
+
+func (s *ServiceConvertersSuite) TestConvertSyncApplyJobStatus() {
+	s.Run("ongoing status has no results", func() {
+		got := convertSyncApplyJobStatus(&model.SyncApplyJobStatus{
+			JobID:          "apply-1",
+			Status:         "ongoing",
+			ProcessedCount: 1,
+			TotalCount:     2,
+		})
+		s.Require().NotNil(got)
+		s.Equal("apply-1", got.JobID)
+		s.Equal("ongoing", got.Status)
+		s.Nil(got.Results)
+	})
+
+	s.Run("completed status includes counts and flat results", func() {
+		got := convertSyncApplyJobStatus(&model.SyncApplyJobStatus{
+			JobID:        "apply-1",
+			Status:       "completed",
+			AddedCount:   1,
+			RemovedCount: 1,
+			ErrorCount:   0,
+			Results: []model.SyncJobResultEntry{
+				{Email: "alice@example.com", Action: "add", Status: "success"},
+				{Email: "carol@example.com", Action: "remove", Status: "error", Error: "boom"},
+			},
+		})
+		s.Require().NotNil(got)
+		s.Equal(1, got.AddedCount)
+		s.Equal(1, got.RemovedCount)
+		s.Equal(0, got.ErrorCount)
+		s.Require().Len(got.Results, 2)
+		s.Equal("alice@example.com", got.Results[0].Email)
+		s.Equal("add", got.Results[0].Action)
+		s.Equal("success", got.Results[0].Status)
+		s.Nil(got.Results[0].Error)
+		s.Equal("boom", ptrVal(got.Results[1].Error))
+	})
+
+	s.Run("failed status includes error message", func() {
+		got := convertSyncApplyJobStatus(&model.SyncApplyJobStatus{
+			JobID:        "apply-1",
+			Status:       "failed",
+			ErrorMessage: "subgroup locked",
+		})
+		s.Require().NotNil(got)
+		s.Equal("subgroup locked", ptrVal(got.ErrorMessage))
+	})
+}
+
 // ptr is a helper to get a pointer to a string literal.
 func ptr(s string) *string { return &s }
 

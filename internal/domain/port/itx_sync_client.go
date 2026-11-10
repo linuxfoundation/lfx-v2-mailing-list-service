@@ -45,11 +45,20 @@ type SyncDiffJob struct {
 	// CommitteeID is the v1 committee ID ITX actually computed this diff against — not
 	// necessarily the mailing list's currently-linked committee, since the list may have been
 	// relinked while the job ran. Empty if ITX's response omitted it.
-	CommitteeID    string
+	CommitteeID string
+	// Direction is the sync direction ("c_to_ml" or "ml_to_c") ITX actually ran this job with —
+	// carried through so a caller re-deriving the result after the fact (GetSyncDiffStatus) does
+	// not need to re-resolve it from the mailing list's current sync_mode, which could have
+	// changed since the job started.
+	Direction      string
 	ToAdd          []SyncJobMember
 	ToRemove       []SyncJobMember
 	EmailConflicts []SyncJobConflict
 	ErrorMessage   string
+	// ProcessedCount and TotalCount report ITX's own progress accounting for this job. Both are 0
+	// until ITX starts reporting progress (e.g. while the job is still Pending).
+	ProcessedCount int
+	TotalCount     int
 }
 
 // SyncApplyJobResult is the outcome of one add or remove within a sync-apply job.
@@ -70,6 +79,14 @@ type SyncApplyJob struct {
 	CommitteeID  string
 	Results      []SyncApplyJobResult
 	ErrorMessage string
+	// ProcessedCount and TotalCount report ITX's own progress accounting for this job.
+	// AddedCount, RemovedCount, and ErrorCount are ITX's own pre-aggregated tallies of Results by
+	// outcome, so a progress/status caller does not need to recompute them from Results itself.
+	ProcessedCount int
+	TotalCount     int
+	AddedCount     int
+	RemovedCount   int
+	ErrorCount     int
 }
 
 // ITXSyncClient proxies committee<->mailing-list membership reconciliation to ITX's own

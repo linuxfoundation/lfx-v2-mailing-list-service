@@ -126,6 +126,19 @@ type ApplyGroupsioMailingListSyncDiffRequestBody struct {
 	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
 }
 
+// StartGroupsioMailingListSyncApplyRequestBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP request body.
+type StartGroupsioMailingListSyncApplyRequestBody struct {
+	// committee_uid from the sync-diff this apply is approving — rejected with
+	// Conflict if the mailing list is no longer linked to this committee
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Members to add, as returned by sync-diff
+	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
+	// Members to remove, as returned by sync-diff
+	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
+}
+
 // AddGroupsioMemberRequestBody is the type of the "mailing-list" service
 // "add-groupsio-member" endpoint HTTP request body.
 type AddGroupsioMemberRequestBody struct {
@@ -464,6 +477,64 @@ type ApplyGroupsioMailingListSyncDiffResponseBody struct {
 	Added []*GroupsioSyncApplyAddResultResponseBody `form:"added" json:"added" xml:"added"`
 	// Outcome of each approved remove
 	Removed []*GroupsioSyncApplyRemoveResultResponseBody `form:"removed" json:"removed" xml:"removed"`
+}
+
+// StartGroupsioMailingListSyncDiffResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body.
+type StartGroupsioMailingListSyncDiffResponseBody struct {
+	// ID of the started job, to be polled via the corresponding status endpoint
+	JobID string `form:"job_id" json:"job_id" xml:"job_id"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff-status" endpoint
+// HTTP response body.
+type GetGroupsioMailingListSyncDiffStatusResponseBody struct {
+	// ID of the sync-diff job
+	JobID string `form:"job_id" json:"job_id" xml:"job_id"`
+	// Current job status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Number of roster entries ITX has processed so far
+	ProcessedCount int `form:"processed_count" json:"processed_count" xml:"processed_count"`
+	// Total number of roster entries ITX expects to process
+	TotalCount int `form:"total_count" json:"total_count" xml:"total_count"`
+	// Failure detail, present only when status is 'failed'
+	ErrorMessage *string `form:"error_message,omitempty" json:"error_message,omitempty" xml:"error_message,omitempty"`
+	// The computed diff — present only once status is 'completed'
+	Diff *GroupsioSyncDiffResponseBody `form:"diff,omitempty" json:"diff,omitempty" xml:"diff,omitempty"`
+}
+
+// StartGroupsioMailingListSyncApplyResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP response body.
+type StartGroupsioMailingListSyncApplyResponseBody struct {
+	// ID of the started job, to be polled via the corresponding status endpoint
+	JobID string `form:"job_id" json:"job_id" xml:"job_id"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body.
+type GetGroupsioMailingListSyncApplyStatusResponseBody struct {
+	// ID of the sync-apply job
+	JobID string `form:"job_id" json:"job_id" xml:"job_id"`
+	// Current job status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Number of approved adds/removes ITX has processed so far
+	ProcessedCount int `form:"processed_count" json:"processed_count" xml:"processed_count"`
+	// Total number of approved adds/removes ITX expects to process
+	TotalCount int `form:"total_count" json:"total_count" xml:"total_count"`
+	// Number of adds ITX reported as successful
+	AddedCount int `form:"added_count" json:"added_count" xml:"added_count"`
+	// Number of removes ITX reported as successful
+	RemovedCount int `form:"removed_count" json:"removed_count" xml:"removed_count"`
+	// Number of adds/removes ITX reported as failed
+	ErrorCount int `form:"error_count" json:"error_count" xml:"error_count"`
+	// Failure detail, present only when status is 'failed'
+	ErrorMessage *string `form:"error_message,omitempty" json:"error_message,omitempty" xml:"error_message,omitempty"`
+	// Flat per-entry outcomes — present only once status is 'completed' or 'failed'
+	Results []*GroupsioSyncJobResultEntryResponseBody `form:"results,omitempty" json:"results,omitempty" xml:"results,omitempty"`
 }
 
 // ListGroupsioMembersResponseBody is the type of the "mailing-list" service
@@ -1123,6 +1194,178 @@ type ApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// StartGroupsioMailingListSyncDiffBadRequestResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "BadRequest" error.
+type StartGroupsioMailingListSyncDiffBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncDiffInternalServerErrorResponseBody is the type
+// of the "mailing-list" service "start-groupsio-mailing-list-sync-diff"
+// endpoint HTTP response body for the "InternalServerError" error.
+type StartGroupsioMailingListSyncDiffInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncDiffNotFoundResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "NotFound" error.
+type StartGroupsioMailingListSyncDiffNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncDiffServiceUnavailableResponseBody is the type
+// of the "mailing-list" service "start-groupsio-mailing-list-sync-diff"
+// endpoint HTTP response body for the "ServiceUnavailable" error.
+type StartGroupsioMailingListSyncDiffServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncDiffUnauthorizedResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-diff" endpoint HTTP
+// response body for the "Unauthorized" error.
+type StartGroupsioMailingListSyncDiffUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusConflictResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff-status" endpoint
+// HTTP response body for the "Conflict" error.
+type GetGroupsioMailingListSyncDiffStatusConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody is the
+// type of the "mailing-list" service
+// "get-groupsio-mailing-list-sync-diff-status" endpoint HTTP response body for
+// the "InternalServerError" error.
+type GetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusNotFoundResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-diff-status" endpoint
+// HTTP response body for the "NotFound" error.
+type GetGroupsioMailingListSyncDiffStatusNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody is the
+// type of the "mailing-list" service
+// "get-groupsio-mailing-list-sync-diff-status" endpoint HTTP response body for
+// the "ServiceUnavailable" error.
+type GetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-diff-status"
+// endpoint HTTP response body for the "Unauthorized" error.
+type GetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyBadRequestResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP response body for the "BadRequest" error.
+type StartGroupsioMailingListSyncApplyBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyConflictResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP response body for the "Conflict" error.
+type StartGroupsioMailingListSyncApplyConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyInternalServerErrorResponseBody is the type
+// of the "mailing-list" service "start-groupsio-mailing-list-sync-apply"
+// endpoint HTTP response body for the "InternalServerError" error.
+type StartGroupsioMailingListSyncApplyInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyNotFoundResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP response body for the "NotFound" error.
+type StartGroupsioMailingListSyncApplyNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyServiceUnavailableResponseBody is the type
+// of the "mailing-list" service "start-groupsio-mailing-list-sync-apply"
+// endpoint HTTP response body for the "ServiceUnavailable" error.
+type StartGroupsioMailingListSyncApplyServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartGroupsioMailingListSyncApplyUnauthorizedResponseBody is the type of the
+// "mailing-list" service "start-groupsio-mailing-list-sync-apply" endpoint
+// HTTP response body for the "Unauthorized" error.
+type StartGroupsioMailingListSyncApplyUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusConflictResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body for the "Conflict" error.
+type GetGroupsioMailingListSyncApplyStatusConflictResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody is the
+// type of the "mailing-list" service
+// "get-groupsio-mailing-list-sync-apply-status" endpoint HTTP response body
+// for the "InternalServerError" error.
+type GetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusNotFoundResponseBody is the type of the
+// "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body for the "NotFound" error.
+type GetGroupsioMailingListSyncApplyStatusNotFoundResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody is the
+// type of the "mailing-list" service
+// "get-groupsio-mailing-list-sync-apply-status" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type GetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body for the "Unauthorized" error.
+type GetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // ListGroupsioMembersInternalServerErrorResponseBody is the type of the
 // "mailing-list" service "list-groupsio-members" endpoint HTTP response body
 // for the "InternalServerError" error.
@@ -1506,6 +1749,35 @@ type GroupsioSyncApplyRemoveResultResponseBody struct {
 	// What happened
 	Outcome string `form:"outcome" json:"outcome" xml:"outcome"`
 	// Failure detail, present only when outcome is 'failed'
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// GroupsioSyncDiffResponseBody is used to define fields on response body types.
+type GroupsioSyncDiffResponseBody struct {
+	// Mailing list (subgroup) ID
+	MailingListID string `form:"mailing_list_id" json:"mailing_list_id" xml:"mailing_list_id"`
+	// LFX v2 committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
+	// Sync direction this diff was computed for
+	SyncMode string `form:"sync_mode" json:"sync_mode" xml:"sync_mode"`
+	// Members to add, to reconcile the target roster
+	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds" json:"adds" xml:"adds"`
+	// Members to remove, to reconcile the target roster
+	Removes []*GroupsioSyncDiffRemoveResponseBody `form:"removes" json:"removes" xml:"removes"`
+	// Email collisions ITX could not resolve into an add or remove
+	Conflicts []*GroupsioSyncDiffConflictResponseBody `form:"conflicts" json:"conflicts" xml:"conflicts"`
+}
+
+// GroupsioSyncJobResultEntryResponseBody is used to define fields on response
+// body types.
+type GroupsioSyncJobResultEntryResponseBody struct {
+	// Member's email address
+	Email string `form:"email" json:"email" xml:"email"`
+	// Whether this entry was an add or a remove
+	Action string `form:"action" json:"action" xml:"action"`
+	// Whether this entry succeeded
+	Status string `form:"status" json:"status" xml:"status"`
+	// Failure detail, present only when status is 'error'
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
@@ -1903,6 +2175,71 @@ func NewApplyGroupsioMailingListSyncDiffResponseBody(res *mailinglist.GroupsioSy
 		}
 	} else {
 		body.Removed = []*GroupsioSyncApplyRemoveResultResponseBody{}
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncDiffResponseBody builds the HTTP response
+// body from the result of the "start-groupsio-mailing-list-sync-diff" endpoint
+// of the "mailing-list" service.
+func NewStartGroupsioMailingListSyncDiffResponseBody(res *mailinglist.GroupsioSyncJobStart) *StartGroupsioMailingListSyncDiffResponseBody {
+	body := &StartGroupsioMailingListSyncDiffResponseBody{
+		JobID: res.JobID,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusResponseBody builds the HTTP response
+// body from the result of the "get-groupsio-mailing-list-sync-diff-status"
+// endpoint of the "mailing-list" service.
+func NewGetGroupsioMailingListSyncDiffStatusResponseBody(res *mailinglist.GroupsioSyncDiffStatus) *GetGroupsioMailingListSyncDiffStatusResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusResponseBody{
+		JobID:          res.JobID,
+		Status:         res.Status,
+		ProcessedCount: res.ProcessedCount,
+		TotalCount:     res.TotalCount,
+		ErrorMessage:   res.ErrorMessage,
+	}
+	if res.Diff != nil {
+		body.Diff = marshalMailinglistGroupsioSyncDiffToGroupsioSyncDiffResponseBody(res.Diff)
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyResponseBody builds the HTTP response
+// body from the result of the "start-groupsio-mailing-list-sync-apply"
+// endpoint of the "mailing-list" service.
+func NewStartGroupsioMailingListSyncApplyResponseBody(res *mailinglist.GroupsioSyncJobStart) *StartGroupsioMailingListSyncApplyResponseBody {
+	body := &StartGroupsioMailingListSyncApplyResponseBody{
+		JobID: res.JobID,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusResponseBody builds the HTTP
+// response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusResponseBody(res *mailinglist.GroupsioSyncApplyStatus) *GetGroupsioMailingListSyncApplyStatusResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusResponseBody{
+		JobID:          res.JobID,
+		Status:         res.Status,
+		ProcessedCount: res.ProcessedCount,
+		TotalCount:     res.TotalCount,
+		AddedCount:     res.AddedCount,
+		RemovedCount:   res.RemovedCount,
+		ErrorCount:     res.ErrorCount,
+		ErrorMessage:   res.ErrorMessage,
+	}
+	if res.Results != nil {
+		body.Results = make([]*GroupsioSyncJobResultEntryResponseBody, len(res.Results))
+		for i, val := range res.Results {
+			if val == nil {
+				body.Results[i] = nil
+				continue
+			}
+			body.Results[i] = marshalMailinglistGroupsioSyncJobResultEntryToGroupsioSyncJobResultEntryResponseBody(val)
+		}
 	}
 	return body
 }
@@ -2665,6 +3002,234 @@ func NewApplyGroupsioMailingListSyncDiffUnauthorizedResponseBody(res *mailinglis
 	return body
 }
 
+// NewStartGroupsioMailingListSyncDiffBadRequestResponseBody builds the HTTP
+// response body from the result of the "start-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewStartGroupsioMailingListSyncDiffBadRequestResponseBody(res *mailinglist.BadRequestError) *StartGroupsioMailingListSyncDiffBadRequestResponseBody {
+	body := &StartGroupsioMailingListSyncDiffBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncDiffInternalServerErrorResponseBody builds
+// the HTTP response body from the result of the
+// "start-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncDiffInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *StartGroupsioMailingListSyncDiffInternalServerErrorResponseBody {
+	body := &StartGroupsioMailingListSyncDiffInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncDiffNotFoundResponseBody builds the HTTP
+// response body from the result of the "start-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewStartGroupsioMailingListSyncDiffNotFoundResponseBody(res *mailinglist.NotFoundError) *StartGroupsioMailingListSyncDiffNotFoundResponseBody {
+	body := &StartGroupsioMailingListSyncDiffNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncDiffServiceUnavailableResponseBody builds the
+// HTTP response body from the result of the
+// "start-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncDiffServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *StartGroupsioMailingListSyncDiffServiceUnavailableResponseBody {
+	body := &StartGroupsioMailingListSyncDiffServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncDiffUnauthorizedResponseBody builds the HTTP
+// response body from the result of the "start-groupsio-mailing-list-sync-diff"
+// endpoint of the "mailing-list" service.
+func NewStartGroupsioMailingListSyncDiffUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *StartGroupsioMailingListSyncDiffUnauthorizedResponseBody {
+	body := &StartGroupsioMailingListSyncDiffUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusConflictResponseBody builds the HTTP
+// response body from the result of the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncDiffStatusConflictResponseBody(res *mailinglist.ConflictError) *GetGroupsioMailingListSyncDiffStatusConflictResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody
+// builds the HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusNotFoundResponseBody builds the HTTP
+// response body from the result of the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncDiffStatusNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGroupsioMailingListSyncDiffStatusNotFoundResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody builds
+// the HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody builds the
+// HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *GetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody {
+	body := &GetGroupsioMailingListSyncDiffStatusUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyBadRequestResponseBody builds the HTTP
+// response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyBadRequestResponseBody(res *mailinglist.BadRequestError) *StartGroupsioMailingListSyncApplyBadRequestResponseBody {
+	body := &StartGroupsioMailingListSyncApplyBadRequestResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyConflictResponseBody builds the HTTP
+// response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyConflictResponseBody(res *mailinglist.ConflictError) *StartGroupsioMailingListSyncApplyConflictResponseBody {
+	body := &StartGroupsioMailingListSyncApplyConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyInternalServerErrorResponseBody builds
+// the HTTP response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *StartGroupsioMailingListSyncApplyInternalServerErrorResponseBody {
+	body := &StartGroupsioMailingListSyncApplyInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyNotFoundResponseBody builds the HTTP
+// response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyNotFoundResponseBody(res *mailinglist.NotFoundError) *StartGroupsioMailingListSyncApplyNotFoundResponseBody {
+	body := &StartGroupsioMailingListSyncApplyNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyServiceUnavailableResponseBody builds
+// the HTTP response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *StartGroupsioMailingListSyncApplyServiceUnavailableResponseBody {
+	body := &StartGroupsioMailingListSyncApplyServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartGroupsioMailingListSyncApplyUnauthorizedResponseBody builds the HTTP
+// response body from the result of the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+func NewStartGroupsioMailingListSyncApplyUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *StartGroupsioMailingListSyncApplyUnauthorizedResponseBody {
+	body := &StartGroupsioMailingListSyncApplyUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusConflictResponseBody builds the HTTP
+// response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusConflictResponseBody(res *mailinglist.ConflictError) *GetGroupsioMailingListSyncApplyStatusConflictResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusConflictResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody
+// builds the HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody(res *mailinglist.InternalServerError) *GetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusInternalServerErrorResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusNotFoundResponseBody builds the HTTP
+// response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusNotFoundResponseBody(res *mailinglist.NotFoundError) *GetGroupsioMailingListSyncApplyStatusNotFoundResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusNotFoundResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody
+// builds the HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody(res *mailinglist.ServiceUnavailableError) *GetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusServiceUnavailableResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody builds the
+// HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *GetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewListGroupsioMembersInternalServerErrorResponseBody builds the HTTP
 // response body from the result of the "list-groupsio-members" endpoint of the
 // "mailing-list" service.
@@ -3219,6 +3784,66 @@ func NewApplyGroupsioMailingListSyncDiffPayload(body *ApplyGroupsioMailingListSy
 	return v
 }
 
+// NewStartGroupsioMailingListSyncDiffPayload builds a mailing-list service
+// start-groupsio-mailing-list-sync-diff endpoint payload.
+func NewStartGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *string) *mailinglist.StartGroupsioMailingListSyncDiffPayload {
+	v := &mailinglist.StartGroupsioMailingListSyncDiffPayload{}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncDiffStatusPayload builds a mailing-list service
+// get-groupsio-mailing-list-sync-diff-status endpoint payload.
+func NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID string, jobID string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncDiffStatusPayload {
+	v := &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{}
+	v.SubgroupID = subgroupID
+	v.JobID = jobID
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewStartGroupsioMailingListSyncApplyPayload builds a mailing-list service
+// start-groupsio-mailing-list-sync-apply endpoint payload.
+func NewStartGroupsioMailingListSyncApplyPayload(body *StartGroupsioMailingListSyncApplyRequestBody, subgroupID string, bearerToken *string) *mailinglist.StartGroupsioMailingListSyncApplyPayload {
+	v := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
+		CommitteeUID: *body.CommitteeUID,
+	}
+	v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
+	for i, val := range body.Adds {
+		if val == nil {
+			v.Adds[i] = nil
+			continue
+		}
+		v.Adds[i] = unmarshalGroupsioSyncDiffAddRequestBodyToMailinglistGroupsioSyncDiffAdd(val)
+	}
+	v.Removes = make([]*mailinglist.GroupsioSyncDiffRemove, len(body.Removes))
+	for i, val := range body.Removes {
+		if val == nil {
+			v.Removes[i] = nil
+			continue
+		}
+		v.Removes[i] = unmarshalGroupsioSyncDiffRemoveRequestBodyToMailinglistGroupsioSyncDiffRemove(val)
+	}
+	v.SubgroupID = subgroupID
+	v.BearerToken = bearerToken
+
+	return v
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusPayload builds a mailing-list
+// service get-groupsio-mailing-list-sync-apply-status endpoint payload.
+func NewGetGroupsioMailingListSyncApplyStatusPayload(subgroupID string, jobID string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncApplyStatusPayload {
+	v := &mailinglist.GetGroupsioMailingListSyncApplyStatusPayload{}
+	v.SubgroupID = subgroupID
+	v.JobID = jobID
+	v.BearerToken = bearerToken
+
+	return v
+}
+
 // NewListGroupsioMembersPayload builds a mailing-list service
 // list-groupsio-members endpoint payload.
 func NewListGroupsioMembersPayload(subgroupID string, bearerToken *string) *mailinglist.ListGroupsioMembersPayload {
@@ -3401,6 +4026,38 @@ func ValidateUpdateGroupsioMailingListRequestBody(body *UpdateGroupsioMailingLis
 // ValidateApplyGroupsioMailingListSyncDiffRequestBody runs the validations
 // defined on Apply-Groupsio-Mailing-List-Sync-DiffRequestBody
 func ValidateApplyGroupsioMailingListSyncDiffRequestBody(body *ApplyGroupsioMailingListSyncDiffRequestBody) (err error) {
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.Adds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
+	}
+	if body.Removes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("removes", "body"))
+	}
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+	}
+	for _, e := range body.Adds {
+		if e != nil {
+			if err2 := ValidateGroupsioSyncDiffAddRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Removes {
+		if e != nil {
+			if err2 := ValidateGroupsioSyncDiffRemoveRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateStartGroupsioMailingListSyncApplyRequestBody runs the validations
+// defined on Start-Groupsio-Mailing-List-Sync-ApplyRequestBody
+func ValidateStartGroupsioMailingListSyncApplyRequestBody(body *StartGroupsioMailingListSyncApplyRequestBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}

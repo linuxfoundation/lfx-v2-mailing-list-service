@@ -38,6 +38,10 @@ Base URL (local): `http://localhost:8080`
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/member_count` | JWT | Get member count for a mailing list |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT (writer) | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` or `auto_ml_to_c`) |
 | `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply` | JWT (writer) | Apply an admin-approved subset of a sync-diff's adds/removes (`auto_c_to_ml` or `auto_ml_to_c`) |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff/start` | JWT (writer) | Start a sync-diff job asynchronously, returning a job ID instead of waiting for it to complete |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status` | JWT (writer) | Poll the progress/result of a sync-diff job started via the `start` endpoint above |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply/start` | JWT (writer) | Start a sync-apply job asynchronously, returning a job ID instead of waiting for it to complete |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply/{job_id}/status` | JWT (writer) | Poll the progress/result of a sync-apply job started via the `start` endpoint above |
 
 ### GroupsIO Members
 
@@ -273,6 +277,92 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
   ],
   "removed": [
     {"email": "departed-member@example.com", "member_id": "<mailing-list-member-id>", "member_type": "mailing_list_member", "outcome": "removed"}
+  ]
+}
+```
+
+**Start a sync-diff job asynchronously (for long-running diffs) and poll its status:**
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/start"
+```
+
+```json
+{"job_id": "<sync-diff-job-id>"}
+```
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/<job-id>/status"
+```
+
+While the job is still running:
+
+```json
+{
+  "job_id": "<sync-diff-job-id>",
+  "status": "ongoing",
+  "processed_count": 120,
+  "total_count": 350
+}
+```
+
+Once ITX finishes computing the diff:
+
+```json
+{
+  "job_id": "<sync-diff-job-id>",
+  "status": "completed",
+  "processed_count": 350,
+  "total_count": 350,
+  "diff": {
+    "mailing_list_id": "<subgroup-id>",
+    "committee_uid": "<committee-uuid>",
+    "sync_mode": "auto_committee_to_mailing_list",
+    "adds": [
+      {"email": "new-member@example.com", "member_id": "<committee-member-uuid>", "member_type": "committee_member", "name": "New Member"}
+    ],
+    "removes": [
+      {"email": "departed-member@example.com", "member_id": "<mailing-list-member-id>", "member_type": "mailing_list_member"}
+    ],
+    "conflicts": []
+  }
+}
+```
+
+**Start a sync-apply job asynchronously and poll its status:**
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"committee_uid":"<committee-uuid>","adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply/start"
+```
+
+```json
+{"job_id": "<sync-apply-job-id>"}
+```
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply/<job-id>/status"
+```
+
+Once ITX finishes applying the changes:
+
+```json
+{
+  "job_id": "<sync-apply-job-id>",
+  "status": "completed",
+  "processed_count": 2,
+  "total_count": 2,
+  "added_count": 1,
+  "removed_count": 1,
+  "error_count": 0,
+  "results": [
+    {"email": "new-member@example.com", "action": "add", "status": "success"},
+    {"email": "departed-member@example.com", "action": "remove", "status": "success"}
   ]
 }
 ```

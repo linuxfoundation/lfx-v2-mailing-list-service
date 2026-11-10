@@ -16,65 +16,73 @@ import (
 
 // Client is the "mailing-list" service client.
 type Client struct {
-	LivezEndpoint                             goa.Endpoint
-	ReadyzEndpoint                            goa.Endpoint
-	ListGroupsioServicesEndpoint              goa.Endpoint
-	CreateGroupsioServiceEndpoint             goa.Endpoint
-	GetGroupsioServiceEndpoint                goa.Endpoint
-	UpdateGroupsioServiceEndpoint             goa.Endpoint
-	DeleteGroupsioServiceEndpoint             goa.Endpoint
-	GetGroupsioServiceProjectsEndpoint        goa.Endpoint
-	FindParentGroupsioServiceEndpoint         goa.Endpoint
-	ListGroupsioMailingListsEndpoint          goa.Endpoint
-	CreateGroupsioMailingListEndpoint         goa.Endpoint
-	GetGroupsioMailingListEndpoint            goa.Endpoint
-	UpdateGroupsioMailingListEndpoint         goa.Endpoint
-	DeleteGroupsioMailingListEndpoint         goa.Endpoint
-	GetGroupsioMailingListCountEndpoint       goa.Endpoint
-	GetGroupsioMailingListMemberCountEndpoint goa.Endpoint
-	GetGroupsioMailingListSyncDiffEndpoint    goa.Endpoint
-	ApplyGroupsioMailingListSyncDiffEndpoint  goa.Endpoint
-	ListGroupsioMembersEndpoint               goa.Endpoint
-	AddGroupsioMemberEndpoint                 goa.Endpoint
-	GetGroupsioMemberEndpoint                 goa.Endpoint
-	UpdateGroupsioMemberEndpoint              goa.Endpoint
-	DeleteGroupsioMemberEndpoint              goa.Endpoint
-	InviteGroupsioMembersEndpoint             goa.Endpoint
-	CheckGroupsioSubscriberEndpoint           goa.Endpoint
-	GetGroupsioArtifactEndpoint               goa.Endpoint
-	GetGroupsioArtifactDownloadEndpoint       goa.Endpoint
+	LivezEndpoint                                 goa.Endpoint
+	ReadyzEndpoint                                goa.Endpoint
+	ListGroupsioServicesEndpoint                  goa.Endpoint
+	CreateGroupsioServiceEndpoint                 goa.Endpoint
+	GetGroupsioServiceEndpoint                    goa.Endpoint
+	UpdateGroupsioServiceEndpoint                 goa.Endpoint
+	DeleteGroupsioServiceEndpoint                 goa.Endpoint
+	GetGroupsioServiceProjectsEndpoint            goa.Endpoint
+	FindParentGroupsioServiceEndpoint             goa.Endpoint
+	ListGroupsioMailingListsEndpoint              goa.Endpoint
+	CreateGroupsioMailingListEndpoint             goa.Endpoint
+	GetGroupsioMailingListEndpoint                goa.Endpoint
+	UpdateGroupsioMailingListEndpoint             goa.Endpoint
+	DeleteGroupsioMailingListEndpoint             goa.Endpoint
+	GetGroupsioMailingListCountEndpoint           goa.Endpoint
+	GetGroupsioMailingListMemberCountEndpoint     goa.Endpoint
+	GetGroupsioMailingListSyncDiffEndpoint        goa.Endpoint
+	ApplyGroupsioMailingListSyncDiffEndpoint      goa.Endpoint
+	StartGroupsioMailingListSyncDiffEndpoint      goa.Endpoint
+	GetGroupsioMailingListSyncDiffStatusEndpoint  goa.Endpoint
+	StartGroupsioMailingListSyncApplyEndpoint     goa.Endpoint
+	GetGroupsioMailingListSyncApplyStatusEndpoint goa.Endpoint
+	ListGroupsioMembersEndpoint                   goa.Endpoint
+	AddGroupsioMemberEndpoint                     goa.Endpoint
+	GetGroupsioMemberEndpoint                     goa.Endpoint
+	UpdateGroupsioMemberEndpoint                  goa.Endpoint
+	DeleteGroupsioMemberEndpoint                  goa.Endpoint
+	InviteGroupsioMembersEndpoint                 goa.Endpoint
+	CheckGroupsioSubscriberEndpoint               goa.Endpoint
+	GetGroupsioArtifactEndpoint                   goa.Endpoint
+	GetGroupsioArtifactDownloadEndpoint           goa.Endpoint
 }
 
 // NewClient initializes a "mailing-list" service client given the endpoints.
-func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, getGroupsioMailingListSyncDiff, applyGroupsioMailingListSyncDiff, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload goa.Endpoint) *Client {
+func NewClient(livez, readyz, listGroupsioServices, createGroupsioService, getGroupsioService, updateGroupsioService, deleteGroupsioService, getGroupsioServiceProjects, findParentGroupsioService, listGroupsioMailingLists, createGroupsioMailingList, getGroupsioMailingList, updateGroupsioMailingList, deleteGroupsioMailingList, getGroupsioMailingListCount, getGroupsioMailingListMemberCount, getGroupsioMailingListSyncDiff, applyGroupsioMailingListSyncDiff, startGroupsioMailingListSyncDiff, getGroupsioMailingListSyncDiffStatus, startGroupsioMailingListSyncApply, getGroupsioMailingListSyncApplyStatus, listGroupsioMembers, addGroupsioMember, getGroupsioMember, updateGroupsioMember, deleteGroupsioMember, inviteGroupsioMembers, checkGroupsioSubscriber, getGroupsioArtifact, getGroupsioArtifactDownload goa.Endpoint) *Client {
 	return &Client{
-		LivezEndpoint:                             livez,
-		ReadyzEndpoint:                            readyz,
-		ListGroupsioServicesEndpoint:              listGroupsioServices,
-		CreateGroupsioServiceEndpoint:             createGroupsioService,
-		GetGroupsioServiceEndpoint:                getGroupsioService,
-		UpdateGroupsioServiceEndpoint:             updateGroupsioService,
-		DeleteGroupsioServiceEndpoint:             deleteGroupsioService,
-		GetGroupsioServiceProjectsEndpoint:        getGroupsioServiceProjects,
-		FindParentGroupsioServiceEndpoint:         findParentGroupsioService,
-		ListGroupsioMailingListsEndpoint:          listGroupsioMailingLists,
-		CreateGroupsioMailingListEndpoint:         createGroupsioMailingList,
-		GetGroupsioMailingListEndpoint:            getGroupsioMailingList,
-		UpdateGroupsioMailingListEndpoint:         updateGroupsioMailingList,
-		DeleteGroupsioMailingListEndpoint:         deleteGroupsioMailingList,
-		GetGroupsioMailingListCountEndpoint:       getGroupsioMailingListCount,
-		GetGroupsioMailingListMemberCountEndpoint: getGroupsioMailingListMemberCount,
-		GetGroupsioMailingListSyncDiffEndpoint:    getGroupsioMailingListSyncDiff,
-		ApplyGroupsioMailingListSyncDiffEndpoint:  applyGroupsioMailingListSyncDiff,
-		ListGroupsioMembersEndpoint:               listGroupsioMembers,
-		AddGroupsioMemberEndpoint:                 addGroupsioMember,
-		GetGroupsioMemberEndpoint:                 getGroupsioMember,
-		UpdateGroupsioMemberEndpoint:              updateGroupsioMember,
-		DeleteGroupsioMemberEndpoint:              deleteGroupsioMember,
-		InviteGroupsioMembersEndpoint:             inviteGroupsioMembers,
-		CheckGroupsioSubscriberEndpoint:           checkGroupsioSubscriber,
-		GetGroupsioArtifactEndpoint:               getGroupsioArtifact,
-		GetGroupsioArtifactDownloadEndpoint:       getGroupsioArtifactDownload,
+		LivezEndpoint:                                 livez,
+		ReadyzEndpoint:                                readyz,
+		ListGroupsioServicesEndpoint:                  listGroupsioServices,
+		CreateGroupsioServiceEndpoint:                 createGroupsioService,
+		GetGroupsioServiceEndpoint:                    getGroupsioService,
+		UpdateGroupsioServiceEndpoint:                 updateGroupsioService,
+		DeleteGroupsioServiceEndpoint:                 deleteGroupsioService,
+		GetGroupsioServiceProjectsEndpoint:            getGroupsioServiceProjects,
+		FindParentGroupsioServiceEndpoint:             findParentGroupsioService,
+		ListGroupsioMailingListsEndpoint:              listGroupsioMailingLists,
+		CreateGroupsioMailingListEndpoint:             createGroupsioMailingList,
+		GetGroupsioMailingListEndpoint:                getGroupsioMailingList,
+		UpdateGroupsioMailingListEndpoint:             updateGroupsioMailingList,
+		DeleteGroupsioMailingListEndpoint:             deleteGroupsioMailingList,
+		GetGroupsioMailingListCountEndpoint:           getGroupsioMailingListCount,
+		GetGroupsioMailingListMemberCountEndpoint:     getGroupsioMailingListMemberCount,
+		GetGroupsioMailingListSyncDiffEndpoint:        getGroupsioMailingListSyncDiff,
+		ApplyGroupsioMailingListSyncDiffEndpoint:      applyGroupsioMailingListSyncDiff,
+		StartGroupsioMailingListSyncDiffEndpoint:      startGroupsioMailingListSyncDiff,
+		GetGroupsioMailingListSyncDiffStatusEndpoint:  getGroupsioMailingListSyncDiffStatus,
+		StartGroupsioMailingListSyncApplyEndpoint:     startGroupsioMailingListSyncApply,
+		GetGroupsioMailingListSyncApplyStatusEndpoint: getGroupsioMailingListSyncApplyStatus,
+		ListGroupsioMembersEndpoint:                   listGroupsioMembers,
+		AddGroupsioMemberEndpoint:                     addGroupsioMember,
+		GetGroupsioMemberEndpoint:                     getGroupsioMember,
+		UpdateGroupsioMemberEndpoint:                  updateGroupsioMember,
+		DeleteGroupsioMemberEndpoint:                  deleteGroupsioMember,
+		InviteGroupsioMembersEndpoint:                 inviteGroupsioMembers,
+		CheckGroupsioSubscriberEndpoint:               checkGroupsioSubscriber,
+		GetGroupsioArtifactEndpoint:                   getGroupsioArtifact,
+		GetGroupsioArtifactDownloadEndpoint:           getGroupsioArtifactDownload,
 	}
 }
 
@@ -361,6 +369,83 @@ func (c *Client) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p *ApplyG
 		return
 	}
 	return ires.(*GroupsioSyncApplyResult), nil
+}
+
+// StartGroupsioMailingListSyncDiff calls the
+// "start-groupsio-mailing-list-sync-diff" endpoint of the "mailing-list"
+// service.
+// StartGroupsioMailingListSyncDiff may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
+//   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-diff
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) StartGroupsioMailingListSyncDiff(ctx context.Context, p *StartGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncJobStart, err error) {
+	var ires any
+	ires, err = c.StartGroupsioMailingListSyncDiffEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncJobStart), nil
+}
+
+// GetGroupsioMailingListSyncDiffStatus calls the
+// "get-groupsio-mailing-list-sync-diff-status" endpoint of the "mailing-list"
+// service.
+// GetGroupsioMailingListSyncDiffStatus may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup, linked committee, or job not found
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
+//   - "Conflict" (type *ConflictError): Mailing list's linked committee changed since the job was started
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioMailingListSyncDiffStatus(ctx context.Context, p *GetGroupsioMailingListSyncDiffStatusPayload) (res *GroupsioSyncDiffStatus, err error) {
+	var ires any
+	ires, err = c.GetGroupsioMailingListSyncDiffStatusEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncDiffStatus), nil
+}
+
+// StartGroupsioMailingListSyncApply calls the
+// "start-groupsio-mailing-list-sync-apply" endpoint of the "mailing-list"
+// service.
+// StartGroupsioMailingListSyncApply may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup or linked committee not found
+//   - "BadRequest" (type *BadRequestError): Subgroup has no linked committee, or its sync_mode does not support sync-apply
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
+//   - "Conflict" (type *ConflictError): Mailing list's linked committee no longer matches the sync-diff this apply was approved against
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) StartGroupsioMailingListSyncApply(ctx context.Context, p *StartGroupsioMailingListSyncApplyPayload) (res *GroupsioSyncJobStart, err error) {
+	var ires any
+	ires, err = c.StartGroupsioMailingListSyncApplyEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncJobStart), nil
+}
+
+// GetGroupsioMailingListSyncApplyStatus calls the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+// GetGroupsioMailingListSyncApplyStatus may return the following errors:
+//   - "NotFound" (type *NotFoundError): Subgroup, linked committee, or job not found
+//   - "Unauthorized" (type *UnauthorizedError): Caller lacks writer access to the linked committee
+//   - "Conflict" (type *ConflictError): Mailing list's linked committee changed since the job was started
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetGroupsioMailingListSyncApplyStatus(ctx context.Context, p *GetGroupsioMailingListSyncApplyStatusPayload) (res *GroupsioSyncApplyStatus, err error) {
+	var ires any
+	ires, err = c.GetGroupsioMailingListSyncApplyStatusEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*GroupsioSyncApplyStatus), nil
 }
 
 // ListGroupsioMembers calls the "list-groupsio-members" endpoint of the

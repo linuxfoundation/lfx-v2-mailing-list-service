@@ -56,6 +56,20 @@ type Service interface {
 	// remove members on the sync-diff's target side (committee or mailing list,
 	// per the linked committee's sync_mode) to reconcile it against the source side
 	ApplyGroupsioMailingListSyncDiff(context.Context, *ApplyGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncApplyResult, err error)
+	// Start computing the membership reconciliation diff between a GroupsIO
+	// subgroup and its linked committee asynchronously, returning a job ID to poll
+	// instead of waiting for it to complete
+	StartGroupsioMailingListSyncDiff(context.Context, *StartGroupsioMailingListSyncDiffPayload) (res *GroupsioSyncJobStart, err error)
+	// Get the progress/result of a sync-diff job started by
+	// start-groupsio-mailing-list-sync-diff
+	GetGroupsioMailingListSyncDiffStatus(context.Context, *GetGroupsioMailingListSyncDiffStatusPayload) (res *GroupsioSyncDiffStatus, err error)
+	// Start applying an admin-approved subset of a previously computed sync-diff
+	// asynchronously, returning a job ID to poll instead of waiting for it to
+	// complete
+	StartGroupsioMailingListSyncApply(context.Context, *StartGroupsioMailingListSyncApplyPayload) (res *GroupsioSyncJobStart, err error)
+	// Get the progress/result of a sync-apply job started by
+	// start-groupsio-mailing-list-sync-apply
+	GetGroupsioMailingListSyncApplyStatus(context.Context, *GetGroupsioMailingListSyncApplyStatusPayload) (res *GroupsioSyncApplyStatus, err error)
 	// List members of a GroupsIO subgroup
 	ListGroupsioMembers(context.Context, *ListGroupsioMembersPayload) (res *GroupsioMemberList, err error)
 	// Add a member to a GroupsIO subgroup
@@ -96,7 +110,7 @@ const ServiceName = "mailing-list"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [27]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "apply-groupsio-mailing-list-sync-diff", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
+var MethodNames = [31]string{"livez", "readyz", "list-groupsio-services", "create-groupsio-service", "get-groupsio-service", "update-groupsio-service", "delete-groupsio-service", "get-groupsio-service-projects", "find-parent-groupsio-service", "list-groupsio-mailing-lists", "create-groupsio-mailing-list", "get-groupsio-mailing-list", "update-groupsio-mailing-list", "delete-groupsio-mailing-list", "get-groupsio-mailing-list-count", "get-groupsio-mailing-list-member-count", "get-groupsio-mailing-list-sync-diff", "apply-groupsio-mailing-list-sync-diff", "start-groupsio-mailing-list-sync-diff", "get-groupsio-mailing-list-sync-diff-status", "start-groupsio-mailing-list-sync-apply", "get-groupsio-mailing-list-sync-apply-status", "list-groupsio-members", "add-groupsio-member", "get-groupsio-member", "update-groupsio-member", "delete-groupsio-member", "invite-groupsio-members", "check-groupsio-subscriber", "get-groupsio-artifact", "get-groupsio-artifact-download"}
 
 // AddGroupsioMemberPayload is the payload type of the mailing-list service
 // add-groupsio-member method.
@@ -289,6 +303,17 @@ type GetGroupsioMailingListPayload struct {
 	SubgroupID string
 }
 
+// GetGroupsioMailingListSyncApplyStatusPayload is the payload type of the
+// mailing-list service get-groupsio-mailing-list-sync-apply-status method.
+type GetGroupsioMailingListSyncApplyStatusPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+	// Sync-apply job ID
+	JobID string
+}
+
 // GetGroupsioMailingListSyncDiffPayload is the payload type of the
 // mailing-list service get-groupsio-mailing-list-sync-diff method.
 type GetGroupsioMailingListSyncDiffPayload struct {
@@ -296,6 +321,17 @@ type GetGroupsioMailingListSyncDiffPayload struct {
 	BearerToken *string
 	// Subgroup ID
 	SubgroupID string
+}
+
+// GetGroupsioMailingListSyncDiffStatusPayload is the payload type of the
+// mailing-list service get-groupsio-mailing-list-sync-diff-status method.
+type GetGroupsioMailingListSyncDiffStatusPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+	// Sync-diff job ID
+	JobID string
 }
 
 // GetGroupsioMemberPayload is the payload type of the mailing-list service
@@ -582,6 +618,29 @@ type GroupsioSyncApplyResult struct {
 	Removed []*GroupsioSyncApplyRemoveResult
 }
 
+// GroupsioSyncApplyStatus is the result type of the mailing-list service
+// get-groupsio-mailing-list-sync-apply-status method.
+type GroupsioSyncApplyStatus struct {
+	// ID of the sync-apply job
+	JobID string
+	// Current job status
+	Status string
+	// Number of approved adds/removes ITX has processed so far
+	ProcessedCount int
+	// Total number of approved adds/removes ITX expects to process
+	TotalCount int
+	// Number of adds ITX reported as successful
+	AddedCount int
+	// Number of removes ITX reported as successful
+	RemovedCount int
+	// Number of adds/removes ITX reported as failed
+	ErrorCount int
+	// Failure detail, present only when status is 'failed'
+	ErrorMessage *string
+	// Flat per-entry outcomes — present only once status is 'completed' or 'failed'
+	Results []*GroupsioSyncJobResultEntry
+}
+
 // GroupsioSyncDiff is the result type of the mailing-list service
 // get-groupsio-mailing-list-sync-diff method.
 type GroupsioSyncDiff struct {
@@ -631,6 +690,42 @@ type GroupsioSyncDiffRemove struct {
 	MemberType string
 }
 
+// GroupsioSyncDiffStatus is the result type of the mailing-list service
+// get-groupsio-mailing-list-sync-diff-status method.
+type GroupsioSyncDiffStatus struct {
+	// ID of the sync-diff job
+	JobID string
+	// Current job status
+	Status string
+	// Number of roster entries ITX has processed so far
+	ProcessedCount int
+	// Total number of roster entries ITX expects to process
+	TotalCount int
+	// Failure detail, present only when status is 'failed'
+	ErrorMessage *string
+	// The computed diff — present only once status is 'completed'
+	Diff *GroupsioSyncDiff
+}
+
+// Outcome of one add or remove within a sync-apply job, as reported by ITX
+type GroupsioSyncJobResultEntry struct {
+	// Member's email address
+	Email string
+	// Whether this entry was an add or a remove
+	Action string
+	// Whether this entry succeeded
+	Status string
+	// Failure detail, present only when status is 'error'
+	Error *string
+}
+
+// GroupsioSyncJobStart is the result type of the mailing-list service
+// start-groupsio-mailing-list-sync-diff method.
+type GroupsioSyncJobStart struct {
+	// ID of the started job, to be polled via the corresponding status endpoint
+	JobID string
+}
+
 // InviteGroupsioMembersPayload is the payload type of the mailing-list service
 // invite-groupsio-members method.
 type InviteGroupsioMembersPayload struct {
@@ -669,6 +764,31 @@ type ListGroupsioServicesPayload struct {
 	BearerToken *string
 	// LFX v2 project UID filter
 	ProjectUID *string
+}
+
+// StartGroupsioMailingListSyncApplyPayload is the payload type of the
+// mailing-list service start-groupsio-mailing-list-sync-apply method.
+type StartGroupsioMailingListSyncApplyPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
+	// committee_uid from the sync-diff this apply is approving — rejected with
+	// Conflict if the mailing list is no longer linked to this committee
+	CommitteeUID string
+	// Members to add, as returned by sync-diff
+	Adds []*GroupsioSyncDiffAdd
+	// Members to remove, as returned by sync-diff
+	Removes []*GroupsioSyncDiffRemove
+}
+
+// StartGroupsioMailingListSyncDiffPayload is the payload type of the
+// mailing-list service start-groupsio-mailing-list-sync-diff method.
+type StartGroupsioMailingListSyncDiffPayload struct {
+	// JWT token issued by Heimdall
+	BearerToken *string
+	// Subgroup ID
+	SubgroupID string
 }
 
 // UpdateGroupsioMailingListPayload is the payload type of the mailing-list

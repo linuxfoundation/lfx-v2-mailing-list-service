@@ -24,7 +24,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|apply-groupsio-mailing-list-sync-diff|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download)",
+		"mailing-list (livez|readyz|list-groupsio-services|create-groupsio-service|get-groupsio-service|update-groupsio-service|delete-groupsio-service|get-groupsio-service-projects|find-parent-groupsio-service|list-groupsio-mailing-lists|create-groupsio-mailing-list|get-groupsio-mailing-list|update-groupsio-mailing-list|delete-groupsio-mailing-list|get-groupsio-mailing-list-count|get-groupsio-mailing-list-member-count|get-groupsio-mailing-list-sync-diff|apply-groupsio-mailing-list-sync-diff|start-groupsio-mailing-list-sync-diff|get-groupsio-mailing-list-sync-diff-status|start-groupsio-mailing-list-sync-apply|get-groupsio-mailing-list-sync-apply-status|list-groupsio-members|add-groupsio-member|get-groupsio-member|update-groupsio-member|delete-groupsio-member|invite-groupsio-members|check-groupsio-subscriber|get-groupsio-artifact|get-groupsio-artifact-download)",
 	}
 }
 
@@ -117,6 +117,25 @@ func ParseEndpoint(
 		mailingListApplyGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListApplyGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
 		mailingListApplyGroupsioMailingListSyncDiffBearerTokenFlag = mailingListApplyGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
 
+		mailingListStartGroupsioMailingListSyncDiffFlags           = flag.NewFlagSet("start-groupsio-mailing-list-sync-diff", flag.ExitOnError)
+		mailingListStartGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListStartGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListStartGroupsioMailingListSyncDiffBearerTokenFlag = mailingListStartGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
+
+		mailingListGetGroupsioMailingListSyncDiffStatusFlags           = flag.NewFlagSet("get-groupsio-mailing-list-sync-diff-status", flag.ExitOnError)
+		mailingListGetGroupsioMailingListSyncDiffStatusSubgroupIDFlag  = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMailingListSyncDiffStatusJobIDFlag       = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("job-id", "REQUIRED", "Sync-diff job ID")
+		mailingListGetGroupsioMailingListSyncDiffStatusBearerTokenFlag = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("bearer-token", "", "")
+
+		mailingListStartGroupsioMailingListSyncApplyFlags           = flag.NewFlagSet("start-groupsio-mailing-list-sync-apply", flag.ExitOnError)
+		mailingListStartGroupsioMailingListSyncApplyBodyFlag        = mailingListStartGroupsioMailingListSyncApplyFlags.String("body", "REQUIRED", "")
+		mailingListStartGroupsioMailingListSyncApplySubgroupIDFlag  = mailingListStartGroupsioMailingListSyncApplyFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListStartGroupsioMailingListSyncApplyBearerTokenFlag = mailingListStartGroupsioMailingListSyncApplyFlags.String("bearer-token", "", "")
+
+		mailingListGetGroupsioMailingListSyncApplyStatusFlags           = flag.NewFlagSet("get-groupsio-mailing-list-sync-apply-status", flag.ExitOnError)
+		mailingListGetGroupsioMailingListSyncApplyStatusSubgroupIDFlag  = mailingListGetGroupsioMailingListSyncApplyStatusFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMailingListSyncApplyStatusJobIDFlag       = mailingListGetGroupsioMailingListSyncApplyStatusFlags.String("job-id", "REQUIRED", "Sync-apply job ID")
+		mailingListGetGroupsioMailingListSyncApplyStatusBearerTokenFlag = mailingListGetGroupsioMailingListSyncApplyStatusFlags.String("bearer-token", "", "")
+
 		mailingListListGroupsioMembersFlags           = flag.NewFlagSet("list-groupsio-members", flag.ExitOnError)
 		mailingListListGroupsioMembersSubgroupIDFlag  = mailingListListGroupsioMembersFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
 		mailingListListGroupsioMembersBearerTokenFlag = mailingListListGroupsioMembersFlags.String("bearer-token", "", "")
@@ -180,6 +199,10 @@ func ParseEndpoint(
 	mailingListGetGroupsioMailingListMemberCountFlags.Usage = mailingListGetGroupsioMailingListMemberCountUsage
 	mailingListGetGroupsioMailingListSyncDiffFlags.Usage = mailingListGetGroupsioMailingListSyncDiffUsage
 	mailingListApplyGroupsioMailingListSyncDiffFlags.Usage = mailingListApplyGroupsioMailingListSyncDiffUsage
+	mailingListStartGroupsioMailingListSyncDiffFlags.Usage = mailingListStartGroupsioMailingListSyncDiffUsage
+	mailingListGetGroupsioMailingListSyncDiffStatusFlags.Usage = mailingListGetGroupsioMailingListSyncDiffStatusUsage
+	mailingListStartGroupsioMailingListSyncApplyFlags.Usage = mailingListStartGroupsioMailingListSyncApplyUsage
+	mailingListGetGroupsioMailingListSyncApplyStatusFlags.Usage = mailingListGetGroupsioMailingListSyncApplyStatusUsage
 	mailingListListGroupsioMembersFlags.Usage = mailingListListGroupsioMembersUsage
 	mailingListAddGroupsioMemberFlags.Usage = mailingListAddGroupsioMemberUsage
 	mailingListGetGroupsioMemberFlags.Usage = mailingListGetGroupsioMemberUsage
@@ -277,6 +300,18 @@ func ParseEndpoint(
 
 			case "apply-groupsio-mailing-list-sync-diff":
 				epf = mailingListApplyGroupsioMailingListSyncDiffFlags
+
+			case "start-groupsio-mailing-list-sync-diff":
+				epf = mailingListStartGroupsioMailingListSyncDiffFlags
+
+			case "get-groupsio-mailing-list-sync-diff-status":
+				epf = mailingListGetGroupsioMailingListSyncDiffStatusFlags
+
+			case "start-groupsio-mailing-list-sync-apply":
+				epf = mailingListStartGroupsioMailingListSyncApplyFlags
+
+			case "get-groupsio-mailing-list-sync-apply-status":
+				epf = mailingListGetGroupsioMailingListSyncApplyStatusFlags
 
 			case "list-groupsio-members":
 				epf = mailingListListGroupsioMembersFlags
@@ -382,6 +417,18 @@ func ParseEndpoint(
 			case "apply-groupsio-mailing-list-sync-diff":
 				endpoint = c.ApplyGroupsioMailingListSyncDiff()
 				data, err = mailinglistc.BuildApplyGroupsioMailingListSyncDiffPayload(*mailingListApplyGroupsioMailingListSyncDiffBodyFlag, *mailingListApplyGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListApplyGroupsioMailingListSyncDiffBearerTokenFlag)
+			case "start-groupsio-mailing-list-sync-diff":
+				endpoint = c.StartGroupsioMailingListSyncDiff()
+				data, err = mailinglistc.BuildStartGroupsioMailingListSyncDiffPayload(*mailingListStartGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListStartGroupsioMailingListSyncDiffBearerTokenFlag)
+			case "get-groupsio-mailing-list-sync-diff-status":
+				endpoint = c.GetGroupsioMailingListSyncDiffStatus()
+				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffStatusPayload(*mailingListGetGroupsioMailingListSyncDiffStatusSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusJobIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusBearerTokenFlag)
+			case "start-groupsio-mailing-list-sync-apply":
+				endpoint = c.StartGroupsioMailingListSyncApply()
+				data, err = mailinglistc.BuildStartGroupsioMailingListSyncApplyPayload(*mailingListStartGroupsioMailingListSyncApplyBodyFlag, *mailingListStartGroupsioMailingListSyncApplySubgroupIDFlag, *mailingListStartGroupsioMailingListSyncApplyBearerTokenFlag)
+			case "get-groupsio-mailing-list-sync-apply-status":
+				endpoint = c.GetGroupsioMailingListSyncApplyStatus()
+				data, err = mailinglistc.BuildGetGroupsioMailingListSyncApplyStatusPayload(*mailingListGetGroupsioMailingListSyncApplyStatusSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncApplyStatusJobIDFlag, *mailingListGetGroupsioMailingListSyncApplyStatusBearerTokenFlag)
 			case "list-groupsio-members":
 				endpoint = c.ListGroupsioMembers()
 				data, err = mailinglistc.BuildListGroupsioMembersPayload(*mailingListListGroupsioMembersSubgroupIDFlag, *mailingListListGroupsioMembersBearerTokenFlag)
@@ -443,6 +490,10 @@ func mailingListUsage() {
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-member-count: Get count of members in a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-sync-diff: Compute the membership reconciliation diff between a GroupsIO subgroup and its linked committee`)
 	fmt.Fprintln(os.Stderr, `    apply-groupsio-mailing-list-sync-diff: Apply an admin-approved subset of a previously computed sync-diff: add and remove members on the sync-diff's target side (committee or mailing list, per the linked committee's sync_mode) to reconcile it against the source side`)
+	fmt.Fprintln(os.Stderr, `    start-groupsio-mailing-list-sync-diff: Start computing the membership reconciliation diff between a GroupsIO subgroup and its linked committee asynchronously, returning a job ID to poll instead of waiting for it to complete`)
+	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-sync-diff-status: Get the progress/result of a sync-diff job started by start-groupsio-mailing-list-sync-diff`)
+	fmt.Fprintln(os.Stderr, `    start-groupsio-mailing-list-sync-apply: Start applying an admin-approved subset of a previously computed sync-diff asynchronously, returning a job ID to poll instead of waiting for it to complete`)
+	fmt.Fprintln(os.Stderr, `    get-groupsio-mailing-list-sync-apply-status: Get the progress/result of a sync-apply job started by start-groupsio-mailing-list-sync-apply`)
 	fmt.Fprintln(os.Stderr, `    list-groupsio-members: List members of a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    add-groupsio-member: Add a member to a GroupsIO subgroup`)
 	fmt.Fprintln(os.Stderr, `    get-groupsio-member: Get a member of a GroupsIO subgroup by ID`)
@@ -812,6 +863,92 @@ func mailingListApplyGroupsioMailingListSyncDiffUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list apply-groupsio-mailing-list-sync-diff --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Commodi ea ut reprehenderit blanditiis.\" --bearer-token \"eyJhbGci...\"")
+}
+
+func mailingListStartGroupsioMailingListSyncDiffUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list start-groupsio-mailing-list-sync-diff", os.Args[0])
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Start computing the membership reconciliation diff between a GroupsIO subgroup and its linked committee asynchronously, returning a job ID to poll instead of waiting for it to complete`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-diff --subgroup-id \"Nemo fugit ut nulla id illum provident.\" --bearer-token \"eyJhbGci...\"")
+}
+
+func mailingListGetGroupsioMailingListSyncDiffStatusUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list get-groupsio-mailing-list-sync-diff-status", os.Args[0])
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -job-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Get the progress/result of a sync-diff job started by start-groupsio-mailing-list-sync-diff`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -job-id STRING: Sync-diff job ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff-status --subgroup-id \"Velit nam occaecati facere.\" --job-id \"Vel expedita exercitationem eum pariatur omnis.\" --bearer-token \"eyJhbGci...\"")
+}
+
+func mailingListStartGroupsioMailingListSyncApplyUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list start-groupsio-mailing-list-sync-apply", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Start applying an admin-approved subset of a previously computed sync-diff asynchronously, returning a job ID to poll instead of waiting for it to complete`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-apply --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Sapiente praesentium impedit.\" --bearer-token \"eyJhbGci...\"")
+}
+
+func mailingListGetGroupsioMailingListSyncApplyStatusUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list get-groupsio-mailing-list-sync-apply-status", os.Args[0])
+	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -job-id STRING")
+	fmt.Fprint(os.Stderr, " -bearer-token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Get the progress/result of a sync-apply job started by start-groupsio-mailing-list-sync-apply`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -job-id STRING: Sync-apply job ID`)
+	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-apply-status --subgroup-id \"Et et eius.\" --job-id \"Rerum quisquam.\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListListGroupsioMembersUsage() {

@@ -115,6 +115,48 @@ func convertSyncApplyRemovePayload(removes []*mailinglist.GroupsioSyncDiffRemove
 	return result
 }
 
+// convertSyncDiffJobStatus converts a domain sync-diff job status into its Goa result type.
+func convertSyncDiffJobStatus(s *model.SyncDiffJobStatus) *mailinglist.GroupsioSyncDiffStatus {
+	result := &mailinglist.GroupsioSyncDiffStatus{
+		JobID:          s.JobID,
+		Status:         s.Status,
+		ProcessedCount: s.ProcessedCount,
+		TotalCount:     s.TotalCount,
+		ErrorMessage:   converter.NonEmptyString(s.ErrorMessage),
+	}
+	if s.Diff != nil {
+		result.Diff = convertSyncDiff(s.Diff)
+	}
+	return result
+}
+
+// convertSyncApplyJobStatus converts a domain sync-apply job status into its Goa result type.
+func convertSyncApplyJobStatus(s *model.SyncApplyJobStatus) *mailinglist.GroupsioSyncApplyStatus {
+	result := &mailinglist.GroupsioSyncApplyStatus{
+		JobID:          s.JobID,
+		Status:         s.Status,
+		ProcessedCount: s.ProcessedCount,
+		TotalCount:     s.TotalCount,
+		AddedCount:     s.AddedCount,
+		RemovedCount:   s.RemovedCount,
+		ErrorCount:     s.ErrorCount,
+		ErrorMessage:   converter.NonEmptyString(s.ErrorMessage),
+	}
+	if s.Results != nil {
+		results := make([]*mailinglist.GroupsioSyncJobResultEntry, len(s.Results))
+		for i, r := range s.Results {
+			results[i] = &mailinglist.GroupsioSyncJobResultEntry{
+				Email:  r.Email,
+				Action: r.Action,
+				Status: r.Status,
+				Error:  converter.NonEmptyString(r.Error),
+			}
+		}
+		result.Results = results
+	}
+	return result
+}
+
 // formatTime returns t formatted as RFC3339, or "" if t is zero.
 func formatTime(t time.Time) string {
 	if t.IsZero() {
