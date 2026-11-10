@@ -2972,6 +2972,7 @@ func EncodeGetGroupsioMailingListSyncApplyStatusRequest(encoder func(*http.Reque
 // whether the response body should be restored after having been read.
 // DecodeGetGroupsioMailingListSyncApplyStatusResponse may return the following
 // errors:
+//   - "BadRequest" (type *mailinglist.BadRequestError): http.StatusBadRequest
 //   - "Conflict" (type *mailinglist.ConflictError): http.StatusConflict
 //   - "InternalServerError" (type *mailinglist.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *mailinglist.NotFoundError): http.StatusNotFound
@@ -3008,6 +3009,20 @@ func DecodeGetGroupsioMailingListSyncApplyStatusResponse(decoder func(*http.Resp
 			}
 			res := NewGetGroupsioMailingListSyncApplyStatusGroupsioSyncApplyStatusOK(&body)
 			return res, nil
+		case http.StatusBadRequest:
+			var (
+				body GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("mailing-list", "get-groupsio-mailing-list-sync-apply-status", err)
+			}
+			err = ValidateGetGroupsioMailingListSyncApplyStatusBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("mailing-list", "get-groupsio-mailing-list-sync-apply-status", err)
+			}
+			return nil, NewGetGroupsioMailingListSyncApplyStatusBadRequest(&body)
 		case http.StatusConflict:
 			var (
 				body GetGroupsioMailingListSyncApplyStatusConflictResponseBody

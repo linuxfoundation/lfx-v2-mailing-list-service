@@ -1324,6 +1324,14 @@ type StartGroupsioMailingListSyncApplyUnauthorizedResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body for the "BadRequest" error.
+type GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody struct {
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // GetGroupsioMailingListSyncApplyStatusConflictResponseBody is the type of the
 // "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
 // endpoint HTTP response body for the "Conflict" error.
@@ -3237,6 +3245,17 @@ func NewGetGroupsioMailingListSyncApplyStatusGroupsioSyncApplyStatusOK(body *Get
 	return v
 }
 
+// NewGetGroupsioMailingListSyncApplyStatusBadRequest builds a mailing-list
+// service get-groupsio-mailing-list-sync-apply-status endpoint BadRequest
+// error.
+func NewGetGroupsioMailingListSyncApplyStatusBadRequest(body *GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody) *mailinglist.BadRequestError {
+	v := &mailinglist.BadRequestError{
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewGetGroupsioMailingListSyncApplyStatusConflict builds a mailing-list
 // service get-groupsio-mailing-list-sync-apply-status endpoint Conflict error.
 func NewGetGroupsioMailingListSyncApplyStatusConflict(body *GetGroupsioMailingListSyncApplyStatusConflictResponseBody) *mailinglist.ConflictError {
@@ -4868,6 +4887,16 @@ func ValidateStartGroupsioMailingListSyncApplyServiceUnavailableResponseBody(bod
 // validations defined on
 // start-groupsio-mailing-list-sync-apply_Unauthorized_response_body
 func ValidateStartGroupsioMailingListSyncApplyUnauthorizedResponseBody(body *StartGroupsioMailingListSyncApplyUnauthorizedResponseBody) (err error) {
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetGroupsioMailingListSyncApplyStatusBadRequestResponseBody runs the
+// validations defined on
+// get-groupsio-mailing-list-sync-apply-status_BadRequest_response_body
+func ValidateGetGroupsioMailingListSyncApplyStatusBadRequestResponseBody(body *GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody) (err error) {
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}

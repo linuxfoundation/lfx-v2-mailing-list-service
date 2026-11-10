@@ -1401,6 +1401,14 @@ paths:
                                       status: success
                                 status: pending
                                 total_count: 3598322195785480135
+                "400":
+                    description: 'BadRequest: job_id is not a valid sync-apply job ID'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                message: The request was invalid.
                 "403":
                     description: 'Unauthorized: Caller lacks writer access to the linked committee'
                     content:

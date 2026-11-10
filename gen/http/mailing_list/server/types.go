@@ -1324,6 +1324,14 @@ type StartGroupsioMailingListSyncApplyUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody is the type of
+// the "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
+// endpoint HTTP response body for the "BadRequest" error.
+type GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody struct {
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // GetGroupsioMailingListSyncApplyStatusConflictResponseBody is the type of the
 // "mailing-list" service "get-groupsio-mailing-list-sync-apply-status"
 // endpoint HTTP response body for the "Conflict" error.
@@ -3170,6 +3178,17 @@ func NewStartGroupsioMailingListSyncApplyServiceUnavailableResponseBody(res *mai
 // service.
 func NewStartGroupsioMailingListSyncApplyUnauthorizedResponseBody(res *mailinglist.UnauthorizedError) *StartGroupsioMailingListSyncApplyUnauthorizedResponseBody {
 	body := &StartGroupsioMailingListSyncApplyUnauthorizedResponseBody{
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetGroupsioMailingListSyncApplyStatusBadRequestResponseBody builds the
+// HTTP response body from the result of the
+// "get-groupsio-mailing-list-sync-apply-status" endpoint of the "mailing-list"
+// service.
+func NewGetGroupsioMailingListSyncApplyStatusBadRequestResponseBody(res *mailinglist.BadRequestError) *GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody {
+	body := &GetGroupsioMailingListSyncApplyStatusBadRequestResponseBody{
 		Message: res.Message,
 	}
 	return body
