@@ -131,6 +131,28 @@ func NewCommitteeProjectLookup(ctx context.Context, source string, natsClient *n
 	}
 }
 
+// NewSyncApplyJobBindingStore initializes and returns the sync-apply job binding store, which
+// records each sync-apply job's mailing-list/committee binding server-side so GetSyncApplyStatus
+// can authenticate a poll's job_id instead of trusting caller-supplied state (see
+// internal/service/grpsio_sync_apply.go).
+// source controls the backend: "nats" (default) or "mock".
+func NewSyncApplyJobBindingStore(ctx context.Context, source string, natsClient *nats.NATSClient) (port.SyncApplyJobBindingStore, error) {
+	switch source {
+	case "mock":
+		slog.InfoContext(ctx, "initializing mock sync-apply job binding store")
+		return infrastructure.NewFakeSyncApplyJobBindingStore(), nil
+	case "nats":
+		slog.InfoContext(ctx, "initializing NATS sync-apply job binding store")
+		kv, err := natsClient.KeyValue(ctx, constants.KVBucketSyncApplyJobBindings)
+		if err != nil {
+			return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketSyncApplyJobBindings, err)
+		}
+		return nats.NewSyncApplyJobBindingStore(kv), nil
+	default:
+		return nil, fmt.Errorf("unsupported sync-apply job binding store implementation: %s", source)
+	}
+}
+
 // decodePrivateKey returns the raw PEM key, base64-decoding it first if needed.
 // Secrets stored in AWS Secrets Manager (and injected via External Secrets Operator)
 // are sometimes base64-encoded before storage; this handles both cases transparently.

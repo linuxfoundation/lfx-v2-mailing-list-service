@@ -5,56 +5,12 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
-
-// syncApplyJobToken binds an ITX sync-apply job ID to the committee UID the apply was approved
-// against, so GetSyncApplyStatus can detect a relink that happens between StartSyncApply's
-// approval-time check and ITX actually running the job — a case job.CommitteeID alone cannot
-// catch, since ITX may re-derive the committee it ran against at execution time and can
-// coincidentally agree with whatever is linked at poll time even after an intervening relink (per
-// @copilot-pull-request-reviewer). The token is opaque to API callers (docs/api-endpoints.md only
-// ever documents job_id as `<sync-apply-job-id>`, a placeholder, never a parseable format), so
-// encoding extra state into it does not change the public API contract.
-type syncApplyJobToken struct {
-	ExpectedCommitteeUID string `json:"c"`
-	ITXJobID             string `json:"j"`
-}
-
-func encodeSyncApplyJobToken(expectedCommitteeUID, itxJobID string) (string, error) {
-	data, err := json.Marshal(syncApplyJobToken{ExpectedCommitteeUID: expectedCommitteeUID, ITXJobID: itxJobID})
-	if err != nil {
-		return "", errs.NewUnexpected("failed to encode sync-apply job ID", err)
-	}
-	return base64.RawURLEncoding.EncodeToString(data), nil
-}
-
-func decodeSyncApplyJobToken(token string) (expectedCommitteeUID, itxJobID string, err error) {
-	data, decodeErr := base64.RawURLEncoding.DecodeString(token)
-	if decodeErr != nil {
-		return "", "", errs.NewValidation("invalid sync-apply job ID")
-	}
-	var t syncApplyJobToken
-	if unmarshalErr := json.Unmarshal(data, &t); unmarshalErr != nil || t.ITXJobID == "" {
-		return "", "", errs.NewValidation("invalid sync-apply job ID")
-	}
-	// The decoded ITXJobID is proxied straight into an ITX URL path segment
-	// (port.ITXSyncClient.GetSyncApplyJob -> url.JoinPath), which collapses ".." segments instead of
-	// rejecting them — so an unvalidated value here would let a caller redirect the lookup to an
-	// arbitrary other mailing list's job using this service's own ITX credentials, bypassing the
-	// writer-access check above (which only covers the mailing list named in the request path), per
-	// @copilot-pull-request-reviewer.
-	if !isSafePathSegment(t.ITXJobID) {
-		return "", "", errs.NewValidation("invalid sync-apply job ID")
-	}
-	return t.ExpectedCommitteeUID, t.ITXJobID, nil
-}
 
 // isSafePathSegment reports whether s is safe to use as a single URL path segment: non-empty, with
 // no path separators, no "." or ".." segments, and no percent-encoded escapes that could decode into
@@ -76,6 +32,7 @@ type SyncApplyOrchestrator struct {
 	itxSyncClient     port.ITXSyncClient
 	accessChecker     port.AccessChecker
 	translator        port.Translator
+	jobBindingStore   port.SyncApplyJobBindingStore
 }
 
 // SyncApplyOrchestratorOption configures a SyncApplyOrchestrator.
@@ -104,6 +61,13 @@ func WithSyncApplyAccessChecker(c port.AccessChecker) SyncApplyOrchestratorOptio
 // (v1) against the mailing list's linked committee UID (v2) in the job-completion recheck below.
 func WithSyncApplyTranslator(t port.Translator) SyncApplyOrchestratorOption {
 	return func(o *SyncApplyOrchestrator) { o.translator = t }
+}
+
+// WithSyncApplyJobBindingStore sets the store StartSyncApply records each job's mailing-list/
+// committee binding into, and GetSyncApplyStatus authenticates a poll's job_id against — see
+// GetSyncApplyStatus's doc comment for why this replaced trusting caller-supplied state.
+func WithSyncApplyJobBindingStore(s port.SyncApplyJobBindingStore) SyncApplyOrchestratorOption {
+	return func(o *SyncApplyOrchestrator) { o.jobBindingStore = s }
 }
 
 // NewSyncApplyOrchestrator creates a SyncApplyOrchestrator with the given options.
@@ -312,18 +276,35 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 	if err != nil {
 		return "", err
 	}
-	return encodeSyncApplyJobToken(prepared.committeeUID, itxJobID)
+
+	// Record the binding this job was approved against server-side, so GetSyncApplyStatus can
+	// authenticate a later poll against it instead of trusting a client-supplied committee UID —
+	// an earlier design embedded ExpectedCommitteeUID in an opaque client-held token, which let a
+	// caller edit that field directly and defeat the relink-safety check it exists to provide (per
+	// @copilot-pull-request-reviewer and @coderabbitai). itxJobID itself is also the job_id handed
+	// back to the caller and later fed into an ITX URL path segment
+	// (port.ITXSyncClient.GetSyncApplyJob -> url.JoinPath); binding it to mailingListID here means
+	// a poll for a job started against a different list is rejected by the MailingListID check in
+	// GetSyncApplyStatus even before isSafePathSegment's path-traversal guard is considered.
+	if err := o.jobBindingStore.Put(ctx, itxJobID, port.SyncApplyJobBinding{
+		MailingListID: mailingListID,
+		CommitteeUID:  prepared.committeeUID,
+	}); err != nil {
+		return "", err
+	}
+
+	return itxJobID, nil
 }
 
 // GetSyncApplyStatus returns the current progress/result of a sync-apply job started by
-// StartSyncApply. Like GetSyncDiffStatus, this has no job-start-time state to fall back on beyond
-// what StartSyncApply encoded into jobID itself (see syncApplyJobToken): the expectedCommitteeUID
-// it carries is checked against the mailing list's CURRENT linked committee on every call (a
-// relink between approval and this poll is rejected as Conflict even if ITX's own job.CommitteeID
-// happens to still agree — see syncApplyJobToken's doc comment), the committee-writer access check
-// is re-run against it on every call too, and a job reported against a different committee
-// (job.CommitteeID, translated v1->v2) than the one currently linked is separately rejected as
-// Conflict by verifyJobCommitteeMatch below (catching a relink ITX's job itself observed mid-run).
+// StartSyncApply. The binding StartSyncApply recorded for jobID (mailing list + committee UID) is
+// looked up server-side rather than trusted from the request: the recorded committeeUID is checked
+// against the mailing list's CURRENT linked committee on every call (a relink between approval and
+// this poll is rejected as Conflict even if ITX's own job.CommitteeID happens to still agree — see
+// WithSyncApplyJobBindingStore's doc comment), the committee-writer access check is re-run against
+// it on every call too, and a job reported against a different committee (job.CommitteeID,
+// translated v1->v2) than the one currently linked is separately rejected as Conflict by
+// verifyJobCommitteeMatch below (catching a relink ITX's job itself observed mid-run).
 //
 // Unlike ApplySyncDiff/fromSyncApplyJob, this does not reconstruct MemberID/MemberType/NameHint
 // enrichment for each result — that requires the request-time approved-adds/removes, which aren't
@@ -331,10 +312,22 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 // model.SyncJobResultEntry (a direct copy of ITX's own per-entry email/action/status/error), with
 // ITX's own pre-aggregated AddedCount/RemovedCount/ErrorCount in place of recomputing them.
 func (o *SyncApplyOrchestrator) GetSyncApplyStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncApplyJobStatus, error) {
-	expectedCommitteeUID, itxJobID, err := decodeSyncApplyJobToken(jobID)
+	// jobID is attacker-controlled (an HTTP caller can send anything) and is proxied straight into
+	// an ITX URL path segment below via itxJobID — reject path-traversal payloads before it is used
+	// for anything, including the binding-store lookup key itself.
+	if !isSafePathSegment(jobID) {
+		return nil, errs.NewValidation("invalid sync-apply job ID")
+	}
+	itxJobID := jobID
+
+	binding, found, err := o.jobBindingStore.Get(ctx, itxJobID)
 	if err != nil {
 		return nil, err
 	}
+	if !found || binding.MailingListID != mailingListID {
+		return nil, errs.NewValidation("invalid sync-apply job ID")
+	}
+	expectedCommitteeUID := binding.CommitteeUID
 
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {

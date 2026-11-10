@@ -117,6 +117,31 @@ nats:
     # compression determines whether KV bucket data is compressed.
     compression: true
 
+  # kv_bucket_sync_apply_job_bindings records the mailing list and committee a sync-apply job was
+  # started against, keyed by the ITX job ID, so a poll of GET .../sync-apply/:job_id can be
+  # authenticated server-side instead of trusting the job_id the caller supplies.
+  kv_bucket_sync_apply_job_bindings:
+    # Set creation to false if the bucket is managed separately.
+    creation: true
+    # These bindings are only needed for the lifetime of a poll window — do not keep them across
+    # a chart uninstall/reinstall.
+    keep: false
+    # replicas is the number of replicas for the KV bucket.
+    replicas: 1
+    # history is the number of history entries to keep per key.
+    history: 1
+    # storage is the storage type for the KV bucket.
+    storage: file
+    # maxValueSize is the maximum size of a value in the KV bucket.
+    maxValueSize: 1024
+    # maxBytes is the maximum number of bytes in the KV bucket.
+    maxBytes: 1073741824  # 1GB
+    # compression determines whether KV bucket data is compressed.
+    compression: true
+    # ttl bounds how long a job binding is retained, so a job's binding does not outlive any
+    # plausible poll window. Go duration format.
+    ttl: 24h
+
 # openfga is the configuration for the OpenFGA server
 openfga:
   # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization

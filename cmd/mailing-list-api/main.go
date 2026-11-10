@@ -179,11 +179,18 @@ func run() int {
 		orchestrator.WithSyncDiffTranslator(translator),
 	)
 
+	syncApplyJobBindingStore, err := service.NewSyncApplyJobBindingStore(ctx, env.RepositorySource, natsClient)
+	if err != nil {
+		slog.ErrorContext(ctx, "error initializing sync-apply job binding store", "error", err)
+		return 1
+	}
+
 	syncApplyOrchestrator := orchestrator.NewSyncApplyOrchestrator(
 		orchestrator.WithSyncApplyMailingListReader(mailingListReaderOrchestrator),
 		orchestrator.WithSyncApplyITXSyncClient(proxyClient),
 		orchestrator.WithSyncApplyAccessChecker(accessChecker),
 		orchestrator.WithSyncApplyTranslator(translator),
+		orchestrator.WithSyncApplyJobBindingStore(syncApplyJobBindingStore),
 	)
 
 	realtimeAutoSyncOrchestrator := orchestrator.NewRealtimeAutoSyncOrchestrator(

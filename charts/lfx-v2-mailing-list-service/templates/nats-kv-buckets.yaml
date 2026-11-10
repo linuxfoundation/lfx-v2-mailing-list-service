@@ -22,3 +22,26 @@ spec:
   maxBytes: {{ .Values.nats.kv_bucket_subgroup_service_index.maxBytes }}
   compression: {{ .Values.nats.kv_bucket_subgroup_service_index.compression }}
 {{- end }}
+---
+{{- if .Values.nats.kv_bucket_sync_apply_job_bindings.creation }}
+apiVersion: jetstream.nats.io/v1beta2
+kind: KeyValue
+metadata:
+  name: sync-apply-job-bindings
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.nats.kv_bucket_sync_apply_job_bindings.keep }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+spec:
+  bucket: sync-apply-job-bindings
+  replicas: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.replicas }}
+  history: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.history }}
+  storage: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.storage }}
+  maxValueSize: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.maxValueSize }}
+  maxBytes: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.maxBytes }}
+  compression: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.compression }}
+  ttl: {{ .Values.nats.kv_bucket_sync_apply_job_bindings.ttl }}
+{{- end }}

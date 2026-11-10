@@ -17,13 +17,18 @@ import (
 	errs "github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/errors"
 )
 
-// syncApplyToken builds the opaque job_id GetSyncApplyStatus expects, as StartSyncApply would
-// have encoded it for a job started with committeeUID approved and itxJobID returned by ITX.
-func syncApplyToken(t *testing.T, committeeUID, itxJobID string) string {
+// bindSyncApplyJob records the binding StartSyncApply would have written for a job started
+// against mailingListID and approved against committeeUID, and returns the job_id
+// GetSyncApplyStatus now expects — the raw ITX job ID, since the binding is authenticated
+// server-side instead of decoded from the ID itself.
+func bindSyncApplyJob(t *testing.T, store port.SyncApplyJobBindingStore, mailingListID, committeeUID, itxJobID string) string {
 	t.Helper()
-	token, err := encodeSyncApplyJobToken(committeeUID, itxJobID)
+	err := store.Put(context.Background(), itxJobID, port.SyncApplyJobBinding{
+		MailingListID: mailingListID,
+		CommitteeUID:  committeeUID,
+	})
 	require.NoError(t, err)
-	return token
+	return itxJobID
 }
 
 func newApplyOrchestrator(mlReader port.GroupsIOMailingListReader, itxClient port.ITXSyncClient) port.SyncApplier {
@@ -31,7 +36,21 @@ func newApplyOrchestrator(mlReader port.GroupsIOMailingListReader, itxClient por
 		WithSyncApplyMailingListReader(mlReader),
 		WithSyncApplyITXSyncClient(itxClient),
 		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyJobBindingStore(mock.NewFakeSyncApplyJobBindingStore()),
 	)
+}
+
+// newApplyOrchestratorWithStore is like newApplyOrchestrator but also returns the job binding
+// store, so a test can pre-populate the binding GetSyncApplyStatus will look up.
+func newApplyOrchestratorWithStore(mlReader port.GroupsIOMailingListReader, itxClient port.ITXSyncClient) (port.SyncApplier, port.SyncApplyJobBindingStore) {
+	store := mock.NewFakeSyncApplyJobBindingStore()
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(mlReader),
+		WithSyncApplyITXSyncClient(itxClient),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyJobBindingStore(store),
+	)
+	return o, store
 }
 
 func TestApplySyncDiff_NoLinkedCommittee(t *testing.T) {
@@ -565,7 +584,7 @@ func TestStartSyncApply_AccessDenied(t *testing.T) {
 // polling for completion, unlike ApplySyncDiff, and submits the approved emails to ITX.
 func TestStartSyncApply_ReturnsJobID(t *testing.T) {
 	stub := &stubITXSyncClient{postApplyJobID: "apply-1"}
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		stub,
 	)
@@ -573,10 +592,14 @@ func TestStartSyncApply_ReturnsJobID(t *testing.T) {
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 	}, nil)
 	require.NoError(t, err)
-	gotCommitteeUID, gotITXJobID, err := decodeSyncApplyJobToken(jobID)
+	assert.Equal(t, "apply-1", jobID, "job_id returned to the caller must be the raw ITX job ID")
+
+	binding, found, err := store.Get(context.Background(), jobID)
 	require.NoError(t, err)
-	assert.Equal(t, "committee-1", gotCommitteeUID)
-	assert.Equal(t, "apply-1", gotITXJobID)
+	require.True(t, found, "StartSyncApply must record the job's binding server-side")
+	assert.Equal(t, "ml-1", binding.MailingListID)
+	assert.Equal(t, "committee-1", binding.CommitteeUID)
+
 	assert.Equal(t, []string{"alice@example.com"}, stub.postApplyAdds)
 	assert.Equal(t, port.SyncJobDirectionCommitteeToMailingList, stub.postApplyDirection)
 }
@@ -606,23 +629,27 @@ func TestStartSyncApply_PostSyncApplyError(t *testing.T) {
 }
 
 func TestGetSyncApplyStatus_NoLongerLinked(t *testing.T) {
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubITXSyncClient{},
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
 }
 
 func TestGetSyncApplyStatus_AccessDenied(t *testing.T) {
+	store := mock.NewFakeSyncApplyJobBindingStore()
 	o := NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
 		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
+		WithSyncApplyJobBindingStore(store),
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.Error(t, err)
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
@@ -631,13 +658,14 @@ func TestGetSyncApplyStatus_AccessDenied(t *testing.T) {
 // TestGetSyncApplyStatus_Ongoing pins that an in-progress job returns progress counts without
 // Results.
 func TestGetSyncApplyStatus_Ongoing(t *testing.T) {
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{
 			applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusOngoing, ProcessedCount: 1, TotalCount: 2},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusOngoing, status.Status)
 	assert.Equal(t, 1, status.ProcessedCount)
@@ -647,7 +675,7 @@ func TestGetSyncApplyStatus_Ongoing(t *testing.T) {
 // TestGetSyncApplyStatus_Completed pins that a completed job's flat results and pre-aggregated
 // counts are copied through without per-entry MemberID/MemberType/NameHint enrichment.
 func TestGetSyncApplyStatus_Completed(t *testing.T) {
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{
 			applyJob: &port.SyncApplyJob{
@@ -662,7 +690,8 @@ func TestGetSyncApplyStatus_Completed(t *testing.T) {
 			},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusCompleted, status.Status)
 	assert.Equal(t, 1, status.AddedCount)
@@ -675,7 +704,7 @@ func TestGetSyncApplyStatus_Completed(t *testing.T) {
 // TestGetSyncApplyStatus_Failed pins that a failed job also surfaces its (possibly partial)
 // results rather than only succeeding for completed jobs.
 func TestGetSyncApplyStatus_Failed(t *testing.T) {
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{
 			applyJob: &port.SyncApplyJob{
@@ -685,7 +714,8 @@ func TestGetSyncApplyStatus_Failed(t *testing.T) {
 			},
 		},
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusFailed, status.Status)
 	assert.Equal(t, "subgroup locked", status.ErrorMessage)
@@ -698,6 +728,7 @@ func TestGetSyncApplyStatus_Failed(t *testing.T) {
 // for the empty CommitteeID, turning a legitimate failure into an opaque polling error (per
 // @copilot-pull-request-reviewer).
 func TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification(t *testing.T) {
+	store := mock.NewFakeSyncApplyJobBindingStore()
 	o := NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{
@@ -709,20 +740,26 @@ func TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification(t *tes
 		}),
 		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
 		WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+		WithSyncApplyJobBindingStore(store),
 	)
-	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	status, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobStatusFailed, status.Status)
 	assert.Equal(t, "subgroup locked", status.ErrorMessage)
 	assert.Empty(t, status.Results)
 }
 
+// TestGetSyncApplyStatus_RejectsPathTraversalJobID pins that jobID is rejected as a path-traversal
+// payload before it is ever used as a binding-store lookup key or ITX URL path segment.
 func TestGetSyncApplyStatus_RejectsPathTraversalJobID(t *testing.T) {
+	store := mock.NewFakeSyncApplyJobBindingStore()
 	o := NewSyncApplyOrchestrator(
 		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusCompleted}}),
 		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
 		WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+		WithSyncApplyJobBindingStore(store),
 	)
 	for _, itxJobID := range []string{
 		"../../other-list/sync-apply/known-job",
@@ -731,19 +768,53 @@ func TestGetSyncApplyStatus_RejectsPathTraversalJobID(t *testing.T) {
 		"foo%2f..%2fbar",
 		"",
 	} {
-		token := syncApplyToken(t, "committee-1", itxJobID)
-		_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", token)
+		// Bind the malicious ID anyway, so a test failure here would prove the path-traversal
+		// guard itself rejects the payload, not merely that the binding happened to be missing.
+		if itxJobID != "" {
+			require.NoError(t, store.Put(context.Background(), itxJobID, port.SyncApplyJobBinding{MailingListID: "ml-1", CommitteeUID: "committee-1"}))
+		}
+		_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", itxJobID)
 		require.Error(t, err, "itxJobID=%q", itxJobID)
 		var validation errs.Validation
 		assert.True(t, errors.As(err, &validation), "itxJobID=%q", itxJobID)
 	}
 }
 
+// TestGetSyncApplyStatus_UnknownOrExpiredJobID pins that a jobID which passes the path-traversal
+// guard but has no recorded binding (unknown to this service, or its KV entry expired) is rejected
+// as invalid rather than falling through to query ITX with no authenticated committee to check.
+func TestGetSyncApplyStatus_UnknownOrExpiredJobID(t *testing.T) {
+	o, _ := newApplyOrchestratorWithStore(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusCompleted}},
+	)
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", "apply-1")
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
+// TestGetSyncApplyStatus_JobIDBoundToDifferentMailingList pins that a jobID bound to a different
+// mailing list than the one in the request is rejected, even though it is a syntactically safe
+// path segment and a real binding exists for it.
+func TestGetSyncApplyStatus_JobIDBoundToDifferentMailingList(t *testing.T) {
+	o, store := newApplyOrchestratorWithStore(
+		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
+		&stubITXSyncClient{applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusCompleted}},
+	)
+	jobID := bindSyncApplyJob(t, store, "ml-other", "committee-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
+	require.Error(t, err)
+	var validation errs.Validation
+	assert.True(t, errors.As(err, &validation))
+}
+
 func TestGetSyncApplyStatus_GetSyncApplyJobError(t *testing.T) {
-	o := newApplyOrchestrator(
+	o, store := newApplyOrchestratorWithStore(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{applyJobErr: errors.New("itx unreachable")},
 	)
-	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", syncApplyToken(t, "committee-1", "apply-1"))
+	jobID := bindSyncApplyJob(t, store, "ml-1", "committee-1", "apply-1")
+	_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", jobID)
 	require.Error(t, err)
 }
