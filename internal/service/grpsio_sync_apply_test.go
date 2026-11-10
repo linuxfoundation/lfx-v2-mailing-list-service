@@ -717,6 +717,28 @@ func TestGetSyncApplyStatus_FailedWithNoResultsSkipsCommitteeVerification(t *tes
 	assert.Empty(t, status.Results)
 }
 
+func TestGetSyncApplyStatus_RejectsPathTraversalJobID(t *testing.T) {
+	o := NewSyncApplyOrchestrator(
+		WithSyncApplyMailingListReader(&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)}),
+		WithSyncApplyITXSyncClient(&stubITXSyncClient{applyJob: &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusCompleted}}),
+		WithSyncApplyAccessChecker(mock.NewMockAccessChecker()),
+		WithSyncApplyTranslator(&stubTranslator{v2ByV1: map[string]string{"v1-committee-1": "committee-1"}}),
+	)
+	for _, itxJobID := range []string{
+		"../../other-list/sync-apply/known-job",
+		"..",
+		"foo/bar",
+		"foo%2f..%2fbar",
+		"",
+	} {
+		token := syncApplyToken(t, "committee-1", itxJobID)
+		_, err := o.GetSyncApplyStatus(ctxWithPrincipal(), "ml-1", token)
+		require.Error(t, err, "itxJobID=%q", itxJobID)
+		var validation errs.Validation
+		assert.True(t, errors.As(err, &validation), "itxJobID=%q", itxJobID)
+	}
+}
+
 func TestGetSyncApplyStatus_GetSyncApplyJobError(t *testing.T) {
 	o := newApplyOrchestrator(
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},

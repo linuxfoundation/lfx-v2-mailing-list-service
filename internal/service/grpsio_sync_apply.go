@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
@@ -43,7 +44,26 @@ func decodeSyncApplyJobToken(token string) (expectedCommitteeUID, itxJobID strin
 	if unmarshalErr := json.Unmarshal(data, &t); unmarshalErr != nil || t.ITXJobID == "" {
 		return "", "", errs.NewValidation("invalid sync-apply job ID")
 	}
+	// The decoded ITXJobID is proxied straight into an ITX URL path segment
+	// (port.ITXSyncClient.GetSyncApplyJob -> url.JoinPath), which collapses ".." segments instead of
+	// rejecting them — so an unvalidated value here would let a caller redirect the lookup to an
+	// arbitrary other mailing list's job using this service's own ITX credentials, bypassing the
+	// writer-access check above (which only covers the mailing list named in the request path), per
+	// @copilot-pull-request-reviewer.
+	if !isSafePathSegment(t.ITXJobID) {
+		return "", "", errs.NewValidation("invalid sync-apply job ID")
+	}
 	return t.ExpectedCommitteeUID, t.ITXJobID, nil
+}
+
+// isSafePathSegment reports whether s is safe to use as a single URL path segment: non-empty, with
+// no path separators, no "." or ".." segments, and no percent-encoded escapes that could decode into
+// either of those at the HTTP layer.
+func isSafePathSegment(s string) bool {
+	if s == "" || s == "." || s == ".." {
+		return false
+	}
+	return !strings.ContainsAny(s, "/\\%")
 }
 
 // SyncApplyOrchestrator implements port.SyncApplier by delegating the actual apply to ITX's own
