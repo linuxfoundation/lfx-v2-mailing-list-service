@@ -235,6 +235,14 @@ const (
 	notLinkedToCommitteeValidationMsg       = "mailing list is not linked to a committee"
 	syncModeManualValidationMsg             = "mailing list sync_mode is manual; there is nothing to reconcile"
 	syncModeUnrecognizedValidationMsgPrefix = "mailing list has an unrecognized sync_mode: "
+
+	// invalidDirectionOverrideMsgPrefix and directionOverrideNotManualMsg are the Validation
+	// messages resolveSyncJobDirection produces for a caller-supplied direction override: an
+	// unrecognized value, or one supplied for a mailing list whose sync_mode is already one of the
+	// auto_* directions (see resolveSyncJobDirection's doc comment for why the latter is rejected
+	// rather than silently honored or silently ignored).
+	invalidDirectionOverrideMsgPrefix = "invalid direction: "
+	directionOverrideNotManualMsg     = "direction may only be specified when the mailing list's sync_mode is manual or unset"
 )
 
 // ErrNothingToReconcile is joined into the three Validation errors above so
@@ -262,4 +270,31 @@ func syncJobDirectionForMode(syncMode string) (string, error) {
 	default:
 		return "", errs.NewValidation(syncModeUnrecognizedValidationMsgPrefix+syncMode, ErrNothingToReconcile)
 	}
+}
+
+// resolveSyncJobDirection decides which direction a sync-diff/sync-apply job should run in: a
+// caller-supplied directionOverride takes priority when present, falling back to
+// syncJobDirectionForMode(syncMode) when it is empty.
+//
+// A manual "Sync Now" (PCC's own UI lets the admin pick either direction for a manual-mode list —
+// see mailing-list-sync-preview-dialog, self-serve's equivalent) is the only reason
+// directionOverride is ever non-empty: it is deliberately rejected when syncMode is already one of
+// the auto_* directions, rather than silently honored (which would let a caller run an auto-synced
+// list against the opposite direction without changing its configured mode — surprising, and
+// liable to fight the next realtime auto-sync event) or silently ignored (which would make the
+// override a no-op without telling the caller). RealtimeAutoSyncOrchestrator.TriggerAutoSync's own
+// (automatic, webhook-driven) call path always passes directionOverride as "" — see its call
+// sites — so this override can never affect automatic sync.
+func resolveSyncJobDirection(syncMode, directionOverride string) (string, error) {
+	if directionOverride == "" {
+		return syncJobDirectionForMode(syncMode)
+	}
+	if directionOverride != port.SyncJobDirectionCommitteeToMailingList &&
+		directionOverride != port.SyncJobDirectionMailingListToCommittee {
+		return "", errs.NewValidation(invalidDirectionOverrideMsgPrefix + directionOverride)
+	}
+	if syncMode != "" && syncMode != model.SyncModeManual {
+		return "", errs.NewValidation(directionOverrideNotManualMsg)
+	}
+	return directionOverride, nil
 }

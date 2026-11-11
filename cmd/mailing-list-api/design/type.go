@@ -15,6 +15,20 @@ func BearerTokenAttribute() {
 	})
 }
 
+// DirectionOverrideAttribute is the DSL attribute for the optional "direction" query parameter
+// shared by the sync-diff start/status/compute endpoints that accept a manual-mode direction
+// override — see resolveSyncJobDirection in internal/service/sync_job_poll.go. Only valid when
+// the mailing list's sync_mode is "manual" or unset; omit to use the mailing list's configured
+// sync_mode direction.
+func DirectionOverrideAttribute() {
+	dsl.Attribute("direction", dsl.String, "Sync direction override for a manual-mode mailing list "+
+		"(\"c_to_ml\" or \"ml_to_c\") — only valid when sync_mode is manual or unset; omit to use the "+
+		"mailing list's configured sync_mode direction", func() {
+		dsl.Enum("c_to_ml", "ml_to_c")
+		dsl.Example("c_to_ml")
+	})
+}
+
 // BadRequestError is the DSL type for a bad request error.
 var BadRequestError = dsl.Type("bad-request-error", func() {
 	dsl.Attribute("message", dsl.String, "Error message", func() {
@@ -236,8 +250,10 @@ var GroupsioSyncDiffType = dsl.Type("groupsio-sync-diff", func() {
 	dsl.Attribute("committee_uid", dsl.String, "LFX v2 committee UID", func() {
 		dsl.Format(dsl.FormatUUID)
 	})
-	dsl.Attribute("sync_mode", dsl.String, "Sync direction this diff was computed for", func() {
-		dsl.Enum("auto_c_to_ml", "auto_ml_to_c")
+	dsl.Attribute("sync_mode", dsl.String, "Mailing list's configured sync_mode at the time this diff was computed — "+
+		"\"manual\" when the diff was computed for a one-time Sync Now using an explicit direction override "+
+		"rather than an auto_* sync_mode", func() {
+		dsl.Enum("manual", "auto_c_to_ml", "auto_ml_to_c")
 		dsl.Example("auto_c_to_ml")
 	})
 	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Members to add, to reconcile the target roster")
@@ -257,6 +273,12 @@ var GroupsioSyncApplyRequestType = dsl.Type("groupsio-sync-apply-request", func(
 	})
 	dsl.Attribute("adds", dsl.ArrayOf(GroupsioSyncDiffAddType), "Members to add, as returned by sync-diff")
 	dsl.Attribute("removes", dsl.ArrayOf(GroupsioSyncDiffRemoveType), "Members to remove, as returned by sync-diff")
+	dsl.Attribute("direction", dsl.String, "Sync direction this apply should run in — required when the mailing "+
+		"list's sync_mode is \"manual\" or unset (a one-time Sync Now, which has no auto_* direction to fall "+
+		"back on), and rejected with BadRequest if given while an auto_* sync_mode is active", func() {
+		dsl.Enum("c_to_ml", "ml_to_c")
+		dsl.Example("c_to_ml")
+	})
 	dsl.Required("committee_uid", "adds", "removes")
 })
 

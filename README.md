@@ -376,7 +376,7 @@ sfid, err := translator.MapID(ctx, constants.TranslationSubjectProject,
 ### Available Make Targets
 
 | Target | Description |
-|--------|-------------|
+| -------- | ------------- |
 | `make all` | Complete build pipeline (setup, lint, test, build) |
 | `make deps` | Install dependencies and Goa CLI |
 | `make setup` | Setup development environment |
@@ -516,8 +516,8 @@ NATS serves two roles in this service: ID translation and event publishing.
 
 The service uses NATS request/reply to translate v2 UUIDs to v1 SFIDs (and vice versa) via the v1-sync-helper service:
 
-| Subject | Purpose |
-|---------|---------|
+| Subject                 | Purpose                                  |
+| ----------------------- | ---------------------------------------- |
 | `lfx.lookup_v1_mapping` | Translate project/committee UIDs ↔ SFIDs |
 
 Key format sent to the v1-sync-helper:
@@ -531,7 +531,7 @@ Key format sent to the v1-sync-helper:
 The service publishes messages to the following NATS subjects (primarily via the v1→v2 data stream processor):
 
 | Subject | Purpose | Message Schema |
-|---------|---------|----------------|
+| --------- | --------- | ---------------- |
 | `lfx.index.groupsio_service` | GroupsIO service indexing events | Indexer message with tags |
 | `lfx.index.groupsio_mailing_list` | Mailing list indexing events | Indexer message with tags |
 | `lfx.index.groupsio_member` | Member indexing events | Indexer message with tags |
@@ -571,7 +571,7 @@ The service can be configured via environment variables:
 ### Core Service Configuration
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| ---------- | ------------- | --------- |
 | `NATS_URL` | NATS server URL | `nats://lfx-platform-nats.lfx.svc.cluster.local:4222` |
 | `NATS_TIMEOUT` | NATS connection timeout | `10s` |
 | `NATS_MAX_RECONNECT` | Maximum NATS reconnect attempts | `3` |
@@ -583,7 +583,7 @@ The service can be configured via environment variables:
 ### Authentication Configuration
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| ---------- | ------------- | --------- |
 | `JWKS_URL` | JWKS URL for JWT verification | `http://lfx-platform-heimdall.lfx.svc.cluster.local:4457/.well-known/jwks` |
 | `JWT_AUDIENCE` | JWT token audience | `lfx-v2-mailing-list-service` |
 | `AUTH_SOURCE` | Authentication source (`jwt` or `mock`) | `jwt` |
@@ -592,7 +592,7 @@ The service can be configured via environment variables:
 ### ITX Proxy Configuration
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| ---------- | ------------- | --------- |
 | `ITX_BASE_URL` | ITX HTTP API base URL | Required |
 | `ITX_CLIENT_ID` | Auth0 client ID for M2M authentication | Required |
 | `ITX_CLIENT_PRIVATE_KEY` | RSA private key (PEM) for Auth0 JWT assertion | Required |
@@ -603,9 +603,9 @@ The service can be configured via environment variables:
 
 ### ID Translator Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TRANSLATOR_SOURCE` | Translator backend (`nats` or `mock`) | `nats` |
+| Variable                   | Description                            | Default                    |
+| -------------------------- | -------------------------------------- | -------------------------- |
+| `TRANSLATOR_SOURCE`        | Translator backend (`nats` or `mock`)  | `nats`                     |
 | `TRANSLATOR_MAPPINGS_FILE` | YAML file for mock translator mappings | `translator_mappings.yaml` |
 
 ### Development Environment Variables

@@ -1255,6 +1255,7 @@ paths:
                                   member_type: committee_member
                                   name: Debitis neque labore autem.
                             committee_uid: 3f60f542-7044-4e09-b924-ee567a39a62f
+                            direction: c_to_ml
                             removes:
                                 - email: cory.dubuque@haag.net
                                   member_id: Error rem tenetur.
@@ -1486,6 +1487,7 @@ paths:
                                   member_type: committee_member
                                   name: Debitis neque labore autem.
                             committee_uid: c62d9a6d-33be-4350-bd1e-0fba38ce699b
+                            direction: c_to_ml
                             removes:
                                 - email: cory.dubuque@haag.net
                                   member_id: Error rem tenetur.
@@ -1569,6 +1571,18 @@ paths:
                     description: Subgroup ID
                     example: Est nemo at minima reprehenderit laudantium.
                   example: Enim est et voluptatem non nobis.
+                - name: direction
+                  in: query
+                  description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                    example: c_to_ml
+                    enum:
+                        - c_to_ml
+                        - ml_to_c
+                  example: c_to_ml
             responses:
                 "200":
                     description: OK response.
@@ -1685,6 +1699,18 @@ paths:
                     description: Sync-diff job ID
                     example: Vel expedita exercitationem eum pariatur omnis.
                   example: Impedit aliquam nam et sed.
+                - name: direction
+                  in: query
+                  description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                    example: c_to_ml
+                    enum:
+                        - c_to_ml
+                        - ml_to_c
+                  example: c_to_ml
             responses:
                 "200":
                     description: OK response.
@@ -1802,6 +1828,18 @@ paths:
                     description: Subgroup ID
                     example: Nemo fugit ut nulla id illum provident.
                   example: Architecto aut fugiat qui.
+                - name: direction
+                  in: query
+                  description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                  allowEmptyValue: true
+                  schema:
+                    type: string
+                    description: Sync direction override for a manual-mode mailing list ("c_to_ml" or "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the mailing list's configured sync_mode direction
+                    example: c_to_ml
+                    enum:
+                        - c_to_ml
+                        - ml_to_c
+                  example: c_to_ml
             responses:
                 "200":
                     description: OK response.
@@ -2476,6 +2514,13 @@ components:
                     description: committee_uid from the sync-diff this apply is approving — rejected with Conflict if the mailing list is no longer linked to this committee
                     example: 3f60f542-7044-4e09-b924-ee567a39a62f
                     format: uuid
+                direction:
+                    type: string
+                    description: Sync direction this apply should run in — required when the mailing list's sync_mode is "manual" or unset (a one-time Sync Now, which has no auto_* direction to fall back on), and rejected with BadRequest if given while an auto_* sync_mode is active
+                    example: c_to_ml
+                    enum:
+                        - c_to_ml
+                        - ml_to_c
                 removes:
                     type: array
                     items:
@@ -2504,6 +2549,7 @@ components:
                       member_type: committee_member
                       name: Debitis neque labore autem.
                 committee_uid: 3f60f542-7044-4e09-b924-ee567a39a62f
+                direction: c_to_ml
                 removes:
                     - email: cory.dubuque@haag.net
                       member_id: Error rem tenetur.
@@ -3792,9 +3838,10 @@ components:
                           member_type: mailing_list_member
                 sync_mode:
                     type: string
-                    description: Sync direction this diff was computed for
+                    description: Mailing list's configured sync_mode at the time this diff was computed — "manual" when the diff was computed for a one-time Sync Now using an explicit direction override rather than an auto_* sync_mode
                     example: auto_c_to_ml
                     enum:
+                        - manual
                         - auto_c_to_ml
                         - auto_ml_to_c
             description: Membership reconciliation diff between a mailing list and its linked committee

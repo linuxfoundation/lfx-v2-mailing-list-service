@@ -106,6 +106,7 @@ func (o *SyncApplyOrchestrator) prepareSyncApply(
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
+	directionOverride string,
 ) (*preparedSyncApply, error) {
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
@@ -133,7 +134,7 @@ func (o *SyncApplyOrchestrator) prepareSyncApply(
 		return nil, err
 	}
 
-	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	direction, err := resolveSyncJobDirection(ml.Committees[0].SyncMode, directionOverride)
 	if err != nil {
 		return nil, err
 	}
@@ -216,8 +217,9 @@ func (o *SyncApplyOrchestrator) ApplySyncDiff(
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
+	directionOverride string,
 ) (*model.SyncApplyResult, error) {
-	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves)
+	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves, directionOverride)
 	if err != nil {
 		return nil, err
 	}
@@ -267,8 +269,9 @@ func (o *SyncApplyOrchestrator) StartSyncApply(
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
+	directionOverride string,
 ) (string, error) {
-	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves)
+	prepared, err := o.prepareSyncApply(ctx, mailingListID, expectedCommitteeUID, approvedAdds, approvedRemoves, directionOverride)
 	if err != nil {
 		return "", err
 	}

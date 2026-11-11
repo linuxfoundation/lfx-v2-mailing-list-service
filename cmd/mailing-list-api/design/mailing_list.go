@@ -413,6 +413,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
+			DirectionOverrideAttribute()
 			dsl.Required("subgroup_id")
 			dsl.Token("bearer_token", dsl.String)
 		})
@@ -426,6 +427,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.HTTP(func() {
 			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/sync-diff")
 			dsl.Param("subgroup_id")
+			dsl.Param("direction")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("NotFound", dsl.StatusNotFound)
@@ -477,6 +479,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.Payload(func() {
 			BearerTokenAttribute()
 			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
+			DirectionOverrideAttribute()
 			dsl.Required("subgroup_id")
 			dsl.Token("bearer_token", dsl.String)
 		})
@@ -489,6 +492,7 @@ var _ = dsl.Service("mailing-list", func() {
 		dsl.HTTP(func() {
 			dsl.POST("/groupsio/mailing-lists/{subgroup_id}/sync-diff/start")
 			dsl.Param("subgroup_id")
+			dsl.Param("direction")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("NotFound", dsl.StatusNotFound)
@@ -506,6 +510,7 @@ var _ = dsl.Service("mailing-list", func() {
 			BearerTokenAttribute()
 			dsl.Attribute("subgroup_id", dsl.String, "Subgroup ID")
 			dsl.Attribute("job_id", dsl.String, "Sync-diff job ID")
+			DirectionOverrideAttribute()
 			dsl.Required("subgroup_id", "job_id")
 			dsl.Token("bearer_token", dsl.String)
 		})
@@ -520,6 +525,7 @@ var _ = dsl.Service("mailing-list", func() {
 			dsl.GET("/groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status")
 			dsl.Param("subgroup_id")
 			dsl.Param("job_id")
+			dsl.Param("direction")
 			dsl.Header("bearer_token:Authorization")
 			dsl.Response(dsl.StatusOK)
 			dsl.Response("NotFound", dsl.StatusNotFound)

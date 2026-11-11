@@ -36,8 +36,8 @@ Base URL (local): `http://localhost:8080`
 | `DELETE` | `/groupsio/mailing-lists/{subgroup_id}` | JWT | Delete a mailing list |
 | `GET` | `/groupsio/mailing-lists/count?project_uid=<uuid>` | JWT | Get mailing list count for a project |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/member_count` | JWT | Get member count for a mailing list |
-| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT (writer) | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml` or `auto_ml_to_c`) |
-| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply` | JWT (writer) | Apply an admin-approved subset of a sync-diff's adds/removes (`auto_c_to_ml` or `auto_ml_to_c`) |
+| `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff` | JWT (writer) | Compute the membership reconciliation diff between a mailing list and its linked committee (`auto_c_to_ml`/`auto_ml_to_c`, or `manual`/unset with an explicit `?direction=` override) |
+| `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply` | JWT (writer) | Apply an admin-approved subset of a sync-diff's adds/removes (`auto_c_to_ml`/`auto_ml_to_c`, or `manual`/unset with an explicit `direction` override) |
 | `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff/start` | JWT (writer) | Start a sync-diff job asynchronously, returning a job ID instead of waiting for it to complete |
 | `GET` | `/groupsio/mailing-lists/{subgroup_id}/sync-diff/{job_id}/status` | JWT (writer) | Poll the progress/result of a sync-diff job started via the `start` endpoint above |
 | `POST` | `/groupsio/mailing-lists/{subgroup_id}/sync-apply/start` | JWT (writer) | Start a sync-apply job asynchronously, returning a job ID instead of waiting for it to complete |
@@ -221,20 +221,36 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 **Compute the sync-diff for a mailing list linked to a committee:**
 
-Supported for mailing lists configured with `sync_mode: auto_c_to_ml` or `auto_ml_to_c`.
+Supported for any mailing list with a linked committee, regardless of `sync_mode`: for
+`sync_mode: auto_c_to_ml`/`auto_ml_to_c` the direction is taken from the configured mode; for
+`manual` or unset `sync_mode` ("one-time Sync Now"), the direction has no auto_* mode to fall back
+on, so pass it explicitly via the optional `direction` query parameter (`c_to_ml` or `ml_to_c`).
+`direction` is rejected with `400 Bad Request` if given while an `auto_*` sync_mode is active — it
+cannot override an already-configured auto direction, only supply one when there isn't one.
+
 Delegates to ITX's sync-diff job (ITX computes and owns the reconciliation logic; this endpoint
 posts the job, polls it to completion, and translates the result) and returns members missing
-from the target roster (`adds`) and members who no longer belong on it (`removes`): for
-`auto_c_to_ml`, `adds` are committee members and `removes` are mailing-list members; for
-`auto_ml_to_c` it is the reverse. Each add/remove entry's `member_type` says which roster its
-`member_id` belongs to. `conflicts` lists email collisions between the two rosters that ITX could
-not confidently resolve into an add or remove. Returns `400 Bad Request` if the mailing list has
-no linked committee, or its `sync_mode` is `manual`. Returns `503 Service Unavailable` if the
-underlying ITX job fails or does not complete within the poll timeout.
+from the target roster (`adds`) and members who no longer belong on it (`removes`): for the
+`c_to_ml` direction (`sync_mode: auto_c_to_ml`, or `direction=c_to_ml` on a manual list), `adds`
+are committee members and `removes` are mailing-list members; for `ml_to_c` it is the reverse.
+Each add/remove entry's `member_type` says which roster its `member_id` belongs to. `conflicts`
+lists email collisions between the two rosters that ITX could not confidently resolve into an add
+or remove. The response's `sync_mode` field reports `manual` when `direction` was used (rather
+than fabricating an `auto_*` value that was never configured). Returns `400 Bad Request` if the
+mailing list has no linked committee, if `sync_mode` is `manual`/unset and `direction` was
+omitted, or if `direction` was given for an `auto_*`-mode list. Returns `503 Service Unavailable`
+if the underlying ITX job fails or does not complete within the poll timeout.
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff"
+```
+
+For a manual-mode (or unset `sync_mode`) mailing list, supply the direction explicitly:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff?direction=c_to_ml"
 ```
 
 ```json
@@ -259,12 +275,15 @@ curl -H "Authorization: Bearer $TOKEN" \
 Takes the `adds`/`removes` an admin chose to apply from a prior sync-diff response and delegates
 to ITX's sync-apply job (this endpoint posts the job, polls it to completion, and translates the
 per-entry results). An entry ITX could not apply is reported as `failed` with ITX's error message
-rather than silently dropped. Same `sync_mode` and committee-link requirements as sync-diff.
+rather than silently dropped. Same `sync_mode`, committee-link, and `direction` requirements as
+sync-diff above — include `direction` in the body when applying a diff computed for a
+manual/unset-mode list (it should match whatever `direction` was passed to compute the diff being
+applied).
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"committee_uid":"<committee-uuid>","adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
+  -d '{"committee_uid":"<committee-uuid>","direction":"c_to_ml","adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
   "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply"
 ```
 
@@ -283,9 +302,19 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Start a sync-diff job asynchronously (for long-running diffs) and poll its status:**
 
+Accepts the same optional `direction` query parameter as the synchronous sync-diff endpoint above
+(required for a `manual`/unset-mode list, rejected for an `auto_*`-mode list).
+
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/start"
+```
+
+For a manual-mode (or unset `sync_mode`) mailing list, supply the direction explicitly:
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/start?direction=c_to_ml"
 ```
 
 ```json
@@ -294,8 +323,12 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
-  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/<job-id>/status"
+  "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-diff/<job-id>/status?direction=c_to_ml"
 ```
+
+`direction` on the status-poll endpoint must match what was passed to `start` for the same job —
+it is re-resolved against the mailing list's current `sync_mode` on each poll, mirroring the
+synchronous sync-diff endpoint's requirements.
 
 While the job is still running:
 
@@ -333,10 +366,14 @@ Once ITX finishes computing the diff:
 
 **Start a sync-apply job asynchronously and poll its status:**
 
+Accepts the same optional `direction` body field as the synchronous sync-apply endpoint above. The
+status-poll endpoint (`GET .../sync-apply/<job-id>/status`) takes no `direction` param — the
+direction was already resolved and locked in when the job was started.
+
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"committee_uid":"<committee-uuid>","adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
+  -d '{"committee_uid":"<committee-uuid>","direction":"c_to_ml","adds":[{"email":"new-member@example.com","member_id":"<committee-member-uuid>","member_type":"committee_member"}],"removes":[{"email":"departed-member@example.com","member_id":"<mailing-list-member-id>","member_type":"mailing_list_member"}]}' \
   "$BASE/groupsio/mailing-lists/<subgroup-id>/sync-apply/start"
 ```
 

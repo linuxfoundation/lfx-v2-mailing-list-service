@@ -58,7 +58,7 @@ func TestApplySyncDiff_NoLinkedCommittee(t *testing.T) {
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -69,7 +69,7 @@ func TestApplySyncDiff_ManualSyncMode(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeManual)},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -80,7 +80,7 @@ func TestApplySyncDiff_PostSyncApplyError(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{postApplyErr: errs.NewServiceUnavailable("itx down")},
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -94,7 +94,7 @@ func TestApplySyncDiff_JobFailed(t *testing.T) {
 			applyJob:       &port.SyncApplyJob{ID: "apply-1", Status: port.SyncJobStatusFailed, ErrorMessage: "subgroup locked"},
 		},
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -118,7 +118,7 @@ func TestApplySyncDiff_AddSuccess(t *testing.T) {
 	)
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember, Name: "Alice Example"},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err)
 	require.Len(t, result.Added, 1)
 	assert.Equal(t, model.SyncApplyOutcomeAdded, result.Added[0].Outcome)
@@ -146,7 +146,7 @@ func TestApplySyncDiff_AddFailure_ReportedAsFailed(t *testing.T) {
 	)
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err)
 	require.Len(t, result.Added, 1)
 	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Added[0].Outcome)
@@ -170,7 +170,7 @@ func TestApplySyncDiff_RemoveSuccess(t *testing.T) {
 	)
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, model.SyncApplyOutcomeRemoved, result.Removed[0].Outcome)
@@ -201,7 +201,7 @@ func TestApplySyncDiff_MailingListToCommitteeDirection(t *testing.T) {
 
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "dana@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, stub.postApplyDirection)
 	require.Len(t, result.Added, 1)
@@ -224,7 +224,7 @@ func TestApplySyncDiff_RemoveFailure_ReportedAsFailed(t *testing.T) {
 	)
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, model.SyncApplyOutcomeFailed, result.Removed[0].Outcome)
@@ -245,7 +245,7 @@ func TestApplySyncDiff_TrustedCallerDropsRemovesWhenListIsPublic(t *testing.T) {
 
 	result, err := o.ApplySyncDiff(withTrustedSystemCaller(context.Background()), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	})
+	}, "")
 	require.NoError(t, err)
 	assert.Empty(t, result.Removed)
 	assert.Empty(t, stub.postApplyRemoves, "the public list's removes must not be submitted to ITX")
@@ -270,7 +270,7 @@ func TestApplySyncDiff_TrustedCallerKeepsRemovesWhenListIsPrivate(t *testing.T) 
 
 	result, err := o.ApplySyncDiff(withTrustedSystemCaller(context.Background()), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, []string{"carol@example.com"}, stub.postApplyRemoves)
@@ -296,7 +296,7 @@ func TestApplySyncDiff_NonTrustedCallerKeepsRemovesEvenWhenPublic(t *testing.T) 
 
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "cm-1", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.NoError(t, err)
 	require.Len(t, result.Removed, 1)
 	assert.Equal(t, []string{"carol@example.com"}, stub.postApplyRemoves)
@@ -312,7 +312,7 @@ func TestApplySyncDiff_AddMemberTypeMismatch(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -325,7 +325,7 @@ func TestApplySyncDiff_RemoveMemberTypeMismatch(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "carol@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -350,7 +350,7 @@ func TestApplySyncDiff_UnmatchedResultEmail(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected@example.com")
 }
@@ -378,7 +378,7 @@ func TestApplySyncDiff_IncompleteResultSet(t *testing.T) {
 	result, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 		{Email: "bob@example.com", MemberID: "cm-2", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err)
 	require.Len(t, result.Added, 2)
 
@@ -411,7 +411,7 @@ func TestApplySyncDiff_DuplicateResultForSameApprovedEntry(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "more than one result")
 }
@@ -434,7 +434,7 @@ func TestApplySyncDiff_UnrecognizedResultAction(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unrecognized action")
 }
@@ -461,7 +461,7 @@ func TestApplySyncDiff_CommitteeChangedWhileJobRunning(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
@@ -478,7 +478,7 @@ func TestApplySyncDiff_RelinkedBeforeApply(t *testing.T) {
 	)
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
@@ -495,7 +495,7 @@ func TestApplySyncDiff_DuplicateAddEmail(t *testing.T) {
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "Alice@Example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
 		{Email: "alice@example.com", MemberID: "cm-2", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -511,7 +511,7 @@ func TestApplySyncDiff_DuplicateRemoveEmail(t *testing.T) {
 	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, []model.SyncDiffRemove{
 		{Email: "Carol@Example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
 		{Email: "carol@example.com", MemberID: "mlm-2", MemberType: model.MemberTypeMailingListMember},
-	})
+	}, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -525,7 +525,7 @@ func TestApplySyncDiff_AccessDenied(t *testing.T) {
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
 		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
 	)
-	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
@@ -538,7 +538,7 @@ func TestApplySyncDiff_NoPrincipal(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{},
 	)
-	_, err := o.ApplySyncDiff(context.Background(), "ml-1", "committee-1", nil, nil)
+	_, err := o.ApplySyncDiff(context.Background(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
@@ -549,7 +549,7 @@ func TestStartSyncApply_NoLinkedCommittee(t *testing.T) {
 		&stubMLReader{ml: &model.GroupsIOMailingList{UID: "ml-1"}},
 		&stubITXSyncClient{},
 	)
-	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -562,7 +562,7 @@ func TestStartSyncApply_RelinkedBeforeStart(t *testing.T) {
 	)
 	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var conflict errs.Conflict
 	assert.True(t, errors.As(err, &conflict))
@@ -574,7 +574,7 @@ func TestStartSyncApply_AccessDenied(t *testing.T) {
 		WithSyncApplyITXSyncClient(&stubITXSyncClient{}),
 		WithSyncApplyAccessChecker(&stubAccessChecker{allow: false}),
 	)
-	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unauthorized errs.Unauthorized
 	assert.True(t, errors.As(err, &unauthorized))
@@ -590,7 +590,7 @@ func TestStartSyncApply_ReturnsJobID(t *testing.T) {
 	)
 	jobID, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, "apply-1", jobID, "job_id returned to the caller must be the raw ITX job ID")
 
@@ -611,7 +611,7 @@ func TestStartSyncApply_MemberTypeMismatch(t *testing.T) {
 	)
 	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "mlm-1", MemberType: model.MemberTypeMailingListMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	var validation errs.Validation
 	assert.True(t, errors.As(err, &validation))
@@ -622,7 +622,7 @@ func TestStartSyncApply_PostSyncApplyError(t *testing.T) {
 		&stubMLReader{ml: mlWithCommitteeSyncMode("committee-1", model.SyncModeAutoCommitteeToMailingList)},
 		&stubITXSyncClient{postApplyErr: errs.NewServiceUnavailable("itx down")},
 	)
-	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil)
+	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", nil, nil, "")
 	require.Error(t, err)
 	var unavailable errs.ServiceUnavailable
 	assert.True(t, errors.As(err, &unavailable))
@@ -661,7 +661,7 @@ func TestStartSyncApply_RetriesTransientBindingWriteFailure(t *testing.T) {
 
 	jobID, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.NoError(t, err, "a transient binding write failure must be retried, not surfaced as an orphaned job")
 	assert.Equal(t, "apply-1", jobID)
 	assert.Equal(t, 3, store.calls, "should retry twice before succeeding on the third attempt")
@@ -687,7 +687,7 @@ func TestStartSyncApply_PermanentBindingWriteFailureIsNotRetried(t *testing.T) {
 
 	_, err := o.StartSyncApply(ctxWithPrincipal(), "ml-1", "committee-1", []model.SyncDiffAdd{
 		{Email: "alice@example.com", MemberID: "cm-1", MemberType: model.MemberTypeCommitteeMember},
-	}, nil)
+	}, nil, "")
 	require.Error(t, err)
 	assert.Equal(t, 1, store.calls, "a permanent error must fail fast instead of burning all retry attempts")
 }

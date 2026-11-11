@@ -433,10 +433,23 @@ func BuildGetGroupsioMailingListMemberCountPayload(mailingListGetGroupsioMailing
 
 // BuildGetGroupsioMailingListSyncDiffPayload builds the payload for the
 // mailing-list get-groupsio-mailing-list-sync-diff endpoint from CLI flags.
-func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingListSyncDiffSubgroupID string, mailingListGetGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingListSyncDiffSubgroupID string, mailingListGetGroupsioMailingListSyncDiffDirection string, mailingListGetGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffPayload, error) {
+	var err error
 	var subgroupID string
 	{
 		subgroupID = mailingListGetGroupsioMailingListSyncDiffSubgroupID
+	}
+	var direction *string
+	{
+		if mailingListGetGroupsioMailingListSyncDiffDirection != "" {
+			direction = &mailingListGetGroupsioMailingListSyncDiffDirection
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	var bearerToken *string
 	{
@@ -446,6 +459,7 @@ func BuildGetGroupsioMailingListSyncDiffPayload(mailingListGetGroupsioMailingLis
 	}
 	v := &mailinglist.GetGroupsioMailingListSyncDiffPayload{}
 	v.SubgroupID = subgroupID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v, nil
@@ -459,7 +473,7 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 	{
 		err = json.Unmarshal([]byte(mailingListApplyGroupsioMailingListSyncDiffBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"direction\": \"c_to_ml\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
 		}
 		if body.Adds == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
@@ -482,6 +496,11 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 				}
 			}
 		}
+		if body.Direction != nil {
+			if !(*body.Direction == "c_to_ml" || *body.Direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.direction", *body.Direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -498,6 +517,7 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 	}
 	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{
 		CommitteeUID: body.CommitteeUID,
+		Direction:    body.Direction,
 	}
 	if body.Adds != nil {
 		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
@@ -531,10 +551,23 @@ func BuildApplyGroupsioMailingListSyncDiffPayload(mailingListApplyGroupsioMailin
 
 // BuildStartGroupsioMailingListSyncDiffPayload builds the payload for the
 // mailing-list start-groupsio-mailing-list-sync-diff endpoint from CLI flags.
-func BuildStartGroupsioMailingListSyncDiffPayload(mailingListStartGroupsioMailingListSyncDiffSubgroupID string, mailingListStartGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.StartGroupsioMailingListSyncDiffPayload, error) {
+func BuildStartGroupsioMailingListSyncDiffPayload(mailingListStartGroupsioMailingListSyncDiffSubgroupID string, mailingListStartGroupsioMailingListSyncDiffDirection string, mailingListStartGroupsioMailingListSyncDiffBearerToken string) (*mailinglist.StartGroupsioMailingListSyncDiffPayload, error) {
+	var err error
 	var subgroupID string
 	{
 		subgroupID = mailingListStartGroupsioMailingListSyncDiffSubgroupID
+	}
+	var direction *string
+	{
+		if mailingListStartGroupsioMailingListSyncDiffDirection != "" {
+			direction = &mailingListStartGroupsioMailingListSyncDiffDirection
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	var bearerToken *string
 	{
@@ -544,6 +577,7 @@ func BuildStartGroupsioMailingListSyncDiffPayload(mailingListStartGroupsioMailin
 	}
 	v := &mailinglist.StartGroupsioMailingListSyncDiffPayload{}
 	v.SubgroupID = subgroupID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v, nil
@@ -552,7 +586,8 @@ func BuildStartGroupsioMailingListSyncDiffPayload(mailingListStartGroupsioMailin
 // BuildGetGroupsioMailingListSyncDiffStatusPayload builds the payload for the
 // mailing-list get-groupsio-mailing-list-sync-diff-status endpoint from CLI
 // flags.
-func BuildGetGroupsioMailingListSyncDiffStatusPayload(mailingListGetGroupsioMailingListSyncDiffStatusSubgroupID string, mailingListGetGroupsioMailingListSyncDiffStatusJobID string, mailingListGetGroupsioMailingListSyncDiffStatusBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffStatusPayload, error) {
+func BuildGetGroupsioMailingListSyncDiffStatusPayload(mailingListGetGroupsioMailingListSyncDiffStatusSubgroupID string, mailingListGetGroupsioMailingListSyncDiffStatusJobID string, mailingListGetGroupsioMailingListSyncDiffStatusDirection string, mailingListGetGroupsioMailingListSyncDiffStatusBearerToken string) (*mailinglist.GetGroupsioMailingListSyncDiffStatusPayload, error) {
+	var err error
 	var subgroupID string
 	{
 		subgroupID = mailingListGetGroupsioMailingListSyncDiffStatusSubgroupID
@@ -560,6 +595,18 @@ func BuildGetGroupsioMailingListSyncDiffStatusPayload(mailingListGetGroupsioMail
 	var jobID string
 	{
 		jobID = mailingListGetGroupsioMailingListSyncDiffStatusJobID
+	}
+	var direction *string
+	{
+		if mailingListGetGroupsioMailingListSyncDiffStatusDirection != "" {
+			direction = &mailingListGetGroupsioMailingListSyncDiffStatusDirection
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	var bearerToken *string
 	{
@@ -570,6 +617,7 @@ func BuildGetGroupsioMailingListSyncDiffStatusPayload(mailingListGetGroupsioMail
 	v := &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{}
 	v.SubgroupID = subgroupID
 	v.JobID = jobID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v, nil
@@ -583,7 +631,7 @@ func BuildStartGroupsioMailingListSyncApplyPayload(mailingListStartGroupsioMaili
 	{
 		err = json.Unmarshal([]byte(mailingListStartGroupsioMailingListSyncApplyBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"direction\": \"c_to_ml\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }'")
 		}
 		if body.Adds == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("adds", "body"))
@@ -606,6 +654,11 @@ func BuildStartGroupsioMailingListSyncApplyPayload(mailingListStartGroupsioMaili
 				}
 			}
 		}
+		if body.Direction != nil {
+			if !(*body.Direction == "c_to_ml" || *body.Direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.direction", *body.Direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -622,6 +675,7 @@ func BuildStartGroupsioMailingListSyncApplyPayload(mailingListStartGroupsioMaili
 	}
 	v := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
 		CommitteeUID: body.CommitteeUID,
+		Direction:    body.Direction,
 	}
 	if body.Adds != nil {
 		v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))

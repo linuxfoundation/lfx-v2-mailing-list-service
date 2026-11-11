@@ -110,6 +110,7 @@ func ParseEndpoint(
 
 		mailingListGetGroupsioMailingListSyncDiffFlags           = flag.NewFlagSet("get-groupsio-mailing-list-sync-diff", flag.ExitOnError)
 		mailingListGetGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListGetGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListGetGroupsioMailingListSyncDiffDirectionFlag   = mailingListGetGroupsioMailingListSyncDiffFlags.String("direction", "", "")
 		mailingListGetGroupsioMailingListSyncDiffBearerTokenFlag = mailingListGetGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
 
 		mailingListApplyGroupsioMailingListSyncDiffFlags           = flag.NewFlagSet("apply-groupsio-mailing-list-sync-diff", flag.ExitOnError)
@@ -119,11 +120,13 @@ func ParseEndpoint(
 
 		mailingListStartGroupsioMailingListSyncDiffFlags           = flag.NewFlagSet("start-groupsio-mailing-list-sync-diff", flag.ExitOnError)
 		mailingListStartGroupsioMailingListSyncDiffSubgroupIDFlag  = mailingListStartGroupsioMailingListSyncDiffFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
+		mailingListStartGroupsioMailingListSyncDiffDirectionFlag   = mailingListStartGroupsioMailingListSyncDiffFlags.String("direction", "", "")
 		mailingListStartGroupsioMailingListSyncDiffBearerTokenFlag = mailingListStartGroupsioMailingListSyncDiffFlags.String("bearer-token", "", "")
 
 		mailingListGetGroupsioMailingListSyncDiffStatusFlags           = flag.NewFlagSet("get-groupsio-mailing-list-sync-diff-status", flag.ExitOnError)
 		mailingListGetGroupsioMailingListSyncDiffStatusSubgroupIDFlag  = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("subgroup-id", "REQUIRED", "Subgroup ID")
 		mailingListGetGroupsioMailingListSyncDiffStatusJobIDFlag       = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("job-id", "REQUIRED", "Sync-diff job ID")
+		mailingListGetGroupsioMailingListSyncDiffStatusDirectionFlag   = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("direction", "", "")
 		mailingListGetGroupsioMailingListSyncDiffStatusBearerTokenFlag = mailingListGetGroupsioMailingListSyncDiffStatusFlags.String("bearer-token", "", "")
 
 		mailingListStartGroupsioMailingListSyncApplyFlags           = flag.NewFlagSet("start-groupsio-mailing-list-sync-apply", flag.ExitOnError)
@@ -413,16 +416,16 @@ func ParseEndpoint(
 				data, err = mailinglistc.BuildGetGroupsioMailingListMemberCountPayload(*mailingListGetGroupsioMailingListMemberCountSubgroupIDFlag, *mailingListGetGroupsioMailingListMemberCountBearerTokenFlag)
 			case "get-groupsio-mailing-list-sync-diff":
 				endpoint = c.GetGroupsioMailingListSyncDiff()
-				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffPayload(*mailingListGetGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffBearerTokenFlag)
+				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffPayload(*mailingListGetGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffDirectionFlag, *mailingListGetGroupsioMailingListSyncDiffBearerTokenFlag)
 			case "apply-groupsio-mailing-list-sync-diff":
 				endpoint = c.ApplyGroupsioMailingListSyncDiff()
 				data, err = mailinglistc.BuildApplyGroupsioMailingListSyncDiffPayload(*mailingListApplyGroupsioMailingListSyncDiffBodyFlag, *mailingListApplyGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListApplyGroupsioMailingListSyncDiffBearerTokenFlag)
 			case "start-groupsio-mailing-list-sync-diff":
 				endpoint = c.StartGroupsioMailingListSyncDiff()
-				data, err = mailinglistc.BuildStartGroupsioMailingListSyncDiffPayload(*mailingListStartGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListStartGroupsioMailingListSyncDiffBearerTokenFlag)
+				data, err = mailinglistc.BuildStartGroupsioMailingListSyncDiffPayload(*mailingListStartGroupsioMailingListSyncDiffSubgroupIDFlag, *mailingListStartGroupsioMailingListSyncDiffDirectionFlag, *mailingListStartGroupsioMailingListSyncDiffBearerTokenFlag)
 			case "get-groupsio-mailing-list-sync-diff-status":
 				endpoint = c.GetGroupsioMailingListSyncDiffStatus()
-				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffStatusPayload(*mailingListGetGroupsioMailingListSyncDiffStatusSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusJobIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusBearerTokenFlag)
+				data, err = mailinglistc.BuildGetGroupsioMailingListSyncDiffStatusPayload(*mailingListGetGroupsioMailingListSyncDiffStatusSubgroupIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusJobIDFlag, *mailingListGetGroupsioMailingListSyncDiffStatusDirectionFlag, *mailingListGetGroupsioMailingListSyncDiffStatusBearerTokenFlag)
 			case "start-groupsio-mailing-list-sync-apply":
 				endpoint = c.StartGroupsioMailingListSyncApply()
 				data, err = mailinglistc.BuildStartGroupsioMailingListSyncApplyPayload(*mailingListStartGroupsioMailingListSyncApplyBodyFlag, *mailingListStartGroupsioMailingListSyncApplySubgroupIDFlag, *mailingListStartGroupsioMailingListSyncApplyBearerTokenFlag)
@@ -827,6 +830,7 @@ func mailingListGetGroupsioMailingListSyncDiffUsage() {
 	// Header with flags
 	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list get-groupsio-mailing-list-sync-diff", os.Args[0])
 	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -direction STRING")
 	fmt.Fprint(os.Stderr, " -bearer-token STRING")
 	fmt.Fprintln(os.Stderr)
 
@@ -836,11 +840,12 @@ func mailingListGetGroupsioMailingListSyncDiffUsage() {
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -direction STRING: `)
 	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff --subgroup-id \"Est nemo at minima reprehenderit laudantium.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff --subgroup-id \"Est nemo at minima reprehenderit laudantium.\" --direction \"c_to_ml\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListApplyGroupsioMailingListSyncDiffUsage() {
@@ -862,13 +867,14 @@ func mailingListApplyGroupsioMailingListSyncDiffUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list apply-groupsio-mailing-list-sync-diff --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Commodi ea ut reprehenderit blanditiis.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list apply-groupsio-mailing-list-sync-diff --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"3f60f542-7044-4e09-b924-ee567a39a62f\",\n      \"direction\": \"c_to_ml\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Commodi ea ut reprehenderit blanditiis.\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListStartGroupsioMailingListSyncDiffUsage() {
 	// Header with flags
 	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list start-groupsio-mailing-list-sync-diff", os.Args[0])
 	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
+	fmt.Fprint(os.Stderr, " -direction STRING")
 	fmt.Fprint(os.Stderr, " -bearer-token STRING")
 	fmt.Fprintln(os.Stderr)
 
@@ -878,11 +884,12 @@ func mailingListStartGroupsioMailingListSyncDiffUsage() {
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
+	fmt.Fprintln(os.Stderr, `    -direction STRING: `)
 	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-diff --subgroup-id \"Nemo fugit ut nulla id illum provident.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-diff --subgroup-id \"Nemo fugit ut nulla id illum provident.\" --direction \"c_to_ml\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListGetGroupsioMailingListSyncDiffStatusUsage() {
@@ -890,6 +897,7 @@ func mailingListGetGroupsioMailingListSyncDiffStatusUsage() {
 	fmt.Fprintf(os.Stderr, "%s [flags] mailing-list get-groupsio-mailing-list-sync-diff-status", os.Args[0])
 	fmt.Fprint(os.Stderr, " -subgroup-id STRING")
 	fmt.Fprint(os.Stderr, " -job-id STRING")
+	fmt.Fprint(os.Stderr, " -direction STRING")
 	fmt.Fprint(os.Stderr, " -bearer-token STRING")
 	fmt.Fprintln(os.Stderr)
 
@@ -900,11 +908,12 @@ func mailingListGetGroupsioMailingListSyncDiffStatusUsage() {
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -subgroup-id STRING: Subgroup ID`)
 	fmt.Fprintln(os.Stderr, `    -job-id STRING: Sync-diff job ID`)
+	fmt.Fprintln(os.Stderr, `    -direction STRING: `)
 	fmt.Fprintln(os.Stderr, `    -bearer-token STRING: `)
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff-status --subgroup-id \"Velit nam occaecati facere.\" --job-id \"Vel expedita exercitationem eum pariatur omnis.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list get-groupsio-mailing-list-sync-diff-status --subgroup-id \"Velit nam occaecati facere.\" --job-id \"Vel expedita exercitationem eum pariatur omnis.\" --direction \"c_to_ml\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListStartGroupsioMailingListSyncApplyUsage() {
@@ -926,7 +935,7 @@ func mailingListStartGroupsioMailingListSyncApplyUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-apply --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Sapiente praesentium impedit.\" --bearer-token \"eyJhbGci...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "mailing-list start-groupsio-mailing-list-sync-apply --body '{\n      \"adds\": [\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         },\n         {\n            \"email\": \"jane_metz@olson.info\",\n            \"member_id\": \"Rerum sequi fuga consequatur.\",\n            \"member_type\": \"committee_member\",\n            \"name\": \"Debitis neque labore autem.\"\n         }\n      ],\n      \"committee_uid\": \"c62d9a6d-33be-4350-bd1e-0fba38ce699b\",\n      \"direction\": \"c_to_ml\",\n      \"removes\": [\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         },\n         {\n            \"email\": \"cory.dubuque@haag.net\",\n            \"member_id\": \"Error rem tenetur.\",\n            \"member_type\": \"mailing_list_member\"\n         }\n      ]\n   }' --subgroup-id \"Sapiente praesentium impedit.\" --bearer-token \"eyJhbGci...\"")
 }
 
 func mailingListGetGroupsioMailingListSyncApplyStatusUsage() {

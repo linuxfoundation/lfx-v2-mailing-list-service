@@ -70,8 +70,9 @@ func NewSyncDiffOrchestrator(opts ...SyncDiffOrchestratorOption) port.SyncDiffCo
 }
 
 // ComputeSyncDiff resolves mailingListID's linked committee and sync_mode, starts an ITX
-// sync-diff job for the corresponding direction, and waits for it to complete.
-func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListID string) (*model.SyncDiff, error) {
+// sync-diff job for the corresponding direction (or directionOverride, see
+// resolveSyncJobDirection), and waits for it to complete.
+func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListID string, directionOverride string) (*model.SyncDiff, error) {
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return nil, err
@@ -85,7 +86,7 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 		return nil, err
 	}
 
-	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	direction, err := resolveSyncJobDirection(ml.Committees[0].SyncMode, directionOverride)
 	if err != nil {
 		return nil, err
 	}
@@ -125,10 +126,11 @@ func (o *SyncDiffOrchestrator) ComputeSyncDiff(ctx context.Context, mailingListI
 }
 
 // StartSyncDiff resolves mailingListID's linked committee and sync_mode, checks committee-writer
-// access, and starts an ITX sync-diff job for the corresponding direction — returning its job ID
-// immediately instead of waiting for it to complete (see ComputeSyncDiff for the blocking
-// equivalent, and GetSyncDiffStatus for polling this job's progress/result).
-func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID string) (string, error) {
+// access, and starts an ITX sync-diff job for the corresponding direction (or directionOverride,
+// see resolveSyncJobDirection) — returning its job ID immediately instead of waiting for it to
+// complete (see ComputeSyncDiff for the blocking equivalent, and GetSyncDiffStatus for polling
+// this job's progress/result).
+func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID string, directionOverride string) (string, error) {
 	ml, err := o.mailingListReader.GetMailingList(ctx, mailingListID)
 	if err != nil {
 		return "", err
@@ -142,7 +144,7 @@ func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID 
 		return "", err
 	}
 
-	direction, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	direction, err := resolveSyncJobDirection(ml.Committees[0].SyncMode, directionOverride)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +160,7 @@ func (o *SyncDiffOrchestrator) StartSyncDiff(ctx context.Context, mailingListID 
 // currently linked is rejected as Conflict — which also transitively catches the mailing list
 // having been relinked or unlinked since the job started, without needing to persist the
 // committee UID StartSyncDiff saw.
-func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncDiffJobStatus, error) {
+func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string, directionOverride string) (*model.SyncDiffJobStatus, error) {
 	// jobID is attacker-controlled (an HTTP caller can send anything) and is proxied straight into
 	// an ITX URL path segment below via itxSyncClient.GetSyncDiffJob -> url.JoinPath — reject
 	// path-traversal payloads before it is used for anything. Unlike sync-apply, there is no
@@ -203,11 +205,13 @@ func (o *SyncDiffOrchestrator) GetSyncDiffStatus(ctx context.Context, mailingLis
 		return nil, err
 	}
 
-	// job.Direction reflects the sync_mode in effect when the job was started; if sync_mode has
-	// since changed (including to manual), labeling the job's diff with the CURRENT sync_mode
-	// below would mismatch the direction the data was actually computed for — reject instead of
-	// mixing a stale direction's data with today's mode.
-	currentDirection, err := syncJobDirectionForMode(ml.Committees[0].SyncMode)
+	// job.Direction reflects the sync_mode (and directionOverride, for a manual-mode list) in
+	// effect when the job was started; if sync_mode has since changed (including to manual), or
+	// this poll's directionOverride no longer resolves to the same direction the job actually ran
+	// with, labeling the job's diff with today's values below would mismatch the direction the
+	// data was actually computed for — reject instead of mixing a stale direction's data with
+	// today's mode.
+	currentDirection, err := resolveSyncJobDirection(ml.Committees[0].SyncMode, directionOverride)
 	if err != nil || currentDirection != job.Direction {
 		return nil, errs.NewConflict("mailing list's sync mode changed while the sync-diff job was running; request a fresh diff")
 	}
