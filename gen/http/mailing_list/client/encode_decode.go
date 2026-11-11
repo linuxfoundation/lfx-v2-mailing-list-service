@@ -2076,6 +2076,11 @@ func EncodeGetGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) goa
 				req.Header.Set("Authorization", head)
 			}
 		}
+		values := req.URL.Query()
+		if p.Direction != nil {
+			values.Add("direction", *p.Direction)
+		}
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }
@@ -2441,6 +2446,11 @@ func EncodeStartGroupsioMailingListSyncDiffRequest(encoder func(*http.Request) g
 				req.Header.Set("Authorization", head)
 			}
 		}
+		values := req.URL.Query()
+		if p.Direction != nil {
+			values.Add("direction", *p.Direction)
+		}
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }
@@ -2609,6 +2619,11 @@ func EncodeGetGroupsioMailingListSyncDiffStatusRequest(encoder func(*http.Reques
 				req.Header.Set("Authorization", head)
 			}
 		}
+		values := req.URL.Query()
+		if p.Direction != nil {
+			values.Add("direction", *p.Direction)
+		}
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }

@@ -16,55 +16,82 @@ import (
 // fakeSyncDiffComputer is a test double for port.SyncDiffComputer that captures its call
 // arguments and returns canned results.
 type fakeSyncDiffComputer struct {
-	startJobID      string
-	startErr        error
-	startCalledWith string
+	startJobID        string
+	startErr          error
+	startCalledWith   string
+	startDirectionArg string
 
-	status         *model.SyncDiffJobStatus
-	statusErr      error
-	statusJobIDArg string
+	status             *model.SyncDiffJobStatus
+	statusErr          error
+	statusJobIDArg     string
+	statusDirectionArg string
 }
 
-func (f *fakeSyncDiffComputer) ComputeSyncDiff(_ context.Context, _ string) (*model.SyncDiff, error) {
+func (f *fakeSyncDiffComputer) ComputeSyncDiff(_ context.Context, _ string, _ string) (*model.SyncDiff, error) {
 	return nil, nil
 }
 
-func (f *fakeSyncDiffComputer) StartSyncDiff(_ context.Context, mailingListID string) (string, error) {
+func (f *fakeSyncDiffComputer) StartSyncDiff(_ context.Context, mailingListID string, directionOverride string) (string, error) {
 	f.startCalledWith = mailingListID
+	f.startDirectionArg = directionOverride
 	return f.startJobID, f.startErr
 }
 
-func (f *fakeSyncDiffComputer) GetSyncDiffStatus(_ context.Context, _, jobID string) (*model.SyncDiffJobStatus, error) {
+func (f *fakeSyncDiffComputer) GetSyncDiffStatus(_ context.Context, _, jobID string, directionOverride string) (*model.SyncDiffJobStatus, error) {
 	f.statusJobIDArg = jobID
+	f.statusDirectionArg = directionOverride
 	return f.status, f.statusErr
 }
 
 // fakeSyncApplier is a test double for port.SyncApplier that captures its call arguments and
 // returns canned results.
 type fakeSyncApplier struct {
-	startJobID      string
-	startErr        error
-	startAddsArg    []model.SyncDiffAdd
-	startRemovesArg []model.SyncDiffRemove
+	startJobID        string
+	startErr          error
+	startAddsArg      []model.SyncDiffAdd
+	startRemovesArg   []model.SyncDiffRemove
+	startDirectionArg string
+
+	applyResult *model.SyncApplyResult
+	applyErr    error
 
 	status         *model.SyncApplyJobStatus
 	statusErr      error
 	statusJobIDArg string
 }
 
-func (f *fakeSyncApplier) ApplySyncDiff(_ context.Context, _, _ string, _ []model.SyncDiffAdd, _ []model.SyncDiffRemove) (*model.SyncApplyResult, error) {
-	return nil, nil
+func (f *fakeSyncApplier) ApplySyncDiff(_ context.Context, _, _ string, _ []model.SyncDiffAdd, _ []model.SyncDiffRemove, directionOverride string) (*model.SyncApplyResult, error) {
+	f.startDirectionArg = directionOverride
+	if f.applyResult != nil || f.applyErr != nil {
+		return f.applyResult, f.applyErr
+	}
+	return &model.SyncApplyResult{}, nil
 }
 
-func (f *fakeSyncApplier) StartSyncApply(_ context.Context, _, _ string, approvedAdds []model.SyncDiffAdd, approvedRemoves []model.SyncDiffRemove) (string, error) {
+func (f *fakeSyncApplier) StartSyncApply(_ context.Context, _, _ string, approvedAdds []model.SyncDiffAdd, approvedRemoves []model.SyncDiffRemove, directionOverride string) (string, error) {
 	f.startAddsArg = approvedAdds
 	f.startRemovesArg = approvedRemoves
+	f.startDirectionArg = directionOverride
 	return f.startJobID, f.startErr
 }
 
 func (f *fakeSyncApplier) GetSyncApplyStatus(_ context.Context, _, jobID string) (*model.SyncApplyJobStatus, error) {
 	f.statusJobIDArg = jobID
 	return f.status, f.statusErr
+}
+
+func TestApplyGroupsioMailingListSyncDiff_DirectionOverride(t *testing.T) {
+	applier := &fakeSyncApplier{}
+	s := &mailingListAPI{syncApplier: applier}
+
+	payload := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{
+		SubgroupID:   "ml-1",
+		CommitteeUID: "c-1",
+		Direction:    strp("ml_to_c"),
+	}
+	_, err := s.ApplyGroupsioMailingListSyncDiff(context.Background(), payload)
+	require.NoError(t, err)
+	require.Equal(t, "ml_to_c", applier.startDirectionArg)
 }
 
 func TestStartGroupsioMailingListSyncDiff(t *testing.T) {
@@ -75,6 +102,15 @@ func TestStartGroupsioMailingListSyncDiff(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "job-1", got.JobID)
 	require.Equal(t, "ml-1", computer.startCalledWith)
+}
+
+func TestStartGroupsioMailingListSyncDiff_DirectionOverride(t *testing.T) {
+	computer := &fakeSyncDiffComputer{startJobID: "job-1"}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	_, err := s.StartGroupsioMailingListSyncDiff(context.Background(), &mailinglist.StartGroupsioMailingListSyncDiffPayload{SubgroupID: "ml-1", Direction: strp("c_to_ml")})
+	require.NoError(t, err)
+	require.Equal(t, "c_to_ml", computer.startDirectionArg)
 }
 
 func TestStartGroupsioMailingListSyncDiff_Error(t *testing.T) {
@@ -94,6 +130,15 @@ func TestGetGroupsioMailingListSyncDiffStatus(t *testing.T) {
 	require.Equal(t, "job-1", got.JobID)
 	require.Equal(t, "ongoing", got.Status)
 	require.Equal(t, "job-1", computer.statusJobIDArg)
+}
+
+func TestGetGroupsioMailingListSyncDiffStatus_DirectionOverride(t *testing.T) {
+	computer := &fakeSyncDiffComputer{status: &model.SyncDiffJobStatus{JobID: "job-1", Status: "ongoing"}}
+	s := &mailingListAPI{syncDiffComputer: computer}
+
+	_, err := s.GetGroupsioMailingListSyncDiffStatus(context.Background(), &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{SubgroupID: "ml-1", JobID: "job-1", Direction: strp("ml_to_c")})
+	require.NoError(t, err)
+	require.Equal(t, "ml_to_c", computer.statusDirectionArg)
 }
 
 func TestGetGroupsioMailingListSyncDiffStatus_Error(t *testing.T) {
@@ -120,6 +165,20 @@ func TestStartGroupsioMailingListSyncApply(t *testing.T) {
 	require.Equal(t, "apply-1", got.JobID)
 	require.Len(t, applier.startAddsArg, 1)
 	require.Equal(t, "alice@example.com", applier.startAddsArg[0].Email)
+}
+
+func TestStartGroupsioMailingListSyncApply_DirectionOverride(t *testing.T) {
+	applier := &fakeSyncApplier{startJobID: "apply-1"}
+	s := &mailingListAPI{syncApplier: applier}
+
+	payload := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
+		SubgroupID:   "ml-1",
+		CommitteeUID: "c-1",
+		Direction:    strp("c_to_ml"),
+	}
+	_, err := s.StartGroupsioMailingListSyncApply(context.Background(), payload)
+	require.NoError(t, err)
+	require.Equal(t, "c_to_ml", applier.startDirectionArg)
 }
 
 func TestStartGroupsioMailingListSyncApply_Error(t *testing.T) {

@@ -26,25 +26,32 @@ type stubSyncDiffComputer struct {
 	calls []string
 
 	sawTrusted bool
+	// gotDirectionOverride records the last directionOverride TriggerAutoSync's call path passed
+	// in — it must always be "", proving the manual-sync override mechanism never reaches the
+	// automatic/webhook-driven path (see resolveSyncJobDirection's doc comment).
+	gotDirectionOverride string
 }
 
-func (c *stubSyncDiffComputer) ComputeSyncDiff(ctx context.Context, mailingListID string) (*model.SyncDiff, error) {
+func (c *stubSyncDiffComputer) ComputeSyncDiff(ctx context.Context, mailingListID string, directionOverride string) (*model.SyncDiff, error) {
 	c.calls = append(c.calls, mailingListID)
+	c.gotDirectionOverride = directionOverride
 	if isTrustedSystemCaller(ctx) {
 		c.sawTrusted = true
 	}
 	return c.diff, c.err
 }
 
-func (c *stubSyncDiffComputer) StartSyncDiff(ctx context.Context, mailingListID string) (string, error) {
+func (c *stubSyncDiffComputer) StartSyncDiff(ctx context.Context, mailingListID string, directionOverride string) (string, error) {
 	c.calls = append(c.calls, mailingListID)
+	c.gotDirectionOverride = directionOverride
 	if isTrustedSystemCaller(ctx) {
 		c.sawTrusted = true
 	}
 	return "", c.err
 }
 
-func (c *stubSyncDiffComputer) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string) (*model.SyncDiffJobStatus, error) {
+func (c *stubSyncDiffComputer) GetSyncDiffStatus(ctx context.Context, mailingListID, jobID string, directionOverride string) (*model.SyncDiffJobStatus, error) {
+	c.gotDirectionOverride = directionOverride
 	if c.err != nil {
 		return nil, c.err
 	}
@@ -63,6 +70,10 @@ type stubSyncApplier struct {
 	gotAdds              []model.SyncDiffAdd
 	gotRemoves           []model.SyncDiffRemove
 	sawTrusted           bool
+	// gotDirectionOverride records the last directionOverride TriggerAutoSync's call path passed
+	// in — it must always be "", proving the manual-sync override mechanism never reaches the
+	// automatic/webhook-driven path (see resolveSyncJobDirection's doc comment).
+	gotDirectionOverride string
 }
 
 func (a *stubSyncApplier) ApplySyncDiff(
@@ -71,12 +82,14 @@ func (a *stubSyncApplier) ApplySyncDiff(
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
+	directionOverride string,
 ) (*model.SyncApplyResult, error) {
 	a.called = true
 	a.gotMailingListID = mailingListID
 	a.gotExpectedCommittee = expectedCommitteeUID
 	a.gotAdds = approvedAdds
 	a.gotRemoves = approvedRemoves
+	a.gotDirectionOverride = directionOverride
 	if isTrustedSystemCaller(ctx) {
 		a.sawTrusted = true
 	}
@@ -89,12 +102,14 @@ func (a *stubSyncApplier) StartSyncApply(
 	expectedCommitteeUID string,
 	approvedAdds []model.SyncDiffAdd,
 	approvedRemoves []model.SyncDiffRemove,
+	directionOverride string,
 ) (string, error) {
 	a.called = true
 	a.gotMailingListID = mailingListID
 	a.gotExpectedCommittee = expectedCommitteeUID
 	a.gotAdds = approvedAdds
 	a.gotRemoves = approvedRemoves
+	a.gotDirectionOverride = directionOverride
 	if isTrustedSystemCaller(ctx) {
 		a.sawTrusted = true
 	}
@@ -228,6 +243,7 @@ func TestTriggerAutoSync_EmptyDiff_NoOp(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, applier.called)
+	assert.Empty(t, diffComputer.gotDirectionOverride, "TriggerAutoSync's own call path must never pass a direction override")
 }
 
 func TestTriggerAutoSync_SyncModeFlippedSinceSnapshot_NoOp(t *testing.T) {
@@ -267,6 +283,8 @@ func TestTriggerAutoSync_AddsAlwaysPropagate_RegardlessOfVisibility(t *testing.T
 		assert.Equal(t, diff.Adds, applier.gotAdds)
 		assert.Empty(t, applier.gotRemoves)
 		assert.Equal(t, "committee-1", applier.gotExpectedCommittee)
+		assert.Empty(t, diffComputer.gotDirectionOverride, "TriggerAutoSync's own call path must never pass a direction override")
+		assert.Empty(t, applier.gotDirectionOverride, "TriggerAutoSync's own call path must never pass a direction override")
 	}
 }
 

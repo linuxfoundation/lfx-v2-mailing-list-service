@@ -10,8 +10,39 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 )
+
+func TestResolveSyncJobDirection_EmptyOverrideFallsBackToSyncMode(t *testing.T) {
+	direction, err := resolveSyncJobDirection(model.SyncModeAutoCommitteeToMailingList, "")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobDirectionCommitteeToMailingList, direction)
+
+	direction, err = resolveSyncJobDirection(model.SyncModeAutoMailingListToCommittee, "")
+	require.NoError(t, err)
+	assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, direction)
+}
+
+func TestResolveSyncJobDirection_OverrideHonoredForManualOrUnsetMode(t *testing.T) {
+	for _, syncMode := range []string{model.SyncModeManual, ""} {
+		direction, err := resolveSyncJobDirection(syncMode, port.SyncJobDirectionMailingListToCommittee)
+		require.NoError(t, err)
+		assert.Equal(t, port.SyncJobDirectionMailingListToCommittee, direction)
+	}
+}
+
+func TestResolveSyncJobDirection_InvalidOverrideValueRejected(t *testing.T) {
+	_, err := resolveSyncJobDirection(model.SyncModeManual, "sideways")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), invalidDirectionOverrideMsgPrefix)
+}
+
+func TestResolveSyncJobDirection_OverrideRejectedForAutoSyncMode(t *testing.T) {
+	_, err := resolveSyncJobDirection(model.SyncModeAutoCommitteeToMailingList, port.SyncJobDirectionMailingListToCommittee)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), directionOverrideNotManualMsg)
+}
 
 // pollCountingITXSyncClient returns SyncJobStatusPending for the first (calls-1) GetSyncDiffJob/
 // GetSyncApplyJob calls, then the configured terminal job. Used to exercise the non-terminal

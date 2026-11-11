@@ -1618,16 +1618,30 @@ func DecodeGetGroupsioMailingListSyncDiffRequest(mux goahttp.Muxer, decoder func
 		var payload *mailinglist.GetGroupsioMailingListSyncDiffPayload
 		var (
 			subgroupID  string
+			direction   *string
 			bearerToken *string
+			err         error
 
 			params = mux.Vars(r)
 		)
 		subgroupID = params["subgroup_id"]
+		directionRaw := r.URL.Query().Get("direction")
+		if directionRaw != "" {
+			direction = &directionRaw
+		}
+		if direction != nil {
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload = NewGetGroupsioMailingListSyncDiffPayload(subgroupID, bearerToken)
+		if err != nil {
+			return payload, err
+		}
+		payload = NewGetGroupsioMailingListSyncDiffPayload(subgroupID, direction, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1910,16 +1924,30 @@ func DecodeStartGroupsioMailingListSyncDiffRequest(mux goahttp.Muxer, decoder fu
 		var payload *mailinglist.StartGroupsioMailingListSyncDiffPayload
 		var (
 			subgroupID  string
+			direction   *string
 			bearerToken *string
+			err         error
 
 			params = mux.Vars(r)
 		)
 		subgroupID = params["subgroup_id"]
+		directionRaw := r.URL.Query().Get("direction")
+		if directionRaw != "" {
+			direction = &directionRaw
+		}
+		if direction != nil {
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload = NewStartGroupsioMailingListSyncDiffPayload(subgroupID, bearerToken)
+		if err != nil {
+			return payload, err
+		}
+		payload = NewStartGroupsioMailingListSyncDiffPayload(subgroupID, direction, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -2035,17 +2063,31 @@ func DecodeGetGroupsioMailingListSyncDiffStatusRequest(mux goahttp.Muxer, decode
 		var (
 			subgroupID  string
 			jobID       string
+			direction   *string
 			bearerToken *string
+			err         error
 
 			params = mux.Vars(r)
 		)
 		subgroupID = params["subgroup_id"]
 		jobID = params["job_id"]
+		directionRaw := r.URL.Query().Get("direction")
+		if directionRaw != "" {
+			direction = &directionRaw
+		}
+		if direction != nil {
+			if !(*direction == "c_to_ml" || *direction == "ml_to_c") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("direction", *direction, []any{"c_to_ml", "ml_to_c"}))
+			}
+		}
 		bearerTokenRaw := r.Header.Get("Authorization")
 		if bearerTokenRaw != "" {
 			bearerToken = &bearerTokenRaw
 		}
-		payload = NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID, jobID, bearerToken)
+		if err != nil {
+			return payload, err
+		}
+		payload = NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID, jobID, direction, bearerToken)
 		if payload.BearerToken != nil {
 			if strings.Contains(*payload.BearerToken, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")

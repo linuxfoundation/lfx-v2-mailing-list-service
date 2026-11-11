@@ -115,7 +115,7 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 	// (and the committeeUID resolved from it) come from the triggering event, not end-user input.
 	ctx = withTrustedSystemCaller(ctx)
 
-	diff, err := o.syncDiffComputer.ComputeSyncDiff(ctx, mailingListID)
+	diff, err := o.syncDiffComputer.ComputeSyncDiff(ctx, mailingListID, "")
 	if err != nil {
 		if errors.Is(err, ErrNothingToReconcile) {
 			// Not linked to a committee, or sync_mode is manual/unrecognized: nothing to
@@ -158,7 +158,7 @@ func (o *RealtimeAutoSyncOrchestrator) TriggerAutoSync(ctx context.Context, mail
 		return nil
 	}
 
-	result, err := o.syncApplier.ApplySyncDiff(ctx, mailingListID, diff.CommitteeUID, diff.Adds, approvedRemoves)
+	result, err := o.syncApplier.ApplySyncDiff(ctx, mailingListID, diff.CommitteeUID, diff.Adds, approvedRemoves, "")
 	if err != nil {
 		return err
 	}

@@ -124,6 +124,11 @@ type ApplyGroupsioMailingListSyncDiffRequestBody struct {
 	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
 	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
+	// Sync direction this apply should run in — required when the mailing list's
+	// sync_mode is "manual" or unset (a one-time Sync Now, which has no auto_*
+	// direction to fall back on), and rejected with BadRequest if given while an
+	// auto_* sync_mode is active
+	Direction *string `form:"direction,omitempty" json:"direction,omitempty" xml:"direction,omitempty"`
 }
 
 // StartGroupsioMailingListSyncApplyRequestBody is the type of the
@@ -137,6 +142,11 @@ type StartGroupsioMailingListSyncApplyRequestBody struct {
 	Adds []*GroupsioSyncDiffAddRequestBody `form:"adds,omitempty" json:"adds,omitempty" xml:"adds,omitempty"`
 	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemoveRequestBody `form:"removes,omitempty" json:"removes,omitempty" xml:"removes,omitempty"`
+	// Sync direction this apply should run in — required when the mailing list's
+	// sync_mode is "manual" or unset (a one-time Sync Now, which has no auto_*
+	// direction to fall back on), and rejected with BadRequest if given while an
+	// auto_* sync_mode is active
+	Direction *string `form:"direction,omitempty" json:"direction,omitempty" xml:"direction,omitempty"`
 }
 
 // AddGroupsioMemberRequestBody is the type of the "mailing-list" service
@@ -455,7 +465,9 @@ type GetGroupsioMailingListSyncDiffResponseBody struct {
 	MailingListID string `form:"mailing_list_id" json:"mailing_list_id" xml:"mailing_list_id"`
 	// LFX v2 committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
-	// Sync direction this diff was computed for
+	// Mailing list's configured sync_mode at the time this diff was computed —
+	// "manual" when the diff was computed for a one-time Sync Now using an
+	// explicit direction override rather than an auto_* sync_mode
 	SyncMode string `form:"sync_mode" json:"sync_mode" xml:"sync_mode"`
 	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds" json:"adds" xml:"adds"`
@@ -1774,7 +1786,9 @@ type GroupsioSyncDiffResponseBody struct {
 	MailingListID string `form:"mailing_list_id" json:"mailing_list_id" xml:"mailing_list_id"`
 	// LFX v2 committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
-	// Sync direction this diff was computed for
+	// Mailing list's configured sync_mode at the time this diff was computed —
+	// "manual" when the diff was computed for a one-time Sync Now using an
+	// explicit direction override rather than an auto_* sync_mode
 	SyncMode string `form:"sync_mode" json:"sync_mode" xml:"sync_mode"`
 	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAddResponseBody `form:"adds" json:"adds" xml:"adds"`
@@ -3786,9 +3800,10 @@ func NewGetGroupsioMailingListMemberCountPayload(subgroupID string, bearerToken 
 
 // NewGetGroupsioMailingListSyncDiffPayload builds a mailing-list service
 // get-groupsio-mailing-list-sync-diff endpoint payload.
-func NewGetGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncDiffPayload {
+func NewGetGroupsioMailingListSyncDiffPayload(subgroupID string, direction *string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncDiffPayload {
 	v := &mailinglist.GetGroupsioMailingListSyncDiffPayload{}
 	v.SubgroupID = subgroupID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v
@@ -3799,6 +3814,7 @@ func NewGetGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *st
 func NewApplyGroupsioMailingListSyncDiffPayload(body *ApplyGroupsioMailingListSyncDiffRequestBody, subgroupID string, bearerToken *string) *mailinglist.ApplyGroupsioMailingListSyncDiffPayload {
 	v := &mailinglist.ApplyGroupsioMailingListSyncDiffPayload{
 		CommitteeUID: *body.CommitteeUID,
+		Direction:    body.Direction,
 	}
 	v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
 	for i, val := range body.Adds {
@@ -3824,9 +3840,10 @@ func NewApplyGroupsioMailingListSyncDiffPayload(body *ApplyGroupsioMailingListSy
 
 // NewStartGroupsioMailingListSyncDiffPayload builds a mailing-list service
 // start-groupsio-mailing-list-sync-diff endpoint payload.
-func NewStartGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *string) *mailinglist.StartGroupsioMailingListSyncDiffPayload {
+func NewStartGroupsioMailingListSyncDiffPayload(subgroupID string, direction *string, bearerToken *string) *mailinglist.StartGroupsioMailingListSyncDiffPayload {
 	v := &mailinglist.StartGroupsioMailingListSyncDiffPayload{}
 	v.SubgroupID = subgroupID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v
@@ -3834,10 +3851,11 @@ func NewStartGroupsioMailingListSyncDiffPayload(subgroupID string, bearerToken *
 
 // NewGetGroupsioMailingListSyncDiffStatusPayload builds a mailing-list service
 // get-groupsio-mailing-list-sync-diff-status endpoint payload.
-func NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID string, jobID string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncDiffStatusPayload {
+func NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID string, jobID string, direction *string, bearerToken *string) *mailinglist.GetGroupsioMailingListSyncDiffStatusPayload {
 	v := &mailinglist.GetGroupsioMailingListSyncDiffStatusPayload{}
 	v.SubgroupID = subgroupID
 	v.JobID = jobID
+	v.Direction = direction
 	v.BearerToken = bearerToken
 
 	return v
@@ -3848,6 +3866,7 @@ func NewGetGroupsioMailingListSyncDiffStatusPayload(subgroupID string, jobID str
 func NewStartGroupsioMailingListSyncApplyPayload(body *StartGroupsioMailingListSyncApplyRequestBody, subgroupID string, bearerToken *string) *mailinglist.StartGroupsioMailingListSyncApplyPayload {
 	v := &mailinglist.StartGroupsioMailingListSyncApplyPayload{
 		CommitteeUID: *body.CommitteeUID,
+		Direction:    body.Direction,
 	}
 	v.Adds = make([]*mailinglist.GroupsioSyncDiffAdd, len(body.Adds))
 	for i, val := range body.Adds {
@@ -4090,6 +4109,11 @@ func ValidateApplyGroupsioMailingListSyncDiffRequestBody(body *ApplyGroupsioMail
 			}
 		}
 	}
+	if body.Direction != nil {
+		if !(*body.Direction == "c_to_ml" || *body.Direction == "ml_to_c") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.direction", *body.Direction, []any{"c_to_ml", "ml_to_c"}))
+		}
+	}
 	return
 }
 
@@ -4120,6 +4144,11 @@ func ValidateStartGroupsioMailingListSyncApplyRequestBody(body *StartGroupsioMai
 			if err2 := ValidateGroupsioSyncDiffRemoveRequestBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.Direction != nil {
+		if !(*body.Direction == "c_to_ml" || *body.Direction == "ml_to_c") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.direction", *body.Direction, []any{"c_to_ml", "ml_to_c"}))
 		}
 	}
 	return

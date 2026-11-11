@@ -102,7 +102,7 @@ func (s *mailingListAPI) GetGroupsioMailingListMemberCount(ctx context.Context, 
 }
 
 func (s *mailingListAPI) GetGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncDiff, error) {
-	diff, err := s.syncDiffComputer.ComputeSyncDiff(ctx, p.SubgroupID)
+	diff, err := s.syncDiffComputer.ComputeSyncDiff(ctx, p.SubgroupID, converter.StringVal(p.Direction))
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -116,6 +116,7 @@ func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p
 		p.CommitteeUID,
 		convertSyncApplyAddPayload(p.Adds),
 		convertSyncApplyRemovePayload(p.Removes),
+		converter.StringVal(p.Direction),
 	)
 	if err != nil {
 		return nil, mapDomainError(err)
@@ -124,7 +125,7 @@ func (s *mailingListAPI) ApplyGroupsioMailingListSyncDiff(ctx context.Context, p
 }
 
 func (s *mailingListAPI) StartGroupsioMailingListSyncDiff(ctx context.Context, p *mailinglist.StartGroupsioMailingListSyncDiffPayload) (*mailinglist.GroupsioSyncJobStart, error) {
-	jobID, err := s.syncDiffComputer.StartSyncDiff(ctx, p.SubgroupID)
+	jobID, err := s.syncDiffComputer.StartSyncDiff(ctx, p.SubgroupID, converter.StringVal(p.Direction))
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -132,7 +133,7 @@ func (s *mailingListAPI) StartGroupsioMailingListSyncDiff(ctx context.Context, p
 }
 
 func (s *mailingListAPI) GetGroupsioMailingListSyncDiffStatus(ctx context.Context, p *mailinglist.GetGroupsioMailingListSyncDiffStatusPayload) (*mailinglist.GroupsioSyncDiffStatus, error) {
-	status, err := s.syncDiffComputer.GetSyncDiffStatus(ctx, p.SubgroupID, p.JobID)
+	status, err := s.syncDiffComputer.GetSyncDiffStatus(ctx, p.SubgroupID, p.JobID, converter.StringVal(p.Direction))
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -146,6 +147,7 @@ func (s *mailingListAPI) StartGroupsioMailingListSyncApply(ctx context.Context, 
 		p.CommitteeUID,
 		convertSyncApplyAddPayload(p.Adds),
 		convertSyncApplyRemovePayload(p.Removes),
+		converter.StringVal(p.Direction),
 	)
 	if err != nil {
 		return nil, mapDomainError(err)

@@ -149,6 +149,11 @@ type ApplyGroupsioMailingListSyncDiffPayload struct {
 	Adds []*GroupsioSyncDiffAdd
 	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemove
+	// Sync direction this apply should run in — required when the mailing list's
+	// sync_mode is "manual" or unset (a one-time Sync Now, which has no auto_*
+	// direction to fall back on), and rejected with BadRequest if given while an
+	// auto_* sync_mode is active
+	Direction *string
 }
 
 // CheckGroupsioSubscriberPayload is the payload type of the mailing-list
@@ -321,6 +326,10 @@ type GetGroupsioMailingListSyncDiffPayload struct {
 	BearerToken *string
 	// Subgroup ID
 	SubgroupID string
+	// Sync direction override for a manual-mode mailing list ("c_to_ml" or
+	// "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the
+	// mailing list's configured sync_mode direction
+	Direction *string
 }
 
 // GetGroupsioMailingListSyncDiffStatusPayload is the payload type of the
@@ -332,6 +341,10 @@ type GetGroupsioMailingListSyncDiffStatusPayload struct {
 	SubgroupID string
 	// Sync-diff job ID
 	JobID string
+	// Sync direction override for a manual-mode mailing list ("c_to_ml" or
+	// "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the
+	// mailing list's configured sync_mode direction
+	Direction *string
 }
 
 // GetGroupsioMemberPayload is the payload type of the mailing-list service
@@ -648,7 +661,9 @@ type GroupsioSyncDiff struct {
 	MailingListID string
 	// LFX v2 committee UID
 	CommitteeUID string
-	// Sync direction this diff was computed for
+	// Mailing list's configured sync_mode at the time this diff was computed —
+	// "manual" when the diff was computed for a one-time Sync Now using an
+	// explicit direction override rather than an auto_* sync_mode
 	SyncMode string
 	// Members to add, to reconcile the target roster
 	Adds []*GroupsioSyncDiffAdd
@@ -780,6 +795,11 @@ type StartGroupsioMailingListSyncApplyPayload struct {
 	Adds []*GroupsioSyncDiffAdd
 	// Members to remove, as returned by sync-diff
 	Removes []*GroupsioSyncDiffRemove
+	// Sync direction this apply should run in — required when the mailing list's
+	// sync_mode is "manual" or unset (a one-time Sync Now, which has no auto_*
+	// direction to fall back on), and rejected with BadRequest if given while an
+	// auto_* sync_mode is active
+	Direction *string
 }
 
 // StartGroupsioMailingListSyncDiffPayload is the payload type of the
@@ -789,6 +809,10 @@ type StartGroupsioMailingListSyncDiffPayload struct {
 	BearerToken *string
 	// Subgroup ID
 	SubgroupID string
+	// Sync direction override for a manual-mode mailing list ("c_to_ml" or
+	// "ml_to_c") — only valid when sync_mode is manual or unset; omit to use the
+	// mailing list's configured sync_mode direction
+	Direction *string
 }
 
 // UpdateGroupsioMailingListPayload is the payload type of the mailing-list
