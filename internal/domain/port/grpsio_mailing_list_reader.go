@@ -13,7 +13,8 @@ import (
 // All IDs are v2 UUIDs. Implementations are responsible for v1/v2 ID translation
 // when communicating with the ITX proxy.
 type GroupsIOMailingListReader interface {
-	// ListMailingLists lists mailing lists, optionally filtered by project UID and/or committee UID.
+	// ListMailingLists lists mailing lists filtered by project UID and/or committee UID.
+	// At least one filter is required; when both are provided, both must match.
 	// Returns the matched mailing lists and total count.
 	ListMailingLists(ctx context.Context, projectUID string, committeeUID string) ([]*model.GroupsIOMailingList, int, error)
 

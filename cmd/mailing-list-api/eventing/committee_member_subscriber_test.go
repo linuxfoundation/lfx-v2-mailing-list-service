@@ -4,8 +4,10 @@
 package eventing
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
+	"github.com/nats-io/nats.go"
 )
 
 // stubAutoSyncer records TriggerAutoSync calls and returns a configured error, optionally keyed
@@ -41,10 +45,14 @@ type stubCommitteeMailingListReader struct {
 	err   error
 
 	gotCtxHadDeadline bool
+	gotProjectUID     string
+	gotCommitteeUID   string
 }
 
-func (r *stubCommitteeMailingListReader) ListMailingLists(ctx context.Context, _, _ string) ([]*model.GroupsIOMailingList, int, error) {
+func (r *stubCommitteeMailingListReader) ListMailingLists(ctx context.Context, projectUID, committeeUID string) ([]*model.GroupsIOMailingList, int, error) {
 	_, r.gotCtxHadDeadline = ctx.Deadline()
+	r.gotProjectUID = projectUID
+	r.gotCommitteeUID = committeeUID
 	return r.lists, len(r.lists), r.err
 }
 func (r *stubCommitteeMailingListReader) GetMailingList(_ context.Context, _ string) (*model.GroupsIOMailingList, error) {
@@ -173,6 +181,44 @@ func TestProcessCommitteeMemberEvent_NoLinkedLists_NoOp(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Empty(t, syncer.calls)
+}
+
+func TestCommitteeMemberSubscriber_MemberEventsDiscoverAndTriggerReconciliation(t *testing.T) {
+	for _, event := range []struct{ subject, data string }{
+		{constants.CommitteeMemberCreatedSubject, `{"data":{"member_uid":"member-1","committee_uid":"committee-1","project_uid":"project-1"}}`},
+		{constants.CommitteeMemberUpdatedSubject, `{"data":{"member_uid":"member-1","member":{"committee_uid":"committee-1"},"old_member":{}}}`},
+		{constants.CommitteeMemberDeletedSubject, `{"data":{"member_uid":"member-1","committee_uid":"committee-1"}}`},
+	} {
+		for _, linked := range []bool{true, false} {
+			name := event.subject + "/unlinked"
+			if linked {
+				name = event.subject + "/linked"
+			}
+			t.Run(name, func(t *testing.T) {
+				reader := &stubCommitteeMailingListReader{}
+				if linked {
+					reader.lists = []*model.GroupsIOMailingList{
+						autoC2MList("101"),
+						{UID: "102", Committees: []model.Committee{{UID: "committee-1", SyncMode: model.SyncModeManual}}},
+					}
+				}
+				syncer := &stubAutoSyncer{}
+				var logs bytes.Buffer
+				logger := slog.New(slog.NewTextHandler(&logs, nil))
+				subscriber := NewCommitteeMemberSubscriber(nil, reader, syncer, logger)
+				subscriber.ctx = context.Background()
+				subscriber.handle(&nats.Msg{Subject: event.subject, Data: []byte(event.data)})
+				assert.Empty(t, reader.gotProjectUID, "discovery must use only the committee selector")
+				assert.Equal(t, "committee-1", reader.gotCommitteeUID)
+				assert.NotContains(t, logs.String(), "level=WARN")
+				if linked {
+					assert.Equal(t, []string{"101"}, syncer.calls)
+				} else {
+					assert.Empty(t, syncer.calls, "an unlinked committee is a clean no-op")
+				}
+			})
+		}
+	}
 }
 
 // blockingAutoSyncer's TriggerAutoSync blocks on release until it is closed, letting a test hold

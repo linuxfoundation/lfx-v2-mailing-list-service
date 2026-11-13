@@ -73,8 +73,10 @@ type subgroupRequestWire struct {
 
 // subgroupListResponseWire represents a list response of GroupsIO subgroups from the ITX API.
 type subgroupListResponseWire struct {
-	Items []*subgroupWire `json:"items"`
-	Total int             `json:"total"`
+	Data     []*subgroupWire `json:"data"`
+	Metadata *struct {
+		TotalResults *int `json:"total_results"`
+	} `json:"meta"`
 }
 
 // countResponseWire represents a count response from the ITX API.
