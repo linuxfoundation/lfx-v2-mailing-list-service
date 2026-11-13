@@ -420,22 +420,24 @@ func (c *itx) AcceptInvite(ctx context.Context, email, username string) error {
 
 // ---- GroupsIOMailingListReader implementation ----
 
-// ListMailingLists lists GroupsIO mailing lists, optionally filtered by project and/or committee v1 IDs.
+// ListMailingLists lists GroupsIO mailing lists filtered by project and/or committee v1 IDs.
+// ITX accepts exactly one selector. When both filters are supplied, discover by committee
+// and apply the project filter locally (the committee response is not paginated by ITX).
 func (c *itx) ListMailingLists(ctx context.Context, projectID string, committeeID string) ([]*model.GroupsIOMailingList, int, error) {
+	if projectID == "" && committeeID == "" {
+		return nil, 0, errs.NewValidation("a project or committee filter is required")
+	}
 	u, err := c.buildURL("v2", "groupsio_subgroup")
 	if err != nil {
 		return nil, 0, errs.NewUnexpected("failed to build URL", err)
 	}
 	q := url.Values{}
-	if projectID != "" {
+	if committeeID != "" {
+		q.Set("committee_id", committeeID)
+	} else {
 		q.Set("project_id", projectID)
 	}
-	if committeeID != "" {
-		q.Set("committee", committeeID)
-	}
-	if len(q) > 0 {
-		u += "?" + q.Encode()
-	}
+	u += "?" + q.Encode()
 
 	resp, err := c.httpClient.Request(ctx, http.MethodGet, u, nil, nil)
 	if err != nil {
@@ -446,12 +448,26 @@ func (c *itx) ListMailingLists(ctx context.Context, projectID string, committeeI
 	if err := json.Unmarshal(resp.Body, &wire); err != nil {
 		return nil, 0, errs.NewUnexpected("failed to parse response", err)
 	}
-
-	items := make([]*model.GroupsIOMailingList, len(wire.Items))
-	for i, item := range wire.Items {
-		items[i] = fromWireSubgroup(item)
+	// A missing/unknown envelope must not masquerade as an unlinked committee.
+	if wire.Data == nil || wire.Metadata == nil || wire.Metadata.TotalResults == nil {
+		return nil, 0, errs.NewUnexpected("invalid mailing list response: expected data and meta.total_results")
 	}
-	return items, wire.Total, nil
+
+	items := make([]*model.GroupsIOMailingList, 0, len(wire.Data))
+	for _, item := range wire.Data {
+		if item == nil {
+			return nil, 0, errs.NewUnexpected("invalid mailing list response: null subgroup")
+		}
+		if projectID != "" && committeeID != "" && item.ProjectID != projectID {
+			continue
+		}
+		items = append(items, fromWireSubgroup(item))
+	}
+	total := *wire.Metadata.TotalResults
+	if projectID != "" && committeeID != "" {
+		total = len(items)
+	}
+	return items, total, nil
 }
 
 // GetMailingList retrieves a GroupsIO mailing list by ID.

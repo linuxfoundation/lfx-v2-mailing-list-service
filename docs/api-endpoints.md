@@ -142,6 +142,9 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
 
 ### GroupsIO Mailing Lists
 
+Listing requires at least one of `project_uid` or `committee_uid`. When both are supplied,
+both must match: the service discovers by committee in ITX and applies the project filter locally.
+
 **List mailing lists for a project:**
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
