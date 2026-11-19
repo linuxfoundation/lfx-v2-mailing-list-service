@@ -46,7 +46,7 @@ make helm-install-local
 ### For Local Development
 
 1. **Prerequisites**
-   - Go 1.24+ installed
+   - Go 1.27.4+ installed
    - Make installed
    - Docker (optional, for containerized development)
    - NATS server running (required for ID translation)
@@ -229,7 +229,7 @@ Because this service reuses the same database and infrastructure as the proxied 
 
 ### Prerequisites
 
-- Go 1.24+
+- Go 1.27.4+
 - Make
 - Git
 

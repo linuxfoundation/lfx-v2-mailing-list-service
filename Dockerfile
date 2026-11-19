@@ -27,8 +27,9 @@ RUN go build -o /go/bin/mailing-list-svc -trimpath -ldflags="-w -s" ./cmd/mailin
 # Run our go binary standalone
 FROM cgr.dev/chainguard/static:latest
 
-# Implicit with base image; setting explicitly for linters.
-USER nonroot
+# Numeric UID of the Chainguard nonroot user. Implicit with the base image;
+# set explicitly for linters, which require a numeric USER.
+USER 65532
 
 EXPOSE 8080
 
