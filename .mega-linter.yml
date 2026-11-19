@@ -30,8 +30,13 @@ DISABLE_ERRORS_LINTERS:
   # Prefer Revive.
   - GO_GOLANGCI_LINT
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
-REPOSITORY_KICS_ARGUMENTS: >-
-  scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="gen/*"
+# Allow GITHUB_TOKEN for working around rate limits (aquasecurity/trivy#7668).
+REPOSITORY_TRIVY_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
+# zizmor's "artipacked" audit needs the GitHub API (to verify
+# SHA-pinned action tags), which requires GITHUB_TOKEN.
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
 SPELL_CSPELL_ANALYZE_FILE_NAMES: false
 SPELL_CSPELL_PRE_COMMANDS:
   - command: >-
