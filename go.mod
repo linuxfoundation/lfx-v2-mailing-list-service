@@ -3,7 +3,7 @@
 
 module github.com/linuxfoundation/lfx-v2-mailing-list-service
 
-go 1.26.11
+go 1.27.4
 
 require (
 	github.com/auth0/go-auth0 v1.48.0
@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/linuxfoundation/lfx-v2-fga-sync v0.3.9
 	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.26
+	github.com/linuxfoundation/lfx-v2-invite-service v0.1.14
 	github.com/nats-io/nats.go v1.53.1
 	github.com/remychantenay/slog-otel v1.3.5
 	github.com/stretchr/testify v1.12.1
@@ -37,8 +38,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require go.yaml.in/yaml/v3 v3.0.5 // indirect
-
 require (
 	github.com/PuerkitoBio/rehttp v1.4.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
@@ -60,7 +59,6 @@ require (
 	github.com/lestrrat-go/iter v1.0.2 // indirect
 	github.com/lestrrat-go/jwx/v2 v2.1.7 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
-	github.com/linuxfoundation/lfx-v2-invite-service v0.1.14
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/nats-io/nkeys v0.4.16 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
@@ -71,6 +69,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.62.0 // indirect

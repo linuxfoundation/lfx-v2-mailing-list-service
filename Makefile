@@ -22,12 +22,12 @@ HELM_NAMESPACE=lfx
 HELM_VALUES_FILE=./charts/lfx-v2-mailing-list-service/values.local.yaml
 
 # Go
-GO_VERSION := 1.24.0
+GO_VERSION := 1.27.4
 GOOS := linux
 GOARCH := amd64
 
 # Linting
-GOLANGCI_LINT_VERSION := v2.3.1
+GOLANGCI_LINT_VERSION := v2.15.0
 LINT_TIMEOUT := 10m
 LINT_TOOL=$(shell go env GOPATH)/bin/golangci-lint
 

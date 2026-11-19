@@ -108,34 +108,23 @@ Request-scoped data flows through context.Context:
 
 ## Development Notes
 
-### Go Toolchain Version
+### Go version
 
-Freely bump `go.mod`'s `go` directive to the latest available *patch*
-release (e.g. `1.X.Y` → `1.X.{Y+1}`) to pick up security fixes. Do **not**
-bump the *minor* version (e.g. `1.X.x` → `1.{X+1}.x`) unless the user
-explicitly asks for it, **and** you've validated it against the Go version
-MegaLinter itself bundles -- MegaLinter runs several linters (e.g.
-`golangci-lint`) against its own bundled Go version, and a `go.mod`
-directive newer than that bundled version breaks those checks.
+This repo targets Go 1.27.x (currently 1.27.4, the latest patch). This
+supersedes the Go version policy in the `lfx-megalinter` skill, which targets
+the latest stable minor minus one: don't move `go.mod` back to Go 1.26. Take
+every 1.27.x patch release, and update `go.mod`, `GO_VERSION` in the
+`Makefile` and `README.md` together. Release images are built with the Go in
+`go.mod` (`ko-build-tag.yaml` uses `go-version-file: go.mod`).
 
-To find MegaLinter's bundled Go version:
-
-```bash
-# 1. Find the MegaLinter flavor and pinned version tag used in CI.
-grep -A1 'oxsecurity/megalinter' .github/workflows/*.yml
-# e.g. "uses: oxsecurity/megalinter/flavors/<flavor>@<sha>  # <tag>"
-
-# 2. Fetch that flavor's Dockerfile and read its GO_ALPINE_VERSION (or
-#    GO_IMAGE_VERSION) build arg.
-curl -s "https://raw.githubusercontent.com/oxsecurity/megalinter/<tag>/flavors/<flavor>/Dockerfile" \
-  | grep -i 'GO_ALPINE_VERSION\|GO_IMAGE_VERSION'
-```
-
-`go.mod`'s `go` directive must never exceed that bundled version. Staying
-one minor version behind it (rather than matching its minor *and* patch
-exactly) leaves room to always take the latest patch release for security
-fixes without ever being blocked by MegaLinter's own bundled patch version
-lagging behind a newly disclosed vulnerability.
+MegaLinter (v10.2.0) runs Go 1.26.10 in its image, so
+`.github/workflows/mega-linter.yml` sets `GOTOOLCHAIN: auto` to let its Go
+linters download the `go.mod` toolchain. Its bundled golangci-lint 2.15.0 is
+built with Go 1.27.0 and lints this module; `GOLANGCI_LINT_VERSION` in the
+`Makefile` matches it. osv-scanner's govulncheck call analysis is built with
+Go 1.26 and cannot load it, so osv-scanner falls back to matching
+vulnerabilities by version: any known vulnerability in a dependency version
+fails the check, reachable or not.
 
 There's no built-in `go` subcommand to look up the latest patch release for
 a given minor version -- query the official `go.dev/dl` JSON feed instead:
