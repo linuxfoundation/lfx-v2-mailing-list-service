@@ -8,6 +8,7 @@ import (
 	"errors"
 	"testing"
 
+	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -88,12 +89,12 @@ func TestBackfillExistingSubgroups(t *testing.T) {
 	objects.entries[subgroupPrefix+"packed"] = packed
 	objects.keys = append(objects.keys, subgroupPrefix+"sg-1") // duplicate from a busy bucket
 
-	dry, err := backfill(ctx, objects, mappings, index, false)
+	dry, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), false)
 	require.NoError(t, err)
 	assert.Equal(t, results{listed: 9, processed: 4, skipped: 5}, dry)
 	assert.Empty(t, index.puts)
 
-	written, err := backfill(ctx, objects, mappings, index, true)
+	written, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.NoError(t, err)
 	assert.Equal(t, dry, written)
 	assert.Len(t, index.puts, 8)
@@ -102,7 +103,7 @@ func TestBackfillExistingSubgroups(t *testing.T) {
 	assert.Equal(t, "sg-1", string(index.entries[constants.KVMappingPrefixSubgroupByService+".svc-1.sg-1"]))
 	assert.Equal(t, "svc-2", string(index.entries[constants.KVMappingPrefixSubgroupParent+".packed"]))
 
-	again, err := backfill(ctx, objects, mappings, index, true)
+	again, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.NoError(t, err)
 	assert.Equal(t, results{listed: 9, skipped: 9}, again)
 	assert.Len(t, index.puts, 8)
@@ -117,14 +118,14 @@ func TestBackfillRejectsConflictsAndSurfacesWriteErrors(t *testing.T) {
 	index := &fakeKV{entries: map[string][]byte{
 		constants.KVMappingPrefixSubgroupParent + ".sg-1": []byte("svc-2"),
 	}}
-	counts, err := backfill(ctx, objects, mappings, index, true)
+	counts, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.ErrorContains(t, err, "1 subgroup records failed")
 	assert.Equal(t, 1, counts.failed)
 	assert.Empty(t, index.puts)
 
 	delete(index.entries, constants.KVMappingPrefixSubgroupParent+".sg-1")
 	index.putErr = errors.New("NATS unavailable")
-	counts, err = backfill(ctx, objects, mappings, index, true)
+	counts, err = backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.Error(t, err)
 	assert.Equal(t, 1, counts.failed)
 	assert.Empty(t, index.puts)
@@ -139,7 +140,7 @@ func TestBackfillCompletesPartialMapping(t *testing.T) {
 	index := &fakeKV{entries: map[string][]byte{
 		constants.KVMappingPrefixSubgroupByService + ".svc-1.sg-1": []byte("sg-1"),
 	}}
-	counts, err := backfill(ctx, objects, mappings, index, true)
+	counts, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.NoError(t, err)
 	assert.Equal(t, results{listed: 1, processed: 1}, counts)
 	assert.Equal(t, []string{constants.KVMappingPrefixSubgroupParent + ".sg-1"}, index.puts)
@@ -156,7 +157,7 @@ func TestBackfillRepairsPendingMove(t *testing.T) {
 		constants.KVMappingPrefixSubgroupByService + ".svc-1." + uid: []byte(uid),
 		constants.KVMappingPrefixSubgroupByService + ".svc-2." + uid: []byte(uid),
 	}}
-	counts, err := backfill(ctx, objects, mappings, index, true)
+	counts, err := backfill(ctx, objects, infraNATS.NewMappingReaderWriter(mappings, index), true)
 	require.NoError(t, err)
 	assert.Equal(t, results{listed: 1, processed: 1}, counts)
 	assert.Equal(t, "svc-2", string(index.entries[constants.KVMappingPrefixSubgroupParent+"."+uid]))

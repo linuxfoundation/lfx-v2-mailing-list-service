@@ -13,6 +13,14 @@ import (
 // ErrMappingAlreadyExists is returned by CreateMapping when the key already exists.
 var ErrMappingAlreadyExists = errors.New("mapping key already exists")
 
+// ProcessingState is the service-owned store, independent of the native
+// subgroup service index and canonical project/committee mapping RPCs.
+type ProcessingState interface {
+	MappingReader
+	MappingWriter
+	Close() error
+}
+
 // MappingState is the lifecycle state of a mapping key.
 type MappingState int
 

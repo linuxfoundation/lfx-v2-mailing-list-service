@@ -3,7 +3,7 @@
 
 // backfill_subgroup_service_index populates the dedicated
 // groupsio-subgroup-service-index KV bucket from existing v1-objects records,
-// checking v1-mappings to skip unprocessed subgroups. It does not replay KV
+// checking Postgres processed-state to skip unprocessed subgroups. It does not replay KV
 // events or send indexer messages. By default it only reports planned writes;
 // pass -write to persist mappings.
 package main
@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/eventstate"
 	infraNATS "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/mapconv"
@@ -55,9 +57,14 @@ func main() {
 		slog.Error("open v1-objects", "error", err)
 		os.Exit(1)
 	}
-	mappings, err := js.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+	mappings, err := eventstate.Open(ctx, os.Getenv("MAILING_LIST_STATE_DATABASE_URL"))
 	if err != nil {
-		slog.Error("open v1-mappings", "error", err)
+		slog.Error("open mailing-list Postgres state")
+		os.Exit(1)
+	}
+	defer func() { _ = mappings.Close() }()
+	if err := mappings.Ready(ctx); err != nil {
+		slog.Error("state cutover not verified")
 		os.Exit(1)
 	}
 	serviceIndex, err := js.KeyValue(ctx, constants.KVBucketSubgroupServiceIndex)
@@ -65,7 +72,7 @@ func main() {
 		slog.Error("open subgroup service index", "error", err)
 		os.Exit(1)
 	}
-	counts, err := backfill(ctx, objects, mappings, serviceIndex, *write)
+	counts, err := backfill(ctx, objects, infraNATS.NewProcessingStateReaderWriter(mappings, serviceIndex, nil), *write)
 	slog.Info("backfill complete", "write", *write, "listed", counts.listed,
 		"processed", counts.processed, "skipped", counts.skipped, "failed", counts.failed)
 	if err != nil {
@@ -74,7 +81,7 @@ func main() {
 	}
 }
 
-func backfill(ctx context.Context, objects, mappings, serviceIndex jetstream.KeyValue, write bool) (results, error) {
+func backfill(ctx context.Context, objects jetstream.KeyValue, mappings port.MappingReaderWriter, write bool) (results, error) {
 	var counts results
 	lister, err := objects.ListKeysFiltered(ctx, subgroupPrefix+">")
 	if errors.Is(err, jetstream.ErrNoKeysFound) {
@@ -91,7 +98,7 @@ func backfill(ctx context.Context, objects, mappings, serviceIndex jetstream.Key
 		}
 		seen[key] = true
 		counts.listed++
-		needed, err := backfillOne(ctx, objects, mappings, serviceIndex, key, write)
+		needed, err := backfillOne(ctx, objects, mappings, key, write)
 		if err != nil {
 			counts.failed++
 			slog.ErrorContext(ctx, "could not process subgroup", "key", key, "error", err)
@@ -110,13 +117,12 @@ func backfill(ctx context.Context, objects, mappings, serviceIndex jetstream.Key
 	return counts, nil
 }
 
-func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.KeyValue, key string, write bool) (bool, error) {
+func backfillOne(ctx context.Context, objects jetstream.KeyValue, store port.MappingReaderWriter, key string, write bool) (bool, error) {
 	uid := strings.TrimPrefix(key, subgroupPrefix)
 	if !constants.ValidKVKeySegment(uid) {
 		return false, fmt.Errorf("invalid subgroup UID %q", uid)
 	}
 	forwardKey := constants.KVMappingPrefixSubgroup + "." + uid
-	store := infraNATS.NewMappingReaderWriter(mappings, serviceIndex)
 	forward, err := store.Lookup(ctx, forwardKey)
 	if err != nil {
 		return false, fmt.Errorf("read mapping %s: %w", forwardKey, err)
@@ -181,21 +187,21 @@ func backfillOne(ctx context.Context, objects, mappings, serviceIndex jetstream.
 	}
 	// Write the index first; readers verify the parent pointer and forward mapping.
 	if !indexed {
-		if _, err := serviceIndex.Put(ctx, indexKey, []byte(uid)); err != nil {
+		if err := store.PutMapping(ctx, indexKey, uid); err != nil {
 			return false, fmt.Errorf("write service index: %w", err)
 		}
 	}
 	if !present || previousParent != serviceUID {
-		if _, err := serviceIndex.Put(ctx, parentKey, []byte(serviceUID)); err != nil {
+		if err := store.PutMapping(ctx, parentKey, serviceUID); err != nil {
 			return false, fmt.Errorf("write subgroup parent: %w", err)
 		}
 	}
 	if pending {
 		oldIndexKey := constants.KVMappingPrefixSubgroupByService + "." + pendingService + "." + uid
-		if _, err := serviceIndex.Put(ctx, oldIndexKey, []byte(constants.KVTombstoneMarker)); err != nil {
+		if err := store.PutTombstone(ctx, oldIndexKey); err != nil {
 			return false, fmt.Errorf("remove previous service index: %w", err)
 		}
-		if _, err := serviceIndex.Put(ctx, pendingKey, []byte(constants.KVTombstoneMarker)); err != nil {
+		if err := store.PutTombstone(ctx, pendingKey); err != nil {
 			return false, fmt.Errorf("clear pending subgroup move: %w", err)
 		}
 	}

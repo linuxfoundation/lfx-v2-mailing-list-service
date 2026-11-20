@@ -79,6 +79,7 @@ The codebase follows hexagonal/clean architecture principles:
 
 ### NATS Integration
 - **JetStream KV**: Reads `v1-objects` (v1 DynamoDB CDC from lfx-v1-sync-helper) and `v1-mappings` (idempotency / entity mapping state); maintains the service-to-mailing-list lookup in `groupsio-subgroup-service-index`
+- **Processing-state storage:** Eventing now uses service-owned Postgres tables and requires `MAILING_LIST_STATE_DATABASE_URL` plus a verified offline cutover. Only the native `groupsio-subgroup-service-index` stays in KV; canonical project/committee reads use the helper RPC. See `docs/event-state-postgres.md`; older `v1-mappings` descriptions below refer to legacy encodings, not runtime bucket access.
 - **Message Publishing**: Publishes indexing and access control events
 - **Data Stream**: Subscribes to v1 DynamoDB KV events for data migration/sync
 - **Connection Management**: Reconnection handling and readiness checks

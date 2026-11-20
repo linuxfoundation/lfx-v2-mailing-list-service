@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/pkg/constants"
@@ -19,6 +20,31 @@ import (
 type natsMappingReaderWriter struct {
 	kv           jetstream.KeyValue
 	serviceIndex jetstream.KeyValue
+	state        port.ProcessingState
+	rpc          mappingRPC
+}
+
+type mappingRPC interface {
+	RequestWithContext(context.Context, string, []byte) (*nats.Msg, error)
+}
+
+// NewProcessingStateReaderWriter routes only the native subgroup index to KV.
+// Canonical project/committee reads go to the helper; owned state goes to PG.
+func NewProcessingStateReaderWriter(state port.ProcessingState, serviceIndex jetstream.KeyValue, rpc mappingRPC) port.MappingReaderWriter {
+	return &natsMappingReaderWriter{state: state, serviceIndex: serviceIndex, rpc: rpc}
+}
+
+func serviceIndexKey(key string) bool {
+	return strings.HasPrefix(key, constants.KVMappingPrefixSubgroupByService+".") ||
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupParent+".") ||
+		strings.HasPrefix(key, constants.KVMappingPrefixSubgroupPreviousService+".")
+}
+
+func (m *natsMappingReaderWriter) Close() error {
+	if m.state != nil {
+		return m.state.Close()
+	}
+	return nil
 }
 
 // NewMappingReaderWriter wraps the shared mappings and service lookup KV buckets.
@@ -63,6 +89,35 @@ func classifyKVError(err error) error {
 }
 
 func (m *natsMappingReaderWriter) Lookup(ctx context.Context, key string) (port.MappingEntry, error) {
+	if m.state != nil && !serviceIndexKey(key) {
+		if strings.HasPrefix(key, "project.sfid.") || strings.HasPrefix(key, "committee.sfid.") {
+			if m.rpc == nil {
+				return port.MappingEntry{}, pkgerrors.MarkTransient(errors.New("canonical mapping RPC unavailable"))
+			}
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			msg, err := m.rpc.RequestWithContext(ctx, "lfx.lookup_v1_mapping", []byte(key))
+			if err != nil {
+				return port.MappingEntry{}, pkgerrors.MarkTransient(errors.New("canonical mapping RPC unavailable"))
+			}
+			value := string(msg.Data)
+			// The helper distinguishes retained tombstones from missing keys.
+			if value == "error: mapping_tombstoned" {
+				return port.MappingEntry{State: port.MappingTombstoned}, nil
+			}
+			if strings.HasPrefix(value, "error:") {
+				return port.MappingEntry{}, pkgerrors.MarkTransient(errors.New("canonical mapping lookup failed"))
+			}
+			if value == "" {
+				return port.MappingEntry{State: port.MappingAbsent}, nil
+			}
+			if value == constants.KVTombstoneMarker {
+				return port.MappingEntry{State: port.MappingTombstoned}, nil
+			}
+			return port.MappingEntry{State: port.MappingPresent, Value: value}, nil
+		}
+		return m.state.Lookup(ctx, key)
+	}
 	entry, err := m.bucketFor(key).Get(ctx, key)
 	if errors.Is(err, jetstream.ErrKeyNotFound) || errors.Is(err, jetstream.ErrKeyDeleted) {
 		return port.MappingEntry{State: port.MappingAbsent}, nil
@@ -81,11 +136,17 @@ func (m *natsMappingReaderWriter) Lookup(ctx context.Context, key string) (port.
 }
 
 func (m *natsMappingReaderWriter) PutMapping(ctx context.Context, key, value string) error {
+	if m.state != nil && !serviceIndexKey(key) {
+		return m.state.PutMapping(ctx, key, value)
+	}
 	_, err := m.bucketFor(key).Put(ctx, key, []byte(value))
 	return classifyKVError(err)
 }
 
 func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value string) error {
+	if m.state != nil && !serviceIndexKey(key) {
+		return m.state.CreateMapping(ctx, key, value)
+	}
 	_, err := m.bucketFor(key).Create(ctx, key, []byte(value))
 	if errors.Is(err, jetstream.ErrKeyExists) {
 		return port.ErrMappingAlreadyExists
@@ -94,10 +155,16 @@ func (m *natsMappingReaderWriter) CreateMapping(ctx context.Context, key, value 
 }
 
 func (m *natsMappingReaderWriter) PurgeMapping(ctx context.Context, key string) error {
+	if m.state != nil && !serviceIndexKey(key) {
+		return m.state.PurgeMapping(ctx, key)
+	}
 	return classifyKVError(m.bucketFor(key).Purge(ctx, key))
 }
 
 func (m *natsMappingReaderWriter) PutTombstone(ctx context.Context, key string) error {
+	if m.state != nil && !serviceIndexKey(key) {
+		return m.state.PutTombstone(ctx, key)
+	}
 	_, err := m.bucketFor(key).Put(ctx, key, []byte(constants.KVTombstoneMarker))
 	return classifyKVError(err)
 }
