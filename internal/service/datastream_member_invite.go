@@ -81,7 +81,7 @@ func (h *MemberInviteHandler) MaybeSendInvite(
 
 	// Atomically claim the invite slot. CreateMapping only succeeds when the key is absent,
 	// so concurrent redeliveries that race here will all fail on the same KV operation.
-	// On SendInvite failure we call PurgeMapping to release the slot so JetStream can retry.
+	// Ambiguous post-dispatch failures retain the slot for manual reconciliation.
 	inviteSentKey := memberInviteSentKey(member.UID)
 	if err := h.mappings.CreateMapping(ctx, inviteSentKey, "pending"); err != nil {
 		if errors.Is(err, port.ErrMappingAlreadyExists) {
@@ -140,11 +140,10 @@ func (h *MemberInviteHandler) MaybeSendInvite(
 	if sendErr != nil {
 		logger.WarnContext(ctx, "failed to send LFID invite for mailing-list member; continuing",
 			"member_uid", member.UID, "error", sendErr)
-		// Release the dedup slot so JetStream redelivery can retry.
-		if purgeErr := h.mappings.PurgeMapping(ctx, inviteSentKey); purgeErr != nil {
-			logger.WarnContext(ctx, "failed to release invite dedup slot after send failure; retries suppressed",
-				"member_uid", member.UID, "error", purgeErr)
-		}
+		return
+	}
+	if result == nil || result.InviteUID == "" {
+		logger.WarnContext(ctx, "LFID invite result unresolved; retaining dispatch claim")
 		return
 	}
 

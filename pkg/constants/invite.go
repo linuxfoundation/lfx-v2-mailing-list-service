@@ -15,6 +15,6 @@ const InviteAcceptedQueueGroup = "mailing-list-service-invite-accepted"
 // KVMemberLFIDInviteSentPrefix is the v1-mappings key prefix used to dedup LFID invites
 // for mailing-list members. The full key is "<prefix>.<memberUID>". The key is created
 // atomically with value "pending" before SendInvite is called (preventing concurrent
-// duplicate sends); on success it is overwritten with the InviteUID; on failure it is
-// purged so JetStream redelivery can retry.
+// duplicate sends); on success it is overwritten with the InviteUID. Ambiguous
+// post-dispatch failures retain the pending claim for manual reconciliation.
 const KVMemberLFIDInviteSentPrefix = "groupsio-member-lfid-invite-sent"

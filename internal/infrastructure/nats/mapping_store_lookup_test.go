@@ -34,6 +34,68 @@ type valueEntry struct {
 
 func (e valueEntry) Value() []byte { return []byte(e.value) }
 
+type stateRoutingFake struct {
+	port.ProcessingState
+	keys []string
+}
+
+func (s *stateRoutingFake) Lookup(_ context.Context, key string) (port.MappingEntry, error) {
+	s.keys = append(s.keys, key)
+	return port.MappingEntry{State: port.MappingPresent, Value: "postgres-state"}, nil
+}
+
+type rpcRoutingFake struct {
+	keys  []string
+	value string
+	err   error
+}
+
+func (r *rpcRoutingFake) RequestWithContext(_ context.Context, subject string, data []byte) (*nats.Msg, error) {
+	if subject != "lfx.lookup_v1_mapping" {
+		return nil, errors.New("wrong mapping subject")
+	}
+	r.keys = append(r.keys, string(data))
+	return &nats.Msg{Data: []byte(r.value)}, r.err
+}
+func TestProcessingStateRouting(t *testing.T) {
+	ctx := context.Background()
+	state := &stateRoutingFake{}
+	rpc := &rpcRoutingFake{value: "canonical-uid"}
+	index := &getKV{entry: valueEntry{value: "native-index"}}
+	s := NewProcessingStateReaderWriter(state, index, rpc)
+	e, err := s.Lookup(ctx, "groupsio-member.member")
+	require.NoError(t, err)
+	require.Equal(t, "postgres-state", e.Value)
+	e, err = s.Lookup(ctx, "groupsio-subgroup-parent.list")
+	require.NoError(t, err)
+	require.Equal(t, "native-index", e.Value)
+	e, err = s.Lookup(ctx, "project.sfid.test")
+	require.NoError(t, err)
+	require.Equal(t, "canonical-uid", e.Value)
+	require.Equal(t, []string{"groupsio-member.member"}, state.keys)
+	require.Equal(t, []string{"project.sfid.test"}, rpc.keys)
+	rpc.value = "!del"
+	e, err = s.Lookup(ctx, "committee.sfid.test")
+	require.NoError(t, err)
+	require.True(t, e.Tombstoned())
+	rpc.value = "error: mapping_tombstoned"
+	e, err = s.Lookup(ctx, "committee.sfid.test")
+	require.NoError(t, err)
+	require.True(t, e.Tombstoned())
+	rpc.value = ""
+	e, err = s.Lookup(ctx, "committee.sfid.test")
+	require.NoError(t, err)
+	require.Equal(t, port.MappingAbsent, e.State)
+	rpc.value = "error: example lookup failure"
+	_, err = s.Lookup(ctx, "committee.sfid.test")
+	require.Error(t, err)
+	require.True(t, pkgerrors.IsTransient(err))
+	rpc.err = errors.New("unavailable")
+	_, err = s.Lookup(ctx, "project.sfid.test")
+	require.Error(t, err)
+	require.True(t, pkgerrors.IsTransient(err))
+}
+
 func TestLookup(t *testing.T) {
 	tests := []struct {
 		name      string

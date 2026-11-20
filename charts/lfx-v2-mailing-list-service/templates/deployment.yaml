@@ -41,6 +41,13 @@ spec:
           # Environment variables from values.yaml app.environment
           # Supports both direct values and valueFrom for secret references
           env:
+            {{- if .Values.eventStateDatabase.secretName }}
+            - name: MAILING_LIST_STATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.eventStateDatabase.secretName | quote }}
+                  key: {{ .Values.eventStateDatabase.secretKey | quote }}
+            {{- end }}
             {{- range $name, $config := .Values.app.environment }}
             - name: {{ $name }}
               {{- if $config.valueFrom }}

@@ -13,6 +13,12 @@ image:
 # replicaCount is the number of replicas for the deployment
 replicaCount: 1
 
+# Existing Secret containing the service-owned Postgres DSN. Complete the
+# offline verified state import before enabling eventing with the new image.
+eventStateDatabase:
+  secretName: ""
+  secretKey: database-url
+
 # annotations are additional annotations applied to the Deployment itself.
 # Example:
 #   reloader.stakater.com/auto: "true"

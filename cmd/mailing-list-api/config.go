@@ -64,6 +64,7 @@ type environment struct {
 
 	// Data stream (eventing)
 	EventingEnabled       bool
+	StateDatabaseURL      string
 	EventingConsumerName  string
 	EventingMaxDeliver    int
 	EventingMaxAckPending int
@@ -195,6 +196,7 @@ func parseEnv() environment {
 		SelfServeBaseURL:      selfServeBaseURL,
 		AutoSyncEnabled:       autoSyncEnabled,
 		EventingEnabled:       os.Getenv("EVENTING_ENABLED") == "true",
+		StateDatabaseURL:      os.Getenv("MAILING_LIST_STATE_DATABASE_URL"),
 		EventingConsumerName:  eventingConsumerName,
 		EventingMaxDeliver:    envInt("EVENTING_MAX_DELIVER", 3),
 		EventingMaxAckPending: envInt("EVENTING_MAX_ACK_PENDING", 1000),

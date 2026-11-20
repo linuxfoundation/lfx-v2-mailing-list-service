@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/model"
@@ -28,6 +29,8 @@ type Config struct {
 	AckWait time.Duration
 	// MaxAckPending is the maximum number of unacknowledged messages in flight.
 	MaxAckPending int
+	// ShutdownTimeout is the graceful in-flight completion window.
+	ShutdownTimeout time.Duration
 }
 
 // EventProcessor is the interface for JetStream KV bucket event consumers.
@@ -39,23 +42,60 @@ type EventProcessor interface {
 
 // natsEventProcessor is the NATS JetStream implementation of EventProcessor.
 type natsEventProcessor struct {
-	natsClient *infraNATS.NATSClient
-	consumer   jetstream.Consumer
-	consumeCtx jetstream.ConsumeContext
-	config     Config
+	natsClient       consumerManager
+	consumer         jetstream.Consumer
+	consumeCtx       jetstream.ConsumeContext
+	config           Config
+	mu               sync.Mutex
+	started          bool
+	stopRequested    bool
+	ready            chan struct{}
+	processingCancel context.CancelFunc
+	active           sync.WaitGroup
+	waitOnce         sync.Once
+	callbacksDone    chan struct{}
+}
+
+type consumerManager interface {
+	CreateOrUpdateConsumer(context.Context, string, jetstream.ConsumerConfig) (jetstream.Consumer, error)
 }
 
 // NewEventProcessor creates an EventProcessor backed by the given NATSClient.
 func NewEventProcessor(_ context.Context, cfg Config, natsClient *infraNATS.NATSClient) (EventProcessor, error) {
 	return &natsEventProcessor{
-		natsClient: natsClient,
-		config:     cfg,
+		natsClient:    natsClient,
+		config:        cfg,
+		callbacksDone: make(chan struct{}),
 	}, nil
 }
 
 // Start creates (or resumes) the durable JetStream consumer and processes messages
 // until ctx is cancelled.
 func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.DataStreamProcessor) error {
+	// Lifecycle cancellation stops admission, not the already-running handler.
+	// Keep its context usable through the graceful completion-write window.
+	processingCtx, cancelProcessing := context.WithCancel(context.WithoutCancel(ctx))
+	defer cancelProcessing()
+	ep.mu.Lock()
+	if ep.started {
+		ep.mu.Unlock()
+		return fmt.Errorf("data stream processor already started")
+	}
+	ep.started = true
+	ep.ready = make(chan struct{})
+	ep.processingCancel = cancelProcessing
+	if ep.callbacksDone == nil {
+		ep.callbacksDone = make(chan struct{})
+	}
+	ready := ep.ready
+	stopped := ep.stopRequested
+	ep.mu.Unlock()
+	var readyOnce sync.Once
+	signalReady := func() { readyOnce.Do(func() { close(ready) }) }
+	defer signalReady()
+	if stopped {
+		return context.Canceled
+	}
 	slog.InfoContext(ctx, "starting data stream processor", "consumer_name", ep.config.ConsumerName)
 
 	consumer, err := ep.natsClient.CreateOrUpdateConsumer(ctx, ep.config.StreamName, jetstream.ConsumerConfig{
@@ -81,17 +121,31 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 		return fmt.Errorf("failed to create or update consumer: %w", err)
 	}
 	ep.consumer = consumer
+	ep.mu.Lock()
+	stopped = ep.stopRequested
+	ep.mu.Unlock()
+	if stopped {
+		return context.Canceled
+	}
 
 	consumeCtx, err := consumer.Consume(
 		func(jMsg jetstream.Msg) {
+			ep.mu.Lock()
+			if ep.stopRequested {
+				ep.mu.Unlock()
+				return
+			} // Leave unprocessed messages for redelivery.
+			ep.active.Add(1)
+			ep.mu.Unlock()
+			defer ep.active.Done()
 			meta, err := jMsg.Metadata()
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to read stream message metadata, ACKing to avoid poison pill",
+				slog.ErrorContext(processingCtx, "failed to read stream message metadata, ACKing to avoid poison pill",
 					"subject", jMsg.Subject(), "error", err)
 				_ = jMsg.Ack()
 				return
 			}
-			streamConsumer.Process(ctx, model.StreamMessage{
+			streamConsumer.Process(processingCtx, model.StreamMessage{
 				Key:           kvKey(jMsg.Subject()),
 				Data:          jMsg.Data(),
 				IsRemoval:     isKVRemoval(jMsg),
@@ -107,12 +161,33 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 	if err != nil {
 		return fmt.Errorf("failed to start consuming messages: %w", err)
 	}
+	ep.mu.Lock()
 	ep.consumeCtx = consumeCtx
+	ep.mu.Unlock()
+	signalReady()
 
 	slog.InfoContext(ctx, "data stream processor started successfully")
-	<-ctx.Done()
-	slog.InfoContext(ctx, "data stream processor context cancelled")
-	return nil
+	closed := consumeCtx.Closed()
+	select {
+	case <-ctx.Done():
+		slog.InfoContext(ctx, "data stream processor context cancelled")
+	case <-closed:
+	}
+	shutdownTimeout := ep.config.ShutdownTimeout
+	if shutdownTimeout <= 0 {
+		shutdownTimeout = 30 * time.Second
+	}
+	stopCtx, cancelStop := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
+	defer cancelStop()
+	err = ep.Stop(stopCtx)
+	if err != nil {
+		// The graceful budget expired. Cancel handler I/O, but keep its store
+		// alive until the callback actually exits. The outer process shutdown
+		// remains the hard deadline for a non-cooperative callback.
+		cancelProcessing()
+		<-ep.callbacksDone
+	}
+	return err
 }
 
 // Stop halts the JetStream consumer. The NATS connection lifecycle is managed
@@ -120,9 +195,47 @@ func (ep *natsEventProcessor) Start(ctx context.Context, streamConsumer port.Dat
 func (ep *natsEventProcessor) Stop(ctx context.Context) error {
 	slog.InfoContext(ctx, "stopping data stream processor")
 
-	if ep.consumeCtx != nil {
-		ep.consumeCtx.Stop()
-		slog.InfoContext(ctx, "data stream consumer stopped")
+	ep.mu.Lock()
+	ep.stopRequested = true
+	started, ready, cancelProcessing := ep.started, ep.ready, ep.processingCancel
+	ep.mu.Unlock()
+	if !started {
+		return nil
+	}
+	select {
+	case <-ready:
+	case <-ctx.Done():
+		if cancelProcessing != nil {
+			cancelProcessing()
+		}
+		return ctx.Err()
+	}
+	ep.mu.Lock()
+	consumeCtx := ep.consumeCtx
+	ep.mu.Unlock()
+	if consumeCtx == nil {
+		if cancelProcessing != nil {
+			cancelProcessing()
+		}
+		return nil
+	}
+	// Capture the SDK completion signal before requesting stop. Also wait on
+	// our admission-protected callback barrier, including concurrent stops.
+	closed := consumeCtx.Closed()
+	consumeCtx.Stop()
+	ep.waitOnce.Do(func() { go func() { ep.active.Wait(); close(ep.callbacksDone) }() })
+	for _, done := range []<-chan struct{}{closed, ep.callbacksDone} {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			if cancelProcessing != nil {
+				cancelProcessing()
+			}
+			return ctx.Err()
+		}
+	}
+	if cancelProcessing != nil {
+		cancelProcessing()
 	}
 
 	slog.InfoContext(ctx, "data stream processor stopped")

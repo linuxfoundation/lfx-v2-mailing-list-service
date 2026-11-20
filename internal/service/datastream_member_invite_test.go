@@ -125,7 +125,7 @@ func (kv *stubKV) ListKeysFiltered(_ context.Context, _ ...string) (jetstream.Ke
 func (kv *stubKV) History(_ context.Context, _ string, _ ...jetstream.WatchOpt) ([]jetstream.KeyValueEntry, error) {
 	return nil, errors.New("not implemented")
 }
-func (kv *stubKV) Bucket() string                                            { return "test" }
+func (kv *stubKV) Bucket() string { return "test" }
 func (kv *stubKV) PurgeDeletes(_ context.Context, _ ...jetstream.KVPurgeOpt) error {
 	return errors.New("not implemented")
 }
@@ -300,7 +300,7 @@ func TestMaybeSendInvite_KVFallbackToTitle(t *testing.T) {
 	assert.Equal(t, "Dev Title List", sender.lastReq.Resource.Name)
 }
 
-func TestMaybeSendInvite_SendFails_PurgesSlotForRetry(t *testing.T) {
+func TestMaybeSendInvite_SendFails_RetainsSlotForReconciliation(t *testing.T) {
 	sender := &stubInviteSender{err: errors.New("invite service unavailable")}
 	m := mock.NewFakeMappingStore()
 	kv := newStubKV()
@@ -316,9 +316,9 @@ func TestMaybeSendInvite_SendFails_PurgesSlotForRetry(t *testing.T) {
 	})
 
 	assert.True(t, sender.called, "SendInvite should have been attempted")
-	// Dedup slot must be purged so JetStream redelivery can retry.
-	_, present := m.GetMappingValue(context.Background(), memberInviteSentKey("mem-fail"))
-	assert.False(t, present, "dedup slot should be purged after send failure to allow retry")
+	value, present := m.GetMappingValue(context.Background(), memberInviteSentKey("mem-fail"))
+	assert.True(t, present, "ambiguous dispatch must never authorize another send")
+	assert.Equal(t, "pending", value)
 }
 
 func TestMaybeSendInvite_UserReaderTransientError_ProceedsWithInvite(t *testing.T) {

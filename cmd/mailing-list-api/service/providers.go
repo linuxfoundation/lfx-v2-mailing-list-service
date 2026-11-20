@@ -14,6 +14,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/domain/port"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/auth"
+	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/eventstate"
 	infrastructure "github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/mock"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/nats"
 	"github.com/linuxfoundation/lfx-v2-mailing-list-service/internal/infrastructure/proxy"
@@ -87,18 +88,22 @@ func NewITXProxyConfig(baseURL, clientID, privateKey, auth0Domain, audience stri
 	}
 }
 
-// NewMappingReaderWriter opens the shared v1-mappings and dedicated subgroup
-// service index buckets used by the data stream event handler.
-func NewMappingReaderWriter(ctx context.Context, natsClient *nats.NATSClient) (port.MappingReaderWriter, error) {
-	kv, err := natsClient.KeyValue(ctx, constants.KVBucketNameV1Mappings)
+// NewMappingReaderWriter opens PG state and the native subgroup service index.
+func NewMappingReaderWriter(ctx context.Context, natsClient *nats.NATSClient, databaseURL string) (port.MappingReaderWriter, error) {
+	state, err := eventstate.Open(ctx, databaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketNameV1Mappings, err)
+		return nil, err
+	}
+	if err := state.Ready(ctx); err != nil {
+		_ = state.Close()
+		return nil, err
 	}
 	serviceIndex, err := natsClient.KeyValue(ctx, constants.KVBucketSubgroupServiceIndex)
 	if err != nil {
+		_ = state.Close()
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", constants.KVBucketSubgroupServiceIndex, err)
 	}
-	return nats.NewMappingReaderWriter(kv, serviceIndex), nil
+	return nats.NewProcessingStateReaderWriter(state, serviceIndex, natsClient), nil
 }
 
 // NewMessagePublisher initializes the message publisher implementation.

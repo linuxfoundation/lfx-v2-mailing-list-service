@@ -40,9 +40,9 @@ func handleDataStream(
 		return nil
 	}
 
-	// Open v1-mappings for idempotency and the subgroup service index for lookups.
-	// Deferred until here so deployments with eventing disabled don't require either bucket.
-	mappings, err := service.NewMappingReaderWriter(ctx, natsClient)
+	// Open verified PG state and the native subgroup service index. Deferred
+	// until here so deployments with eventing disabled need neither dependency.
+	mappings, err := service.NewMappingReaderWriter(ctx, natsClient, env.StateDatabaseURL)
 	if err != nil {
 		return err
 	}
@@ -68,15 +68,19 @@ func handleDataStream(
 	streamConsumer := infraNATS.NewDataStreamConsumer(handler)
 
 	cfg := eventing.Config{
-		ConsumerName:  env.EventingConsumerName,
-		StreamName:    "KV_" + constants.KVBucketV1Objects,
-		MaxDeliver:    env.EventingMaxDeliver,
-		AckWait:       time.Duration(env.EventingAckWaitSecs) * time.Second,
-		MaxAckPending: env.EventingMaxAckPending,
+		ConsumerName:    env.EventingConsumerName,
+		StreamName:      "KV_" + constants.KVBucketV1Objects,
+		MaxDeliver:      env.EventingMaxDeliver,
+		AckWait:         time.Duration(env.EventingAckWaitSecs) * time.Second,
+		MaxAckPending:   env.EventingMaxAckPending,
+		ShutdownTimeout: gracefulShutdownSeconds * time.Second,
 	}
 
 	processor, err := eventing.NewEventProcessor(ctx, cfg, natsClient)
 	if err != nil {
+		if closer, ok := mappings.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
 		return fmt.Errorf("failed to create data stream processor: %w", err)
 	}
 
@@ -88,19 +92,11 @@ func handleDataStream(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		if closer, ok := mappings.(interface{ Close() error }); ok {
+			defer func() { _ = closer.Close() }()
+		}
 		if err := processor.Start(ctx, streamConsumer); err != nil {
 			slog.ErrorContext(ctx, "data stream processor exited with error", "error", err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		stopCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownSeconds*time.Second)
-		defer cancel()
-		if err := processor.Stop(stopCtx); err != nil {
-			slog.ErrorContext(stopCtx, "error stopping data stream processor", "error", err)
 		}
 	}()
 

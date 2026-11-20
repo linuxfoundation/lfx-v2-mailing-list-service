@@ -525,6 +525,13 @@ Key format sent to the v1-sync-helper:
 - `project.uid.<uuid>` — v2 UUID → v1 SFID
 - `project.sfid.<sfid>` — v1 SFID → v2 UUID
 - `committee.uid.<uuid>` — v2 UUID → v1 SFID (response: `projectSFID:committeeSFID`)
+- `committee.sfid.<sfid>` — v1 committee SFID → v2 committee UUID
+
+The helper reads generic mapping keys. A missing key returns an empty response;
+retained deletion returns `error: mapping_tombstoned`; other failures use an
+`error:` envelope. The processing adapter recognizes the explicit tombstone
+code before generic transient failures and accepts legacy `!del` replies too.
+Verified against the [helper handler](https://github.com/linuxfoundation/lfx-v1-sync-helper/blob/1f8b7dd3b8e7c1a5f5bd3187d8c36dc48f6c9cf6/cmd/lfx-v1-sync-helper/lookup_handler.go).
 
 ### Published Subjects
 

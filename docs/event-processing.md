@@ -6,6 +6,10 @@ The mailing list service implements a NATS JetStream KV-bucket event processor t
 
 The pipeline is driven by the `lfx-v1-sync-helper` component, which writes DynamoDB change events into the `v1-objects` KV bucket. The mailing list service consumes those events, transforms them into v2 domain models, and publishes the results to the indexer and access-control (FGA-sync) services.
 
+Processing/relationship/invitation state is now in service-owned Postgres tables;
+legacy `v1-mappings` key names in this guide describe the handler port encoding,
+not runtime bucket access. See [Postgres state and cutover](event-state-postgres.md).
+
 ---
 
 ## Architecture
@@ -18,7 +22,7 @@ graph TD
     SH[lfx-v1-sync-helper]
     KV1[NATS KV: v1-objects]
     EP[EventProcessor<br/>mailing-list-service]
-    KV2[NATS KV: v1-mappings<br/>idempotency store]
+    KV2[Mailing-list-owned Postgres<br/>processing state]
     KVI[NATS KV: groupsio-subgroup-service-index<br/>service-to-list lookup]
     IDX[Indexer Service<br/>OpenSearch]
     FGA[FGA-Sync Service<br/>OpenFGA]
@@ -50,7 +54,7 @@ graph TD
 sequenceDiagram
     participant KV as v1-objects KV
     participant EP as EventProcessor
-    participant MP as v1-mappings KV
+    participant MP as Mailing-list Postgres
     participant IDX as Indexer
     participant FGA as FGA-Sync
 
@@ -75,7 +79,7 @@ Deletes arrive in two forms:
 sequenceDiagram
     participant KV as v1-objects KV
     participant EP as EventProcessor
-    participant MP as v1-mappings KV
+    participant MP as Mailing-list Postgres
     participant IDX as Indexer
     participant FGA as FGA-Sync
 
@@ -100,9 +104,9 @@ graph LR
     SG --> M[Member<br/>itx-groupsio-v2-member]
 ```
 
-- A **subgroup** event is NAK'd with backoff if the parent service mapping is absent from `v1-mappings`.
-- A **member** event is NAK'd with backoff if the parent subgroup mapping is absent from `v1-mappings`.
-- A **message** event is NAK'd with backoff if the `group_id` reverse index (`groupsio-subgroup-gid`) is absent from `v1-mappings`.
+- A **subgroup** event is NAK'd if its parent service is not processed in Postgres.
+- A **member** event is NAK'd if its parent subgroup is not processed in Postgres.
+- A **message** event is NAK'd if its `group_id` lookup is missing from Postgres.
 
 ### Reverse Index (group_id → UID)
 
@@ -216,7 +220,8 @@ After writing the gid and project mappings needed by other events, the subgroup 
 
 ## Deduplication
 
-The `v1-mappings` KV bucket tracks processing state for each entity:
+Service-owned Postgres tables track processing state. The key/value forms below
+are compatibility encodings at the handler port, not physical KV storage:
 
 | State | Key Pattern | Value |
 |---|---|---|
@@ -236,7 +241,10 @@ The separate `groupsio-subgroup-service-index` bucket stores:
 | Mailing list parent service | `groupsio-subgroup-parent.<uid>` | `<service_uid>` |
 | Pending move cleanup | `groupsio-subgroup-previous-service.<uid>` | `<old_service_uid>` until its index key is tombstoned |
 
-Removed index entries use the same `!del` tombstone marker. These keys are routed to the dedicated bucket by prefix; the processed-subgroup mapping remains in `v1-mappings`. A lookup returns an error rather than a partial list if the KV watcher closes before completing its initial replay.
+Removed native index entries use the `!del` marker. These keys stay routed to the
+dedicated NATS bucket; processed-subgroup state lives in `mailing_list_sync_state`
+in Postgres. An incomplete native KV enumeration returns an error, not a partial
+list. See [owned tables and cutover](event-state-postgres.md).
 
 ---
 
@@ -247,6 +255,7 @@ Removed index entries use the same `!del` tombstone marker. These keys are route
 | Variable | Default | Description |
 |---|---|---|
 | `EVENTING_ENABLED` | _(unset)_ | Set to `true` to enable the data stream processor |
+| `MAILING_LIST_STATE_DATABASE_URL` | _(required for eventing/repair)_ | Secret-loaded URL for verified service-owned PG state; complete offline cutover first |
 | `EVENTING_CONSUMER_NAME` | `mailing-list-service-kv-consumer` | Durable JetStream consumer name |
 | `EVENTING_MAX_DELIVER` | `3` | Maximum delivery attempts before giving up |
 | `EVENTING_ACK_WAIT_SECS` | `30` | Seconds the server waits for ACK before redelivering |
@@ -294,12 +303,16 @@ stateDiagram-v2
     [*] --> Starting: EVENTING_ENABLED = "true"
     Starting --> Running: Consumer created / resumed
     Running --> Stopping: ctx cancelled (SIGTERM / shutdown)
-    Stopping --> [*]: consumer.Stop() called
+    Stopping --> [*]: callbacks finished, store closed
 ```
 
 1. **Startup**: `handleDataStream` is called from `main.go` after the NATS client is ready. If `EVENTING_ENABLED` is not `true`, the function is a no-op.
 2. **Running**: The processor consumes messages in the background goroutine until context cancellation.
-3. **Shutdown**: A second goroutine waits for `ctx.Done()` and calls `processor.Stop()` with a graceful-shutdown timeout.
+3. **Shutdown**: The processor stops new consumption, waits for SDK completion and
+   active callbacks, and preserves the processing context during its graceful
+   completion-write window. Only after `Start` finishes can its caller close PG.
+   Expiry of the graceful budget cancels handler I/O; the outer process shutdown
+   remains the hard limit for non-cooperative code.
 
 ---
 
@@ -309,6 +322,8 @@ stateDiagram-v2
 
 ```bash
 export EVENTING_ENABLED=true
+# Load MAILING_LIST_STATE_DATABASE_URL from an approved Secret and complete
+# the offline verified import before starting this image.
 make run
 ```
 
@@ -337,9 +352,9 @@ Watch for these log messages:
 
 | Symptom | Action |
 |---|---|
-| No events processed or startup fails | Verify `EVENTING_ENABLED=true`, check NATS connectivity, confirm `v1-objects`, `v1-mappings` and `groupsio-subgroup-service-index` buckets exist |
-| Repeated NAK / ordering failures | Ensure `lfx-v1-sync-helper` is populating the KV bucket in dependency order |
-| Duplicate events replayed | Inspect `v1-mappings` bucket for missing tombstones |
+| No events processed or startup fails | Check eventing, both native NATS buckets, the Secret-loaded PG URL, DB connectivity, and the verified `mailing_list_state_cutover` checkpoint |
+| Repeated NAK / ordering failures | Check source parent records, PG processed-state, and canonical helper mapping RPC availability |
+| Duplicate events replayed | Inspect deletion state in `mailing_list_sync_state` / `mailing_list_member_principals`, not legacy KV |
 | Consumer not progressing | Check downstream indexer / FGA-sync availability; review `EVENTING_MAX_DELIVER` |
 
 ---
@@ -366,7 +381,10 @@ internal/
     └── datastream_member_handler.go      # Member transform + publish
 ```
 
-The `MappingReaderWriter` port abstracts `v1-mappings` operations (create-vs-update resolution, parent-dependency checks and tombstones) and the dedicated `groupsio-subgroup-service-index` lookup. The NATS adapter routes reads and writes by key prefix; both buckets use the `!del` tombstone marker.
+The `MappingReaderWriter` port abstracts owned PG state, canonical helper RPC
+reads, and the native `groupsio-subgroup-service-index`. The composite adapter
+routes only native subgroup indexes to KV. PG stores named domain columns and
+reconstructs legacy marker encodings at the port boundary.
 
 ### Adding a New Entity Type
 
@@ -385,8 +403,10 @@ The `MappingReaderWriter` port abstracts `v1-mappings` operations (create-vs-upd
 unset EVENTING_ENABLED
 make run
 
-# Enable with a local NATS server after creating v1-objects, v1-mappings
-# and groupsio-subgroup-service-index (the service Helm chart creates the last one)
+# In an isolated fixture environment, provision native v1-objects and
+# groupsio-subgroup-service-index, plus service-owned PG. Load the database URL
+# and run the verified offline import described in event-state-postgres.md.
+# Seed canonical project/committee mappings needed by your source fixture too.
 export EVENTING_ENABLED=true
 export NATS_URL=nats://localhost:4222
 make run
@@ -394,8 +414,8 @@ make run
 # Inject a test event manually
 nats kv put v1-objects itx-groupsio-v2-service.test-uid '{"group_service_type":"primary","project_id":"proj-1","domain":"groups.io"}'
 
-# Verify mapping was written
-nats kv get v1-mappings groupsio-service.test-uid
+# Verify PG state using the approved connection, not legacy mappings KV
+psql "$MAILING_LIST_STATE_DATABASE_URL" -c "SELECT resource_kind,source_id,deleted FROM mailing_list_sync_state WHERE source_id='test-uid'"
 
 # Run unit tests
 go test ./cmd/mailing-list-api/eventing/... ./internal/service/... -v
